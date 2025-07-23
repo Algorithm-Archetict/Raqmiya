@@ -1,6 +1,6 @@
-﻿using ITI_Raqmiya_MVC.Models;
+﻿
 
-namespace ITI_Raqmiya_MVC.Repository.Repository_Interface
+namespace Raqmiya.Infrastructure
 {
     public interface ICategoryRepository
     {
