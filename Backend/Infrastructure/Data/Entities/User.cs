@@ -26,6 +26,9 @@ namespace Raqmiya.Infrastructure
         public string? StripeConnectAccountId { get; set; } // Nullable, for creators
         public string? PayoutSettings { get; set; } // Store as JSON string or complex type, nullable
 
+        // midas added
+        public bool IsActive;
+
         // Navigation properties
         public ICollection<Product> Products { get; set; } = new List<Product>();
         public ICollection<Order> Orders { get; set; } = new List<Order>();
