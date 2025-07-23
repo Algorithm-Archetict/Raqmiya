@@ -11,4 +11,7 @@
         Task AddAsync(User newUser);
         Task<bool> UserExistsByUsernameAsync(string username);
     }
+
+
+
 }
