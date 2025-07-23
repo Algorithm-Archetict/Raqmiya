@@ -1,16 +1,15 @@
-﻿using ITI_Raqmiya_MVC.Data;
-using ITI_Raqmiya_MVC.Models;
+﻿
 using ITI_Raqmiya_MVC.Repository.Repository_Interface;
 using Microsoft.EntityFrameworkCore;
 using System;
 
-namespace ITI_Raqmiya_MVC.Repository.Repos_Implementation
+namespace Raqmiya.Infrastructure
 {
     public class TagRepository : ITagRepository
     {
-        private readonly RaqmiyaContext _context;
+        private readonly RaqmiyaDbContext _context;
 
-        public TagRepository(RaqmiyaContext context)
+        public TagRepository(RaqmiyaDbContext context)
         {
             _context = context;
         }

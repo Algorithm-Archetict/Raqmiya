@@ -1,15 +1,14 @@
-﻿using ITI_Raqmiya_MVC.Data;
-using ITI_Raqmiya_MVC.Models;
+﻿
 using ITI_Raqmiya_MVC.Repository.Repository_Interface;
 using Microsoft.EntityFrameworkCore;
 
-namespace ITI_Raqmiya_MVC.Repository.Repos_Implementation
+namespace Raqmiya.Infrastructure
 {
     public class UserRepo : IUserRepo
     {
-        private readonly RaqmiyaContext _context;
+        private readonly RaqmiyaDbContext _context;
 
-        public UserRepo(RaqmiyaContext context)
+        public UserRepo(RaqmiyaDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
