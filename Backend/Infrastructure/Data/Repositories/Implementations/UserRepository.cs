@@ -1,14 +1,13 @@
 ﻿
-using ITI_Raqmiya_MVC.Repository.Repository_Interface;
 using Microsoft.EntityFrameworkCore;
 
 namespace Raqmiya.Infrastructure
 {
-    public class UserRepo : IUserRepo
+    public class UserRepository : IAuthRepository
     {
         private readonly RaqmiyaDbContext _context;
 
-        public UserRepo(RaqmiyaDbContext context)
+        public UserRepository(RaqmiyaDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
@@ -30,6 +29,13 @@ namespace Raqmiya.Infrastructure
 
         public void SaveChanges() => _context.SaveChanges();
 
+
+
+
+
+
+
+
         public User GetByEmail(string email)
         {
             throw new NotImplementedException();
@@ -46,6 +52,41 @@ namespace Raqmiya.Infrastructure
         }
 
         public bool UsernameExists(string username)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> RegisterAsync(string email, string username, string password, string role)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> LoginAsync(string username, string password)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string HashPassword(string password, string salt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UserExistsByEmailAsync(string email)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<User> GetUserByEmailOrUsernameAsync(string emailOrUsername)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task AddAsync(User newUser)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UserExistsByUsernameAsync(string username)
         {
             throw new NotImplementedException();
         }
