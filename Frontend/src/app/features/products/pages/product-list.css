@@ -1,0 +1,27 @@
+/* src/app/features/products/pages/product-list/product-list.css */
+.product-list-container {
+    padding-bottom: 2rem; /* Give some space at the bottom */
+  }
+  
+  /* Pagination styling adjustments */
+  .pagination .page-link {
+    color: #007bff;
+    cursor: pointer;
+  }
+  
+  .pagination .page-link:hover {
+    background-color: #e9ecef;
+  }
+  
+  .pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+  }
+  
+  .pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+  }

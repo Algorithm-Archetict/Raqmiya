@@ -1,0 +1,47 @@
+/* src/app/features/auth/components/login/login.css */
+.card-header {
+    border-bottom: none;
+  }
+  
+  .card {
+    border-radius: 0.5rem;
+    overflow: hidden; /* Ensures header corners are rounded */
+  }
+  
+  .form-label {
+    font-weight: 500;
+  }
+  
+  .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+  }
+  
+  .btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+  }
+  
+  /* Custom styling for spinner inside button */
+  .btn .app-loading-spinner {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+    vertical-align: middle; /* Align spinner vertically */
+  }
+  
+  .btn .app-loading-spinner .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+    color: #fff; /* White spinner in primary button */
+  }
+  
+  a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
