@@ -35,10 +35,8 @@ namespace Raqmiya.Infrastructure
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
         public ICollection<Post> Posts { get; set; } = new List<Post>();
-
-
         public ICollection<WishlistItem> WishlistItems { get; set; } = new List<WishlistItem>();
         public ICollection<ProductView> ProductViews { get; set; } = new List<ProductView>();
-
+        public ICollection<License> Licenses { get; set; } = new List<License>();
     }
 }

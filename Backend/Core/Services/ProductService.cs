@@ -483,5 +483,33 @@ namespace Core.Services
                 TotalCount = totalProducts
             };
         }
+
+        // --- Product File Management ---
+        public async Task<FileDTO> AddProductFileAsync(int productId, int creatorId, string originalName, string fileUrl, long size, string contentType)
+        {
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null)
+                throw new KeyNotFoundException("Product not found.");
+            if (product.CreatorId != creatorId)
+                throw new UnauthorizedAccessException("You are not authorized to add files to this product.");
+            var file = await _productRepository.AddProductFileAsync(productId, originalName, fileUrl, size, contentType);
+            return new FileDTO { Id = file.Id, Name = file.Name, FileUrl = file.FileUrl };
+        }
+
+        public async Task<List<FileDTO>> GetProductFilesAsync(int productId)
+        {
+            var files = await _productRepository.GetProductFilesAsync(productId);
+            return files.Select(f => new FileDTO { Id = f.Id, Name = f.Name, FileUrl = f.FileUrl }).ToList();
+        }
+
+        public async Task<bool> DeleteProductFileAsync(int productId, int fileId, int creatorId)
+        {
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null)
+                throw new KeyNotFoundException("Product not found.");
+            if (product.CreatorId != creatorId)
+                throw new UnauthorizedAccessException("You are not authorized to delete files from this product.");
+            return await _productRepository.DeleteProductFileAsync(productId, fileId);
+        }
     }
 }

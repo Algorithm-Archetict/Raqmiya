@@ -39,5 +39,10 @@ namespace Core.Interfaces
         Task<List<CategoryDTO>> GetAllCategoriesAsync();
         Task<List<TagDTO>> GetAllTagsAsync();
         Task<List<TagDTO>> GetTagsForCategoriesAsync(List<int> categoryIds);
+
+        // --- Product File Management ---
+        Task<FileDTO> AddProductFileAsync(int productId, int creatorId, string originalName, string fileUrl, long size, string contentType);
+        Task<List<FileDTO>> GetProductFilesAsync(int productId);
+        Task<bool> DeleteProductFileAsync(int productId, int fileId, int creatorId);
     }
 }

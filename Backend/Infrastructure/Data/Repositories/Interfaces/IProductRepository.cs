@@ -98,5 +98,10 @@ namespace Raqmiya.Infrastructure
         Task<IEnumerable<Product>> GetBestSellingProductsAsync(int count, int pageNumber, int pageSize);
         /// <summary>Gets the trendy products based on recent activity.</summary>
         Task<IEnumerable<Product>> GetTrendyProductsAsync(int count, int daysBack, int pageNumber, int pageSize);
+
+        // --- Product File Management ---
+        Task<AddedFile> AddProductFileAsync(int productId, string name, string fileUrl, long size, string contentType);
+        Task<List<AddedFile>> GetProductFilesAsync(int productId);
+        Task<bool> DeleteProductFileAsync(int productId, int fileId);
     }
 }

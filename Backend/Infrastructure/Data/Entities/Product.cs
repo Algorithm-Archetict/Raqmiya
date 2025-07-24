@@ -45,5 +45,6 @@ namespace Raqmiya.Infrastructure
         // Add this navigation property for order items
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
+        public ICollection<License> Licenses { get; set; } = new List<License>();
     }
 }

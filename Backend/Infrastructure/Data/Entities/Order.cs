@@ -21,5 +21,6 @@ namespace Raqmiya.Infrastructure
 
         // midas added
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+        public ICollection<License> Licenses { get; set; } = new List<License>();
     }
 }

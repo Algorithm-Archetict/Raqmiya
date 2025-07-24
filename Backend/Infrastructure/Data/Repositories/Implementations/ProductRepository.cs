@@ -517,5 +517,35 @@ namespace Raqmiya.Infrastructure
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        // --- Product File Management ---
+        public async Task<AddedFile> AddProductFileAsync(int productId, string name, string fileUrl, long size, string contentType)
+        {
+            var file = new AddedFile
+            {
+                ProductId = productId,
+                Name = name,
+                FileUrl = fileUrl,
+                Size = size,
+                ContentType = contentType
+            };
+            _context.Files.Add(file);
+            await _context.SaveChangesAsync();
+            return file;
+        }
+
+        public async Task<List<AddedFile>> GetProductFilesAsync(int productId)
+        {
+            return await _context.Files.Where(f => f.ProductId == productId).ToListAsync();
+        }
+
+        public async Task<bool> DeleteProductFileAsync(int productId, int fileId)
+        {
+            var file = await _context.Files.FirstOrDefaultAsync(f => f.Id == fileId && f.ProductId == productId);
+            if (file == null) return false;
+            _context.Files.Remove(file);
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

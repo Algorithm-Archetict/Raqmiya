@@ -46,6 +46,9 @@ namespace Raqmiya.Infrastructure
             modelBuilder.Entity<WishlistItem>()
                 .HasKey(wi => new { wi.UserId, wi.ProductId });
 
+            modelBuilder.Entity<CategoryTag>()
+                .HasKey(ct => new { ct.CategoryId, ct.TagId });
+
             // Configure relationships
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Creator)
@@ -175,6 +178,25 @@ namespace Raqmiya.Infrastructure
             {
                 entity.HasIndex(e => e.Permalink).IsUnique();
             });
+
+            // Configure License table relationships
+            modelBuilder.Entity<License>()
+                .HasOne(l => l.Order)
+                .WithMany(o => o.Licenses)
+                .HasForeignKey(l => l.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<License>()
+                .HasOne(l => l.Product)
+                .WithMany(p => p.Licenses)
+                .HasForeignKey(l => l.ProductId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent multiple cascade paths
+
+            modelBuilder.Entity<License>()
+                .HasOne(l => l.Buyer)
+                .WithMany(u => u.Licenses)
+                .HasForeignKey(l => l.BuyerId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent multiple cascade paths
 
             // Ensure other entity configurations (e.g., string lengths) are present.
         }
