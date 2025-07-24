@@ -1,5 +1,4 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System;
 
 namespace Raqmiya.Infrastructure
@@ -255,7 +254,7 @@ namespace Raqmiya.Infrastructure
             {
                 ProductId = productId,
                 UserId = userId,
-                ViewedAt = DateTime.Now, // Use DateTime.UtcNow for production
+                ViewedAt = DateTime.UtcNow,
                 IpAddress = ipAddress
             };
             await _context.ProductViews.AddAsync(productView);
@@ -324,25 +323,92 @@ namespace Raqmiya.Infrastructure
                 .ToListAsync();
         }
 
-        public async Task<double> GetPublishedProductsCountAsync()
+        // --- Derived Metrics Queries ---
+        public async Task<int> GetPublishedProductsCountAsync()
         {
             return await _context.Products.CountAsync(p => p.Status == "published" && p.IsPublic);
         }
 
-        public async Task<double> GetProductsByCreatorCountAsync(int creatorId)
+        public async Task<int> GetProductsByCreatorCountAsync(int creatorId)
         {
             return await _context.Products.CountAsync(p => p.CreatorId == creatorId);
         }
 
-        // Optional: If you need pagination for the user's wishlist
-        public async Task<double> GetUserWishlistCountAsync(int userId)
+        public async Task<int> GetUserWishlistCountAsync(int userId)
         {
             return await _context.WishlistItems.CountAsync(wi => wi.UserId == userId);
         }
 
+        public async Task<IEnumerable<Product>> GetMostWishedProductsAsync(int count, int pageNumber, int pageSize)
+        {
+            return await _context.Products
+                .Where(p => p.Status == "published" && p.IsPublic)
+                .OrderByDescending(p => p.WishlistItems.Count())
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Creator)
+                .Include(p => p.Reviews)
+                .Include(p => p.Orders)
+                .AsNoTracking()
+                .ToListAsync();
+        }
 
-        //TODO
-        
+        public async Task<IEnumerable<Product>> GetTopRatedProductsAsync(int count, int pageNumber, int pageSize)
+        {
+            return await _context.Products
+                .Where(p => p.Status == "published" && p.IsPublic && p.Reviews.Any())
+                .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Creator)
+                .Include(p => p.Reviews)
+                .Include(p => p.Orders)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Product>> GetBestSellingProductsAsync(int count, int pageNumber, int pageSize)
+        {
+            return await _context.Products
+                .Where(p => p.Status == "published" && p.IsPublic)
+                .OrderByDescending(p => p.Orders.Count())
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Creator)
+                .Include(p => p.Reviews)
+                .Include(p => p.Orders)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Product>> GetTrendyProductsAsync(int count, int daysBack, int pageNumber, int pageSize)
+        {
+            var cutoffDate = DateTime.UtcNow.AddDays(-daysBack);
+            return await _context.Products
+                .Where(p => p.Status == "published" && p.IsPublic)
+                .OrderByDescending(p => p.ProductViews.Count(pv => pv.ViewedAt >= cutoffDate) +
+                                         p.WishlistItems.Count(wi => wi.AddedAt >= cutoffDate) +
+                                         p.Orders.Count(o => o.OrderedAt >= cutoffDate))
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Creator)
+                .Include(p => p.Reviews)
+                .Include(p => p.Orders)
+                .Include(p => p.WishlistItems)
+                .Include(p => p.ProductViews)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Product>> GetAllAsync(int pageNumber, int pageSize)
+        {
+            return await _context.Products
+                .OrderBy(p => p.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .AsNoTracking()
+                .ToListAsync();
+        }
 
         public async Task<Product?> GetProductWithAllDetailsByPermalinkAsync(string permalink)
         {
@@ -363,37 +429,18 @@ namespace Raqmiya.Infrastructure
                 .FirstOrDefaultAsync(p => p.Permalink == permalink);
         }
 
-        // NEW: Check if permalink exists
         public async Task<bool> PermalinkExistsAsync(string permalink)
         {
             return await _context.Products.AnyAsync(p => p.Permalink == permalink);
         }
 
-        // Existing pagination methods (adjust signatures for pageNumber, pageSize)
         public async Task<IEnumerable<Product>> GetPublishedProductsAsync(int pageNumber, int pageSize)
         {
             return await _context.Products
                 .Where(p => p.Status == "published" && p.IsPublic)
-                .Include(p => p.Creator)
-                .Include(p => p.Reviews)
-                .Include(p => p.Orders)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .AsNoTracking()
-                .ToListAsync();
-        }
-
-        // ... (Keep other existing methods as updated in the previous response) ...
-
-        // Ensure pagination is correctly applied to these derived metrics methods:
-        public async Task<IEnumerable<Product>> GetMostWishedProductsAsync(int count, int pageNumber, int pageSize)
-        {
-            return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic)
-                .OrderByDescending(p => p.WishlistItems.Count())
-                .Skip((pageNumber - 1) * pageSize) // Apply pagination
-                .Take(pageSize) // Apply pagination
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews)
                 .Include(p => p.Orders)
@@ -401,13 +448,13 @@ namespace Raqmiya.Infrastructure
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Product>> GetTopRatedProductsAsync(int count, int pageNumber, int pageSize)
+        public async Task<IEnumerable<Product>> GetProductsByCreatorIdAsync(int creatorId, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic && p.Reviews.Any())
-                .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
-                .Skip((pageNumber - 1) * pageSize) // Apply pagination
-                .Take(pageSize) // Apply pagination
+                .Where(p => p.CreatorId == creatorId)
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews)
                 .Include(p => p.Orders)
@@ -415,13 +462,13 @@ namespace Raqmiya.Infrastructure
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Product>> GetBestSellingProductsAsync(int count, int pageNumber, int pageSize)
+        public async Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic)
-                .OrderByDescending(p => p.Orders.Count())
-                .Skip((pageNumber - 1) * pageSize) // Apply pagination
-                .Take(pageSize) // Apply pagination
+                .Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm))
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews)
                 .Include(p => p.Orders)
@@ -429,80 +476,131 @@ namespace Raqmiya.Infrastructure
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Product>> GetTrendyProductsAsync(int count, int daysBack, int pageNumber, int pageSize)
+        public async Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId, int pageNumber, int pageSize)
         {
-            var cutoffDate = DateTime.UtcNow.AddDays(-daysBack);
-
             return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic)
-                .OrderByDescending(p => p.ProductViews.Count(pv => pv.ViewedAt >= cutoffDate) +
-                                         p.WishlistItems.Count(wi => wi.AddedAt >= cutoffDate) +
-                                         //p.Orders.Count(o => o.OrderDate >= cutoffDate))
-                                         p.Orders.Count(o => o.OrderedAt >= cutoffDate))
-                .Skip((pageNumber - 1) * pageSize) // Apply pagination
-                .Take(pageSize) // Apply pagination
+                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId))
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews)
                 .Include(p => p.Orders)
-                .Include(p => p.WishlistItems)
-                .Include(p => p.ProductViews)
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-
-
-
-        public Task<IEnumerable<Product>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<Product>> GetProductsByTagIdAsync(int tagId, int pageNumber, int pageSize)
         {
-            throw new NotImplementedException();
+            return await _context.Products
+                .Where(p => p.ProductTags.Any(pt => pt.TagId == tagId))
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Creator)
+                .Include(p => p.Reviews)
+                .Include(p => p.Orders)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        public Task<IEnumerable<Product>> GetProductsByCreatorIdAsync(int creatorId, int pageNumber, int pageSize)
+        public async Task<IEnumerable<Product>> GetUserWishlistAsync(int userId, int pageNumber, int pageSize)
         {
-            throw new NotImplementedException();
+            return await _context.WishlistItems
+                .Where(wi => wi.UserId == userId)
+                .Select(wi => wi.Product)
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Creator)
+                .Include(p => p.Files)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        public Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm, int pageNumber, int pageSize)
+        // --- Product File Management ---
+        public async Task<AddedFile> AddProductFileAsync(int productId, string name, string fileUrl, long size, string contentType)
         {
-            throw new NotImplementedException();
+            var file = new AddedFile
+            {
+                ProductId = productId,
+                Name = name,
+                FileUrl = fileUrl,
+                Size = size,
+                ContentType = contentType
+            };
+            _context.Files.Add(file);
+            await _context.SaveChangesAsync();
+            return file;
         }
 
-        public Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId, int pageNumber, int pageSize)
+        public async Task<List<AddedFile>> GetProductFilesAsync(int productId)
         {
-            throw new NotImplementedException();
+            return await _context.Files.Where(f => f.ProductId == productId).ToListAsync();
         }
 
-        public Task<IEnumerable<Product>> GetProductsByTagIdAsync(int tagId, int pageNumber, int pageSize)
+        public async Task<bool> DeleteProductFileAsync(int productId, int fileId)
         {
-            throw new NotImplementedException();
+            var file = await _context.Files.FirstOrDefaultAsync(f => f.Id == fileId && f.ProductId == productId);
+            if (file == null) return false;
+            _context.Files.Remove(file);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        public Task<IEnumerable<Product>> GetUserWishlistAsync(int userId, int pageNumber, int pageSize)
+        // --- Admin Moderation ---
+        public async Task<List<Product>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize)
         {
-            throw new NotImplementedException();
+            return await _context.Products
+                .Where(p => p.Status == status)
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Creator)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-
-
-
-
-        public Task<int> GetPublishedProductsCountAsync()
+        public async Task<bool> ApproveProductAsync(int productId, int adminId)
         {
-            throw new NotImplementedException();
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null) return false;
+            product.Status = "published";
+            product.PublishedAt = DateTime.UtcNow;
+            product.RejectionReason = null;
+            await _context.SaveChangesAsync();
+            await AddModerationLogAsync(new ModerationLog
+            {
+                ProductId = productId,
+                AdminId = adminId,
+                Action = "approved",
+                Timestamp = DateTime.UtcNow
+            });
+            return true;
         }
 
-        Task<int> GetProductsByCreatorCountAsync(int creatorId)
+        public async Task<bool> RejectProductAsync(int productId, int adminId, string reason)
         {
-            throw new NotImplementedException();
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null) return false;
+            product.Status = "rejected";
+            product.RejectionReason = reason;
+            await _context.SaveChangesAsync();
+            await AddModerationLogAsync(new ModerationLog
+            {
+                ProductId = productId,
+                AdminId = adminId,
+                Action = "rejected",
+                Reason = reason,
+                Timestamp = DateTime.UtcNow
+            });
+            return true;
         }
 
-        public Task<int> GetUserWishlistCountAsync(int userId)
+        public async Task AddModerationLogAsync(ModerationLog log)
         {
-            throw new NotImplementedException();
+            _context.ModerationLogs.Add(log);
+            await _context.SaveChangesAsync();
         }
     }
-
-
-
 }

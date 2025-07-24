@@ -1,9 +1,11 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Raqmiya.Infrastructure
 {
-    public class UserRepository : IAuthRepository
+    public class UserRepository : IUserRepository
     {
         private readonly RaqmiyaDbContext _context;
 
@@ -12,83 +14,22 @@ namespace Raqmiya.Infrastructure
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public User GetById(int id) => _context.Users.Find(id);
+        public async Task<User?> GetByIdAsync(int id) => await _context.Users.FindAsync(id);
 
-        public IEnumerable<User> GetAll() => _context.Users.ToList();
+        public async Task<User?> GetUserByEmailAsync(string email) => await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-        public void Add(User user) => _context.Users.Add(user);
+        public async Task<User?> GetUserByUsernameAsync(string username) => await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
 
-        public void Update(User user) => _context.Users.Update(user);
+        public async Task<User?> GetUserByEmailOrUsernameAsync(string identifier) => await _context.Users.FirstOrDefaultAsync(u => u.Email == identifier || u.Username == identifier);
 
-        public void Delete(int id)
-        {
-            var user = GetById(id);
-            if (user != null)
-                _context.Users.Remove(user);
-        }
+        public async Task<bool> UserExistsByEmailAsync(string email) => await _context.Users.AnyAsync(u => u.Email == email);
 
-        public void SaveChanges() => _context.SaveChanges();
+        public async Task<bool> UserExistsByUsernameAsync(string username) => await _context.Users.AnyAsync(u => u.Username == username);
 
+        public async Task AddAsync(User user) { await _context.Users.AddAsync(user); await _context.SaveChangesAsync(); }
 
+        public async Task UpdateAsync(User user) { _context.Users.Update(user); await _context.SaveChangesAsync(); }
 
-
-
-
-
-
-        public User GetByEmail(string email)
-        {
-            throw new NotImplementedException();
-        }
-
-        public User GetByUsername(string username)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool EmailExists(string email)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool UsernameExists(string username)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> RegisterAsync(string email, string username, string password, string role)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> LoginAsync(string username, string password)
-        {
-            throw new NotImplementedException();
-        }
-
-        public string HashPassword(string password, string salt)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> UserExistsByEmailAsync(string email)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<User> GetUserByEmailOrUsernameAsync(string emailOrUsername)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AddAsync(User newUser)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> UserExistsByUsernameAsync(string username)
-        {
-            throw new NotImplementedException();
-        }
+        public async Task<List<User>> GetAllAsync() => await _context.Users.ToListAsync();
     }
 }

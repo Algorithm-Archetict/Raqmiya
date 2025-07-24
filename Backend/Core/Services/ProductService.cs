@@ -438,5 +438,112 @@ namespace Core.Services
             _logger.LogWarning("GetTagsForCategoriesAsync not fully implemented - returns all tags or placeholder.");
             return await GetAllTagsAsync(); // Placeholder
         }
+
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByCategoryAsync(int categoryId, int pageNumber, int pageSize)
+        {
+            var products = await _productRepository.GetProductsByCategoryIdAsync(categoryId, pageNumber, pageSize);
+            var totalProducts = products.Count(); // For now, use returned count; for large sets, use a count query
+            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalProducts
+            };
+        }
+
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByTagAsync(int tagId, int pageNumber, int pageSize)
+        {
+            var products = await _productRepository.GetProductsByTagIdAsync(tagId, pageNumber, pageSize);
+            var totalProducts = products.Count();
+            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalProducts
+            };
+        }
+
+        public async Task<PagedResultDTO<ProductListItemDTO>> SearchProductsAsync(string search, int pageNumber, int pageSize)
+        {
+            var products = await _productRepository.SearchProductsAsync(search, pageNumber, pageSize);
+            var totalProducts = products.Count();
+            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalProducts
+            };
+        }
+
+        // --- Product File Management ---
+        public async Task<FileDTO> AddProductFileAsync(int productId, int creatorId, string originalName, string fileUrl, long size, string contentType)
+        {
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null)
+                throw new KeyNotFoundException("Product not found.");
+            if (product.CreatorId != creatorId)
+                throw new UnauthorizedAccessException("You are not authorized to add files to this product.");
+            var file = await _productRepository.AddProductFileAsync(productId, originalName, fileUrl, size, contentType);
+            return new FileDTO { Id = file.Id, Name = file.Name, FileUrl = file.FileUrl };
+        }
+
+        public async Task<List<FileDTO>> GetProductFilesAsync(int productId)
+        {
+            var files = await _productRepository.GetProductFilesAsync(productId);
+            return files.Select(f => new FileDTO { Id = f.Id, Name = f.Name, FileUrl = f.FileUrl }).ToList();
+        }
+
+        public async Task<bool> DeleteProductFileAsync(int productId, int fileId, int creatorId)
+        {
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null)
+                throw new KeyNotFoundException("Product not found.");
+            if (product.CreatorId != creatorId)
+                throw new UnauthorizedAccessException("You are not authorized to delete files from this product.");
+            return await _productRepository.DeleteProductFileAsync(productId, fileId);
+        }
+
+        // --- Admin Moderation ---
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize)
+        {
+            var products = await _productRepository.GetProductsByStatusAsync(status, pageNumber, pageSize);
+            var total = products.Count;
+            var items = products.Select(p => new ProductListItemDTO
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Status = p.Status,
+                CreatorUsername = p.Creator.Username,
+                PublishedAt = p.PublishedAt,
+                Price = p.Price,
+                Currency = p.Currency
+            }).ToList();
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = items,
+                TotalCount = total,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<bool> ApproveProductAsync(int productId, int adminId)
+        {
+            return await _productRepository.ApproveProductAsync(productId, adminId);
+        }
+
+        public async Task<bool> RejectProductAsync(int productId, int adminId, string reason)
+        {
+            return await _productRepository.RejectProductAsync(productId, adminId, reason);
+        }
     }
 }
