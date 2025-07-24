@@ -483,17 +483,21 @@ namespace Raqmiya.Infrastructure
             throw new NotImplementedException();
         }
 
-        Task<int> IProductRepository.GetPublishedProductsCountAsync()
+
+
+
+
+        public Task<int> GetPublishedProductsCountAsync()
         {
             throw new NotImplementedException();
         }
 
-        Task<int> IProductRepository.GetProductsByCreatorCountAsync(int creatorId)
+        Task<int> GetProductsByCreatorCountAsync(int creatorId)
         {
             throw new NotImplementedException();
         }
 
-        Task<int> IProductRepository.GetUserWishlistCountAsync(int userId)
+        public Task<int> GetUserWishlistCountAsync(int userId)
         {
             throw new NotImplementedException();
         }

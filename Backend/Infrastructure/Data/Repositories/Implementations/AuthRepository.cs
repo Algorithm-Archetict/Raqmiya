@@ -70,5 +70,25 @@ namespace Raqmiya.Infrastructure
             var hashBytes = sha256.ComputeHash(combinedBytes);
             return Convert.ToBase64String(hashBytes);
         }
+
+        public Task<bool> UserExistsByEmailAsync(string email)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<User> GetUserByEmailOrUsernameAsync(string emailOrUsername)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task AddAsync(User newUser)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UserExistsByUsernameAsync(string username)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
