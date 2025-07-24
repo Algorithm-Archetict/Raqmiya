@@ -331,6 +331,54 @@ namespace API.Controllers
             return Ok("File deleted.");
         }
 
+        // --- Admin Endpoints ---
+
+        /// <summary>
+        /// List products by status (admin only).
+        /// </summary>
+        [HttpGet("admin/by-status")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetProductsByStatus([FromQuery] string status = "pending", [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            return Ok(await _productService.GetProductsByStatusAsync(status, pageNumber, pageSize));
+        }
+
+        /// <summary>
+        /// Approve a product (admin only).
+        /// </summary>
+        [HttpPost("admin/{id}/approve")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> ApproveProduct(int id)
+        {
+            var adminId = GetCurrentUserId();
+            if (!adminId.HasValue) return Unauthorized();
+            var result = await _productService.ApproveProductAsync(id, adminId.Value);
+            if (!result) return NotFound();
+            return Ok("Product approved and published.");
+        }
+
+        /// <summary>
+        /// Reject a product (admin only).
+        /// </summary>
+        [HttpPost("admin/{id}/reject")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> RejectProduct(int id, [FromBody] ProductModerationRequestDTO request)
+        {
+            if (request.Action?.ToLower() != "reject" || string.IsNullOrWhiteSpace(request.Reason))
+                return BadRequest("Rejection reason is required.");
+            var adminId = GetCurrentUserId();
+            if (!adminId.HasValue) return Unauthorized();
+            var result = await _productService.RejectProductAsync(id, adminId.Value, request.Reason!);
+            if (!result) return NotFound();
+            return Ok("Product rejected.");
+        }
+
         // --- Helpers ---
         private int? GetCurrentUserId()
         {

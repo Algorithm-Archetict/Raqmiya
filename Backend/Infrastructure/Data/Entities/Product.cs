@@ -17,7 +17,11 @@ namespace Raqmiya.Infrastructure
         public string? CoverImageUrl { get; set; } // Nullable
         public string? PreviewVideoUrl { get; set; } // Nullable
         public DateTime? PublishedAt { get; set; } // Nullable, if not published yet
-        public string Status { get; set; } = "draft"; // e.g., "draft", "published", "archived", "unlisted"
+        /// <summary>
+        /// Product status: draft, pending, published, rejected, archived, unlisted
+        /// </summary>
+        public string Status { get; set; } = "draft"; // e.g., "draft", "pending", "published", "rejected", "archived", "unlisted"
+        public string? RejectionReason { get; set; } // Nullable, set if rejected by admin
         public bool IsPublic { get; set; }
         public string Permalink { get; set; } = string.Empty;
 

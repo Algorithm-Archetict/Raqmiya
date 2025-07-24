@@ -103,5 +103,11 @@ namespace Raqmiya.Infrastructure
         Task<AddedFile> AddProductFileAsync(int productId, string name, string fileUrl, long size, string contentType);
         Task<List<AddedFile>> GetProductFilesAsync(int productId);
         Task<bool> DeleteProductFileAsync(int productId, int fileId);
+
+        // --- Admin Moderation ---
+        Task<List<Product>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize);
+        Task<bool> ApproveProductAsync(int productId, int adminId);
+        Task<bool> RejectProductAsync(int productId, int adminId, string reason);
+        Task AddModerationLogAsync(ModerationLog log);
     }
 }

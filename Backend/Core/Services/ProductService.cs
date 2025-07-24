@@ -511,5 +511,39 @@ namespace Core.Services
                 throw new UnauthorizedAccessException("You are not authorized to delete files from this product.");
             return await _productRepository.DeleteProductFileAsync(productId, fileId);
         }
+
+        // --- Admin Moderation ---
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize)
+        {
+            var products = await _productRepository.GetProductsByStatusAsync(status, pageNumber, pageSize);
+            var total = products.Count;
+            var items = products.Select(p => new ProductListItemDTO
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Status = p.Status,
+                CreatorUsername = p.Creator.Username,
+                PublishedAt = p.PublishedAt,
+                Price = p.Price,
+                Currency = p.Currency
+            }).ToList();
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = items,
+                TotalCount = total,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<bool> ApproveProductAsync(int productId, int adminId)
+        {
+            return await _productRepository.ApproveProductAsync(productId, adminId);
+        }
+
+        public async Task<bool> RejectProductAsync(int productId, int adminId, string reason)
+        {
+            return await _productRepository.RejectProductAsync(productId, adminId, reason);
+        }
     }
 }

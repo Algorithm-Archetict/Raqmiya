@@ -44,5 +44,10 @@ namespace Core.Interfaces
         Task<FileDTO> AddProductFileAsync(int productId, int creatorId, string originalName, string fileUrl, long size, string contentType);
         Task<List<FileDTO>> GetProductFilesAsync(int productId);
         Task<bool> DeleteProductFileAsync(int productId, int fileId, int creatorId);
+
+        // --- Admin Moderation ---
+        Task<PagedResultDTO<ProductListItemDTO>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize);
+        Task<bool> ApproveProductAsync(int productId, int adminId);
+        Task<bool> RejectProductAsync(int productId, int adminId, string reason);
     }
 }
