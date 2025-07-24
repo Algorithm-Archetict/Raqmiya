@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\mahmo\\source\\repos\\Raqmiya\\Backend\\Shared\\Shared.csproj": {}
+    "C:\\Users\\mahmo\\Source\\Repos\\Raqmiya\\Backend\\Shared\\Shared.csproj": {}
   },
   "projects": {
-    "C:\\Users\\mahmo\\source\\repos\\Raqmiya\\Backend\\Shared\\Shared.csproj": {
+    "C:\\Users\\mahmo\\Source\\Repos\\Raqmiya\\Backend\\Shared\\Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\mahmo\\source\\repos\\Raqmiya\\Backend\\Shared\\Shared.csproj",
+        "projectUniqueName": "C:\\Users\\mahmo\\Source\\Repos\\Raqmiya\\Backend\\Shared\\Shared.csproj",
         "projectName": "Shared",
-        "projectPath": "C:\\Users\\mahmo\\source\\repos\\Raqmiya\\Backend\\Shared\\Shared.csproj",
+        "projectPath": "C:\\Users\\mahmo\\Source\\Repos\\Raqmiya\\Backend\\Shared\\Shared.csproj",
         "packagesPath": "C:\\Users\\mahmo\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\mahmo\\source\\repos\\Raqmiya\\Backend\\Shared\\obj\\",
+        "outputPath": "C:\\Users\\mahmo\\Source\\Repos\\Raqmiya\\Backend\\Shared\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
