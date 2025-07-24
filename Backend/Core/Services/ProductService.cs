@@ -438,5 +438,50 @@ namespace Core.Services
             _logger.LogWarning("GetTagsForCategoriesAsync not fully implemented - returns all tags or placeholder.");
             return await GetAllTagsAsync(); // Placeholder
         }
+
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByCategoryAsync(int categoryId, int pageNumber, int pageSize)
+        {
+            var products = await _productRepository.GetProductsByCategoryIdAsync(categoryId, pageNumber, pageSize);
+            var totalProducts = products.Count(); // For now, use returned count; for large sets, use a count query
+            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalProducts
+            };
+        }
+
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByTagAsync(int tagId, int pageNumber, int pageSize)
+        {
+            var products = await _productRepository.GetProductsByTagIdAsync(tagId, pageNumber, pageSize);
+            var totalProducts = products.Count();
+            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalProducts
+            };
+        }
+
+        public async Task<PagedResultDTO<ProductListItemDTO>> SearchProductsAsync(string search, int pageNumber, int pageSize)
+        {
+            var products = await _productRepository.SearchProductsAsync(search, pageNumber, pageSize);
+            var totalProducts = products.Count();
+            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalProducts
+            };
+        }
     }
 }

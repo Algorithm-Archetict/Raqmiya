@@ -1,4 +1,3 @@
-
 using Core.Interfaces;
 using Core.Services;
 using Microsoft.OpenApi.Models;
@@ -59,6 +58,7 @@ namespace API
             builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped<ITagRepository, TagRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>(); // NEW: User Repository
+            builder.Services.AddScoped<IAuthRepository, AuthRepository>(); // Register AuthRepository for IAuthRepository
 
             // --- 3. Configure Services (Core/Business Logic Layer) ---
             builder.Services.AddScoped<IProductService, ProductService>();

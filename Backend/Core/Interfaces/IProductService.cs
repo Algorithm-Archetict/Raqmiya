@@ -11,6 +11,9 @@ namespace Core.Interfaces
     {
         // Publicly accessible product listings
         Task<PagedResultDTO<ProductListItemDTO>> GetPublishedProductsAsync(int pageNumber, int pageSize);
+        Task<PagedResultDTO<ProductListItemDTO>> GetProductsByCategoryAsync(int categoryId, int pageNumber, int pageSize);
+        Task<PagedResultDTO<ProductListItemDTO>> GetProductsByTagAsync(int tagId, int pageNumber, int pageSize);
+        Task<PagedResultDTO<ProductListItemDTO>> SearchProductsAsync(string search, int pageNumber, int pageSize);
         Task<ProductDetailDTO?> GetProductDetailsByPermalinkAsync(string permalink, int? userId = null); // For public view by permalink
         Task<ProductDetailDTO?> GetProductDetailsByIdAsync(int productId, int? userId = null); // For internal/creator view by ID
 
