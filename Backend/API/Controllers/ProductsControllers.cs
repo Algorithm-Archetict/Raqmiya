@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.DTOs.ProductDTOs;
+using Microsoft.AspNetCore.Http;
+using Raqmiya.Infrastructure;
+using System.IO;
 using System.Security.Claims;
 
 namespace API.Controllers
@@ -262,6 +265,70 @@ namespace API.Controllers
         public async Task<IActionResult> GetTrendy([FromQuery] int count = 10, [FromQuery] int daysBack = 30, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             return Ok(await _productService.GetTrendyProductsAsync(count, daysBack, pageNumber, pageSize));
+        }
+
+        /// <summary>
+        /// Upload a file for a product. Files are stored in wwwroot/uploads/products/{productId}/.
+        /// Only the product's creator can upload files. Allowed types: PDF, ZIP, JPG, PNG, MP4, etc.
+        /// </summary>
+        [HttpPost("{id}/files")]
+        [Authorize(Roles = "Creator")]
+        [RequestSizeLimit(50_000_000)] // 50 MB limit
+        [ProducesResponseType(typeof(FileDTO), 201)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        public async Task<IActionResult> UploadProductFile(int id, [FromForm] IFormFile file)
+        {
+            var creatorId = GetCurrentUserId();
+            if (!creatorId.HasValue) return Unauthorized();
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+            var allowedTypes = new[] { "application/pdf", "application/zip", "image/jpeg", "image/png", "video/mp4" };
+            if (!allowedTypes.Contains(file.ContentType))
+                return BadRequest("File type not allowed.");
+            var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "products", id.ToString());
+            Directory.CreateDirectory(uploadsRoot);
+            var fileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
+            var filePath = Path.Combine(uploadsRoot, fileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            var fileUrl = $"/uploads/products/{id}/{fileName}";
+            var fileDto = await _productService.AddProductFileAsync(id, creatorId.Value, file.FileName, fileUrl, file.Length, file.ContentType);
+            return Created(fileUrl, fileDto);
+        }
+
+        /// <summary>
+        /// List all files for a product.
+        /// </summary>
+        [HttpGet("{id}/files")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(List<FileDTO>), 200)]
+        public async Task<IActionResult> GetProductFiles(int id)
+        {
+            var files = await _productService.GetProductFilesAsync(id);
+            return Ok(files);
+        }
+
+        /// <summary>
+        /// Delete a file from a product (creator only).
+        /// </summary>
+        [HttpDelete("{id}/files/{fileId}")]
+        [Authorize(Roles = "Creator")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> DeleteProductFile(int id, int fileId)
+        {
+            var creatorId = GetCurrentUserId();
+            if (!creatorId.HasValue) return Unauthorized();
+            var result = await _productService.DeleteProductFileAsync(id, fileId, creatorId.Value);
+            if (!result) return NotFound();
+            // Optionally: delete the file from disk as well
+            return Ok("File deleted.");
         }
 
         // --- Helpers ---
