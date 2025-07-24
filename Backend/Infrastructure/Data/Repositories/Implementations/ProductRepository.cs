@@ -547,5 +547,60 @@ namespace Raqmiya.Infrastructure
             await _context.SaveChangesAsync();
             return true;
         }
+
+        // --- Admin Moderation ---
+        public async Task<List<Product>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize)
+        {
+            return await _context.Products
+                .Where(p => p.Status == status)
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Creator)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<bool> ApproveProductAsync(int productId, int adminId)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null) return false;
+            product.Status = "published";
+            product.PublishedAt = DateTime.UtcNow;
+            product.RejectionReason = null;
+            await _context.SaveChangesAsync();
+            await AddModerationLogAsync(new ModerationLog
+            {
+                ProductId = productId,
+                AdminId = adminId,
+                Action = "approved",
+                Timestamp = DateTime.UtcNow
+            });
+            return true;
+        }
+
+        public async Task<bool> RejectProductAsync(int productId, int adminId, string reason)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null) return false;
+            product.Status = "rejected";
+            product.RejectionReason = reason;
+            await _context.SaveChangesAsync();
+            await AddModerationLogAsync(new ModerationLog
+            {
+                ProductId = productId,
+                AdminId = adminId,
+                Action = "rejected",
+                Reason = reason,
+                Timestamp = DateTime.UtcNow
+            });
+            return true;
+        }
+
+        public async Task AddModerationLogAsync(ModerationLog log)
+        {
+            _context.ModerationLogs.Add(log);
+            await _context.SaveChangesAsync();
+        }
     }
 }

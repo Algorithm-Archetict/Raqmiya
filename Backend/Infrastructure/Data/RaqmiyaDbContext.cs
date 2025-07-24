@@ -32,6 +32,7 @@ namespace Raqmiya.Infrastructure
         public DbSet<Post> Posts { get; set; } = null!;
         // public DbSet<ProductCategory> ProductCategories { get; set; } = null!;
         public DbSet<CategoryTag> CategoryTags { get; set; } = null!;
+        public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -197,6 +198,19 @@ namespace Raqmiya.Infrastructure
                 .WithMany(u => u.Licenses)
                 .HasForeignKey(l => l.BuyerId)
                 .OnDelete(DeleteBehavior.Restrict); // Prevent multiple cascade paths
+
+            // Configure ModerationLog table relationships
+            modelBuilder.Entity<ModerationLog>()
+                .HasOne(m => m.Product)
+                .WithMany()
+                .HasForeignKey(m => m.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ModerationLog>()
+                .HasOne(m => m.Admin)
+                .WithMany()
+                .HasForeignKey(m => m.AdminId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Ensure other entity configurations (e.g., string lengths) are present.
         }
