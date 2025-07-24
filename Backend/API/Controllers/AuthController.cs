@@ -29,11 +29,21 @@ namespace API.Controllers
         [AllowAnonymous]
         [ProducesResponseType(typeof(AuthResponseDTO), 200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(403)]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDTO request)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            // Restrict Admin registration to only authenticated admins
+            if (request.Role == "Admin")
+            {
+                if (!User.Identity?.IsAuthenticated ?? true || !User.IsInRole("Admin"))
+                {
+                    return Forbid("Only authenticated admins can create new admin accounts.");
+                }
             }
 
             try
