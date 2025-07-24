@@ -11,6 +11,9 @@ namespace Core.Interfaces
     {
         // Publicly accessible product listings
         Task<PagedResultDTO<ProductListItemDTO>> GetPublishedProductsAsync(int pageNumber, int pageSize);
+        Task<PagedResultDTO<ProductListItemDTO>> GetProductsByCategoryAsync(int categoryId, int pageNumber, int pageSize);
+        Task<PagedResultDTO<ProductListItemDTO>> GetProductsByTagAsync(int tagId, int pageNumber, int pageSize);
+        Task<PagedResultDTO<ProductListItemDTO>> SearchProductsAsync(string search, int pageNumber, int pageSize);
         Task<ProductDetailDTO?> GetProductDetailsByPermalinkAsync(string permalink, int? userId = null); // For public view by permalink
         Task<ProductDetailDTO?> GetProductDetailsByIdAsync(int productId, int? userId = null); // For internal/creator view by ID
 
@@ -36,5 +39,15 @@ namespace Core.Interfaces
         Task<List<CategoryDTO>> GetAllCategoriesAsync();
         Task<List<TagDTO>> GetAllTagsAsync();
         Task<List<TagDTO>> GetTagsForCategoriesAsync(List<int> categoryIds);
+
+        // --- Product File Management ---
+        Task<FileDTO> AddProductFileAsync(int productId, int creatorId, string originalName, string fileUrl, long size, string contentType);
+        Task<List<FileDTO>> GetProductFilesAsync(int productId);
+        Task<bool> DeleteProductFileAsync(int productId, int fileId, int creatorId);
+
+        // --- Admin Moderation ---
+        Task<PagedResultDTO<ProductListItemDTO>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize);
+        Task<bool> ApproveProductAsync(int productId, int adminId);
+        Task<bool> RejectProductAsync(int productId, int adminId, string reason);
     }
 }

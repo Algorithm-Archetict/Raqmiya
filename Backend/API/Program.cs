@@ -1,8 +1,8 @@
-
 using Core.Interfaces;
 using Core.Services;
 using Microsoft.OpenApi.Models;
 using Raqmiya.Infrastructure;
+using Raqmiya.Infrastructure.Data;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -59,6 +59,7 @@ namespace API
             builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped<ITagRepository, TagRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>(); // NEW: User Repository
+            builder.Services.AddScoped<IAuthRepository, AuthRepository>(); // Register AuthRepository for IAuthRepository
 
             // --- 3. Configure Services (Core/Business Logic Layer) ---
             builder.Services.AddScoped<IProductService, ProductService>();
@@ -152,6 +153,16 @@ namespace API
 
 
             var app = builder.Build();
+
+            // --- SEED DATABASE IN DEVELOPMENT ---
+            if (app.Environment.IsDevelopment())
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<RaqmiyaDbContext>();
+                    DbInitializer.Seed(db);
+                }
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

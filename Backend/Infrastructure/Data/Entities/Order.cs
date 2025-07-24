@@ -1,5 +1,4 @@
-﻿using Infrastructure;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace Raqmiya.Infrastructure
 {
@@ -22,12 +21,6 @@ namespace Raqmiya.Infrastructure
 
         // midas added
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
-
-        //TO ADD
-        //public Order()
-        //{
-        //    OrderItems = new HashSet<OrderItem>();
-        //}
-
+        public ICollection<License> Licenses { get; set; } = new List<License>();
     }
 }

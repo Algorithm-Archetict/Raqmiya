@@ -1,55 +1,31 @@
 ﻿using Raqmiya.Infrastructure;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Raqmiya.Infrastructure
 {
+    /// <summary>
+    /// Repository interface for user data access and management.
+    /// </summary>
     public interface IUserRepository
     {
-
-
+        /// <summary>Gets a user by their ID.</summary>
         Task<User?> GetByIdAsync(int id);
+        /// <summary>Gets a user by their email.</summary>
         Task<User?> GetUserByEmailAsync(string email);
+        /// <summary>Gets a user by their username.</summary>
         Task<User?> GetUserByUsernameAsync(string username);
-        Task<User?> GetUserByEmailOrUsernameAsync(string identifier); // For login
+        /// <summary>Gets a user by email or username (for login).</summary>
+        Task<User?> GetUserByEmailOrUsernameAsync(string identifier);
+        /// <summary>Checks if a user exists by email.</summary>
         Task<bool> UserExistsByEmailAsync(string email);
+        /// <summary>Checks if a user exists by username.</summary>
         Task<bool> UserExistsByUsernameAsync(string username);
+        /// <summary>Adds a new user.</summary>
         Task AddAsync(User user);
-        Task UpdateAsync(User user); // If you allow user profile updates
-                                     // Add more methods as needed (e.g., GetUserRolesAsync)
-
-
-
-
-        //// Get all users (Admin only)
-        //IEnumerable<User> GetAll();
-
-        //// Get a user by ID
-        //User GetById(int id);
-
-        //// Add a new user (if applicable, e.g., during registration)
-        //void Add(User user);
-
-        //// Update user profile
-        //void Update(User user);
-
-        //// Delete a user by ID (Admin only)
-        //void Delete(int id);
-
-        //// Get a user by email (for login or checks)
-        //User GetByEmail(string email);
-
-        //// Optional: Get a user by username
-        //User GetByUsername(string username);
-
-        //// Optional: Check if email exists (for validation)
-        //bool EmailExists(string email);
-
-        //// Optional: Check if username exists
-        //bool UsernameExists(string username);
-        //void SaveChanges();
+        /// <summary>Updates an existing user.</summary>
+        Task UpdateAsync(User user);
+        /// <summary>Gets all users (admin only).</summary>
+        Task<List<User>> GetAllAsync();
     }
 }

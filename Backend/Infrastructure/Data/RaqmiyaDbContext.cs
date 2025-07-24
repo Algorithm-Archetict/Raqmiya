@@ -1,7 +1,5 @@
-﻿// Gumroad.Infrastructure/Data/EcommerceDbContext.cs
-//using Gumroad.Infrastructure.Data.Entities;
-using Infrastructure;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Raqmiya.Infrastructure;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 
@@ -34,6 +32,7 @@ namespace Raqmiya.Infrastructure
         public DbSet<Post> Posts { get; set; } = null!;
         // public DbSet<ProductCategory> ProductCategories { get; set; } = null!;
         public DbSet<CategoryTag> CategoryTags { get; set; } = null!;
+        public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -47,6 +46,9 @@ namespace Raqmiya.Infrastructure
 
             modelBuilder.Entity<WishlistItem>()
                 .HasKey(wi => new { wi.UserId, wi.ProductId });
+
+            modelBuilder.Entity<CategoryTag>()
+                .HasKey(ct => new { ct.CategoryId, ct.TagId });
 
             // Configure relationships
             modelBuilder.Entity<Product>()
@@ -178,12 +180,39 @@ namespace Raqmiya.Infrastructure
                 entity.HasIndex(e => e.Permalink).IsUnique();
             });
 
+            // Configure License table relationships
+            modelBuilder.Entity<License>()
+                .HasOne(l => l.Order)
+                .WithMany(o => o.Licenses)
+                .HasForeignKey(l => l.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<License>()
+                .HasOne(l => l.Product)
+                .WithMany(p => p.Licenses)
+                .HasForeignKey(l => l.ProductId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent multiple cascade paths
+
+            modelBuilder.Entity<License>()
+                .HasOne(l => l.Buyer)
+                .WithMany(u => u.Licenses)
+                .HasForeignKey(l => l.BuyerId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent multiple cascade paths
+
+            // Configure ModerationLog table relationships
+            modelBuilder.Entity<ModerationLog>()
+                .HasOne(m => m.Product)
+                .WithMany()
+                .HasForeignKey(m => m.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ModerationLog>()
+                .HasOne(m => m.Admin)
+                .WithMany()
+                .HasForeignKey(m => m.AdminId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Ensure other entity configurations (e.g., string lengths) are present.
-            // Example for `File` table to avoid conflict with System.IO.File
-            modelBuilder.Entity<AddedFile>(entity =>
-            {
-                entity.ToTable("Files"); // Explicitly map to "Files" table
-            });
         }
     }
 }
