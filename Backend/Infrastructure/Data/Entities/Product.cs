@@ -1,4 +1,6 @@
-﻿namespace Raqmiya.Infrastructure
+﻿using Infrastructure;
+
+namespace Raqmiya.Infrastructure
 {
     public class Product
     {
@@ -19,7 +21,12 @@
         // Navigation properties
         public User Creator { get; set; } = null!; // Required navigation property
         public ICollection<AddedFile> Files { get; set; } = new List<AddedFile>();
+        
+
+        // Issue is here        ........................... كسم ليفربول
         public ICollection<Order> Orders { get; set; } = new List<Order>(); // Products can be in many orders
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+        // Issue is here        ............................
         public ICollection<Variant> Variants { get; set; } = new List<Variant>();
         public ICollection<OfferCode> OfferCodes { get; set; } = new List<OfferCode>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();

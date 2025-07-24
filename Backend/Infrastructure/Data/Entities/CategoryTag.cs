@@ -2,6 +2,8 @@
 {
     public class CategoryTag
     {
+        public int Id { get; set; } // Primary Key
+
         public int CategoryId { get; set; }
         public int TagId { get; set; }
 

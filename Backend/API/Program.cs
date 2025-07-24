@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System;
 
 namespace API
 {
@@ -51,14 +52,30 @@ namespace API
             // Add services to the container.
 
             // --- 1. Configure DbContext ---
+            //builder.Services.AddDbContext<RaqmiyaDbContext>(options =>
+            //    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            //builder.Services.AddDbContext<RaqmiyaDbContext>(options =>
+            //    options.UseSqlServer(
+            //     builder.Configuration.GetConnectionString("DefaultConnection"),
+            //    sqlOptions => sqlOptions.MigrationsAssembly("Infrastructure")
+            //    )
+            // );
             builder.Services.AddDbContext<RaqmiyaDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        x => x.MigrationsAssembly("Infrastructure") // ?? VERY IMPORTANT
+    )
+);
+
+
 
             // --- 2. Configure Repositories (Infrastructure Layer) ---
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
             builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped<ITagRepository, TagRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>(); // NEW: User Repository
+            builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
             // --- 3. Configure Services (Core/Business Logic Layer) ---
             builder.Services.AddScoped<IProductService, ProductService>();

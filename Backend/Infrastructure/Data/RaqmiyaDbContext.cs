@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 
+
 namespace Raqmiya.Infrastructure
 {
     public class RaqmiyaDbContext : DbContext
@@ -180,10 +181,13 @@ namespace Raqmiya.Infrastructure
 
             // Ensure other entity configurations (e.g., string lengths) are present.
             // Example for `File` table to avoid conflict with System.IO.File
-            modelBuilder.Entity<AddedFile>(entity =>
-            {
-                entity.ToTable("Files"); // Explicitly map to "Files" table
-            });
+            modelBuilder.Entity<AddedFile>(
+            //     entity =>
+            // {
+            //     entity.ToTable("Files"); // Explicitly map to "Files" table
+            // }
+            )
+            ;
         }
     }
 }

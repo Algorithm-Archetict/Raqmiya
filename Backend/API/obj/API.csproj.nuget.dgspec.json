@@ -36,6 +36,9 @@
               "E:\\محمد\\ITI\\Graduation Project\\Raqmiya\\Backend\\Core\\Core.csproj": {
                 "projectPath": "E:\\محمد\\ITI\\Graduation Project\\Raqmiya\\Backend\\Core\\Core.csproj"
               },
+              "E:\\محمد\\ITI\\Graduation Project\\Raqmiya\\Backend\\Infrastructure\\Infrastructure.csproj": {
+                "projectPath": "E:\\محمد\\ITI\\Graduation Project\\Raqmiya\\Backend\\Infrastructure\\Infrastructure.csproj"
+              },
               "E:\\محمد\\ITI\\Graduation Project\\Raqmiya\\Backend\\Shared\\Shared.csproj": {
                 "projectPath": "E:\\محمد\\ITI\\Graduation Project\\Raqmiya\\Backend\\Shared\\Shared.csproj"
               }
@@ -58,6 +61,12 @@
           "targetAlias": "net8.0",
           "dependencies": {
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[8.0.17, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
               "target": "Package",
               "version": "[8.0.17, )"
             },

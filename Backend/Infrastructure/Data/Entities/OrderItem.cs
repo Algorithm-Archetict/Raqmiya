@@ -19,7 +19,7 @@ namespace Infrastructure
         public Order Order { get; set; } // Navigation property to the parent Order
 
         public int ProductId { get; set; }
-        public Product Product { get; set; } // Navigation property to the Product purchased
+        public Product Product { get; set; } // Navigation property to the Product purchased    // This is the 'HasOne' side
 
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1.")]
