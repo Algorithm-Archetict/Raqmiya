@@ -1,4 +1,9 @@
-﻿namespace Raqmiya.Infrastructure
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Raqmiya.Infrastructure; // OrderItem is in this namespace
+
+namespace Raqmiya.Infrastructure
 {
     public class Product
     {
@@ -36,6 +41,9 @@
 
         //Views
         public ICollection<ProductView> ProductViews { get; set; } = new List<ProductView>();
+
+        // Add this navigation property for order items
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     }
 }
