@@ -1,4 +1,4 @@
-﻿using Raqmiya.Infrastructure;
+﻿
 
 namespace Raqmiya.Infrastructure
 {
@@ -75,7 +75,7 @@ namespace Raqmiya.Infrastructure
 
 
         // Counts for pagination
-        Task<int> GetPublishedProductsCountAsync();
+        public Task<int> GetPublishedProductsCountAsync();
         Task<int> GetProductsByCreatorCountAsync(int creatorId);
         Task<int> GetUserWishlistCountAsync(int userId);
 

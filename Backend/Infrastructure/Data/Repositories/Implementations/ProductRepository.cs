@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 
+
 namespace Raqmiya.Infrastructure
 {
     public class ProductRepository : IProductRepository
@@ -324,6 +325,7 @@ namespace Raqmiya.Infrastructure
                 .ToListAsync();
         }
 
+
         public async Task<double> GetPublishedProductsCountAsync()
         {
             return await _context.Products.CountAsync(p => p.Status == "published" && p.IsPublic);
@@ -483,21 +485,17 @@ namespace Raqmiya.Infrastructure
             throw new NotImplementedException();
         }
 
-
-
-
-
-        public Task<int> GetPublishedProductsCountAsync()
+        Task<int> IProductRepository.GetPublishedProductsCountAsync()
         {
             throw new NotImplementedException();
         }
 
-        Task<int> GetProductsByCreatorCountAsync(int creatorId)
+        Task<int> IProductRepository.GetProductsByCreatorCountAsync(int creatorId)
         {
             throw new NotImplementedException();
         }
 
-        public Task<int> GetUserWishlistCountAsync(int userId)
+        Task<int> IProductRepository.GetUserWishlistCountAsync(int userId)
         {
             throw new NotImplementedException();
         }

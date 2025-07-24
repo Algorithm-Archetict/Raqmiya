@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Raqmiya.Infrastructure
 {
-    public class UserRepository : IAuthRepository
+    public class UserRepository : IUserRepository
     {
         private readonly RaqmiyaDbContext _context;
 
@@ -87,6 +87,26 @@ namespace Raqmiya.Infrastructure
         }
 
         public Task<bool> UserExistsByUsernameAsync(string username)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<User?> GetByIdAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<User?> GetUserByEmailAsync(string email)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<User?> GetUserByUsernameAsync(string username)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UpdateAsync(User user)
         {
             throw new NotImplementedException();
         }

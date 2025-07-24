@@ -11,6 +11,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Infrastructure;
+using Microsoft.Extensions.Configuration;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Core.Services
 {
@@ -150,7 +152,7 @@ namespace Core.Services
 
             var expires = DateTime.UtcNow.AddHours(int.Parse(_configuration["Jwt:TokenValidityInHours"] ?? "1")); // Configurable expiry
 
-            var token = new JwtSecurityToken(
+            var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
