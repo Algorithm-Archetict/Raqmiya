@@ -6,7 +6,7 @@ namespace Raqmiya.Infrastructure
 {
     public class User
     {
-        public int Id { get; set; } // Primary Key
+        public int Id { get; set; } 
         public string Email { get; set; } = string.Empty;
 
         [Display(Name = "Password")]
@@ -18,7 +18,6 @@ namespace Raqmiya.Infrastructure
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Use UTC for consistency
         public DateTime? LastLogin { get; set; } // Nullable
 
-        // midas updated
         // public bool IsCreator { get; set; }
         public string Role { get; set; } = "User"; // Default role, can be "User", "Creator", or "Admin"
         public string? ProfileDescription { get; set; } // Nullable
@@ -26,8 +25,7 @@ namespace Raqmiya.Infrastructure
         public string? StripeConnectAccountId { get; set; } // Nullable, for creators
         public string? PayoutSettings { get; set; } // Store as JSON string or complex type, nullable
 
-        // midas added
-        public bool IsActive;
+        public bool IsActive { get; set; } = true; // Indicates if the user account is active
 
         // Navigation properties
         public ICollection<Product> Products { get; set; } = new List<Product>();

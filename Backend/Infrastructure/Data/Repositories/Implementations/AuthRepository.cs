@@ -1,5 +1,4 @@
-﻿
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -71,24 +70,25 @@ namespace Raqmiya.Infrastructure
             return Convert.ToBase64String(hashBytes);
         }
 
-        public Task<bool> UserExistsByEmailAsync(string email)
+        public async Task<bool> UserExistsByEmailAsync(string email)
         {
-            throw new NotImplementedException();
+            return await _db.Users.AnyAsync(u => u.Email == email);
         }
 
-        public Task<User> GetUserByEmailOrUsernameAsync(string emailOrUsername)
+        public async Task<bool> UserExistsByUsernameAsync(string username)
         {
-            throw new NotImplementedException();
+            return await _db.Users.AnyAsync(u => u.Username == username);
         }
 
-        public Task AddAsync(User newUser)
+        public async Task<User> GetUserByEmailOrUsernameAsync(string emailOrUsername)
         {
-            throw new NotImplementedException();
+            return await _db.Users.FirstOrDefaultAsync(u => u.Email == emailOrUsername || u.Username == emailOrUsername);
         }
 
-        public Task<bool> UserExistsByUsernameAsync(string username)
+        public async Task AddAsync(User newUser)
         {
-            throw new NotImplementedException();
+            _db.Users.Add(newUser);
+            await _db.SaveChangesAsync();
         }
     }
 }
