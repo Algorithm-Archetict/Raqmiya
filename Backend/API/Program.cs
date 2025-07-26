@@ -15,37 +15,6 @@ namespace API
     {
         public static void Main(string[] args)
         {
-            //var builder = WebApplication.CreateBuilder(args);
-
-            //// Add services to the container.
-
-            //builder.Services.AddControllers();
-            //// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            //builder.Services.AddEndpointsApiExplorer();
-            //builder.Services.AddSwaggerGen();
-
-            //var app = builder.Build();
-
-            //// Configure the HTTP request pipeline.
-            //if (app.Environment.IsDevelopment())
-            //{
-            //    app.UseSwagger();
-            //    app.UseSwaggerUI();
-            //}
-
-            ////.UseHttpsRedirection();
-
-            //app.UseAuthorization();
-
-
-            //app.MapControllers();
-
-            //app.Run();
-
-
-
-
-
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
@@ -65,14 +34,6 @@ namespace API
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAuthService, AuthService>(); // NEW: Auth Service
 
-            // --- 4. Configure Authentication (JWT Bearer) ---
-            // Add Jwt settings to appsettings.json:
-            // "Jwt": {
-            //   "Issuer": "GumroadAPI",
-            //   "Audience": "GumroadUI",
-            //   "Secret": "YOUR_SUPER_SECRET_KEY_AT_LEAST_32_CHARS_LONG", // Make this strong and store securely
-            //   "TokenValidityInHours": 24
-            // }
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -145,7 +106,7 @@ namespace API
             {
                 options.AddPolicy("AllowSpecificOrigin",
                     builder => builder
-                        .WithOrigins("http://localhost:4200") // Angular dev server default port
+                        .WithOrigins() // Angular dev server default port "http://localhost:4200"
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials()); // If you're sending cookies/auth headers
@@ -179,10 +140,10 @@ namespace API
             // --- Use CORS Middleware ---
             app.UseCors("AllowSpecificOrigin");
 
-            app.UseAuthentication(); // Must be before Authorization
+            app.UseAuthentication();
             app.UseAuthorization();
 
-            app.MapControllers(); // Maps API endpoints
+            app.MapControllers();
 
             app.Run();
         }

@@ -98,6 +98,20 @@ namespace Raqmiya.Infrastructure.Data
                 context.Reviews.Add(new Review { ProductId = product.Id, UserId = customer.Id, Rating = 5, Comment = "Great product!", CreatedAt = DateTime.UtcNow, IsApproved = true });
                 context.SaveChanges();
             }
+
+            // --- Force update for current admin ---
+            var adminUser = context.Users.FirstOrDefault(u => u.Username == "admin" || u.Email == "admin@example.com");
+            if (adminUser != null)
+            {
+                var tempAuthRepo = new Raqmiya.Infrastructure.AuthRepository(context);
+                var newAdminPassword = "Admin123!"; // Set your desired admin password here
+                var newSalt = tempAuthRepo.GenerateSalt();
+                var newHash = tempAuthRepo.HashPassword(newAdminPassword, newSalt); // Now PBKDF2
+                adminUser.Salt = newSalt;
+                adminUser.HashedPassword = newHash;
+                adminUser.IsActive = true;
+                context.SaveChanges();
+            }
         }
     }
 }
