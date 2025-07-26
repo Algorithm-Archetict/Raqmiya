@@ -508,15 +508,16 @@ namespace Raqmiya.Infrastructure
         {
             return await _context.WishlistItems
                 .Where(wi => wi.UserId == userId)
-                .Select(wi => wi.Product)
-                .OrderByDescending(p => p.PublishedAt)
+                .Include(wi => wi.Product).ThenInclude(p => p.Creator)
+                .Include(wi => wi.Product).ThenInclude(p => p.Files)
+                .OrderByDescending(wi => wi.Product.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Include(p => p.Creator)
-                .Include(p => p.Files)
+                .Select(wi => wi.Product)
                 .AsNoTracking()
                 .ToListAsync();
         }
+
 
         // --- Product File Management ---
         public async Task<AddedFile> AddProductFileAsync(int productId, string name, string fileUrl, long size, string contentType)
