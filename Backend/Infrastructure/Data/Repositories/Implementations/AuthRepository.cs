@@ -54,7 +54,7 @@ namespace Raqmiya.Infrastructure
             return inputHash == user.HashedPassword;
         }
 
-        private string GenerateSalt()
+        public string GenerateSalt()
         {
             var saltBytes = new byte[16];
             using var rng = RandomNumberGenerator.Create();
@@ -64,10 +64,12 @@ namespace Raqmiya.Infrastructure
 
         public string HashPassword(string password, string salt)
         {
-            using var sha256 = SHA256.Create();
-            var combinedBytes = Encoding.UTF8.GetBytes(salt + password);
-            var hashBytes = sha256.ComputeHash(combinedBytes);
-            return Convert.ToBase64String(hashBytes);
+            var saltBytes = Convert.FromBase64String(salt);
+            using (var pbkdf2 = new Rfc2898DeriveBytes(password, saltBytes, 10000, HashAlgorithmName.SHA256))
+            {
+                byte[] hash = pbkdf2.GetBytes(32);
+                return Convert.ToBase64String(hash);
+            }
         }
 
         public async Task<bool> UserExistsByEmailAsync(string email)
