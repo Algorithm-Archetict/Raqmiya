@@ -38,7 +38,8 @@ namespace API.Controllers
             }
 
             // Restrict Admin registration to only authenticated admins
-            if (request.Role == "Admin")
+
+                if (request.Role == "Admin")
             {
                 if (!User.Identity?.IsAuthenticated ?? true || !User.IsInRole("Admin"))
                 {

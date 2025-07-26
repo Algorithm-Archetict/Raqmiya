@@ -82,10 +82,9 @@ namespace API.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var creatorId = GetCurrentUserId();
-            if (!creatorId.HasValue) return Unauthorized();
             try
             {
-                var product = await _productService.CreateProductAsync(creatorId.Value, request);
+                var product = await _productService.CreateProductAsync(creatorId, request);
                 return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
             }
             catch (Exception ex)
@@ -110,10 +109,9 @@ namespace API.Controllers
             if (id != request.Id) return BadRequest("Product ID in URL does not match ID in request body.");
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var creatorId = GetCurrentUserId();
-            if (!creatorId.HasValue) return Unauthorized();
             try
             {
-                var updatedProduct = await _productService.UpdateProductAsync(id, creatorId.Value, request);
+                var updatedProduct = await _productService.UpdateProductAsync(id, creatorId, request);
                 return Ok(updatedProduct);
             }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
@@ -139,10 +137,9 @@ namespace API.Controllers
         public async Task<IActionResult> DeleteProduct(int id)
         {
             var creatorId = GetCurrentUserId();
-            if (!creatorId.HasValue) return Unauthorized();
             try
             {
-                await _productService.DeleteProductAsync(id, creatorId.Value);
+                await _productService.DeleteProductAsync(id, creatorId);
                 return NoContent();
             }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
@@ -166,10 +163,9 @@ namespace API.Controllers
         public async Task<IActionResult> AddToWishlist(int id)
         {
             var userId = GetCurrentUserId();
-            if (!userId.HasValue) return Unauthorized();
             try
             {
-                await _productService.AddProductToWishlistAsync(userId.Value, id);
+                await _productService.AddProductToWishlistAsync(userId, id);
                 return Ok("Product added to wishlist.");
             }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
@@ -193,10 +189,9 @@ namespace API.Controllers
         public async Task<IActionResult> RemoveFromWishlist(int id)
         {
             var userId = GetCurrentUserId();
-            if (!userId.HasValue) return Unauthorized();
             try
             {
-                await _productService.RemoveProductFromWishlistAsync(userId.Value, id);
+                await _productService.RemoveProductFromWishlistAsync(userId, id);
                 return Ok("Product removed from wishlist.");
             }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
@@ -217,8 +212,7 @@ namespace API.Controllers
         public async Task<IActionResult> GetMyWishlist([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             var userId = GetCurrentUserId();
-            if (!userId.HasValue) return Unauthorized();
-            return Ok(await _productService.GetUserWishlistAsync(userId.Value, pageNumber, pageSize));
+            return Ok(await _productService.GetUserWishlistAsync(userId, pageNumber, pageSize));
         }
 
         // --- Analytics Endpoints ---
@@ -281,7 +275,6 @@ namespace API.Controllers
         public async Task<IActionResult> UploadProductFile(int id, [FromForm] IFormFile file)
         {
             var creatorId = GetCurrentUserId();
-            if (!creatorId.HasValue) return Unauthorized();
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
             var allowedTypes = new[] { "application/pdf", "application/zip", "image/jpeg", "image/png", "video/mp4" };
@@ -296,7 +289,7 @@ namespace API.Controllers
                 await file.CopyToAsync(stream);
             }
             var fileUrl = $"/uploads/products/{id}/{fileName}";
-            var fileDto = await _productService.AddProductFileAsync(id, creatorId.Value, file.FileName, fileUrl, file.Length, file.ContentType);
+            var fileDto = await _productService.AddProductFileAsync(id, creatorId, file.FileName, fileUrl, file.Length, file.ContentType);
             return Created(fileUrl, fileDto);
         }
 
@@ -324,8 +317,7 @@ namespace API.Controllers
         public async Task<IActionResult> DeleteProductFile(int id, int fileId)
         {
             var creatorId = GetCurrentUserId();
-            if (!creatorId.HasValue) return Unauthorized();
-            var result = await _productService.DeleteProductFileAsync(id, fileId, creatorId.Value);
+            var result = await _productService.DeleteProductFileAsync(id, fileId, creatorId);
             if (!result) return NotFound();
             // Optionally: delete the file from disk as well
             return Ok("File deleted.");
@@ -354,8 +346,7 @@ namespace API.Controllers
         public async Task<IActionResult> ApproveProduct(int id)
         {
             var adminId = GetCurrentUserId();
-            if (!adminId.HasValue) return Unauthorized();
-            var result = await _productService.ApproveProductAsync(id, adminId.Value);
+            var result = await _productService.ApproveProductAsync(id, adminId);
             if (!result) return NotFound();
             return Ok("Product approved and published.");
         }
@@ -373,18 +364,26 @@ namespace API.Controllers
             if (request.Action?.ToLower() != "reject" || string.IsNullOrWhiteSpace(request.Reason))
                 return BadRequest("Rejection reason is required.");
             var adminId = GetCurrentUserId();
-            if (!adminId.HasValue) return Unauthorized();
-            var result = await _productService.RejectProductAsync(id, adminId.Value, request.Reason!);
+            var result = await _productService.RejectProductAsync(id, adminId, request.Reason!);
             if (!result) return NotFound();
             return Ok("Product rejected.");
         }
 
         // --- Helpers ---
-        private int? GetCurrentUserId()
+        private int GetCurrentUserId()
         {
+            // Check for Bearer prefix in Authorization header for better diagnostics
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(authHeader) && !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Authorization header must start with 'Bearer '");
+            }
+            if (!User.Identity?.IsAuthenticated ?? true)
+                throw new UnauthorizedAccessException("User is not authenticated.");
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (int.TryParse(userIdStr, out int userId)) return userId;
-            return null;
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+                throw new UnauthorizedAccessException("User ID claim missing or invalid.");
+            return userId;
         }
     }
 }
