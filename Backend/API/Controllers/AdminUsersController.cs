@@ -1,3 +1,4 @@
+using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Raqmiya.Infrastructure;
@@ -12,12 +13,40 @@ namespace API.Controllers
     public class AdminUsersController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
+        private readonly IAuthService _authService;
         private readonly ILogger<AdminUsersController> _logger;
 
-        public AdminUsersController(IUserRepository userRepository, ILogger<AdminUsersController> logger)
+        public AdminUsersController(IUserRepository userRepository, IAuthService authService, ILogger<AdminUsersController> logger)
         {
             _userRepository = userRepository;
+            _authService = authService;
             _logger = logger;
+        }
+
+        [HttpPost]
+        [ProducesResponseType(typeof(AuthResponseDTO), 201)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> CreateAdmin([FromBody] RegisterRequestDTO request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            // Force role to Admin regardless of input
+            request.Role = RoleConstants.Admin;
+            try
+            {
+                var response = await _authService.RegisterAsync(request);
+                if (response.Success)
+                {
+                    // AuthResponseDTO does not have UserId, so just return 201 with response
+                    return Created("/api/admin/users", response); // Could enhance to return new user location if available
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating admin user: {Message}", ex.Message);
+                return Problem("An error occurred while creating the admin user.");
+            }
         }
 
         [HttpGet]
