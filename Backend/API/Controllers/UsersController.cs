@@ -33,12 +33,18 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<ActionResult<UserProfileDTO>> GetMe()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdStr, out int userId))
-                return Unauthorized();
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null) return NotFound();
-            return Ok(MapToProfileDTO(user));
+            try
+            {
+                var userId = GetCurrentUserId();
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null) return NotFound();
+                return Ok(MapToProfileDTO(user));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting current user profile");
+                return Problem("An error occurred while fetching the profile.");
+            }
         }
 
         /// <summary>
@@ -51,16 +57,23 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> UpdateMe([FromBody] UserUpdateDTO dto)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdStr, out int userId))
-                return Unauthorized();
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null) return NotFound();
-            if (!string.IsNullOrWhiteSpace(dto.Username)) user.Username = dto.Username;
-            if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) user.ProfileDescription = dto.ProfileDescription;
-            if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) user.ProfileImageUrl = dto.ProfileImageUrl;
-            await _userRepository.UpdateAsync(user);
-            return Ok(MapToProfileDTO(user));
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            try
+            {
+                var userId = GetCurrentUserId();
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null) return NotFound();
+                if (!string.IsNullOrWhiteSpace(dto.Username)) user.Username = dto.Username;
+                if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) user.ProfileDescription = dto.ProfileDescription;
+                if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) user.ProfileImageUrl = dto.ProfileImageUrl;
+                await _userRepository.UpdateAsync(user);
+                return Ok(MapToProfileDTO(user));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating user profile");
+                return Problem("An error occurred while updating the profile.");
+            }
         }
 
         /// <summary>
@@ -73,94 +86,142 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdStr, out int userId))
-                return Unauthorized();
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null) return NotFound();
-
-            // Verify current password
-            var saltBytes = Convert.FromBase64String(user.Salt);
-            using (var pbkdf2 = new Rfc2898DeriveBytes(dto.CurrentPassword, saltBytes, 10000, HashAlgorithmName.SHA256))
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            try
             {
-                var hash = Convert.ToBase64String(pbkdf2.GetBytes(32));
-                if (hash != user.HashedPassword)
-                    return BadRequest("Current password is incorrect.");
+                var userId = GetCurrentUserId();
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null) return NotFound();
+                var saltBytes = Convert.FromBase64String(user.Salt);
+                using (var pbkdf2 = new Rfc2898DeriveBytes(dto.CurrentPassword, saltBytes, 10000, HashAlgorithmName.SHA256))
+                {
+                    var hash = Convert.ToBase64String(pbkdf2.GetBytes(32));
+                    if (hash != user.HashedPassword)
+                        return BadRequest("Current password is incorrect.");
+                }
+                var newSalt = GenerateSalt();
+                var newHash = HashPassword(dto.NewPassword, newSalt);
+                user.Salt = newSalt;
+                user.HashedPassword = newHash;
+                await _userRepository.UpdateAsync(user);
+                return Ok("Password changed successfully.");
             }
-
-            // Set new password
-            var newSalt = GenerateSalt();
-            var newHash = HashPassword(dto.NewPassword, newSalt);
-            user.Salt = newSalt;
-            user.HashedPassword = newHash;
-            await _userRepository.UpdateAsync(user);
-            return Ok("Password changed successfully.");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error changing password");
+                return Problem("An error occurred while changing the password.");
+            }
         }
 
         /// <summary>
         /// List all users (admin only).
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = RoleConstants.Admin)]
         [ProducesResponseType(typeof(IEnumerable<UserProfileDTO>), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         public async Task<ActionResult<IEnumerable<UserProfileDTO>>> GetAll()
         {
-            var users = await _userRepository.GetAllAsync();
-            return Ok(users.Select(MapToProfileDTO));
+            try
+            {
+                var users = await _userRepository.GetAllAsync();
+                return Ok(users.Select(MapToProfileDTO));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error listing users");
+                return Problem("An error occurred while listing users.");
+            }
         }
 
         /// <summary>
         /// Get a user by id (admin only).
         /// </summary>
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = RoleConstants.Admin)]
         [ProducesResponseType(typeof(UserProfileDTO), 200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public async Task<ActionResult<UserProfileDTO>> GetById(int id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            if (user == null) return NotFound();
-            return Ok(MapToProfileDTO(user));
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null) return NotFound();
+                return Ok(MapToProfileDTO(user));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user by id");
+                return Problem("An error occurred while fetching the user.");
+            }
         }
 
         /// <summary>
         /// Deactivate a user account (admin only).
         /// </summary>
         [HttpPost("{id}/deactivate")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = RoleConstants.Admin)]
         [ProducesResponseType(200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeactivateUser(int id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            if (user == null) return NotFound();
-            user.IsActive = false;
-            await _userRepository.UpdateAsync(user);
-            return Ok($"User {id} deactivated.");
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null) return NotFound();
+                user.IsActive = false;
+                await _userRepository.UpdateAsync(user);
+                return Ok($"User {id} deactivated.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating user");
+                return Problem("An error occurred while deactivating the user.");
+            }
         }
 
         /// <summary>
         /// Activate a user account (admin only).
         /// </summary>
         [HttpPost("{id}/activate")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = RoleConstants.Admin)]
         [ProducesResponseType(200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> ActivateUser(int id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            if (user == null) return NotFound();
-            user.IsActive = true;
-            await _userRepository.UpdateAsync(user);
-            return Ok($"User {id} activated.");
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null) return NotFound();
+                user.IsActive = true;
+                await _userRepository.UpdateAsync(user);
+                return Ok($"User {id} activated.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error activating user");
+                return Problem("An error occurred while activating the user.");
+            }
+        }
+
+        /// <summary>
+        /// Extracts the current user's ID from the JWT claims.
+        /// </summary>
+        /// <returns>The current user's ID.</returns>
+        /// <exception cref="UnauthorizedAccessException">Thrown when the User ID is not found or is not a valid integer.</exception>
+        protected int GetCurrentUserId()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+                throw new UnauthorizedAccessException("User ID claim missing or invalid.");
+            return userId;
         }
 
         private static UserProfileDTO MapToProfileDTO(User user) => new UserProfileDTO
