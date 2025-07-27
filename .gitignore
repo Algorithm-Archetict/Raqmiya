@@ -1,72 +1,71 @@
-# Ignore node_modules for Angular frontend
-/Frontend/node_modules/
+# --- Frontend (Angular/TypeScript) ---
+# Ignore node_modules in any subdirectory
+**/node_modules/
 
-# Ignore Angular build artifacts
-/Frontend/dist/
-/Frontend/.angular/cache/
-/Frontend/.angular/
+# Ignore dist, build, .angular cache in any subdirectory
+**/dist/
+**/.angular/
+**/.angular/cache/
 
 # Ignore environment files (do not commit secrets!)
-/Frontend/src/environments/environment*.ts
+**/environments/environment*.ts
 
-# Ignore editor and system files
+# Ignore coverage outputs
+**/coverage/
+**/coverage*.json
+
+# --- Backend (C#/.NET) ---
+# Ignore build results and publish outputs in any subdirectory
+**/bin/
+**/obj/
+**/out/
+**/TestResults/
+**/.vs/
+**/.vscode/
+**/.user
+**/.suo
+**/.userosscache
+**/.sln.docstates
+
+# Ignore Rider, VS Code, and Visual Studio files in any subdirectory
+**/.idea/
+**/.vs/
+**/*.suo
+**/*.user
+**/*.userosscache
+**/*.sln.docstates
+
+# Ignore ASP.NET generated files
+**/wwwroot/
+
+# Ignore NuGet packages
+**/packages/
+**/Packages/
+
+# Ignore logs and secrets
+**/*.log
+**/appsettings.*.json
+!**/appsettings.json
+
+# Ignore environment variables
+**/.env
+
+# Ignore deployment artifacts
+**/publish/
+**/deploy/
+
+# --- Editor & System files ---
 *.swp
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 
-# Ignore npm debug logs
+# --- NPM/Yarn/PNPM logs ---
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# --- .NET (Backend) Ignore Rules ---
-
-# Ignore build results and publish outputs
-/Backend/bin/
-/Backend/obj/
-/Backend/out/
-/Backend/TestResults/
-/Backend/.vs/
-/Backend/.vscode/
-/Backend/.user
-/Backend/.suo
-/Backend/.userosscache
-/Backend/.sln.docstates
-
-# Ignore Rider, VS Code, and Visual Studio files (if present)
-/Backend/.idea/
-/Backend/.vs/
-/Backend/*.suo
-/Backend/*.user
-/Backend/*.userosscache
-/Backend/*.sln.docstates
-
-# Ignore ASP.NET generated files
-/Backend/wwwroot/
-/Backend/node_modules/
-
-# Ignore NuGet packages
-/Backend/packages/
-/Backend/Packages/
-
-# Ignore logs and secrets
-/Backend/*.log
-/Backend/appsettings.*.json
-!/Backend/appsettings.json
-
-# Ignore coverage reports
-/Backend/coverage/
-/Backend/coverage*.json
-
-# Ignore environment variables
-/Backend/.env
-
-# Ignore deployment artifacts
-/Backend/publish/
-/Backend/deploy/
 
 # --- Global ignores ---
 *.log

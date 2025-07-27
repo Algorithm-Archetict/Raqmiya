@@ -1,12 +1,9 @@
-﻿using ITI_Raqmiya_MVC.Data;
-using ITI_Raqmiya_MVC.Models;
-using System.Security.Cryptography;
-using ITI_Raqmiya_MVC.Repository.Repository_Interface;
+﻿using System.Security.Cryptography;
 
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 
-namespace ITI_Raqmiya_MVC.Repository.Repos_Implementation
+namespace Raqmiya.Infrastructure
 {
     //public interface IAuthRepository
     //{
@@ -17,9 +14,9 @@ namespace ITI_Raqmiya_MVC.Repository.Repos_Implementation
     // Repository/AuthRepository.cs
     public class AuthRepository : IAuthRepository
     {
-        private readonly RaqmiyaContext _db;
+        private readonly RaqmiyaDbContext _db;
 
-        public AuthRepository(RaqmiyaContext db)
+        public AuthRepository(RaqmiyaDbContext db)
         {
             _db = db;
         }
@@ -36,9 +33,9 @@ namespace ITI_Raqmiya_MVC.Repository.Repos_Implementation
             {
                 Email = email,
                 Username = username,
-                PasswordHash = hash,
+                HashedPassword = hash,
                 Salt = salt,
-                IsCreator = role == "Creator", // Assuming role is either "Creator" or something else
+                Role = role,
                 CreatedAt = DateTime.UtcNow,
 
             };
@@ -54,10 +51,10 @@ namespace ITI_Raqmiya_MVC.Repository.Repos_Implementation
             if (user == null) return false;
 
             var inputHash = HashPassword(password, user.Salt);
-            return inputHash == user.PasswordHash;
+            return inputHash == user.HashedPassword;
         }
 
-        private string GenerateSalt()
+        public string GenerateSalt()
         {
             var saltBytes = new byte[16];
             using var rng = RandomNumberGenerator.Create();
@@ -67,10 +64,33 @@ namespace ITI_Raqmiya_MVC.Repository.Repos_Implementation
 
         public string HashPassword(string password, string salt)
         {
-            using var sha256 = SHA256.Create();
-            var combinedBytes = Encoding.UTF8.GetBytes(salt + password);
-            var hashBytes = sha256.ComputeHash(combinedBytes);
-            return Convert.ToBase64String(hashBytes);
+            var saltBytes = Convert.FromBase64String(salt);
+            using (var pbkdf2 = new Rfc2898DeriveBytes(password, saltBytes, 10000, HashAlgorithmName.SHA256))
+            {
+                byte[] hash = pbkdf2.GetBytes(32);
+                return Convert.ToBase64String(hash);
+            }
+        }
+
+        public async Task<bool> UserExistsByEmailAsync(string email)
+        {
+            return await _db.Users.AnyAsync(u => u.Email == email);
+        }
+
+        public async Task<bool> UserExistsByUsernameAsync(string username)
+        {
+            return await _db.Users.AnyAsync(u => u.Username == username);
+        }
+
+        public async Task<User> GetUserByEmailOrUsernameAsync(string emailOrUsername)
+        {
+            return await _db.Users.FirstOrDefaultAsync(u => u.Email == emailOrUsername || u.Username == emailOrUsername);
+        }
+
+        public async Task AddAsync(User newUser)
+        {
+            _db.Users.Add(newUser);
+            await _db.SaveChangesAsync();
         }
     }
 }

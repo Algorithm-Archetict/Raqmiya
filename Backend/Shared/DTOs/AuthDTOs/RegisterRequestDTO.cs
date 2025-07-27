@@ -7,6 +7,13 @@ using System.Threading.Tasks;
 
 namespace Shared.DTOs.AuthDTOs
 {
+    public static class RoleConstants
+    {
+        public const string Admin = "Admin";
+        public const string Creator = "Creator";
+        public const string Customer = "Customer";
+    }
+
     public class RegisterRequestDTO
     {
         [Required]
@@ -21,7 +28,8 @@ namespace Shared.DTOs.AuthDTOs
         [StringLength(100, MinimumLength = 6)]
         public string Password { get; set; } = string.Empty;
 
-        // Optionally, add a role for registration if you allow specific roles
-        // public string? Role { get; set; }
+        [Required]
+        [RegularExpression("^(Admin|Creator|Customer)$", ErrorMessage = "Role must be Admin, Creator, or Customer.")]
+        public string Role { get; set; } = RoleConstants.Customer; // Default to Customer
     }
 }

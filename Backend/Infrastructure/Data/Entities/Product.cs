@@ -1,4 +1,9 @@
-﻿namespace Raqmiya.Infrastructure
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Raqmiya.Infrastructure; // OrderItem is in this namespace
+
+namespace Raqmiya.Infrastructure
 {
     public class Product
     {
@@ -12,7 +17,11 @@
         public string? CoverImageUrl { get; set; } // Nullable
         public string? PreviewVideoUrl { get; set; } // Nullable
         public DateTime? PublishedAt { get; set; } // Nullable, if not published yet
-        public string Status { get; set; } = "draft"; // e.g., "draft", "published", "archived", "unlisted"
+        /// <summary>
+        /// Product status: draft, pending, published, rejected, archived, unlisted
+        /// </summary>
+        public string Status { get; set; } = "draft"; // e.g., "draft", "pending", "published", "rejected", "archived", "unlisted"
+        public string? RejectionReason { get; set; } // Nullable, set if rejected by admin
         public bool IsPublic { get; set; }
         public string Permalink { get; set; } = string.Empty;
 
@@ -37,5 +46,9 @@
         //Views
         public ICollection<ProductView> ProductViews { get; set; } = new List<ProductView>();
 
+        // Add this navigation property for order items
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+        public ICollection<License> Licenses { get; set; } = new List<License>();
     }
 }
