@@ -33,15 +33,12 @@ namespace API.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterRequestDTO request)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             // Restrict Admin registration to only authenticated admins
-
-                if (request.Role == "Admin")
+            if (request.Role == RoleConstants.Admin)
             {
-                if (!User.Identity?.IsAuthenticated ?? true || !User.IsInRole("Admin"))
+                if (!User.Identity?.IsAuthenticated ?? true || !User.IsInRole(RoleConstants.Admin))
                 {
                     return Forbid("Only authenticated admins can create new admin accounts.");
                 }
@@ -52,14 +49,14 @@ namespace API.Controllers
                 var response = await _authService.RegisterAsync(request);
                 if (response.Success)
                 {
-                    return Ok(response); // Returns token on successful registration
+                    return Ok(response);
                 }
-                return BadRequest(response); // Returns error message from service
+                return BadRequest(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during user registration: {Message}", ex.Message);
-                return StatusCode(500, "An internal server error occurred during registration.");
+                return Problem("An internal server error occurred during registration.");
             }
         }
 
@@ -74,23 +71,21 @@ namespace API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO request)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             try
             {
                 var response = await _authService.LoginAsync(request);
                 if (response.Success)
                 {
-                    return Ok(response); // Returns token on successful login
+                    return Ok(response);
                 }
-                return Unauthorized(response); // Returns error message for invalid credentials
+                return Unauthorized(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during user login: {Message}", ex.Message);
-                return StatusCode(500, "An internal server error occurred during login.");
+                return Problem("An internal server error occurred during login.");
             }
         }
 
@@ -103,18 +98,26 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public IActionResult GetCurrentUser()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var username = User.FindFirstValue(ClaimTypes.Name);
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            var role = User.FindFirstValue(ClaimTypes.Role);
-
-            return Ok(new
+            try
             {
-                Id = userId,
-                Username = username,
-                Email = email,
-                Role = role
-            });
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var username = User.FindFirstValue(ClaimTypes.Name);
+                var email = User.FindFirstValue(ClaimTypes.Email);
+                var role = User.FindFirstValue(ClaimTypes.Role);
+
+                return Ok(new
+                {
+                    Id = userId,
+                    Username = username,
+                    Email = email,
+                    Role = role
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting current user from JWT");
+                return Problem("An error occurred while fetching the current user.");
+            }
         }
     }
 }
