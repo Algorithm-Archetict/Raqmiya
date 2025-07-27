@@ -10,7 +10,7 @@ import { Product, ProductCreateRequest, ProductUpdateRequest, PaginatedProducts 
 })
 export class ProductService {
   private apiUrl = environment.apiUrl;
-  private productsUrl = `${this.apiUrl}/products`; // Base URL for product endpoints
+  private productsUrl = `${this.apiUrl}/product`; // Base URL for product endpoints
 
   constructor(private http: HttpClient) {}
 
