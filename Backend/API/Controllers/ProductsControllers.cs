@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.DTOs.ProductDTOs;
+using Shared.DTOs.AuthDTOs;
 using Microsoft.AspNetCore.Http;
 using Raqmiya.Infrastructure;
 using System.IO;
@@ -65,32 +66,44 @@ namespace API.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetProductByPermalink(string permalink)
         {
-            var userId = GetCurrentUserId();
-            var product = await _productService.GetProductDetailsByPermalinkAsync(permalink, userId);
-            if (product == null) return NotFound();
-            return Ok(product);
+            try
+            {
+                var userId = GetCurrentUserId();
+                var product = await _productService.GetProductDetailsByPermalinkAsync(permalink, userId);
+                if (product == null) return NotFound();
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting product by permalink");
+                return Problem("An error occurred while fetching the product.");
+            }
         }
 
         /// <summary>
         /// Create a new product (creator only).
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Creator")]
+        [Authorize(Roles = RoleConstants.Creator)]
         [ProducesResponseType(typeof(ProductDetailDTO), 201)]
         [ProducesResponseType(400)]
         public async Task<IActionResult> CreateProduct([FromBody] ProductCreateRequestDTO request)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var creatorId = GetCurrentUserId();
             try
             {
+                var creatorId = GetCurrentUserId();
                 var product = await _productService.CreateProductAsync(creatorId, request);
                 return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating product for creator {CreatorId}.", creatorId);
-                return StatusCode(500, "An error occurred while creating the product.");
+                _logger.LogError(ex, "Error creating product");
+                return Problem("An error occurred while creating the product.");
             }
         }
 
@@ -98,7 +111,7 @@ namespace API.Controllers
         /// Update an existing product (creator only).
         /// </summary>
         [HttpPut("{id}")]
-        [Authorize(Roles = "Creator")]
+        [Authorize(Roles = RoleConstants.Creator)]
         [ProducesResponseType(typeof(ProductDetailDTO), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
@@ -108,9 +121,9 @@ namespace API.Controllers
         {
             if (id != request.Id) return BadRequest("Product ID in URL does not match ID in request body.");
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var creatorId = GetCurrentUserId();
             try
             {
+                var creatorId = GetCurrentUserId();
                 var updatedProduct = await _productService.UpdateProductAsync(id, creatorId, request);
                 return Ok(updatedProduct);
             }
@@ -120,8 +133,8 @@ namespace API.Controllers
             catch (ArgumentException ex) { ModelState.AddModelError("", ex.Message); return BadRequest(ModelState); }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating product {ProductId} for creator {CreatorId}.", id, creatorId);
-                return StatusCode(500, "An error occurred while updating the product.");
+                _logger.LogError(ex, "Error updating product {ProductId}", id);
+                return Problem("An error occurred while updating the product.");
             }
         }
 
@@ -129,16 +142,16 @@ namespace API.Controllers
         /// Delete a product (creator only).
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Creator")]
+        [Authorize(Roles = RoleConstants.Creator)]
         [ProducesResponseType(204)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var creatorId = GetCurrentUserId();
             try
             {
+                var creatorId = GetCurrentUserId();
                 await _productService.DeleteProductAsync(id, creatorId);
                 return NoContent();
             }
@@ -146,8 +159,8 @@ namespace API.Controllers
             catch (UnauthorizedAccessException ex) { return Forbid(ex.Message); }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting product {ProductId} for creator {CreatorId}.", id, creatorId);
-                return StatusCode(500, "An error occurred while deleting the product.");
+                _logger.LogError(ex, "Error deleting product {ProductId}", id);
+                return Problem("An error occurred while deleting the product.");
             }
         }
 
@@ -162,9 +175,9 @@ namespace API.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> AddToWishlist(int id)
         {
-            var userId = GetCurrentUserId();
             try
             {
+                var userId = GetCurrentUserId();
                 await _productService.AddProductToWishlistAsync(userId, id);
                 return Ok("Product added to wishlist.");
             }
@@ -172,8 +185,8 @@ namespace API.Controllers
             catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding product {ProductId} to user {UserId}'s wishlist.", id, userId);
-                return StatusCode(500, "An error occurred while adding to wishlist.");
+                _logger.LogError(ex, "Error adding product {ProductId} to wishlist", id);
+                return Problem("An error occurred while adding to wishlist.");
             }
         }
 
@@ -198,8 +211,8 @@ namespace API.Controllers
             catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error removing product {ProductId} from user {UserId}'s wishlist.", id, userId);
-                return StatusCode(500, "An error occurred while removing from wishlist.");
+                _logger.LogError(ex, "Error removing product {ProductId} from wishlist", id);
+                return Problem("An error occurred while removing from wishlist.");
             }
         }
 
@@ -211,8 +224,16 @@ namespace API.Controllers
         [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
         public async Task<IActionResult> GetMyWishlist([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var userId = GetCurrentUserId();
-            return Ok(await _productService.GetUserWishlistAsync(userId, pageNumber, pageSize));
+            try
+            {
+                var userId = GetCurrentUserId();
+                return Ok(await _productService.GetUserWishlistAsync(userId, pageNumber, pageSize));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting wishlist for user");
+                return Problem("An error occurred while fetching the wishlist.");
+            }
         }
 
         // --- Analytics Endpoints ---
@@ -370,16 +391,8 @@ namespace API.Controllers
         }
 
         // --- Helpers ---
-        private int GetCurrentUserId()
+        protected int GetCurrentUserId()
         {
-            // Check for Bearer prefix in Authorization header for better diagnostics
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            if (!string.IsNullOrEmpty(authHeader) && !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new UnauthorizedAccessException("Authorization header must start with 'Bearer '");
-            }
-            if (!User.Identity?.IsAuthenticated ?? true)
-                throw new UnauthorizedAccessException("User is not authenticated.");
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
                 throw new UnauthorizedAccessException("User ID claim missing or invalid.");
