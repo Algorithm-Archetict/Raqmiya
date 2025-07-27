@@ -1,60 +1,59 @@
 // src/app/models/product.model.ts
 
 /**
- * Interface for a product entity.
+ * Interface for a product entity (matches backend ProductListItemDTO).
  */
 export interface Product {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    currency: string;
-    imageUrl?: string; // Optional: URL to product image
-    creatorId: string; // ID of the user who created the product
-    creatorUsername?: string; // Optional: Creator's username for display
-    category?: string; // Optional: Product category
-    stock?: number; // Optional: Available stock
-    isPublished: boolean; // Whether the product is visible to others
-    createdAt: Date;
-    updatedAt: Date;
-    // Add other product properties as needed, e.g., tags, reviews, ratings
-  }
-  
-  /**
-   * Interface for product creation request payload.
-   */
-  export interface ProductCreateRequest {
-    name: string;
-    description: string;
-    price: number;
-    currency: string;
-    imageUrl?: string;
-    category?: string;
-    stock?: number;
-    isPublished?: boolean; // Can be optional if default is handled by backend
-  }
-  
-  /**
-   * Interface for product update request payload.
-   */
-  export interface ProductUpdateRequest {
-    name?: string;
-    description?: string;
-    price?: number;
-    currency?: string;
-    imageUrl?: string;
-    category?: string;
-    stock?: number;
-    isPublished?: boolean;
-  }
-  
-  /**
-   * Interface for a paginated list of products.
-   */
-  export interface PaginatedProducts {
-    products: Product[];
-    totalItems: number;
-    currentPage: number;
-    totalPages: number;
-    itemsPerPage: number;
-  }
+  id: number; // Changed from string to number to match backend
+  name: string;
+  permalink: string;
+  price: number;
+  currency: string;
+  coverImageUrl?: string; // Changed from imageUrl to coverImageUrl
+  creatorUsername: string;
+  averageRating: number;
+  salesCount: number;
+  status: string;
+  isPublic: boolean;
+  publishedAt?: Date;
+}
+
+/**
+ * Interface for product creation request payload.
+ */
+export interface ProductCreateRequest {
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  imageUrl?: string;
+  category?: string;
+  stock?: number;
+  isPublished?: boolean;
+}
+
+/**
+ * Interface for product update request payload.
+ */
+export interface ProductUpdateRequest {
+  id: number; // Required for updates
+  name?: string;
+  description?: string;
+  price?: number;
+  currency?: string;
+  imageUrl?: string;
+  category?: string;
+  stock?: number;
+  isPublished?: boolean;
+}
+
+/**
+ * Interface for a paginated list of products (matches backend PagedResultDTO).
+ */
+export interface PaginatedProducts {
+  items: Product[]; // Changed from products to items
+  pageNumber: number; // Changed from currentPage
+  pageSize: number; // Changed from itemsPerPage
+  totalPages: number;
+  totalCount: number; // Changed from totalItems
+}

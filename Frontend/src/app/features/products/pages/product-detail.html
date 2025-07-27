@@ -5,7 +5,7 @@
     <div *ngIf="!isLoading && product" class="card shadow-sm product-detail-card">
       <div class="row g-0">
         <div class="col-md-4">
-          <img *ngIf="product.imageUrl; else noImage" [src]="product.imageUrl" class="img-fluid rounded-start product-image" alt="{{ product.name }}">
+          <img *ngIf="product.coverImageUrl; else noImage" [src]="product.coverImageUrl" class="img-fluid rounded-start product-image" alt="{{ product.name }}">
           <ng-template #noImage>
             <div class="product-image-placeholder bg-light d-flex align-items-center justify-content-center">
               <span>No Image</span>
@@ -17,22 +17,22 @@
             <h1 class="card-title">{{ product.name }}</h1>
             <p class="card-text text-muted">By {{ product.creatorUsername || 'Unknown Creator' }}</p>
             <hr>
-            <p class="card-text product-description">{{ product.description }}</p>
+            <p class="card-text product-description">Product details available on the backend.</p>
             <hr>
             <div class="d-flex justify-content-between align-items-center mb-3">
               <span class="product-price display-6 fw-bold">{{ product.price | currency:product.currency:'symbol':'1.2-2' }}</span>
-              <span *ngIf="product.category" class="badge bg-primary fs-6">{{ product.category }}</span>
+              <span class="badge bg-primary fs-6">{{ product.status }}</span>
             </div>
-  
+
             <div class="d-grid gap-2 mt-4">
               <button (click)="onBuyNow()" class="btn btn-lg btn-success">Buy Now</button>
               <button *ngIf="isCreator" (click)="onEditProduct()" class="btn btn-outline-primary btn-sm mt-2">Edit Product</button>
               <button *ngIf="isCreator" (click)="onDeleteProduct()" class="btn btn-outline-danger btn-sm mt-2">Delete Product</button>
             </div>
-  
+
             <div class="mt-4 text-muted text-end">
-              <small>Published: {{ product.isPublished ? 'Yes' : 'No' }}</small><br>
-              <small>Created: {{ product.createdAt | date:'mediumDate' }}</small>
+              <small>Published: {{ product.isPublic ? 'Yes' : 'No' }}</small><br>
+              <small>Created: {{ product.publishedAt | date:'mediumDate' }}</small>
             </div>
           </div>
         </div>

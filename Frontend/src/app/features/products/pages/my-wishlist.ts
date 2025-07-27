@@ -43,30 +43,32 @@ export class MyWishlistComponent implements OnInit {
       // Populate with dummy data for now
       this.wishlistProducts = [
         {
-          id: 'wish-1',
+          id: 1, // Changed from string to number
           name: 'Premium Icon Set',
-          description: 'A beautiful collection of 1000+ vector icons.',
+          permalink: 'premium-icon-set',
           price: 29.99,
           currency: 'USD',
-          imageUrl: 'https://via.placeholder.com/150/FF5733/FFFFFF?text=IconSet',
-          creatorId: 'user-2',
+          coverImageUrl: 'https://via.placeholder.com/150/FF5733/FFFFFF?text=IconSet',
           creatorUsername: 'IconMaster',
-          isPublished: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          averageRating: 4.5,
+          salesCount: 10,
+          status: 'published',
+          isPublic: true,
+          publishedAt: new Date(),
         },
         {
-          id: 'wish-2',
+          id: 2, // Changed from string to number
           name: 'Marketing E-book',
-          description: 'Learn the secrets of digital marketing in this comprehensive guide.',
+          permalink: 'marketing-ebook',
           price: 19.99,
           currency: 'USD',
-          imageUrl: 'https://via.placeholder.com/150/3366FF/FFFFFF?text=E-book',
-          creatorId: 'user-3',
+          coverImageUrl: 'https://via.placeholder.com/150/3366FF/FFFFFF?text=E-book',
           creatorUsername: 'MarketingGuru',
-          isPublished: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          averageRating: 4.2,
+          salesCount: 5,
+          status: 'published',
+          isPublic: true,
+          publishedAt: new Date(),
         }
       ];
 
@@ -77,7 +79,7 @@ export class MyWishlistComponent implements OnInit {
   }
 
   // You would also typically have methods to remove items from wishlist
-  onRemoveFromWishlist(productId: string): void {
+  onRemoveFromWishlist(productId: number): void {
     console.log(`Removing ${productId} from wishlist`);
     // Implement actual removal via API call
     this.wishlistProducts = this.wishlistProducts.filter(p => p.id !== productId);

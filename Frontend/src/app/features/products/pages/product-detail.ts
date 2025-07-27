@@ -46,7 +46,8 @@ export class ProductDetailComponent implements OnInit {
 
     this.authService.currentUser$.subscribe(user => {
       if (this.product && user) {
-        this.isCreator = this.product.creatorId === user.id;
+        // Compare by username instead of ID since we don't have creatorId in the Product interface
+        this.isCreator = this.product.creatorUsername === user.username;
       } else {
         this.isCreator = false;
       }
@@ -56,7 +57,7 @@ export class ProductDetailComponent implements OnInit {
   loadProduct(id: string): void {
     this.isLoading = true;
     this.errorMessage = null;
-    this.productService.getProductById(id).subscribe({
+    this.productService.getProductById(parseInt(id)).subscribe({
       next: (data: Product) => {
         this.product = data;
         this.isLoading = false;
@@ -74,7 +75,7 @@ export class ProductDetailComponent implements OnInit {
 
   onEditProduct(): void {
     if (this.product) {
-      this.router.navigate(['/products/edit', this.product.id]);
+      this.router.navigate(['/products/edit', this.product.id.toString()]);
     }
   }
 

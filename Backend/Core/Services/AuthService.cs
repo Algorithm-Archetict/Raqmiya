@@ -74,26 +74,37 @@ namespace Core.Services
 
         public async Task<AuthResponseDTO> LoginAsync(LoginRequestDTO request)
         {
+            _logger.LogInformation("Login attempt for: {EmailOrUsername}", request.EmailOrUsername);
+            
             var user = await _authRepository.GetUserByEmailOrUsernameAsync(request.EmailOrUsername);
 
             if (user == null)
             {
+                _logger.LogWarning("User not found: {EmailOrUsername}", request.EmailOrUsername);
                 return new AuthResponseDTO { Success = false, Message = "Invalid credentials." };
             }
 
+            _logger.LogInformation("User found: {Username}, Email: {Email}, IsActive: {IsActive}", 
+                user.Username, user.Email, user.IsActive);
+
             var hashedPasswordAttempt = HashPassword(request.Password, user.Salt);
+            _logger.LogInformation("Password comparison - Stored: {StoredHash}, Attempt: {AttemptHash}", 
+                user.HashedPassword, hashedPasswordAttempt);
 
             if (hashedPasswordAttempt != user.HashedPassword)
             {
+                _logger.LogWarning("Password mismatch for user: {EmailOrUsername}", request.EmailOrUsername);
                 return new AuthResponseDTO { Success = false, Message = "Invalid credentials." };
             }
 
             if (!user.IsActive)
             {
+                _logger.LogWarning("Inactive account for user: {EmailOrUsername}", request.EmailOrUsername);
                 return new AuthResponseDTO { Success = false, Message = "Account is inactive." };
             }
 
             var token = GenerateJwtToken(user);
+            _logger.LogInformation("Login successful for user: {EmailOrUsername}", request.EmailOrUsername);
 
             return new AuthResponseDTO
             {

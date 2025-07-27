@@ -35,11 +35,26 @@ export class AuthService {
   private decodeTokenAndSetUser(): void {
     const token = localStorage.getItem('authToken');
     if (token) {
-      // In a real app, you'd decode a JWT here to get user info.
-      // For now, let's just assume a basic user for demonstration.
-      const dummyUser: User = { id: '1', username: 'demoUser', email: 'user@example.com' };
-      this._currentUser.next(dummyUser);
-      this._isLoggedIn.next(true);
+      // Try to get user data from localStorage if it was stored during login
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          this._currentUser.next(user);
+          this._isLoggedIn.next(true);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          // Fallback to dummy user if parsing fails
+          const dummyUser: User = { id: '1', username: 'demoUser', email: 'user@example.com' };
+          this._currentUser.next(dummyUser);
+          this._isLoggedIn.next(true);
+        }
+      } else {
+        // Fallback to dummy user if no user data found
+        const dummyUser: User = { id: '1', username: 'demoUser', email: 'user@example.com' };
+        this._currentUser.next(dummyUser);
+        this._isLoggedIn.next(true);
+      }
     }
   }
 
@@ -47,8 +62,17 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
       tap(response => {
         localStorage.setItem('authToken', response.token);
-        // localStorage.setItem('refreshToken', response.refreshToken); // If using refresh tokens
-        this.decodeTokenAndSetUser(); // Update user status after successful login
+        // Store user data in localStorage for persistence
+        if (response.username) {
+          const user: User = {
+            id: '1', // We don't have user ID from backend, using placeholder
+            username: response.username,
+            email: response.email || ''
+          };
+          localStorage.setItem('userData', JSON.stringify(user));
+          this._currentUser.next(user);
+        }
+        this._isLoggedIn.next(true);
       })
     );
   }
@@ -59,7 +83,7 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem('authToken');
-    // localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userData'); // Also remove user data
     this._isLoggedIn.next(false);
     this._currentUser.next(null);
     this.router.navigate(['/auth/login']); // Redirect to login page after logout

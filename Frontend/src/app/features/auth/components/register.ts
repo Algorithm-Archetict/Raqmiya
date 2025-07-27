@@ -35,16 +35,16 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit(): void {
     this.registerForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      Username: ['', [Validators.required, Validators.minLength(3)]],
+      Email: ['', [Validators.required, Validators.email]],
+      Password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', Validators.required]
     }, { validators: this.passwordMatchValidator }); // Add custom validator
   }
 
   // Custom validator for password match
   passwordMatchValidator(form: FormGroup) {
-    const password = form.get('password')?.value;
+    const password = form.get('Password')?.value;
     const confirmPassword = form.get('confirmPassword')?.value;
     return password === confirmPassword ? null : { mismatch: true };
   }
@@ -56,9 +56,10 @@ export class RegisterComponent implements OnInit {
 
     if (this.registerForm.valid) {
       const registerPayload: RegisterRequest = {
-        username: this.registerForm.value.username,
-        email: this.registerForm.value.email,
-        password: this.registerForm.value.password
+        Username: this.registerForm.value.Username,
+        Email: this.registerForm.value.Email,
+        Password: this.registerForm.value.Password,
+        Role: 'Customer' // This should match RoleConstants.Customer
       };
 
       this.authService.register(registerPayload).subscribe({

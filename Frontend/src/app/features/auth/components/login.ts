@@ -35,8 +35,8 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      EmailOrUsername: ['', [Validators.required]],
+      Password: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
@@ -51,7 +51,7 @@ export class LoginComponent implements OnInit {
         next: (response) => {
           this.isLoading = false;
           this.successMessage = response.message || 'Login successful!';
-          this.router.navigate(['/products']); // Redirect to products or dashboard on success
+          this.router.navigate(['/products']);
         },
         error: (err) => {
           this.isLoading = false;

@@ -26,10 +26,24 @@
   .dropdown-menu {
     background-color: #343a40; /* Dark background for dropdown */
     border: none;
+    display: none; /* Hide by default */
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 1000;
+    min-width: 200px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  
+  .dropdown-menu.show {
+    display: block; /* Show when has 'show' class */
   }
   
   .dropdown-menu .dropdown-item {
     color: rgba(255, 255, 255, 0.75); /* Light text for items */
+    padding: 0.5rem 1rem;
+    display: block;
+    text-decoration: none;
   }
   
   .dropdown-menu .dropdown-item:hover {
@@ -39,6 +53,7 @@
   
   .dropdown-divider {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 0.5rem 0;
   }
   
   /* Icon for user dropdown */

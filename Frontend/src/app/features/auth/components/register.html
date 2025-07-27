@@ -11,55 +11,55 @@
   
             <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
               <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
+                <label for="Username" class="form-label">Username</label>
                 <input
                   type="text"
                   class="form-control"
-                  id="username"
-                  formControlName="username"
+                  id="Username"
+                  formControlName="Username"
                   placeholder="Your unique username"
-                  [class.is-invalid]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched"
+                  [class.is-invalid]="registerForm.get('Username')?.invalid && registerForm.get('Username')?.touched"
                 >
-                <div class="invalid-feedback" *ngIf="registerForm.get('username')?.errors?.['required'] && registerForm.get('username')?.touched">
+                <div class="invalid-feedback" *ngIf="registerForm.get('Username')?.errors?.['required'] && registerForm.get('Username')?.touched">
                   Username is required.
                 </div>
-                <div class="invalid-feedback" *ngIf="registerForm.get('username')?.errors?.['minlength'] && registerForm.get('username')?.touched">
+                <div class="invalid-feedback" *ngIf="registerForm.get('Username')?.errors?.['minlength'] && registerForm.get('Username')?.touched">
                   Username must be at least 3 characters.
                 </div>
               </div>
   
               <div class="mb-3">
-                <label for="email" class="form-label">Email address</label>
+                <label for="Email" class="form-label">Email address</label>
                 <input
                   type="email"
                   class="form-control"
-                  id="email"
-                  formControlName="email"
+                  id="Email"
+                  formControlName="Email"
                   placeholder="name@example.com"
-                  [class.is-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+                  [class.is-invalid]="registerForm.get('Email')?.invalid && registerForm.get('Email')?.touched"
                 >
-                <div class="invalid-feedback" *ngIf="registerForm.get('email')?.errors?.['required'] && registerForm.get('email')?.touched">
+                <div class="invalid-feedback" *ngIf="registerForm.get('Email')?.errors?.['required'] && registerForm.get('Email')?.touched">
                   Email is required.
                 </div>
-                <div class="invalid-feedback" *ngIf="registerForm.get('email')?.errors?.['email'] && registerForm.get('email')?.touched">
+                <div class="invalid-feedback" *ngIf="registerForm.get('Email')?.errors?.['email'] && registerForm.get('Email')?.touched">
                   Please enter a valid email address.
                 </div>
               </div>
   
               <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
+                <label for="Password" class="form-label">Password</label>
                 <input
                   type="password"
                   class="form-control"
-                  id="password"
-                  formControlName="password"
+                  id="Password"
+                  formControlName="Password"
                   placeholder="Your password"
-                  [class.is-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+                  [class.is-invalid]="registerForm.get('Password')?.invalid && registerForm.get('Password')?.touched"
                 >
-                <div class="invalid-feedback" *ngIf="registerForm.get('password')?.errors?.['required'] && registerForm.get('password')?.touched">
+                <div class="invalid-feedback" *ngIf="registerForm.get('Password')?.errors?.['required'] && registerForm.get('Password')?.touched">
                   Password is required.
                 </div>
-                <div class="invalid-feedback" *ngIf="registerForm.get('password')?.errors?.['minlength'] && registerForm.get('password')?.touched">
+                <div class="invalid-feedback" *ngIf="registerForm.get('Password')?.errors?.['minlength'] && registerForm.get('Password')?.touched">
                   Password must be at least 6 characters long.
                 </div>
               </div>

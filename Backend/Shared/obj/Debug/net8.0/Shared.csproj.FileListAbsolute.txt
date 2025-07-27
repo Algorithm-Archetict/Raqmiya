@@ -1,0 +1,12 @@
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\bin\Debug\net8.0\Shared.deps.json
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\bin\Debug\net8.0\Shared.dll
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\bin\Debug\net8.0\Shared.pdb
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\Shared.GeneratedMSBuildEditorConfig.editorconfig
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\Shared.AssemblyInfoInputs.cache
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\Shared.AssemblyInfo.cs
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\Shared.csproj.CoreCompileInputs.cache
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\Shared.sourcelink.json
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\Shared.dll
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\refint\Shared.dll
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\Shared.pdb
+D:\ITI Labs\ITIGP\Raqmiya\Backend\Shared\obj\Debug\net8.0\ref\Shared.dll

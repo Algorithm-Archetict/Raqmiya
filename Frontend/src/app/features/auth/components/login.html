@@ -11,36 +11,33 @@
   
             <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
               <div class="mb-3">
-                <label for="email" class="form-label">Email address</label>
+                <label for="EmailOrUsername" class="form-label">Email or Username</label>
                 <input
-                  type="email"
+                  type="text"
                   class="form-control"
-                  id="email"
-                  formControlName="email"
-                  placeholder="name@example.com"
-                  [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+                  id="EmailOrUsername"
+                  formControlName="EmailOrUsername"
+                  placeholder="Enter your email or username"
+                  [class.is-invalid]="loginForm.get('EmailOrUsername')?.invalid && loginForm.get('EmailOrUsername')?.touched"
                 >
-                <div class="invalid-feedback" *ngIf="loginForm.get('email')?.errors?.['required'] && loginForm.get('email')?.touched">
-                  Email is required.
-                </div>
-                <div class="invalid-feedback" *ngIf="loginForm.get('email')?.errors?.['email'] && loginForm.get('email')?.touched">
-                  Please enter a valid email address.
+                <div class="invalid-feedback" *ngIf="loginForm.get('EmailOrUsername')?.errors?.['required'] && loginForm.get('EmailOrUsername')?.touched">
+                  Email or Username is required.
                 </div>
               </div>
               <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
+                <label for="Password" class="form-label">Password</label>
                 <input
                   type="password"
                   class="form-control"
-                  id="password"
-                  formControlName="password"
+                  id="Password"
+                  formControlName="Password"
                   placeholder="Password"
-                  [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+                  [class.is-invalid]="loginForm.get('Password')?.invalid && loginForm.get('Password')?.touched"
                 >
-                <div class="invalid-feedback" *ngIf="loginForm.get('password')?.errors?.['required'] && loginForm.get('password')?.touched">
+                <div class="invalid-feedback" *ngIf="loginForm.get('Password')?.errors?.['required'] && loginForm.get('Password')?.touched">
                   Password is required.
                 </div>
-                <div class="invalid-feedback" *ngIf="loginForm.get('password')?.errors?.['minlength'] && loginForm.get('password')?.touched">
+                <div class="invalid-feedback" *ngIf="loginForm.get('Password')?.errors?.['minlength'] && loginForm.get('Password')?.touched">
                   Password must be at least 6 characters long.
                 </div>
               </div>

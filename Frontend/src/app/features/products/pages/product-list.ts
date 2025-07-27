@@ -38,7 +38,7 @@ export class ProductListComponent implements OnInit {
     this.errorMessage = null;
     this.productService.getProducts(this.currentPage, this.itemsPerPage).subscribe({
       next: (data: PaginatedProducts) => {
-        this.products = data.products;
+        this.products = data.items; // Changed from data.products to data.items
         this.totalPages = data.totalPages;
         this.isLoading = false;
       },

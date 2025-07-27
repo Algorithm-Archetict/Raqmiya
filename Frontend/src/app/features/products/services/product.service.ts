@@ -10,7 +10,7 @@ import { Product, ProductCreateRequest, ProductUpdateRequest, PaginatedProducts 
 })
 export class ProductService {
   private apiUrl = environment.apiUrl;
-  private productsUrl = `${this.apiUrl}/product`; // Base URL for product endpoints
+  private productsUrl = `${this.apiUrl}/Products`; // Fix: Use 'Products' (plural) to match backend controller
 
   constructor(private http: HttpClient) {}
 
@@ -21,7 +21,7 @@ export class ProductService {
     return this.http.get<PaginatedProducts>(this.productsUrl, { params });
   }
 
-  getProductById(id: string): Observable<Product> {
+  getProductById(id: number): Observable<Product> {
     return this.http.get<Product>(`${this.productsUrl}/${id}`);
   }
 
@@ -29,11 +29,11 @@ export class ProductService {
     return this.http.post<Product>(this.productsUrl, product);
   }
 
-  updateProduct(id: string, product: ProductUpdateRequest): Observable<Product> {
+  updateProduct(id: number, product: ProductUpdateRequest): Observable<Product> {
     return this.http.put<Product>(`${this.productsUrl}/${id}`, product);
   }
 
-  deleteProduct(id: string): Observable<void> {
+  deleteProduct(id: number): Observable<void> {
     return this.http.delete<void>(`${this.productsUrl}/${id}`);
   }
 

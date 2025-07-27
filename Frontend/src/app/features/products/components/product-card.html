@@ -1,5 +1,5 @@
 <div class="card product-card h-100 shadow-sm">
-    <img *ngIf="product.imageUrl; else noImage" [src]="product.imageUrl" class="card-img-top" alt="{{ product.name }}">
+    <img *ngIf="product.coverImageUrl; else noImage" [src]="product.coverImageUrl" class="card-img-top" alt="{{ product.name }}">
     <ng-template #noImage>
       <div class="card-img-top-placeholder bg-light d-flex align-items-center justify-content-center">
         <span>No Image</span>
@@ -8,15 +8,15 @@
   
     <div class="card-body d-flex flex-column">
       <h5 class="card-title">{{ product.name }}</h5>
-      <p class="card-text text-muted">{{ product.description | slice:0:100 }}...</p>
+      <p class="card-text text-muted">By {{ product.creatorUsername }}</p>
       <div class="mt-auto">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="product-price fs-5 fw-bold">{{ product.price | currency:product.currency:'symbol':'1.2-2' }}</span>
-          <span *ngIf="product.category" class="badge bg-secondary">{{ product.category }}</span>
+          <span class="badge bg-secondary">{{ product.status }}</span>
         </div>
         <div class="d-grid gap-2">
-          <a [routerLink]="['/products/detail', product.id]" class="btn btn-primary btn-sm">View Details</a>
-          <button (click)="onAddToCart(product.id)" class="btn btn-outline-success btn-sm">Add to Cart</button>
+          <a [routerLink]="['/products/detail', product.id.toString()]" class="btn btn-primary btn-sm">View Details</a>
+          <button (click)="onAddToCart(product.id.toString())" class="btn btn-outline-success btn-sm">Add to Cart</button>
         </div>
       </div>
     </div>

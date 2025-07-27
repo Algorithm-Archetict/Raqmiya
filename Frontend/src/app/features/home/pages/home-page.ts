@@ -8,6 +8,7 @@ import { Product } from '../../../models/product.model';
 import { ProductCardComponent } from '../../products/components/product-card';
 import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinner';
 import { Alert } from '../../../shared/ui/alert/alert';
+import { PaginatedProducts } from '../../../models/product.model';
 
 @Component({
   selector: 'app-home-page',
@@ -51,9 +52,9 @@ export class HomePageComponent implements OnInit {
     this.isLoadingProducts = true;
     this.productsErrorMessage = null;
     // Fetch a few latest products, e.g., first 3
-    this.productService.getProducts(1, 3).subscribe({
-      next: (data) => {
-        this.latestProducts = data.products;
+    this.productService.getProducts(1, 6).subscribe({
+      next: (data: PaginatedProducts) => {
+        this.latestProducts = data.items; // Changed from data.products to data.items
         this.isLoadingProducts = false;
       },
       error: (err) => {

@@ -56,7 +56,7 @@ export class MyProductsComponent implements OnInit {
     this.errorMessage = null;
     this.productService.getProductsByCreator(this.currentUserId, this.currentPage, this.itemsPerPage).subscribe({
       next: (data: PaginatedProducts) => {
-        this.myProducts = data.products;
+        this.myProducts = data.items; // Changed from data.products to data.items
         this.totalPages = data.totalPages;
         this.isLoading = false;
       },

@@ -32,8 +32,18 @@ namespace API.Controllers
         [ProducesResponseType(403)]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDTO request)
         {
+            _logger.LogInformation("Registration attempt received: Email={Email}, Username={Username}, Role={Role}", 
+                request.Email, request.Username, request.Role);
+
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                _logger.LogWarning("Model validation failed: {Errors}", string.Join(", ", errors));
+                return BadRequest(new { Errors = errors, ModelState = ModelState });
+            }
 
             // Restrict Admin registration to only authenticated admins
             if (request.Role == RoleConstants.Admin)
@@ -70,16 +80,28 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO request)
         {
+            _logger.LogInformation("Login attempt received: EmailOrUsername={EmailOrUsername}", request.EmailOrUsername);
+
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                _logger.LogWarning("Login model validation failed: {Errors}", string.Join(", ", errors));
+                return BadRequest(new { Errors = errors, ModelState = ModelState });
+            }
 
             try
             {
                 var response = await _authService.LoginAsync(request);
                 if (response.Success)
                 {
+                    _logger.LogInformation("Login successful for user: {EmailOrUsername}", request.EmailOrUsername);
                     return Ok(response);
                 }
+                _logger.LogWarning("Login failed for user: {EmailOrUsername}, Message: {Message}", 
+                    request.EmailOrUsername, response.Message);
                 return Unauthorized(response);
             }
             catch (Exception ex)

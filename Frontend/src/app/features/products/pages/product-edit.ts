@@ -23,7 +23,7 @@ import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinn
 })
 export class ProductEditComponent implements OnInit {
   productForm!: FormGroup;
-  productId: string | null = null;
+  productId: number | null = null; // Changed from string to number
   product: Product | null = null;
   isLoading = false;
   errorMessage: string | null = null;
@@ -51,8 +51,9 @@ export class ProductEditComponent implements OnInit {
     });
 
     this.route.paramMap.subscribe(params => {
-      this.productId = params.get('id');
-      if (this.productId) {
+      const idParam = params.get('id');
+      if (idParam) {
+        this.productId = parseInt(idParam); // Convert string to number
         this.loadProductForEdit(this.productId);
       } else {
         this.errorMessage = 'No product ID provided for editing.';
@@ -60,12 +61,18 @@ export class ProductEditComponent implements OnInit {
     });
   }
 
-  loadProductForEdit(id: string): void {
+  loadProductForEdit(id: number): void { // Changed parameter type to number
     this.isLoading = true;
     this.productService.getProductById(id).subscribe({
       next: (data: Product) => {
         this.product = data;
-        this.productForm.patchValue(data); // Populate form with existing product data
+        // Note: The Product interface doesn't have all the form fields, so we'll need to handle this carefully
+        this.productForm.patchValue({
+          name: data.name,
+          price: data.price,
+          currency: data.currency
+          // Add other fields as needed
+        });
         this.isLoading = false;
       },
       error: (err) => {
@@ -83,13 +90,16 @@ export class ProductEditComponent implements OnInit {
     this.successMessage = null;
 
     if (this.productForm.valid && this.productId) {
-      const productPayload: ProductUpdateRequest = this.productForm.value;
+      const productPayload: ProductUpdateRequest = {
+        id: this.productId, // Add the ID to the payload
+        ...this.productForm.value
+      };
       this.productService.updateProduct(this.productId, productPayload).subscribe({
         next: () => {
           this.isLoading = false;
           this.successMessage = 'Product updated successfully!';
           // Optionally, redirect after update
-          // this.router.navigate(['/products/detail', this.productId]);
+          // this.router.navigate(['/products/detail', this.productId.toString()]);
         },
         error: (err) => {
           this.isLoading = false;

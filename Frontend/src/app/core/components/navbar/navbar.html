@@ -30,14 +30,16 @@
             <a class="nav-link" routerLink="/auth/register" routerLinkActive="active">Register</a>
           </li>
           <li class="nav-item dropdown" *ngIf="isLoggedIn">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-person-circle me-1"></i> {{ username || 'Account' }}
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-              <li><a class="dropdown-item" routerLink="/profile">Profile</a></li>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" (click)="onLogout()">Logout</a></li>
-            </ul>
+            <div class="dropdown">
+              <a class="nav-link dropdown-toggle" href="#" (click)="toggleDropdown(); $event.preventDefault()" style="cursor: pointer;">
+                <i class="bi bi-person-circle me-1"></i> {{ username || 'Account' }}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" [class.show]="isDropdownOpen" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" routerLink="/profile" (click)="closeDropdown()">Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" (click)="onLogout(); $event.preventDefault()" style="cursor: pointer;">Logout</a></li>
+              </ul>
+            </div>
           </li>
         </ul>
       </div>
