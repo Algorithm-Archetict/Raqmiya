@@ -9,7 +9,7 @@ using System.Text;
 namespace API.Controllers
 {
     /// <summary>
-    /// Controller for user profile and admin user management.
+    /// Controller for user profile management.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -110,104 +110,6 @@ namespace API.Controllers
             {
                 _logger.LogError(ex, "Error changing password");
                 return Problem("An error occurred while changing the password.");
-            }
-        }
-
-        /// <summary>
-        /// List all users (admin only).
-        /// </summary>
-        [HttpGet]
-        [Authorize(Roles = RoleConstants.Admin)]
-        [ProducesResponseType(typeof(IEnumerable<UserProfileDTO>), 200)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
-        public async Task<ActionResult<IEnumerable<UserProfileDTO>>> GetAll()
-        {
-            try
-            {
-                var users = await _userRepository.GetAllAsync();
-                return Ok(users.Select(MapToProfileDTO));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error listing users");
-                return Problem("An error occurred while listing users.");
-            }
-        }
-
-        /// <summary>
-        /// Get a user by id (admin only).
-        /// </summary>
-        [HttpGet("{id}")]
-        [Authorize(Roles = RoleConstants.Admin)]
-        [ProducesResponseType(typeof(UserProfileDTO), 200)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
-        [ProducesResponseType(404)]
-        public async Task<ActionResult<UserProfileDTO>> GetById(int id)
-        {
-            try
-            {
-                var user = await _userRepository.GetByIdAsync(id);
-                if (user == null) return NotFound();
-                return Ok(MapToProfileDTO(user));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting user by id");
-                return Problem("An error occurred while fetching the user.");
-            }
-        }
-
-        /// <summary>
-        /// Deactivate a user account (admin only).
-        /// </summary>
-        [HttpPost("{id}/deactivate")]
-        [Authorize(Roles = RoleConstants.Admin)]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
-        [ProducesResponseType(404)]
-        public async Task<IActionResult> DeactivateUser(int id)
-        {
-            try
-            {
-                var user = await _userRepository.GetByIdAsync(id);
-                if (user == null) return NotFound();
-                user.IsActive = false;
-                await _userRepository.UpdateAsync(user);
-                return Ok($"User {id} deactivated.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deactivating user");
-                return Problem("An error occurred while deactivating the user.");
-            }
-        }
-
-        /// <summary>
-        /// Activate a user account (admin only).
-        /// </summary>
-        [HttpPost("{id}/activate")]
-        [Authorize(Roles = RoleConstants.Admin)]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
-        [ProducesResponseType(404)]
-        public async Task<IActionResult> ActivateUser(int id)
-        {
-            try
-            {
-                var user = await _userRepository.GetByIdAsync(id);
-                if (user == null) return NotFound();
-                user.IsActive = true;
-                await _userRepository.UpdateAsync(user);
-                return Ok($"User {id} activated.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error activating user");
-                return Problem("An error occurred while activating the user.");
             }
         }
 
