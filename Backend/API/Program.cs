@@ -64,7 +64,7 @@ namespace API
             // --- 7. Configure Swagger/OpenAPI for JWT Authentication ---
             builder.Services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gumroad API", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Raqmiya API", Version = "v1" ,Description= "Endpoints for E-Commerce platform"});
 
                 // Configure Swagger to use JWT Bearer authentication
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
