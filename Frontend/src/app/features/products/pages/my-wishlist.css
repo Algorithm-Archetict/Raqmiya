@@ -1,0 +1,15 @@
+/* src/app/features/products/pages/my-wishlist/my-wishlist.css */
+.my-wishlist-container {
+    padding-bottom: 2rem;
+  }
+  
+  .btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+  }
+  
+  .btn-outline-danger:hover {
+    color: #fff;
+    background-color: #dc3545;
+    border-color: #dc3545;
+  }

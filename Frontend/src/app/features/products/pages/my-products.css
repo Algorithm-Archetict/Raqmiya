@@ -1,0 +1,37 @@
+/* src/app/features/products/pages/my-products/my-products.css */
+.my-products-container {
+    padding-bottom: 2rem;
+  }
+  
+  .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+  }
+  
+  .btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+  }
+  
+  /* Pagination styling adjustments (can be reused from product-list.css or made global if preferred) */
+  .pagination .page-link {
+    color: #007bff;
+    cursor: pointer;
+  }
+  
+  .pagination .page-link:hover {
+    background-color: #e9ecef;
+  }
+  
+  .pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+  }
+  
+  .pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+  }

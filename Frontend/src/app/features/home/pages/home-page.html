@@ -1,0 +1,36 @@
+<div class="home-container">
+    <div class="hero-section text-center py-5">
+      <h1 class="display-4 mb-3">Welcome to RAQMIYA!</h1>
+      <p class="lead mb-4">The easiest way to sell your digital products.</p>
+      <div *ngIf="!isLoggedIn; else loggedInMessage">
+        <a routerLink="/auth/register" class="btn btn-primary btn-lg me-2">Get Started - It's Free!</a>
+        <a routerLink="/auth/login" class="btn btn-outline-light btn-lg">Login</a>
+      </div>
+      <ng-template #loggedInMessage>
+        <p class="lead">Hello, {{ username || 'User' }}! Start creating or exploring products.</p>
+        <a routerLink="/products/create" class="btn btn-primary btn-lg me-2">Create Product</a>
+        <a routerLink="/products/list" class="btn btn-outline-light btn-lg">Browse Products</a>
+      </ng-template>
+    </div>
+  
+    <div class="container py-5">
+      <h2 class="text-center mb-4">Latest Products</h2>
+      <app-loading-spinner *ngIf="isLoadingProducts"></app-loading-spinner>
+      <app-alert *ngIf="productsErrorMessage" [message]="productsErrorMessage" type="danger"></app-alert>
+  
+      <div *ngIf="!isLoadingProducts && latestProducts.length > 0" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <div class="col" *ngFor="let product of latestProducts">
+          <app-product-card [product]="product"></app-product-card>
+        </div>
+      </div>
+  
+      <div *ngIf="!isLoadingProducts && latestProducts.length === 0 && !productsErrorMessage" class="alert alert-info text-center" role="alert">
+        No latest products to display right now.
+      </div>
+  
+      <div class="text-center mt-5">
+        <a routerLink="/products/list" class="btn btn-secondary btn-lg">View All Products &rarr;</a>
+      </div>
+    </div>
+  
+    </div>
