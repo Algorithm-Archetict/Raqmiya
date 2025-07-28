@@ -19,7 +19,7 @@ import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinn
     LoadingSpinner       // Import the LoadingSpinner standalone component
   ],
   templateUrl: './login.html',
-  styleUrls: ['./login.css']
+  styleUrls: ['../auth.css'] // Changed to use shared auth.css
 })
 export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
