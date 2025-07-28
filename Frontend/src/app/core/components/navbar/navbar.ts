@@ -1,34 +1,52 @@
 // src/app/core/components/navbar/navbar.ts
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router'; // Import Router for logout, RouterLink/Active for navigation
-import { AuthService } from '../../services/auth'; // Import AuthService
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../services/auth';
+import { ThemeService, Theme } from '../../services/theme.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,       // Enables routerLink directive
-    RouterLinkActive  // Enables routerLinkActive directive for active link styling
+    RouterLink,
+    RouterLinkActive
   ],
   templateUrl: './navbar.html',
   styleUrls: ['./navbar.css']
 })
-export class NavbarComponent implements OnInit {
+export class NavbarComponent implements OnInit, AfterViewInit {
   isLoggedIn: boolean = false;
-  username: string | null = null; // To display username in navbar
-  isDropdownOpen: boolean = false; // Add dropdown state
+  username: string | null = null;
+  isDropdownOpen: boolean = false;
+  isSearchOpen: boolean = false;
+  currentTheme: Theme = 'light';
+  
+  // Custom dropdown states
+  isCategoriesDropdownOpen: boolean = false;
+  isUserDropdownOpen: boolean = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService, 
+    private router: Router,
+    private themeService: ThemeService
+  ) {}
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event): void {
-    // Close dropdown if clicking outside
     const target = event.target as HTMLElement;
     if (!target.closest('.dropdown')) {
       this.isDropdownOpen = false;
+      this.isCategoriesDropdownOpen = false;
+      this.isUserDropdownOpen = false;
     }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    this.closeSearch();
+    this.closeAllDropdowns();
   }
 
   ngOnInit(): void {
@@ -36,24 +54,96 @@ export class NavbarComponent implements OnInit {
     this.authService.isLoggedIn$.subscribe(loggedIn => {
       this.isLoggedIn = loggedIn;
       if (loggedIn) {
-        this.username = this.authService.getCurrentUsername(); // Get username
+        this.username = this.authService.getCurrentUsername();
       } else {
         this.username = null;
       }
     });
+
+    // Subscribe to theme changes
+    this.themeService.currentTheme$.subscribe(theme => {
+      this.currentTheme = theme;
+    });
   }
 
+  ngAfterViewInit(): void {
+    // No need to initialize Bootstrap dropdowns since we're using custom implementation
+  }
+
+  // Categories dropdown methods
+  toggleCategoriesDropdown(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isCategoriesDropdownOpen = !this.isCategoriesDropdownOpen;
+    this.isUserDropdownOpen = false; // Close other dropdown
+  }
+
+  closeCategoriesDropdown(): void {
+    this.isCategoriesDropdownOpen = false;
+  }
+
+  // User dropdown methods
+  toggleUserDropdown(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isUserDropdownOpen = !this.isUserDropdownOpen;
+    this.isCategoriesDropdownOpen = false; // Close other dropdown
+  }
+
+  closeUserDropdown(): void {
+    this.isUserDropdownOpen = false;
+  }
+
+  // General dropdown methods
   toggleDropdown(): void {
     this.isDropdownOpen = !this.isDropdownOpen;
   }
 
-  closeDropdown(): void {
+  closeAllDropdowns(): void {
     this.isDropdownOpen = false;
+    this.isCategoriesDropdownOpen = false;
+    this.isUserDropdownOpen = false;
+  }
+
+  closeDropdown(): void {
+    this.closeAllDropdowns();
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+  }
+
+  openSearch(): void {
+    this.isSearchOpen = true;
+  }
+
+  closeSearch(): void {
+    this.isSearchOpen = false;
   }
 
   onLogout(): void {
-    this.closeDropdown();
+    console.log('Logout clicked - executing logout...');
+    this.closeAllDropdowns();
     this.authService.logout();
-    this.router.navigate(['/auth/login']); // Redirect to login page after logout
+    // The AuthService will handle the navigation to login page
+  }
+
+  // Navigation methods for user dropdown
+  navigateToProfile(): void {
+    // For now, navigate to home page as placeholder
+    this.router.navigate(['/home']);
+    console.log('Navigate to Profile - Feature coming soon!');
+  }
+
+  navigateToDashboard(): void {
+    // For now, navigate to home page as placeholder
+    this.router.navigate(['/home']);
+    console.log('Navigate to Dashboard - Feature coming soon!');
+  }
+
+  navigateToSettings(): void {
+    // For now, navigate to home page as placeholder
+    this.router.navigate(['/home']);
+    console.log('Navigate to Settings - Feature coming soon!');
   }
 }

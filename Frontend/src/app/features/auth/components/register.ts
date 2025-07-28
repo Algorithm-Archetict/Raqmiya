@@ -19,7 +19,7 @@ import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinn
     LoadingSpinner
   ],
   templateUrl: './register.html',
-  styleUrls: ['./register.css']
+  styleUrls: ['../auth.css'] // Changed to use shared auth.css
 })
 export class RegisterComponent implements OnInit {
   registerForm!: FormGroup;
