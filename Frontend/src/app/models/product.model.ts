@@ -6,16 +6,24 @@
 export interface Product {
   id: number; // Changed from string to number to match backend
   name: string;
+  description?: string; // Added for product card display
   permalink: string;
   price: number;
+  originalPrice?: number; // Added for discount display
   currency: string;
   coverImageUrl?: string; // Changed from imageUrl to coverImageUrl
   creatorUsername: string;
   averageRating: number;
+  rating?: number; // Added for star rating display
+  reviewCount?: number; // Added for review count
   salesCount: number;
   status: string;
   isPublic: boolean;
   publishedAt?: Date;
+  category?: { // Added for category display
+    id: number;
+    name: string;
+  };
 }
 
 /**
