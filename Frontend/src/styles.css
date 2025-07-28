@@ -1,1 +1,27 @@
 /* You can add global styles to this file, and also import other style files */
+/* src/styles.css */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+/* Example: Basic reset and body styles */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f4f4f4;
+  }
+  
+  /* Example: Simple container styling */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+  }
+
+  
+  /* Add your global CSS styles here.
+     If you intend to use a CSS framework like Bootstrap,
+     you would typically import it here:
+     @import '~bootstrap/dist/css/bootstrap.min.css';
+     (You would need to install bootstrap first: npm install bootstrap)
+  */

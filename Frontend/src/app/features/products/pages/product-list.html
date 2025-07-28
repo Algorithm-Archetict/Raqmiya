@@ -1,0 +1,30 @@
+<div class="product-list-container">
+    <h1 class="mb-4">All Products</h1>
+  
+    <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+    <app-alert *ngIf="errorMessage" [message]="errorMessage" type="danger"></app-alert>
+  
+    <div *ngIf="!isLoading && products.length > 0" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      <div class="col" *ngFor="let product of products">
+        <app-product-card [product]="product"></app-product-card>
+      </div>
+    </div>
+  
+    <div *ngIf="!isLoading && products.length === 0 && !errorMessage" class="alert alert-info" role="alert">
+      No products available at the moment.
+    </div>
+  
+    <nav *ngIf="totalPages > 1 && !isLoading" aria-label="Product list pagination" class="mt-4">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="onPageChange(currentPage - 1)">Previous</a>
+        </li>
+        <li class="page-item" *ngFor="let pageNum of pages" [class.active]="pageNum === currentPage">
+          <a class="page-link" (click)="onPageChange(pageNum)">{{ pageNum }}</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a class="page-link" (click)="onPageChange(currentPage + 1)">Next</a>
+        </li>
+      </ul>
+    </nav>
+  </div>

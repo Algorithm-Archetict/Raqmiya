@@ -1,0 +1,67 @@
+/* src/app/features/products/components/product-card/product-card.css */
+.product-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    overflow: hidden; /* Ensures image corners match card */
+  }
+  
+  .product-card .card-img-top {
+    height: 200px; /* Fixed height for product images */
+    object-fit: cover; /* Ensures images cover the area without distortion */
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .product-card .card-img-top-placeholder {
+    height: 200px;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  
+  .product-card .card-body {
+    padding: 1rem;
+  }
+  
+  .product-card .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    min-height: 2.5rem; /* Ensure consistent height for titles */
+  }
+  
+  .product-card .card-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+    min-height: 4rem; /* Ensure consistent height for descriptions */
+  }
+  
+  .product-card .product-price {
+    color: #007bff;
+  }
+  
+  .badge {
+    font-size: 0.75em;
+    padding: 0.4em 0.6em;
+  }
+  
+  .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+  }
+  
+  .btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+  }
+  
+  .btn-outline-success {
+    color: #28a745;
+    border-color: #28a745;
+  }
+  
+  .btn-outline-success:hover {
+    color: #fff;
+    background-color: #28a745;
+    border-color: #28a745;
+  }

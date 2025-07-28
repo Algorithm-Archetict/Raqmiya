@@ -1,0 +1,66 @@
+/* src/app/core/components/navbar/navbar.css */
+.navbar {
+    padding: 0.75rem 1rem;
+  }
+  
+  .navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .navbar-nav .nav-link {
+    font-weight: 500;
+    margin-right: 10px;
+  }
+  
+  .navbar-nav .nav-link.active {
+    color: #fff;
+    font-weight: 600;
+    border-bottom: 2px solid #007bff; /* Highlight active link */
+    padding-bottom: 5px; /* Adjust padding for border */
+  }
+  
+  /* Dropdown specific */
+  .dropdown-menu {
+    background-color: #343a40; /* Dark background for dropdown */
+    border: none;
+    display: none; /* Hide by default */
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 1000;
+    min-width: 200px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  
+  .dropdown-menu.show {
+    display: block; /* Show when has 'show' class */
+  }
+  
+  .dropdown-menu .dropdown-item {
+    color: rgba(255, 255, 255, 0.75); /* Light text for items */
+    padding: 0.5rem 1rem;
+    display: block;
+    text-decoration: none;
+  }
+  
+  .dropdown-menu .dropdown-item:hover {
+    background-color: #007bff; /* Highlight on hover */
+    color: #fff;
+  }
+  
+  .dropdown-divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 0.5rem 0;
+  }
+  
+  /* Icon for user dropdown */
+  .bi-person-circle {
+    font-size: 1.2rem;
+    vertical-align: middle;
+  }
+  
+  /* Ensure Bootstrap Icons CSS is available (add to index.html or global styles) */
+  /* Example: <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"> */
