@@ -34,6 +34,10 @@ namespace API
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAuthService, AuthService>(); // NEW: Auth Service
 
+            // --- 4. Configure Logging ---
+            builder.Logging.AddConsole();
+            builder.Logging.AddDebug();
+
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -64,7 +68,7 @@ namespace API
             // --- 7. Configure Swagger/OpenAPI for JWT Authentication ---
             builder.Services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Raqmiya API", Version = "v1" ,Description= "Endpoints for E-Commerce platform"});
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gumroad API", Version = "v1" });
 
                 // Configure Swagger to use JWT Bearer authentication
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -106,7 +110,7 @@ namespace API
             {
                 options.AddPolicy("AllowSpecificOrigin",
                     builder => builder
-                        .WithOrigins() // Angular dev server default port "http://localhost:4200"
+                        .WithOrigins("http://localhost:4200") // Angular dev server default port
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials()); // If you're sending cookies/auth headers
