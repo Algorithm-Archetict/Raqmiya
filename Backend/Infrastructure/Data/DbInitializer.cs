@@ -8,6 +8,26 @@ namespace Raqmiya.Infrastructure.Data
 {
     public static class DbInitializer
     {
+        private static string GenerateSalt()
+        {
+            byte[] saltBytes = new byte[16];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(saltBytes);
+            }
+            return Convert.ToBase64String(saltBytes);
+        }
+
+        private static string HashPassword(string password, string salt)
+        {
+            var saltBytes = Convert.FromBase64String(salt);
+            using (var pbkdf2 = new System.Security.Cryptography.Rfc2898DeriveBytes(password, saltBytes, 10000, System.Security.Cryptography.HashAlgorithmName.SHA256))
+            {
+                byte[] hash = pbkdf2.GetBytes(32);
+                return Convert.ToBase64String(hash);
+            }
+        }
+
         public static void Seed(RaqmiyaDbContext context)
         {
             context.Database.Migrate();
@@ -15,9 +35,38 @@ namespace Raqmiya.Infrastructure.Data
             // --- Users ---
             if (!context.Users.Any())
             {
-                var admin = new User { Username = "admin", Email = "admin@example.com", HashedPassword = "adminpass", Salt = "", Role = "Admin", CreatedAt = DateTime.UtcNow, IsActive = true };
-                var creator = new User { Username = "creator", Email = "creator@example.com", HashedPassword = "creatorpass", Salt = "", Role = "Creator", CreatedAt = DateTime.UtcNow, IsActive = true };
-                var customer = new User { Username = "customer", Email = "customer@example.com", HashedPassword = "customerpass", Salt = "", Role = "Customer", CreatedAt = DateTime.UtcNow, IsActive = true };
+                // Create properly hashed passwords for seeded users
+                var adminSalt = GenerateSalt();
+                var creatorSalt = GenerateSalt();
+                var customerSalt = GenerateSalt();
+                
+                var admin = new User { 
+                    Username = "admin", 
+                    Email = "admin@example.com", 
+                    HashedPassword = HashPassword("adminpass", adminSalt), 
+                    Salt = adminSalt, 
+                    Role = "Admin", 
+                    CreatedAt = DateTime.UtcNow, 
+                    IsActive = true 
+                };
+                var creator = new User { 
+                    Username = "creator", 
+                    Email = "creator@example.com", 
+                    HashedPassword = HashPassword("creatorpass", creatorSalt), 
+                    Salt = creatorSalt, 
+                    Role = "Creator", 
+                    CreatedAt = DateTime.UtcNow, 
+                    IsActive = true 
+                };
+                var customer = new User { 
+                    Username = "customer", 
+                    Email = "customer@example.com", 
+                    HashedPassword = HashPassword("customerpass", customerSalt), 
+                    Salt = customerSalt, 
+                    Role = "Customer", 
+                    CreatedAt = DateTime.UtcNow, 
+                    IsActive = true 
+                };
                 context.Users.AddRange(admin, creator, customer);
                 context.SaveChanges();
             }
