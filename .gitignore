@@ -7,9 +7,6 @@
 **/.angular/
 **/.angular/cache/
 
-# Ignore environment files (do not commit secrets!)
-**/environments/environment*.ts
-
 # Ignore coverage outputs
 **/coverage/
 **/coverage*.json
