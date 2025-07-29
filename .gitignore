@@ -23,6 +23,7 @@
 **/.suo
 **/.userosscache
 **/.sln.docstates
+**/Migrations
 
 # Ignore Rider, VS Code, and Visual Studio files in any subdirectory
 **/.idea/
