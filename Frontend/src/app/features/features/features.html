@@ -1,0 +1,135 @@
+<div class="features-page">
+  <!-- Hero Section with Grid Background -->
+  <section class="hero-section">
+    <div class="hero-background">
+      <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+      </div>
+    </div>
+    
+    <div class="container">
+      <div class="row align-items-center min-vh-100">
+        <div class="col-lg-6">
+          <div class="hero-content animate-fade-in-up">
+            <h1 class="hero-title">
+              Everything you need to sell digital products online
+            </h1>
+            <p class="hero-subtitle">
+              Join thousands of creators who trust Raqmiya to sell their digital products, 
+              from ebooks to software, with zero setup fees and instant payouts.
+            </p>
+            <div class="hero-actions">
+              <a routerLink="/auth/register" class="btn btn-primary btn-lg">
+                <i class="fas fa-rocket me-2"></i>
+                Start Selling Today
+              </a>
+              <a routerLink="/products/list" class="btn btn-outline btn-lg ms-3">
+                <i class="fas fa-compass me-2"></i>
+                Explore Products
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="hero-visual animate-fade-in-up" style="animation-delay: 0.3s;">
+            <div class="product-showcase">
+              <div class="product-card showcase-card-1">
+                <div class="product-image">
+                  <i class="fas fa-book"></i>
+                </div>
+                <div class="product-info">
+                  <h5>eBooks</h5>
+                  <p>Digital Books</p>
+                </div>
+              </div>
+              <div class="product-card showcase-card-2">
+                <div class="product-image">
+                  <i class="fas fa-palette"></i>
+                </div>
+                <div class="product-info">
+                  <h5>Graphics</h5>
+                  <p>Design Assets</p>
+                </div>
+              </div>
+              <div class="product-card showcase-card-3">
+                <div class="product-image">
+                  <i class="fas fa-code"></i>
+                </div>
+                <div class="product-info">
+                  <h5>Templates</h5>
+                  <p>Code & Scripts</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="features-section">
+    <div class="container">
+      <div class="section-header text-center">
+        <h2 class="section-title">Why Choose Raqmiya?</h2>
+        <p class="section-description">
+          Built for creators, by creators. Everything you need to succeed online.
+        </p>
+      </div>
+      
+      <div class="row g-4">
+        <div class="col-lg-4 col-md-6" *ngFor="let feature of features">
+          <div class="feature-card">
+            <div class="feature-icon" [class]="'bg-' + feature.color">
+              <i [class]="feature.icon"></i>
+            </div>
+            <h3 class="feature-title">{{ feature.title }}</h3>
+            <p class="feature-description">{{ feature.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits Section -->
+  <section class="benefits-section">
+    <div class="container">
+      <div class="row g-5">
+        <div class="col-lg-6" *ngFor="let benefit of benefits">
+          <div class="benefit-card">
+            <h3 class="benefit-title">{{ benefit.title }}</h3>
+            <ul class="benefit-list">
+              <li *ngFor="let item of benefit.items">
+                <i class="fas fa-check"></i>
+                {{ item }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="container text-center">
+      <h2 class="cta-title">Ready to start your journey?</h2>
+      <p class="cta-description">
+        Join thousands of creators who are already selling on Raqmiya
+      </p>
+      <div class="cta-actions">
+        <a routerLink="/auth/register" class="btn btn-primary btn-lg">
+          <i class="fas fa-user-plus me-2"></i>
+          Create Your Account
+        </a>
+        <a routerLink="/products/list" class="btn btn-outline btn-lg ms-3">
+          <i class="fas fa-eye me-2"></i>
+          See What's Selling
+        </a>
+      </div>
+    </div>
+  </section>
+</div> 

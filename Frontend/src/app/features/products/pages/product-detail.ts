@@ -1,189 +1,364 @@
-// src/app/features/products/pages/product-detail/product-detail.ts
-import { Component, OnInit } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+// src/app/features/products/pages/product-detail.ts
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { ProductService } from '../services/product.service';
-import { Product } from '../../../models/product.model';
-import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinner';
-import { Alert } from '../../../shared/ui/alert/alert';
 import { AuthService } from '../../../core/services/auth';
-import { CartService } from '../../../core/services/cart.service';
+import { Product } from '../../../models/product.model';
+import { Alert } from '../../../shared/ui/alert/alert';
+import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinner';
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
   imports: [
     CommonModule,
-    CurrencyPipe,
-    DatePipe,
-    LoadingSpinner,
-    Alert
+    RouterLink,
+    Alert,
+    LoadingSpinner
   ],
   templateUrl: './product-detail.html',
   styleUrls: ['./product-detail.css']
 })
-export class ProductDetailComponent implements OnInit {
+export class ProductDetailComponent implements OnInit, OnDestroy {
   product: Product | null = null;
   isLoading = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
-  isCreator: boolean = false;
-  userRole: string | null = null;
-  isDeleting: boolean = false;
+  private destroy$ = new Subject<void>();
+
+  // User permissions
+  canEdit = false;
+  canDelete = false;
+  isOwner = false;
+
+  // UI state
+  activeTab = 'overview';
+  showFullDescription = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private productService: ProductService,
-    private authService: AuthService,
-    private cartService: CartService
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
-      const productId = params.get('id');
-      if (productId) {
+      const idParam = params.get('id');
+      if (idParam) {
+        const productId = parseInt(idParam);
         this.loadProduct(productId);
       } else {
-        this.errorMessage = 'Product ID not provided.';
+        this.errorMessage = 'No product ID provided.';
       }
     });
-
-    this.authService.currentUser$.subscribe(user => {
-      if (this.product && user) {
-        this.isCreator = this.product.creatorUsername === user.username;
-      } else {
-        this.isCreator = false;
-      }
-    });
-
-    // Get user role
-    this.userRole = this.authService.getUserRole();
   }
 
-  loadProduct(id: string): void {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadProduct(id: number): void {
     this.isLoading = true;
     this.errorMessage = null;
-    
-    this.productService.getProductById(parseInt(id)).subscribe({
-      next: (data: Product) => {
-        this.product = data;
-        this.isLoading = false;
-        
-        // Re-check isCreator after product is loaded
-        const currentUser = this.authService.getCurrentUsername();
-        this.isCreator = this.product.creatorUsername === currentUser;
-      },
-      error: (err) => {
-        console.error('Failed to load product details:', err);
-        this.errorMessage = 'Failed to load product details. It might not exist or you may not have permission to view it.';
-        this.isLoading = false;
-      }
-    });
+
+    this.productService.getProductById(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (product: Product) => {
+          this.product = product;
+          this.checkUserPermissions();
+          this.isLoading = false;
+          console.log('Product loaded:', product);
+        },
+        error: (error) => {
+          console.error('Error loading product:', error);
+          this.errorMessage = error.message || 'Failed to load product.';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  private checkUserPermissions(): void {
+    if (!this.product) return;
+
+    const currentUser = this.authService.getCurrentUser();
+    const userRole = this.authService.getUserRole();
+
+    // Check if user is the owner
+    this.isOwner = currentUser?.id === this.product.creatorId;
+
+    // Set permissions based on role and ownership
+    this.canEdit = this.isOwner || userRole === 'Admin';
+    this.canDelete = this.isOwner || userRole === 'Admin';
   }
 
   onEditProduct(): void {
     if (this.product) {
-      this.router.navigate(['/products/edit', this.product.id.toString()]);
+      this.router.navigate(['/products/edit', this.product.id]);
     }
   }
 
   onDeleteProduct(): void {
     if (!this.product) return;
 
-    const confirmed = confirm(`Are you sure you want to delete "${this.product.name}"? This action cannot be undone.`);
-    if (confirmed) {
-      this.isDeleting = true;
+    if (confirm(`Are you sure you want to delete "${this.product.name}"? This action cannot be undone.`)) {
+      this.isLoading = true;
       this.errorMessage = null;
-      
-      this.productService.deleteProduct(this.product.id).subscribe({
-        next: () => {
-          this.isDeleting = false;
-          alert('Product deleted successfully!');
-          this.router.navigate(['/products/my-products']);
-        },
-        error: (err) => {
-          this.isDeleting = false;
-          console.error('Failed to delete product:', err);
-          this.errorMessage = 'Failed to delete product. Please try again.';
-        }
-      });
+
+      this.productService.deleteProduct(this.product.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.successMessage = 'Product deleted successfully.';
+            setTimeout(() => {
+              this.router.navigate(['/products/my-products']);
+            }, 2000);
+          },
+          error: (error) => {
+            console.error('Error deleting product:', error);
+            this.errorMessage = error.message || 'Failed to delete product.';
+            this.isLoading = false;
+          }
+        });
     }
   }
 
-  onBuyNow(): void {
-    if (this.product) {
-      // Add to cart and proceed to checkout
-      this.addToCart();
-    }
-  }
-
-  onAddToCart(): void {
+  onToggleProductStatus(): void {
     if (!this.product) return;
 
-    // Check if user is logged in
-    if (!this.authService.isLoggedIn()) {
-      this.errorMessage = 'Please log in to add items to your cart.';
-      return;
+    const newStatus = this.product.status === 'Published' ? 'Draft' : 'Published';
+    const action = newStatus === 'Published' ? 'publish' : 'unpublish';
+    
+    if (confirm(`Are you sure you want to ${action} "${this.product.name}"?`)) {
+      this.isLoading = true;
+      this.errorMessage = null;
+
+      const updatePayload = {
+        isPublic: newStatus === 'Published'
+      };
+
+      this.productService.updateProduct(this.product.id, updatePayload)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (updatedProduct) => {
+            this.product = updatedProduct;
+            this.successMessage = `Product ${action}ed successfully.`;
+            setTimeout(() => {
+              this.successMessage = null;
+            }, 3000);
+            this.isLoading = false;
+          },
+          error: (error) => {
+            console.error(`Error ${action}ing product:`, error);
+            this.errorMessage = error.message || `Failed to ${action} product.`;
+            this.isLoading = false;
+          }
+        });
     }
-
-    // Check if product is already in cart
-    if (this.cartService.isProductInCart(this.product.id)) {
-      this.errorMessage = 'This product is already in your cart.';
-      return;
-    }
-
-    this.cartService.addToCart(this.product, 1).subscribe({
-      next: () => {
-        this.successMessage = `${this.product?.name} added to cart successfully!`;
-        setTimeout(() => this.successMessage = null, 3000);
-      },
-      error: (error) => {
-        this.errorMessage = error.message || 'Failed to add product to cart.';
-        console.error('Add to cart error:', error);
-      }
-    });
-  }
-
-  addToCart(): void {
-    this.onAddToCart();
   }
 
   onAddToWishlist(): void {
-    if (this.product) {
-      console.log(`Adding ${this.product.name} to wishlist`);
-      // TODO: Implement wishlist functionality
-      alert(`${this.product.name} added to wishlist!`);
+    if (!this.product) return;
+
+    this.productService.addToWishlist(this.product.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.successMessage = 'Product added to wishlist successfully.';
+          setTimeout(() => {
+            this.successMessage = null;
+          }, 3000);
+        },
+        error: (error) => {
+          console.error('Error adding to wishlist:', error);
+          this.errorMessage = error.message || 'Failed to add product to wishlist.';
+        }
+      });
+  }
+
+  onRemoveFromWishlist(): void {
+    if (!this.product) return;
+
+    this.productService.removeFromWishlist(this.product.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.successMessage = 'Product removed from wishlist successfully.';
+          setTimeout(() => {
+            this.successMessage = null;
+          }, 3000);
+        },
+        error: (error) => {
+          console.error('Error removing from wishlist:', error);
+          this.errorMessage = error.message || 'Failed to remove product from wishlist.';
+        }
+      });
+  }
+
+  // Helper methods for template
+  getStatusBadgeClass(status: string): string {
+    switch (status?.toLowerCase()) {
+      case 'published':
+        return 'badge bg-success';
+      case 'draft':
+        return 'badge bg-secondary';
+      case 'pending':
+        return 'badge bg-warning';
+      case 'rejected':
+        return 'badge bg-danger';
+      default:
+        return 'badge bg-secondary';
     }
   }
 
-  onShareProduct(): void {
-    if (this.product && navigator.share) {
+  getStatusDisplayName(status: string): string {
+    switch (status?.toLowerCase()) {
+      case 'published':
+        return 'Published';
+      case 'draft':
+        return 'Draft';
+      case 'pending':
+        return 'Pending Review';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  formatPrice(price: number, currency: string): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'USD'
+    }).format(price);
+  }
+
+  formatDate(date: string | Date): string {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  formatDateTime(date: string | Date): string {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  getCategoryName(categoryId: number): string {
+    const categories = [
+      { id: 1, name: 'Gaming' },
+      { id: 2, name: 'Software Development' },
+      { id: 3, name: 'Design' },
+      { id: 4, name: 'Music' },
+      { id: 5, name: 'Video' },
+      { id: 6, name: 'Education' },
+      { id: 7, name: 'Business' },
+      { id: 8, name: 'Entertainment' }
+    ];
+    const category = categories.find(c => c.id === categoryId);
+    return category?.name || 'Unknown';
+  }
+
+  getTagNames(tagIds: number[]): string[] {
+    const tags = [
+      { id: 1, name: 'Popular' },
+      { id: 2, name: 'New Release' },
+      { id: 3, name: 'Featured' },
+      { id: 4, name: 'Best Seller' },
+      { id: 5, name: 'Trending' },
+      { id: 6, name: 'Limited Time' },
+      { id: 7, name: 'Premium' },
+      { id: 8, name: 'Free' }
+    ];
+    return tagIds?.map(id => tags.find(t => t.id === id)?.name || 'Unknown') || [];
+  }
+
+  getFileSize(bytes: number): string {
+    if (!bytes) return 'N/A';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  getFileExtension(filename: string): string {
+    if (!filename) return '';
+    return filename.split('.').pop()?.toUpperCase() || '';
+  }
+
+  toggleDescription(): void {
+    this.showFullDescription = !this.showFullDescription;
+  }
+
+  setActiveTab(tab: string): void {
+    this.activeTab = tab;
+  }
+
+  isActiveTab(tab: string): boolean {
+    return this.activeTab === tab;
+  }
+
+  // Navigation helpers
+  goBack(): void {
+    window.history.back();
+  }
+
+  goToMyProducts(): void {
+    this.router.navigate(['/products/my-products']);
+  }
+
+  goToProductList(): void {
+    this.router.navigate(['/products/list']);
+  }
+
+  // Social sharing (placeholder for future implementation)
+  shareProduct(): void {
+    if (navigator.share && this.product) {
       navigator.share({
         title: this.product.name,
-        text: `Check out this amazing product: ${this.product.name}`,
+        text: this.product.description,
         url: window.location.href
       });
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href).then(() => {
-        alert('Product link copied to clipboard!');
+        this.successMessage = 'Product link copied to clipboard!';
+        setTimeout(() => {
+          this.successMessage = null;
+        }, 3000);
       });
     }
   }
 
-  getProductRating(): number {
-    return this.product?.averageRating || 0;
+  // Download product (placeholder for future implementation)
+  downloadProduct(): void {
+    if (!this.product) return;
+    
+    this.successMessage = 'Download functionality coming soon!';
+    setTimeout(() => {
+      this.successMessage = null;
+    }, 3000);
   }
 
-  getProductStatusClass(): string {
-    switch (this.product?.status) {
-      case 'published':
-        return 'bg-success';
-      case 'draft':
-        return 'bg-warning';
-      default:
-        return 'bg-secondary';
-    }
+  // Purchase product (placeholder for future implementation)
+  purchaseProduct(): void {
+    if (!this.product) return;
+    
+    this.successMessage = 'Purchase functionality coming soon!';
+    setTimeout(() => {
+      this.successMessage = null;
+    }, 3000);
   }
 }

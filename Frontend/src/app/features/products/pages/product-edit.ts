@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subject, takeUntil, tap, forkJoin, switchMap, of, Observable } from 'rxjs';
+import { Subject, takeUntil, tap, forkJoin, switchMap, of, Observable, catchError, throwError } from 'rxjs';
 import { ProductService } from '../services/product.service';
 import { AuthService } from '../../../core/services/auth';
 import { FileUploadService } from '../../../core/services/file-upload.service';
@@ -306,43 +306,58 @@ export class ProductEditComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.errorMessage = null;
     
-    this.productService.getProductById(id).subscribe({
-      next: (data: Product) => {
-        this.product = data;
-        console.log('Product data loaded:', data);
-        
-        // Populate form with existing data
-        const formData = {
-          name: data.name,
-          description: data.description || '',
-          price: data.price,
-          currency: data.currency,
-          productType: data.productType || '',
-          coverImageUrl: data.coverImageUrl || '',
-          previewVideoUrl: data.previewVideoUrl || '',
-          isPublic: data.isPublic !== false, // Default to true if not set
-          permalink: data.permalink || '',
-          categoryIds: data.categoryIds || (data.category ? [data.category.id] : []),
-          tagIds: data.tagIds || []
-        };
-        
-        console.log('Form data to patch:', formData);
-        this.productForm.patchValue(formData);
+    this.productService.getProductById(id)
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError(error => {
+          console.error('Failed to load product for editing:', error);
+          this.errorMessage = this.extractErrorMessage(error, 'Failed to load product for editing. It might not exist or you lack permissions.');
+          this.isLoading = false;
+          this.router.navigate(['/products/my-products']);
+          return throwError(() => error);
+        })
+      )
+      .subscribe({
+        next: (data: Product) => {
+          this.product = data;
+          console.log('Product data loaded:', data);
+          
+          // Verify user has permission to edit this product
+          const currentUser = this.authService.getCurrentUser();
+          const currentUserId = currentUser?.id;
+          if (data.creatorId && currentUserId && data.creatorId !== currentUserId) {
+            this.errorMessage = 'You do not have permission to edit this product.';
+            this.isLoading = false;
+            this.router.navigate(['/products/my-products']);
+            return;
+          }
+          
+          // Populate form with existing data
+          const formData = {
+            name: data.name || '',
+            description: data.description || '',
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            productType: data.productType || '',
+            coverImageUrl: data.coverImageUrl || '',
+            previewVideoUrl: data.previewVideoUrl || '',
+            isPublic: data.isPublic !== false, // Default to true if not set
+            permalink: data.permalink || '',
+            categoryIds: data.categoryIds || (data.category ? [data.category.id] : []),
+            tagIds: data.tagIds || []
+          };
+          
+          console.log('Form data to patch:', formData);
+          this.productForm.patchValue(formData);
 
-        // Set image preview if available
-        if (data.coverImageUrl) {
-          this.imagePreview = data.coverImageUrl;
+          // Set image preview if available
+          if (data.coverImageUrl) {
+            this.imagePreview = data.coverImageUrl;
+          }
+
+          this.isLoading = false;
         }
-
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('Failed to load product for editing:', err);
-        this.errorMessage = 'Failed to load product for editing. It might not exist or you lack permissions.';
-        this.isLoading = false;
-        this.router.navigate(['/products/my-products']);
-      }
-    });
+      });
   }
 
   onUpdateProduct(): void {
@@ -367,50 +382,61 @@ export class ProductEditComponent implements OnInit, OnDestroy {
     console.log('Form valid:', this.productForm.valid);
     console.log('Form errors:', this.productForm.errors);
 
-    // Step 1: Update the product with JSON payload
-    // Only include fields that have values and are different from the original product
+    // Create update payload with proper data types
     const formValues = this.productForm.value;
-    const updatePayload: Partial<ProductUpdateRequest> = {
-      id: this.productId // Include the ID in the payload
+    const updatePayload: ProductUpdateRequest = {
+      name: formValues.name?.trim(),
+      description: formValues.description?.trim() || '',
+      price: parseFloat(formValues.price) || 0,
+      currency: formValues.currency?.toUpperCase() || 'USD',
+      productType: formValues.productType,
+      permalink: formValues.permalink?.trim(),
+      isPublic: Boolean(formValues.isPublic),
+      categoryIds: Array.isArray(formValues.categoryIds) ? formValues.categoryIds : [],
+      tagIds: Array.isArray(formValues.tagIds) ? formValues.tagIds : []
     };
-    
-    // Only include fields that have values
-    if (formValues.name) updatePayload.name = formValues.name;
-    if (formValues.description !== undefined) updatePayload.description = formValues.description;
-    if (formValues.price !== undefined) updatePayload.price = formValues.price;
-    if (formValues.currency) updatePayload.currency = formValues.currency;
-    if (formValues.productType) updatePayload.productType = formValues.productType;
-    if (formValues.permalink) updatePayload.permalink = formValues.permalink;
-    if (formValues.isPublic !== undefined) updatePayload.isPublic = formValues.isPublic;
-    if (formValues.categoryIds && formValues.categoryIds.length > 0) updatePayload.categoryIds = formValues.categoryIds;
-    if (formValues.tagIds && formValues.tagIds.length > 0) updatePayload.tagIds = formValues.tagIds;
-    
-    // Ensure we have at least some fields to update
-    if (Object.keys(updatePayload).length === 0) {
-      console.warn('No fields to update, sending minimal payload');
-      updatePayload.name = formValues.name || this.product?.name;
-      updatePayload.description = formValues.description !== undefined ? formValues.description : this.product?.description;
+
+    // Handle image/video URLs - only include if they have values
+    if (formValues.coverImageUrl?.trim()) {
+      updatePayload.coverImageUrl = formValues.coverImageUrl.trim();
     }
-    
-    // Handle image/video URLs
-    if (this.selectedCoverImage) {
-      updatePayload.coverImageUrl = 'placeholder';
-    } else if (formValues.coverImageUrl) {
-      updatePayload.coverImageUrl = formValues.coverImageUrl;
+    if (formValues.previewVideoUrl?.trim()) {
+      updatePayload.previewVideoUrl = formValues.previewVideoUrl.trim();
     }
-    
-    if (this.selectedPreviewVideo) {
-      updatePayload.previewVideoUrl = 'placeholder';
-    } else if (formValues.previewVideoUrl) {
-      updatePayload.previewVideoUrl = formValues.previewVideoUrl;
+
+    // Validate required fields
+    if (!updatePayload.name || !updatePayload.price || !updatePayload.currency || !updatePayload.productType || !updatePayload.permalink) {
+      this.errorMessage = 'Please fill in all required fields.';
+      this.isLoading = false;
+      return;
+    }
+
+    if (updatePayload.price <= 0) {
+      this.errorMessage = 'Price must be greater than 0.';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!/^[a-z0-9\-_]+$/.test(updatePayload.permalink)) {
+      this.errorMessage = 'Permalink must contain only lowercase letters, numbers, hyphens, and underscores.';
+      this.isLoading = false;
+      return;
     }
 
     console.log('Update payload:', updatePayload);
 
     this.productService.updateProduct(this.productId, updatePayload)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError(error => {
+          console.error('Error updating product:', error);
+          this.errorMessage = this.extractErrorMessage(error, 'Failed to update product. Please try again.');
+          this.isLoading = false;
+          return throwError(() => error);
+        })
+      )
       .subscribe({
-        next: (updatedProduct: any) => {
+        next: (updatedProduct: Product) => {
           console.log('Product updated successfully:', updatedProduct);
           
           // Step 2: Upload new files if any were selected
@@ -422,20 +448,6 @@ export class ProductEditComponent implements OnInit, OnDestroy {
             setTimeout(() => {
               this.router.navigate(['/products/detail', this.productId]);
             }, 2000);
-          }
-        },
-        error: (error: any) => {
-          console.error('Error updating product:', error);
-          console.error('Error details:', error.error);
-          console.error('Error status:', error.status);
-          console.error('Error statusText:', error.statusText);
-          this.isLoading = false;
-          if (error.error?.message) {
-            this.errorMessage = error.error.message;
-          } else if (error.error?.title) {
-            this.errorMessage = error.error.title;
-          } else {
-            this.errorMessage = 'Failed to update product. Please try again.';
           }
         }
       });
@@ -453,6 +465,10 @@ export class ProductEditComponent implements OnInit, OnDestroy {
           tap((response: any) => {
             coverImageUrl = response?.fileUrl;
             console.log('Cover image uploaded:', response);
+          }),
+          catchError(error => {
+            console.error('Error uploading cover image:', error);
+            return throwError(() => error);
           })
         )
       );
@@ -465,6 +481,10 @@ export class ProductEditComponent implements OnInit, OnDestroy {
           tap((response: any) => {
             previewVideoUrl = response?.fileUrl;
             console.log('Preview video uploaded:', response);
+          }),
+          catchError(error => {
+            console.error('Error uploading preview video:', error);
+            return throwError(() => error);
           })
         )
       );
@@ -476,6 +496,10 @@ export class ProductEditComponent implements OnInit, OnDestroy {
         this.fileUploadService.uploadProductFile(productId, this.selectedDigitalProduct!).pipe(
           tap(response => {
             console.log('Digital product uploaded:', response);
+          }),
+          catchError(error => {
+            console.error('Error uploading digital product:', error);
+            return throwError(() => error);
           })
         )
       );
@@ -487,7 +511,7 @@ export class ProductEditComponent implements OnInit, OnDestroy {
         .pipe(
           switchMap(() => {
             // Update product with real URLs if files were uploaded
-            const finalUpdatePayload: any = {};
+            const finalUpdatePayload: ProductUpdateRequest = {};
             if (coverImageUrl) finalUpdatePayload.coverImageUrl = coverImageUrl;
             if (previewVideoUrl) finalUpdatePayload.previewVideoUrl = previewVideoUrl;
 
@@ -497,7 +521,13 @@ export class ProductEditComponent implements OnInit, OnDestroy {
               return of(null);
             }
           }),
-          takeUntil(this.destroy$)
+          takeUntil(this.destroy$),
+          catchError(error => {
+            console.error('Error in file upload process:', error);
+            this.errorMessage = this.extractErrorMessage(error, 'Product updated but file upload failed. Please try uploading files again.');
+            this.isLoading = false;
+            return throwError(() => error);
+          })
         )
         .subscribe({
           next: () => {
@@ -506,11 +536,6 @@ export class ProductEditComponent implements OnInit, OnDestroy {
             setTimeout(() => {
               this.router.navigate(['/products/detail', this.productId]);
             }, 2000);
-          },
-          error: (error) => {
-            console.error('Error in file upload process:', error);
-            this.isLoading = false;
-            this.errorMessage = 'Product updated but file upload failed. Please try uploading files again.';
           }
         });
     } else {
@@ -520,6 +545,25 @@ export class ProductEditComponent implements OnInit, OnDestroy {
         this.router.navigate(['/products/detail', this.productId]);
       }, 2000);
     }
+  }
+
+  private extractErrorMessage(error: any, defaultMessage: string): string {
+    if (error.error) {
+      if (typeof error.error === 'string') {
+        return error.error;
+      } else if (error.error.message) {
+        return error.error.message;
+      } else if (error.error.title) {
+        return error.error.title;
+      } else if (error.error.detail) {
+        return error.error.detail;
+      } else if (error.error.errors && Array.isArray(error.error.errors)) {
+        return error.error.errors.map((e: any) => e.message || e).join(', ');
+      } else if (error.error.ValidationErrors && Array.isArray(error.error.ValidationErrors)) {
+        return error.error.ValidationErrors.map((e: any) => e.ErrorMessage || e).join(', ');
+      }
+    }
+    return defaultMessage;
   }
 
   private markFormGroupTouched(): void {

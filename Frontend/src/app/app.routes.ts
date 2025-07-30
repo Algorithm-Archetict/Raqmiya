@@ -18,6 +18,15 @@ export const ROUTES: Routes = [
     // You might want to protect all product routes or specific ones within the feature
     // canActivate: [authGuard]
   },
+  {
+    path: 'features',
+    loadComponent: () => import('./features/features/features').then(m => m.FeaturesComponent)
+  },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./features/dashboard/dashboard').then(m => m.DashboardComponent),
+    canActivate: [authGuard]
+  },
   // Example for a profile route, protected by authGuard
   {
     path: 'profile',

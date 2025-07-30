@@ -1,0 +1,171 @@
+<div class="dashboard-page">
+  <!-- Dashboard Header -->
+  <section class="dashboard-header">
+    <div class="hero-background">
+      <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+      </div>
+    </div>
+    
+    <div class="container">
+      <div class="row align-items-center py-5">
+        <div class="col-lg-8">
+          <div class="dashboard-welcome animate-fade-in-up">
+            <h1 class="dashboard-title">
+              Welcome back, <span class="text-gradient">{{ username || 'Creator' }}</span>!
+            </h1>
+            <p class="dashboard-subtitle">
+              Here's what's happening with your digital products today.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 text-end">
+          <div class="dashboard-actions animate-fade-in-up" style="animation-delay: 0.2s;">
+            <a routerLink="/products/create" class="btn btn-primary">
+              <i class="fas fa-plus me-2"></i>
+              Create Product
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dashboard Stats -->
+  <section class="dashboard-stats-section">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-lg-3 col-md-6" *ngFor="let stat of dashboardStats">
+          <div class="stat-card animate-fade-in-up">
+            <div class="stat-icon" [class]="'bg-' + stat.color">
+              <i [class]="stat.icon"></i>
+            </div>
+            <div class="stat-content">
+              <h3 class="stat-value">{{ stat.value }}</h3>
+              <p class="stat-title">{{ stat.title }}</p>
+              <span class="stat-change">{{ stat.change }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dashboard Content -->
+  <section class="dashboard-content-section">
+    <div class="container">
+      <div class="row g-4">
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+          <div class="dashboard-card animate-fade-in-up">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-bolt me-2"></i>
+                Quick Actions
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="quick-actions">
+                <div class="quick-action-item" *ngFor="let action of quickActions">
+                  <a [routerLink]="action.link" class="quick-action-link">
+                    <div class="quick-action-icon" [class]="'bg-' + action.color">
+                      <i [class]="action.icon"></i>
+                    </div>
+                    <div class="quick-action-content">
+                      <h5>{{ action.title }}</h5>
+                      <p>{{ action.description }}</p>
+                    </div>
+                    <i class="fas fa-chevron-right quick-action-arrow"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Products -->
+        <div class="col-lg-8">
+          <div class="dashboard-card animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-box me-2"></i>
+                Recent Products
+              </h3>
+              <a routerLink="/products/my-products" class="btn btn-outline btn-sm">
+                View All
+              </a>
+            </div>
+            <div class="card-body">
+              <div class="recent-products">
+                <div class="product-item" *ngFor="let product of recentProducts">
+                  <div class="product-image">
+                    <i [class]="product.image"></i>
+                  </div>
+                  <div class="product-info">
+                    <h5>{{ product.name }}</h5>
+                    <p class="product-price">${{ product.price }}</p>
+                    <p class="product-sales">{{ product.sales }} sales</p>
+                  </div>
+                  <div class="product-actions">
+                    <span [class]="getStatusClass(product.status)">{{ product.status }}</span>
+                    <div class="action-buttons">
+                      <button class="btn btn-sm btn-outline" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline text-danger" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Analytics Section -->
+  <section class="analytics-section">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="dashboard-card animate-fade-in-up">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-chart-line me-2"></i>
+                Sales Overview
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="analytics-placeholder">
+                <i class="fas fa-chart-area"></i>
+                <p>Sales analytics chart will be displayed here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="dashboard-card animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-users me-2"></i>
+                Customer Insights
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="analytics-placeholder">
+                <i class="fas fa-chart-pie"></i>
+                <p>Customer analytics will be displayed here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div> 

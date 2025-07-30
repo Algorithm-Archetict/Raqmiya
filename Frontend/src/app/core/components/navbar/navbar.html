@@ -22,6 +22,18 @@
             Home
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center" routerLink="/products/list" routerLinkActive="active">
+            <i class="fas fa-compass me-1"></i>
+            Discover
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center" routerLink="/features" routerLinkActive="active">
+            <i class="fas fa-star me-1"></i>
+            Features
+          </a>
+        </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" (click)="toggleCategoriesDropdown($event)">
             <i class="fas fa-th-large me-1"></i>
@@ -60,14 +72,6 @@
 
       <!-- Right Side Items -->
       <ul class="navbar-nav ms-auto align-items-center">
-        <!-- Search Bar -->
-        <li class="nav-item me-3">
-          <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" class="form-control search-input" placeholder="Search products..." aria-label="Search">
-          </div>
-        </li>
-
         <!-- Cart -->
         <li class="nav-item me-3" *ngIf="isLoggedIn">
           <a class="nav-link position-relative" routerLink="/products/cart" routerLinkActive="active">
@@ -105,18 +109,18 @@
             <div class="avatar-container me-2">
               <i class="fas fa-user-circle"></i>
             </div>
-            <span>{{ username || 'Account' }}</span>
+            <span class="username">{{ username || 'Account' }}</span>
             <span *ngIf="userRole" class="badge bg-primary ms-2">{{ userRole }}</span>
             <i class="fas fa-chevron-down ms-1" [class.rotated]="isUserDropdownOpen"></i>
           </a>
           <ul class="dropdown-menu dropdown-menu-end" [class.show]="isUserDropdownOpen">
+            <li *ngIf="userRole === 'Creator'"><a class="dropdown-item" routerLink="/dashboard" (click)="closeUserDropdown()"><i class="fas fa-chart-line me-2"></i>Dashboard</a></li>
             <li *ngIf="userRole === 'Creator'"><a class="dropdown-item" routerLink="/products/my-products" (click)="closeUserDropdown()"><i class="fas fa-box me-2"></i>My Products</a></li>
             <li *ngIf="userRole === 'Creator'"><a class="dropdown-item" routerLink="/products/create" (click)="closeUserDropdown()"><i class="fas fa-plus me-2"></i>Create Product</a></li>
             <li><a class="dropdown-item" routerLink="/products/my-wishlist" (click)="closeUserDropdown()"><i class="fas fa-heart me-2"></i>My Wishlist</a></li>
             <li><a class="dropdown-item" routerLink="/products/cart" (click)="closeUserDropdown()"><i class="fas fa-shopping-cart me-2"></i>Shopping Cart <span *ngIf="cartItemCount > 0" class="badge bg-primary ms-2">{{ cartItemCount }}</span></a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#" (click)="navigateToProfile(); closeUserDropdown()"><i class="fas fa-user me-2"></i>Profile</a></li>
-            <li><a class="dropdown-item" href="#" (click)="navigateToDashboard(); closeUserDropdown()"><i class="fas fa-chart-line me-2"></i>Dashboard</a></li>
             <li><a class="dropdown-item" href="#" (click)="navigateToSettings(); closeUserDropdown()"><i class="fas fa-cog me-2"></i>Settings</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item text-danger" href="#" (click)="onLogout(); closeUserDropdown()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
@@ -126,28 +130,3 @@
     </div>
   </div>
 </nav>
-
-<!-- Search Overlay (Mobile) -->
-<div class="search-overlay" *ngIf="isSearchOpen">
-  <div class="search-overlay-content">
-    <div class="search-header">
-      <h5>Search Products</h5>
-      <button class="btn-close" (click)="closeSearch()"></button>
-    </div>
-    <div class="search-input-container">
-      <i class="fas fa-search"></i>
-      <input type="text" class="form-control" placeholder="Search for products, creators, categories..." autofocus>
-    </div>
-    <div class="search-suggestions">
-      <div class="suggestion-category">
-        <h6>Popular Categories</h6>
-        <div class="suggestion-tags">
-          <span class="badge bg-primary me-2 mb-2">eBooks</span>
-          <span class="badge bg-primary me-2 mb-2">Templates</span>
-          <span class="badge bg-primary me-2 mb-2">Graphics</span>
-          <span class="badge bg-primary me-2 mb-2">Audio</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>

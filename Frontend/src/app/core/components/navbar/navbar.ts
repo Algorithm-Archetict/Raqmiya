@@ -22,7 +22,6 @@ export class NavbarComponent implements OnInit, AfterViewInit {
   username: string | null = null;
   userRole: string | null = null;
   isDropdownOpen: boolean = false;
-  isSearchOpen: boolean = false;
   currentTheme: Theme = 'light';
   cartItemCount: number = 0;
   
@@ -49,7 +48,6 @@ export class NavbarComponent implements OnInit, AfterViewInit {
 
   @HostListener('document:keydown.escape')
   onEscapeKey(): void {
-    this.closeSearch();
     this.closeAllDropdowns();
   }
 
@@ -124,14 +122,6 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     this.themeService.toggleTheme();
   }
 
-  openSearch(): void {
-    this.isSearchOpen = true;
-  }
-
-  closeSearch(): void {
-    this.isSearchOpen = false;
-  }
-
   onLogout(): void {
     console.log('Logout clicked - executing logout...');
     this.closeAllDropdowns();
@@ -144,12 +134,6 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     // For now, navigate to home page as placeholder
     this.router.navigate(['/home']);
     console.log('Navigate to Profile - Feature coming soon!');
-  }
-
-  navigateToDashboard(): void {
-    // For now, navigate to home page as placeholder
-    this.router.navigate(['/home']);
-    console.log('Navigate to Dashboard - Feature coming soon!');
   }
 
   navigateToSettings(): void {

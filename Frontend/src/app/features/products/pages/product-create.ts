@@ -78,7 +78,7 @@ export class ProductCreateComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private productService: ProductService,
-    public authService: AuthService,
+    private authService: AuthService,
     private router: Router,
     private fileUploadService: FileUploadService
   ) { }
@@ -87,37 +87,9 @@ export class ProductCreateComponent implements OnInit, OnDestroy {
     console.log('ProductCreateComponent initialized');
     console.log('Current user:', this.authService.getCurrentUsername());
     console.log('User role:', this.authService.getUserRole());
-    console.log('Current user object:', this.authService.getCurrentUser());
     
     this.initForm();
     this.generatePermalink();
-    
-    // Test backend connection
-    this.testBackendConnection();
-  }
-
-  private testBackendConnection(): void {
-    console.log('Testing backend connection...');
-    this.productService.testBackendConnection().subscribe({
-      next: (response: any) => {
-        console.log('Backend connection successful:', response);
-        this.errorMessage = ''; // Clear any previous error messages
-      },
-      error: (error: any) => {
-        console.error('Backend connection failed:', error);
-        this.errorMessage = 'Unable to connect to server. Please check your connection and try again.';
-        
-        // Log detailed error information
-        if (error.status) {
-          console.error('Error status:', error.status);
-          console.error('Error status text:', error.statusText);
-          console.error('Error URL:', error.url);
-        }
-        if (error.error) {
-          console.error('Error response body:', error.error);
-        }
-      }
-    });
   }
 
   ngOnDestroy(): void {
@@ -129,34 +101,15 @@ export class ProductCreateComponent implements OnInit, OnDestroy {
     this.productForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
       description: ['', [Validators.maxLength(5000)]],
-      price: [null, [Validators.required, Validators.min(0.01), Validators.max(1000000)]],
+      price: [0, [Validators.required, Validators.min(0.01), Validators.max(1000000)]],
       currency: ['USD', [Validators.required, Validators.minLength(3), Validators.maxLength(3)]],
       productType: ['', [Validators.required, Validators.maxLength(50)]],
-      coverImageUrl: [''],
-      previewVideoUrl: [''],
+      coverImageUrl: ['', [Validators.maxLength(500)]],
+      previewVideoUrl: ['', [Validators.maxLength(500)]],
       isPublic: [true],
       permalink: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200), Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
       categoryIds: [[]],
       tagIds: [[]]
-    });
-
-    // Add form value change listener for debugging
-    this.productForm.valueChanges.subscribe(values => {
-      console.log('Form values changed:', values);
-    });
-
-    // Add form status change listener for debugging
-    this.productForm.statusChanges.subscribe(status => {
-      console.log('Form status changed:', status);
-      if (status === 'INVALID') {
-        console.log('Form errors:', this.productForm.errors);
-        Object.keys(this.productForm.controls).forEach(key => {
-          const control = this.productForm.get(key);
-          if (control?.errors) {
-            console.log(`Field ${key} errors:`, control.errors);
-          }
-        });
-      }
     });
   }
 
@@ -372,52 +325,27 @@ export class ProductCreateComponent implements OnInit, OnDestroy {
       previewVideo: this.selectedPreviewVideo?.name
     });
 
-    // Get current user
+    // Step 1: Create the product with placeholder URLs
     const currentUser = this.authService.getCurrentUser();
-    if (!currentUser?.id) {
-      this.errorMessage = 'User not authenticated. Please log in again.';
-      this.isLoading = false;
-      return;
-    }
-
-    // Prepare the product payload with proper data types
-    const formValues = this.productForm.value;
     const productPayload: ProductCreateRequest = {
-      creatorId: currentUser.id,
-      name: formValues.name?.trim(),
-      description: formValues.description?.trim() || '',
-      price: parseFloat(formValues.price) || 0,
-      currency: formValues.currency?.toUpperCase() || 'USD',
-      productType: formValues.productType,
-      permalink: formValues.permalink?.trim(),
-      isPublic: Boolean(formValues.isPublic),
-      categoryIds: Array.isArray(formValues.categoryIds) ? formValues.categoryIds : [],
-      tagIds: Array.isArray(formValues.tagIds) ? formValues.tagIds : []
+      ...this.productForm.value,
+      creatorId: currentUser?.id || '1', // Use user ID instead of username
+      coverImageUrl: this.selectedCoverImage ? 'placeholder' : undefined,
+      previewVideoUrl: this.selectedPreviewVideo ? 'placeholder' : undefined
     };
 
-    // Validate required fields
+    // Ensure required fields are present
     if (!productPayload.name || !productPayload.price || !productPayload.currency || !productPayload.productType || !productPayload.permalink) {
       this.errorMessage = 'Please fill in all required fields.';
       this.isLoading = false;
       return;
     }
 
-    // Validate price
-    if (productPayload.price <= 0) {
-      this.errorMessage = 'Price must be greater than 0.';
-      this.isLoading = false;
-      return;
-    }
-
-    // Validate permalink format
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(productPayload.permalink)) {
-      this.errorMessage = 'Permalink must contain only lowercase letters, numbers, and hyphens.';
-      this.isLoading = false;
-      return;
-    }
-
     console.log('Product payload being sent:', productPayload);
     console.log('Product payload JSON:', JSON.stringify(productPayload, null, 2));
+    console.log('Form values:', this.productForm.value);
+    console.log('Form valid:', this.productForm.valid);
+    console.log('Form errors:', this.productForm.errors);
 
     this.productService.createProduct(productPayload)
       .pipe(takeUntil(this.destroy$))
@@ -442,20 +370,12 @@ export class ProductCreateComponent implements OnInit, OnDestroy {
           if (error && typeof error === 'object') {
             if (error.status === 415) {
               errorMessage = 'Unsupported media type. Please check your file formats.';
-            } else if (error.status === 400) {
-              errorMessage = 'Invalid request data. Please check your input.';
-            } else if (error.status === 401) {
-              errorMessage = 'Authentication required. Please log in again.';
-            } else if (error.status === 403) {
-              errorMessage = 'Access denied. You may not have permission to create products.';
             } else if (error.status === 500) {
-              errorMessage = 'Server error. Please try again later or contact support.';
+              errorMessage = 'Server error. Please check your input and try again.';
             } else if (error.error && error.error.message) {
               errorMessage = error.error.message;
             } else if (error.error && error.error.title) {
               errorMessage = error.error.title;
-            } else if (error.error && typeof error.error === 'string') {
-              errorMessage = error.error;
             } else if (error.message) {
               errorMessage = error.message;
             }
@@ -464,46 +384,6 @@ export class ProductCreateComponent implements OnInit, OnDestroy {
           }
           
           this.errorMessage = errorMessage;
-        }
-      });
-  }
-
-  // Test method to create a minimal product for debugging
-  testCreateMinimalProduct(): void {
-    console.log('Testing minimal product creation...');
-    
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser?.id) {
-      this.errorMessage = 'User not authenticated. Please log in again.';
-      return;
-    }
-
-    const testProduct: ProductCreateRequest = {
-      creatorId: currentUser.id,
-      name: 'Test Product',
-      description: 'Test description',
-      price: 9.99,
-      currency: 'USD',
-      productType: 'Software',
-      permalink: 'test-product',
-      isPublic: true,
-      categoryIds: [],
-      tagIds: []
-    };
-
-    console.log('Test product payload:', testProduct);
-    console.log('Test product JSON:', JSON.stringify(testProduct, null, 2));
-
-    this.productService.createProduct(testProduct)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response: any) => {
-          console.log('Test product created successfully:', response);
-          this.successMessage = 'Test product created successfully!';
-        },
-        error: (error: any) => {
-          console.error('Test product creation failed:', error);
-          this.errorMessage = `Test failed: ${error.message || 'Unknown error'}`;
         }
       });
   }
