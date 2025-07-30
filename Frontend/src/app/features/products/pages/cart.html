@@ -1,0 +1,222 @@
+<div class="cart-container mt-4">
+  <div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <h1 class="cart-title">
+            <i class="fas fa-shopping-cart me-3"></i>
+            Shopping Cart
+          </h1>
+          <div class="cart-summary">
+            <span class="badge bg-primary fs-6">
+              {{ cart?.totalItems || 0 }} {{ (cart?.totalItems || 0) === 1 ? 'item' : 'items' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading and Error States -->
+    <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+    
+    <app-alert *ngIf="errorMessage" [message]="errorMessage" type="danger"></app-alert>
+    <app-alert *ngIf="successMessage" [message]="successMessage" type="success"></app-alert>
+
+    <!-- Empty Cart State -->
+    <div *ngIf="!isLoading && isCartEmpty()" class="empty-cart">
+      <div class="text-center py-5">
+        <i class="fas fa-shopping-cart fa-4x text-muted mb-4"></i>
+        <h3 class="text-muted">Your cart is empty</h3>
+        <p class="text-muted mb-4">Looks like you haven't added any products to your cart yet.</p>
+        <button (click)="continueShopping()" class="btn btn-primary btn-lg">
+          <i class="fas fa-shopping-bag me-2"></i>
+          Start Shopping
+        </button>
+      </div>
+    </div>
+
+    <!-- Cart Items -->
+    <div *ngIf="!isLoading && !isCartEmpty()" class="row">
+      <div class="col-lg-8">
+        <div class="cart-items">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light">
+              <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Cart Items</h5>
+                <button 
+                  (click)="clearCart()" 
+                  class="btn btn-outline-danger btn-sm"
+                  [disabled]="isClearing">
+                  <i class="fas fa-trash me-1"></i>
+                  <span *ngIf="!isClearing">Clear Cart</span>
+                  <span *ngIf="isClearing">Clearing...</span>
+                </button>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div class="cart-item" *ngFor="let item of cart?.items; trackBy: trackByCartItem">
+                <div class="row g-0 align-items-center">
+                  <!-- Product Image -->
+                  <div class="col-md-2 col-3">
+                    <div class="cart-item-image">
+                      <img *ngIf="item.product.coverImageUrl; else noImage" 
+                           [src]="item.product.coverImageUrl" 
+                           [alt]="item.product.name"
+                           class="img-fluid rounded">
+                      <ng-template #noImage>
+                        <div class="cart-item-placeholder">
+                          <i class="fas fa-image"></i>
+                        </div>
+                      </ng-template>
+                    </div>
+                  </div>
+
+                  <!-- Product Details -->
+                  <div class="col-md-4 col-6">
+                    <div class="cart-item-details">
+                      <h6 class="cart-item-title">{{ item.product.name }}</h6>
+                      <p class="cart-item-creator text-muted mb-1">
+                        <i class="fas fa-user me-1"></i>
+                        {{ item.product.creatorUsername }}
+                      </p>
+                      <p class="cart-item-price mb-0">
+                        <span class="price-amount">
+                          {{ item.price | currency:item.product.currency:'symbol':'1.2-2' }}
+                        </span>
+                        <small class="text-muted">per item</small>
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Quantity Controls -->
+                  <div class="col-md-3 col-6">
+                    <div class="cart-item-quantity">
+                      <div class="quantity-controls">
+                        <button 
+                          (click)="updateQuantity(item, item.quantity - 1)"
+                          class="btn btn-outline-secondary btn-sm"
+                          [disabled]="item.quantity <= 1 || isItemUpdating(item.id)">
+                          <i class="fas fa-minus"></i>
+                        </button>
+                        <span class="quantity-display">
+                          <span *ngIf="!isItemUpdating(item.id)">{{ item.quantity }}</span>
+                          <i *ngIf="isItemUpdating(item.id)" class="fas fa-spinner fa-spin"></i>
+                        </span>
+                        <button 
+                          (click)="updateQuantity(item, item.quantity + 1)"
+                          class="btn btn-outline-secondary btn-sm"
+                          [disabled]="item.quantity >= 10 || isItemUpdating(item.id)">
+                          <i class="fas fa-plus"></i>
+                        </button>
+                      </div>
+                      <small class="text-muted">Max: 10</small>
+                    </div>
+                  </div>
+
+                  <!-- Item Total -->
+                  <div class="col-md-2 col-6">
+                    <div class="cart-item-total">
+                      <span class="total-amount">
+                        {{ getItemTotal(item) | currency:item.product.currency:'symbol':'1.2-2' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Remove Button -->
+                  <div class="col-md-1 col-6">
+                    <div class="cart-item-actions">
+                      <button 
+                        (click)="removeItem(item)"
+                        class="btn btn-outline-danger btn-sm"
+                        [disabled]="isItemUpdating(item.id)"
+                        title="Remove item">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart Summary -->
+      <div class="col-lg-4">
+        <div class="cart-summary-card">
+          <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">
+                <i class="fas fa-calculator me-2"></i>
+                Order Summary
+              </h5>
+            </div>
+            <div class="card-body">
+              <!-- Summary Details -->
+              <div class="summary-item" *ngFor="let item of cart?.items">
+                <div class="d-flex justify-content-between">
+                  <span class="summary-item-name">{{ item.product.name }}</span>
+                  <span class="summary-item-price">
+                    {{ getItemTotal(item) | currency:item.product.currency:'symbol':'1.2-2' }}
+                  </span>
+                </div>
+                <small class="text-muted">Qty: {{ item.quantity }}</small>
+              </div>
+
+              <hr>
+
+              <!-- Totals -->
+              <div class="summary-totals">
+                <div class="summary-row">
+                  <span>Subtotal:</span>
+                  <span>{{ getCartTotals().subtotal | currency:getCartTotals().currency:'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="summary-row">
+                  <span>Tax:</span>
+                  <span>Free (Digital Products)</span>
+                </div>
+                <div class="summary-row">
+                  <span>Shipping:</span>
+                  <span>Free (Digital Download)</span>
+                </div>
+                <hr>
+                <div class="summary-row total">
+                  <strong>Total:</strong>
+                  <strong>{{ getCartTotals().total | currency:getCartTotals().currency:'symbol':'1.2-2' }}</strong>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="summary-actions">
+                <button 
+                  (click)="proceedToCheckout()"
+                  class="btn btn-success btn-lg w-100 mb-3"
+                  [disabled]="!canCheckout()">
+                  <i class="fas fa-credit-card me-2"></i>
+                  <span *ngIf="!isCheckingOut">Proceed to Checkout</span>
+                  <span *ngIf="isCheckingOut">Processing...</span>
+                </button>
+                
+                <button 
+                  (click)="continueShopping()"
+                  class="btn btn-outline-primary w-100">
+                  <i class="fas fa-arrow-left me-2"></i>
+                  Continue Shopping
+                </button>
+              </div>
+
+              <!-- Security Notice -->
+              <div class="security-notice mt-3">
+                <div class="d-flex align-items-center text-muted">
+                  <i class="fas fa-shield-alt me-2"></i>
+                  <small>Secure checkout with SSL encryption</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

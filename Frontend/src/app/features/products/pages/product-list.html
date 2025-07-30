@@ -120,25 +120,18 @@
   <div class="products-section">
     <div class="container">
       <!-- Loading State -->
-      <div class="loading-container" *ngIf="isLoading">
-        <div class="loading-spinner">
-          <i class="fas fa-spinner fa-spin"></i>
-        </div>
-        <p>Loading amazing products...</p>
-      </div>
+      <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
 
       <!-- Error State -->
-      <div class="error-container" *ngIf="errorMessage">
-        <div class="error-content">
-          <i class="fas fa-exclamation-triangle"></i>
-          <h3>Oops! Something went wrong</h3>
-          <p>{{ errorMessage }}</p>
-          <button class="btn btn-primary" (click)="retryLoad()">
-            <i class="fas fa-redo me-2"></i>
-            Try Again
-          </button>
-        </div>
-      </div>
+      <app-alert *ngIf="errorMessage" [message]="errorMessage" type="danger">
+        <button class="btn btn-primary" (click)="retryLoad()">
+          <i class="fas fa-redo me-2"></i>
+          Try Again
+        </button>
+      </app-alert>
+
+      <!-- Success State -->
+      <app-alert *ngIf="successMessage" [message]="successMessage" type="success"></app-alert>
 
       <!-- Products Grid -->
       <div *ngIf="!isLoading && products.length > 0" class="products-grid" [class.list-view]="viewMode === 'list'">

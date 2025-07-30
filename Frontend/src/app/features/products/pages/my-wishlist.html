@@ -1,20 +1,122 @@
 <div class="my-wishlist-container mt-4">
-    <h1 class="mb-4">My Wishlist</h1>
-  
-    <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
-    <app-alert *ngIf="errorMessage && !isLoading" [message]="errorMessage" type="info"></app-alert>
-  
-    <div *ngIf="!isLoading && wishlistProducts.length > 0" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-      <div class="col" *ngFor="let product of wishlistProducts">
-        <app-product-card [product]="product"></app-product-card>
-        <div class="text-center mt-2">
-          <button class="btn btn-sm btn-outline-danger" (click)="onRemoveFromWishlist(product.id)">Remove from Wishlist</button>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1>My Wishlist</h1>
+      <p class="text-muted mb-0">Save products you love for later purchase</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-danger" (click)="onClearWishlist()" 
+              [disabled]="wishlistProducts.length === 0">
+        <i class="fas fa-trash me-2"></i>Clear All
+      </button>
+      <a routerLink="/products/list" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Browse Products
+      </a>
+    </div>
+  </div>
+
+  <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+  <app-alert *ngIf="errorMessage && !isLoading" [message]="errorMessage" type="info">
+    <button class="btn btn-primary btn-sm" (click)="retryLoad()">
+      <i class="fas fa-redo me-1"></i>Retry
+    </button>
+  </app-alert>
+
+  <!-- Wishlist Summary -->
+  <div class="row mb-4" *ngIf="!isLoading && wishlistProducts.length > 0">
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title text-primary">{{ wishlistProducts.length }}</h5>
+          <p class="card-text">Items in Wishlist</p>
         </div>
       </div>
     </div>
-  
-    <div *ngIf="!isLoading && wishlistProducts.length === 0 && !errorMessage" class="alert alert-info" role="alert">
-      Your wishlist is empty. Browse products to add some!
-      <a routerLink="/products/list" class="alert-link">Browse Products</a>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title text-success">{{ getTotalValue() | currency:'USD':'symbol':'1.2-2' }}</h5>
+          <p class="card-text">Total Value</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title text-warning">{{ getAverageRating() | number:'1.1-1' }}</h5>
+          <p class="card-text">Average Rating</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title text-info">{{ wishlistProducts.length }}</h5>
+          <p class="card-text">Unique Creators</p>
+        </div>
+      </div>
     </div>
   </div>
+
+  <div *ngIf="!isLoading && wishlistProducts.length > 0" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    <div class="col" *ngFor="let product of wishlistProducts; trackBy: trackByProduct">
+      <div class="card h-100 wishlist-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="badge bg-success">{{ product.status | titlecase }}</span>
+            <button class="btn btn-sm btn-outline-danger" 
+                    (click)="onRemoveFromWishlist(product.id)"
+                    [disabled]="isRemoving[product.id]">
+              <i class="fas fa-heart-broken" *ngIf="!isRemoving[product.id]"></i>
+              <i class="fas fa-spinner fa-spin" *ngIf="isRemoving[product.id]"></i>
+            </button>
+          </div>
+          
+          <h5 class="card-title">{{ product.name }}</h5>
+          <p class="card-text text-muted">{{ product.description || 'No description available' }}</p>
+          
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="h6 text-primary mb-0">
+              {{ product.price | currency:product.currency:'symbol':'1.2-2' }}
+            </span>
+            <small class="text-muted">
+              <i class="fas fa-star text-warning me-1"></i>
+              {{ product.averageRating | number:'1.1-1' }}
+            </small>
+          </div>
+          
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <small class="text-muted d-block">Sales</small>
+              <strong>{{ product.salesCount }}</strong>
+            </div>
+            <div class="col-6">
+              <small class="text-muted d-block">Creator</small>
+              <strong>{{ product.creatorUsername }}</strong>
+            </div>
+          </div>
+          
+          <div class="d-grid gap-2">
+            <a [routerLink]="['/products/detail', product.id]" class="btn btn-outline-primary btn-sm">
+              <i class="fas fa-eye me-1"></i>View Details
+            </a>
+            <button class="btn btn-success btn-sm">
+              <i class="fas fa-shopping-cart me-1"></i>Buy Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && wishlistProducts.length === 0 && !errorMessage" class="text-center py-5">
+    <div class="empty-state">
+      <i class="fas fa-heart fa-4x text-muted mb-3"></i>
+      <h3>Your wishlist is empty</h3>
+      <p class="text-muted">Start browsing products and add your favorites to your wishlist!</p>
+      <a routerLink="/products/list" class="btn btn-primary">
+        <i class="fas fa-search me-2"></i>Browse Products
+      </a>
+    </div>
+  </div>
+</div>

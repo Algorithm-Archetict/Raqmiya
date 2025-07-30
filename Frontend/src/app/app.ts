@@ -16,5 +16,5 @@ import { NavbarComponent } from './core/components/navbar/navbar'; // Import you
   styleUrls: ['./app.css']   // Path to your root CSS styles
 })
 export class AppComponent {
-  title = 'gumroad-frontend'; // Your application title
+  title = 'Raqmiya-Frontend'; // Your application title
 }

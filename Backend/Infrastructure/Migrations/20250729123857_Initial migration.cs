@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddProductFileSupport : Migration
+    public partial class Initialmigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -61,7 +61,8 @@ namespace Infrastructure.Migrations
                     ProfileDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ProfileImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     StripeConnectAccountId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PayoutSettings = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    PayoutSettings = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -108,6 +109,7 @@ namespace Infrastructure.Migrations
                     PreviewVideoUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PublishedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RejectionReason = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsPublic = table.Column<bool>(type: "bit", nullable: false),
                     Permalink = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
@@ -143,6 +145,35 @@ namespace Infrastructure.Migrations
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ModerationLogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    AdminId = table.Column<int>(type: "int", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Reason = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ModerationLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ModerationLogs_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ModerationLogs_Users_AdminId",
+                        column: x => x.AdminId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -527,6 +558,16 @@ namespace Infrastructure.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ModerationLogs_AdminId",
+                table: "ModerationLogs",
+                column: "AdminId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ModerationLogs_ProductId",
+                table: "ModerationLogs",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OfferCodes_ProductId",
                 table: "OfferCodes",
                 column: "ProductId");
@@ -646,6 +687,9 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Licenses");
+
+            migrationBuilder.DropTable(
+                name: "ModerationLogs");
 
             migrationBuilder.DropTable(
                 name: "OfferCodes");

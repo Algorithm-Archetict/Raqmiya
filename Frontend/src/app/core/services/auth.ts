@@ -67,7 +67,8 @@ export class AuthService {
           const user: User = {
             id: '1', // We don't have user ID from backend, using placeholder
             username: response.username,
-            email: response.email || ''
+            email: response.email || '',
+            roles: response.roles || []
           };
           localStorage.setItem('userData', JSON.stringify(user));
           this._currentUser.next(user);
@@ -95,6 +96,32 @@ export class AuthService {
 
   getCurrentUsername(): string | null {
     return this._currentUser.getValue()?.username || null;
+  }
+
+  getCurrentUser(): User | null {
+    return this._currentUser.getValue();
+  }
+
+  isLoggedIn(): boolean {
+    return this._isLoggedIn.getValue();
+  }
+
+  hasRole(role: string): boolean {
+    const user = this._currentUser.getValue();
+    return user?.roles?.includes(role) || false;
+  }
+
+  isCreator(): boolean {
+    return this.hasRole('Creator');
+  }
+
+  isCustomer(): boolean {
+    return this.hasRole('Customer');
+  }
+
+  getUserRole(): string | null {
+    const user = this._currentUser.getValue();
+    return user?.roles?.[0] || null;
   }
 
   // Example: Check token validity (e.g., against an API endpoint)

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { ThemeService, Theme } from '../../services/theme.service';
+import { CartService } from '../../services/cart.service';
 
 @Component({
   selector: 'app-navbar',
@@ -19,9 +20,11 @@ import { ThemeService, Theme } from '../../services/theme.service';
 export class NavbarComponent implements OnInit, AfterViewInit {
   isLoggedIn: boolean = false;
   username: string | null = null;
+  userRole: string | null = null;
   isDropdownOpen: boolean = false;
   isSearchOpen: boolean = false;
   currentTheme: Theme = 'light';
+  cartItemCount: number = 0;
   
   // Custom dropdown states
   isCategoriesDropdownOpen: boolean = false;
@@ -30,7 +33,8 @@ export class NavbarComponent implements OnInit, AfterViewInit {
   constructor(
     private authService: AuthService, 
     private router: Router,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private cartService: CartService
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -55,14 +59,21 @@ export class NavbarComponent implements OnInit, AfterViewInit {
       this.isLoggedIn = loggedIn;
       if (loggedIn) {
         this.username = this.authService.getCurrentUsername();
+        this.userRole = this.authService.getUserRole();
       } else {
         this.username = null;
+        this.userRole = null;
       }
     });
 
     // Subscribe to theme changes
     this.themeService.currentTheme$.subscribe(theme => {
       this.currentTheme = theme;
+    });
+
+    // Subscribe to cart changes
+    this.cartService.cartItemCount$.subscribe(count => {
+      this.cartItemCount = count;
     });
   }
 

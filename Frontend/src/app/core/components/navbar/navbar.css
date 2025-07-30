@@ -1,64 +1,107 @@
-/* Modern Navbar Styles */
+/* Epic Games Style Navbar */
 .navbar {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.8) !important;
+  background: var(--bg-overlay) !important;
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
   transition: all var(--transition-normal);
   z-index: 1000;
+  padding: var(--spacing-md) 0;
+  box-shadow: var(--shadow-lg);
 }
 
-[data-theme="dark"] .navbar {
-  background: rgba(15, 23, 42, 0.8) !important;
-}
-
-/* Brand Styles */
+/* Epic Games Brand Styles */
 .navbar-brand {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
   text-decoration: none;
-  transition: transform var(--transition-fast);
-}
-
-.navbar-brand:hover {
-  transform: scale(1.05);
-}
-
-.brand-logo {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-}
-
-.text-gradient {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  transition: all var(--transition-normal);
+  background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Navigation Links */
+.navbar-brand:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 10px rgba(0, 116, 228, 0.5));
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-glow);
+  margin-right: var(--spacing-sm);
+}
+
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Epic Games Navigation Links */
 .navbar-nav .nav-link {
-  color: var(--text-primary) !important;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  color: var(--text-secondary) !important;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
   position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
+}
+
+/* Epic Games Cart Badge */
+.navbar-nav .nav-link .badge {
+  font-size: 0.7rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+  border-radius: var(--radius-md);
+  animation: epicPulse 2s infinite;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes epicPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 116, 228, 0.7);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 10px rgba(0, 116, 228, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 116, 228, 0);
+  }
 }
 
 .navbar-nav .nav-link:hover {
-  color: var(--primary-color) !important;
-  background-color: rgba(99, 102, 241, 0.1);
-  transform: translateY(-1px);
+  color: var(--text-primary) !important;
+  background: var(--bg-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .navbar-nav .nav-link.active {
-  color: var(--primary-color) !important;
-  background-color: rgba(99, 102, 241, 0.15);
+  color: var(--text-primary) !important;
+  background: var(--gradient-glow);
+  border: 1px solid var(--border-accent);
 }
 
 /* Dropdown Styles */

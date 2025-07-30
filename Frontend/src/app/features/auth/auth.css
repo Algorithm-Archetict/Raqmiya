@@ -1,7 +1,12 @@
-/* Modern Auth Pages Styling */
+/* Epic Games Auth Pages Styling */
 .auth-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  background: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(0, 116, 228, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(108, 43, 217, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
+  background-attachment: fixed;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -65,23 +70,34 @@
   }
 }
 
-/* Auth Card */
+/* Epic Games Auth Card */
 .auth-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
+  background: var(--bg-overlay);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-2xl), var(--shadow-glow);
   border: 1px solid var(--border-color);
-  padding: 1.5rem 1.25rem;
+  padding: var(--spacing-2xl);
   position: relative;
   z-index: 1;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
   animation: authSlideUp 0.8s ease-out;
   transition: all var(--transition-normal);
 }
 
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+}
+
 .auth-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-2xl);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-2xl), 0 0 30px rgba(0, 116, 228, 0.3);
 }
 
 @keyframes authSlideUp {
@@ -285,6 +301,94 @@
   margin-top: 1.25rem;
   text-align: center;
   animation: authFadeInUp 0.8s ease-out 0.8s both;
+}
+
+/* Role Selection */
+.role-selection {
+  margin-top: 0.5rem;
+}
+
+.role-option {
+  position: relative;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.role-option:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.role-option.selected {
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+  box-shadow: var(--shadow-lg);
+}
+
+.role-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.role-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  margin: 0;
+  width: 100%;
+}
+
+.role-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+}
+
+.role-option:hover .role-icon {
+  transform: scale(1.1);
+}
+
+.role-option.selected .role-icon {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.role-content {
+  flex: 1;
+}
+
+.role-content h6 {
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.role-content p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.role-option.selected .role-content h6 {
+  color: var(--primary-color);
 }
 
 .btn {

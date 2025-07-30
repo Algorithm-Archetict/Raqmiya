@@ -106,7 +106,7 @@ namespace API
             {
                 options.AddPolicy("AllowSpecificOrigin",
                     builder => builder
-                        .WithOrigins() // Angular dev server default port "http://localhost:4200"
+                        .WithOrigins("http://localhost:4200") 
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials()); // If you're sending cookies/auth headers

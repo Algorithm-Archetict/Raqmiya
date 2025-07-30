@@ -1,10 +1,15 @@
 // src/app/features/products/pages/product-list/product-list.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ProductCardComponent } from '../components/product-card';
 import { ProductService } from '../services/product.service';
 import { Product, PaginatedProducts } from '../../../models/product.model';
+import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinner';
+import { Alert } from '../../../shared/ui/alert/alert';
+import { CartService } from '../../../core/services/cart.service';
+import { AuthService } from '../../../core/services/auth';
 
 @Component({
   selector: 'app-product-list',
@@ -12,16 +17,19 @@ import { Product, PaginatedProducts } from '../../../models/product.model';
   imports: [
     CommonModule,
     FormsModule,
-    ProductCardComponent
+    ProductCardComponent,
+    LoadingSpinner,
+    Alert
   ],
   templateUrl: './product-list.html',
   styleUrls: ['./product-list.css']
 })
-export class ProductListComponent implements OnInit {
+export class ProductListComponent implements OnInit, OnDestroy {
   // Products and pagination
   products: Product[] = [];
   isLoading = false;
   errorMessage: string | null = null;
+  successMessage: string | null = null;
   currentPage = 1;
   totalPages = 1;
   totalItems = 0;
@@ -54,10 +62,33 @@ export class ProductListComponent implements OnInit {
   // Math for template
   Math = Math;
 
-  constructor(private productService: ProductService) {}
+  // Search debouncing
+  private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
+  constructor(
+    private productService: ProductService,
+    private cartService: CartService,
+    private authService: AuthService
+  ) {
+    // Setup debounced search
+    this.searchSubject.pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.currentPage = 1;
+      this.loadProducts();
+    });
+  }
 
   ngOnInit(): void {
     this.loadProducts();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // View mode methods
@@ -67,13 +98,12 @@ export class ProductListComponent implements OnInit {
 
   // Search methods
   onSearchChange(): void {
-    this.currentPage = 1;
-    this.loadProducts();
+    this.searchSubject.next(this.searchTerm);
   }
 
   clearSearch(): void {
     this.searchTerm = '';
-    this.onSearchChange();
+    this.searchSubject.next('');
   }
 
   // Filter methods
@@ -211,8 +241,28 @@ export class ProductListComponent implements OnInit {
   }
 
   onAddToCart(product: Product): void {
-    console.log('Add to cart:', product);
-    // Implement cart functionality
+    // Check if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      this.errorMessage = 'Please log in to add items to your cart.';
+      return;
+    }
+
+    // Check if product is already in cart
+    if (this.cartService.isProductInCart(product.id)) {
+      this.errorMessage = 'This product is already in your cart.';
+      return;
+    }
+
+    this.cartService.addToCart(product, 1).subscribe({
+      next: () => {
+        this.successMessage = `${product.name} added to cart successfully!`;
+        setTimeout(() => this.successMessage = null, 3000);
+      },
+      error: (error) => {
+        this.errorMessage = error.message || 'Failed to add product to cart.';
+        console.error('Add to cart error:', error);
+      }
+    });
   }
 
   onToggleWishlist(product: Product): void {

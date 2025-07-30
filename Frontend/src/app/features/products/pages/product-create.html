@@ -1,85 +1,324 @@
-<div class="product-form-container mt-4">
-    <h1 class="mb-4">Create New Product</h1>
-  
-    <app-alert *ngIf="errorMessage" [message]="errorMessage" type="danger"></app-alert>
-    <app-alert *ngIf="successMessage" [message]="successMessage" type="success"></app-alert>
-  
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <form [formGroup]="productForm" (ngSubmit)="onCreateProduct()">
-          <div class="mb-3">
-            <label for="name" class="form-label">Product Name</label>
-            <input type="text" id="name" formControlName="name" class="form-control"
-              [class.is-invalid]="productForm.get('name')?.invalid && productForm.get('name')?.touched"
-              placeholder="e.g., Ultimate Productivity Planner">
-            <div class="invalid-feedback" *ngIf="productForm.get('name')?.errors?.['required'] && productForm.get('name')?.touched">
-              Product name is required.
+<div class="product-form-container">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="text-gradient">Create New Product</h2>
+      <p class="text-muted">Upload your digital product and set up its details</p>
+    </div>
+
+    <div class="card-body">
+      <!-- Alert Messages -->
+      <app-alert *ngIf="errorMessage" [message]="errorMessage" [type]="'danger'"></app-alert>
+      <app-alert *ngIf="successMessage" [message]="successMessage" [type]="'success'"></app-alert>
+
+      <!-- Loading Spinner -->
+      <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+
+      <form [formGroup]="productForm" (ngSubmit)="onCreateProduct()" *ngIf="!isLoading">
+        
+        <!-- Debug Information -->
+        <div class="debug-info" style="background: #f8f9fa; padding: 10px; margin-bottom: 20px; border-radius: 5px; font-size: 12px;">
+          <strong>Debug Info:</strong><br>
+          Current User: {{ authService.getCurrentUser()?.username || 'Not logged in' }}<br>
+          User ID: {{ authService.getCurrentUser()?.id || 'No ID' }}<br>
+          User Role: {{ authService.getUserRole() || 'No role' }}<br>
+          Form Valid: {{ productForm.valid }}<br>
+          Digital Product Selected: {{ selectedDigitalProduct?.name || 'None' }}
+        </div>
+        
+        <!-- Basic Information Section -->
+        <div class="form-section">
+          <h3 class="section-title">Basic Information</h3>
+          
+          <div class="row">
+            <div class="col-md-8">
+              <div class="form-group">
+                <label for="name" class="form-label">Product Name *</label>
+                <input 
+                  type="text" 
+                  id="name" 
+                  formControlName="name" 
+                  class="form-control"
+                  [class.is-invalid]="productForm.get('name')?.invalid && productForm.get('name')?.touched"
+                  placeholder="Enter product name"
+                  (input)="generatePermalink()"
+                >
+                <div class="invalid-feedback" *ngIf="getFieldError('name')">
+                  {{ getFieldError('name') }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="permalink" class="form-label">Permalink *</label>
+                <input 
+                  type="text" 
+                  id="permalink" 
+                  formControlName="permalink" 
+                  class="form-control"
+                  [class.is-invalid]="productForm.get('permalink')?.invalid && productForm.get('permalink')?.touched"
+                  placeholder="product-url-slug"
+                >
+                <div class="invalid-feedback" *ngIf="getFieldError('permalink')">
+                  {{ getFieldError('permalink') }}
+                </div>
+              </div>
             </div>
           </div>
-  
-          <div class="mb-3">
+
+          <div class="form-group">
             <label for="description" class="form-label">Description</label>
-            <textarea id="description" formControlName="description" class="form-control" rows="5"
+            <textarea 
+              id="description" 
+              formControlName="description" 
+              class="form-control" 
+              rows="4"
               [class.is-invalid]="productForm.get('description')?.invalid && productForm.get('description')?.touched"
-              placeholder="A detailed description of your product..."></textarea>
-            <div class="invalid-feedback" *ngIf="productForm.get('description')?.errors?.['required'] && productForm.get('description')?.touched">
-              Description is required.
+              placeholder="Describe your product..."
+            ></textarea>
+            <div class="form-text">
+              {{ (productForm.get('description')?.value?.length || 0) }}/5000 characters
+            </div>
+            <div class="invalid-feedback" *ngIf="getFieldError('description')">
+              {{ getFieldError('description') }}
             </div>
           </div>
-  
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label for="price" class="form-label">Price</label>
-              <input type="number" id="price" formControlName="price" class="form-control"
-                [class.is-invalid]="productForm.get('price')?.invalid && productForm.get('price')?.touched"
-                placeholder="0.00">
-              <div class="invalid-feedback" *ngIf="productForm.get('price')?.errors?.['required'] && productForm.get('price')?.touched">
-                Price is required.
-              </div>
-              <div class="invalid-feedback" *ngIf="productForm.get('price')?.errors?.['min'] && productForm.get('price')?.touched">
-                Price must be greater than 0.
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="form-section">
+          <h3 class="section-title">Digital Product Files</h3>
+          
+          <!-- Digital Product File -->
+          <div class="form-group">
+            <label for="digitalProductFile" class="form-label">Digital Product File *</label>
+            <div class="file-upload-container">
+              <input 
+                type="file" 
+                id="digitalProductFile" 
+                class="form-control file-input"
+                (change)="onDigitalProductSelected($event)"
+                accept=".zip,.rar,.jpg,.jpeg,.png,.gif,.webp,.mp4,.avi,.mov,.wmv,.pdf,.txt,.json,.xml"
+              >
+              <div class="file-info" *ngIf="selectedDigitalProduct">
+                <span class="file-name">{{ selectedDigitalProduct.name }}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="onClearDigitalProduct()">
+                  <i class="fas fa-times"></i>
+                </button>
               </div>
             </div>
-            <div class="col-md-6">
-              <label for="currency" class="form-label">Currency</label>
-              <select id="currency" formControlName="currency" class="form-select"
-                [class.is-invalid]="productForm.get('currency')?.invalid && productForm.get('currency')?.touched">
-                <option *ngFor="let curr of currencies" [value]="curr">{{ curr }}</option>
-              </select>
-              <div class="invalid-feedback" *ngIf="productForm.get('currency')?.errors?.['required'] && productForm.get('currency')?.touched">
-                Currency is required.
+            <div class="form-text">
+              Supported formats: ZIP, RAR, Images (JPG, PNG, GIF, WebP), Videos (MP4, AVI, MOV, WMV), Documents (PDF, TXT, JSON, XML)
+            </div>
+          </div>
+
+          <!-- Cover Image File -->
+          <div class="form-group">
+            <label for="coverImageFile" class="form-label">Cover Image (Optional)</label>
+            <div class="file-upload-container">
+              <input 
+                type="file" 
+                id="coverImageFile" 
+                class="form-control file-input"
+                (change)="onCoverImageSelected($event)"
+                accept="image/*"
+              >
+              <div class="file-info" *ngIf="selectedCoverImage">
+                <span class="file-name">{{ selectedCoverImage.name }}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="onClearCoverImage()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="image-preview" *ngIf="imagePreview">
+              <img [src]="imagePreview" alt="Cover image preview" class="preview-image">
+            </div>
+            <div class="form-text">
+              Supported formats: JPG, PNG, GIF, WebP (max 5MB)
+            </div>
+          </div>
+
+          <!-- Preview Video File -->
+          <div class="form-group">
+            <label for="previewVideoFile" class="form-label">Preview Video (Optional)</label>
+            <div class="file-upload-container">
+              <input 
+                type="file" 
+                id="previewVideoFile" 
+                class="form-control file-input"
+                (change)="onPreviewVideoSelected($event)"
+                accept="video/*"
+              >
+              <div class="file-info" *ngIf="selectedPreviewVideo">
+                <span class="file-name">{{ selectedPreviewVideo.name }}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="onClearPreviewVideo()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="video-preview" *ngIf="videoPreview">
+              <video [src]="videoPreview" controls class="preview-video"></video>
+            </div>
+            <div class="form-text">
+              Supported formats: MP4, AVI, MOV, WMV, WebM (max 50MB)
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Details Section -->
+        <div class="form-section">
+          <h3 class="section-title">Product Details</h3>
+          
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="productType" class="form-label">Product Type *</label>
+                <select 
+                  id="productType" 
+                  formControlName="productType" 
+                  class="form-control"
+                  [class.is-invalid]="productForm.get('productType')?.invalid && productForm.get('productType')?.touched"
+                >
+                  <option value="">Select product type</option>
+                  <option *ngFor="let type of productTypes" [value]="type">{{ type }}</option>
+                </select>
+                <div class="invalid-feedback" *ngIf="getFieldError('productType')">
+                  {{ getFieldError('productType') }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="price" class="form-label">Price *</label>
+                <input 
+                  type="number" 
+                  id="price" 
+                  formControlName="price" 
+                  class="form-control"
+                  [class.is-invalid]="productForm.get('price')?.invalid && productForm.get('price')?.touched"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0.01"
+                >
+                <div class="invalid-feedback" *ngIf="getFieldError('price')">
+                  {{ getFieldError('price') }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="currency" class="form-label">Currency *</label>
+                <input 
+                  type="text" 
+                  id="currency" 
+                  formControlName="currency" 
+                  class="form-control"
+                  [class.is-invalid]="productForm.get('currency')?.invalid && productForm.get('currency')?.touched"
+                  placeholder="USD"
+                  maxlength="3"
+                >
+                <div class="invalid-feedback" *ngIf="getFieldError('currency')">
+                  {{ getFieldError('currency') }}
+                </div>
               </div>
             </div>
           </div>
-  
-          <div class="mb-3">
-            <label for="imageUrl" class="form-label">Image URL (Optional)</label>
-            <input type="url" id="imageUrl" formControlName="imageUrl" class="form-control" placeholder="https://example.com/image.jpg">
+
+          <div class="form-group">
+            <div class="form-check">
+              <input 
+                type="checkbox" 
+                id="isPublic" 
+                formControlName="isPublic" 
+                class="form-check-input"
+              >
+              <label for="isPublic" class="form-check-label">
+                Make this product public
+              </label>
+            </div>
           </div>
-  
-          <div class="mb-3">
-            <label for="category" class="form-label">Category (Optional)</label>
-            <input type="text" id="category" formControlName="category" class="form-control" placeholder="e.g., Digital Art, Software">
+        </div>
+
+        <!-- Categories Section -->
+        <div class="form-section">
+          <h3 class="section-title">Categories</h3>
+          <div class="categories-grid">
+            <div 
+              *ngFor="let category of categories" 
+              class="category-item"
+              [class.selected]="isCategorySelected(category.id)"
+            >
+              <input 
+                type="checkbox" 
+                [id]="'category-' + category.id"
+                [checked]="isCategorySelected(category.id)"
+                (change)="onCategoryChange(category.id, $event.target.checked)"
+                class="category-checkbox"
+              >
+              <label [for]="'category-' + category.id" class="category-label">
+                {{ category.name }}
+              </label>
+            </div>
           </div>
-  
-          <div class="mb-3">
-            <label for="stock" class="form-label">Stock (Optional, leave blank for unlimited)</label>
-            <input type="number" id="stock" formControlName="stock" class="form-control" placeholder="e.g., 100">
+        </div>
+
+        <!-- Tags Section -->
+        <div class="form-section">
+          <h3 class="section-title">Tags</h3>
+          <div class="tags-grid">
+            <div 
+              *ngFor="let tag of tags" 
+              class="tag-item"
+              [class.selected]="isTagSelected(tag.id)"
+            >
+              <input 
+                type="checkbox" 
+                [id]="'tag-' + tag.id"
+                [checked]="isTagSelected(tag.id)"
+                (change)="onTagChange(tag.id, $event.target.checked)"
+                class="tag-checkbox"
+              >
+              <label [for]="'tag-' + tag.id" class="tag-label">
+                {{ tag.name }}
+              </label>
+            </div>
           </div>
-  
-          <div class="mb-3 form-check">
-            <input type="checkbox" id="isPublished" formControlName="isPublished" class="form-check-input">
-            <label class="form-check-label" for="isPublished">Publish Product (Make it visible)</label>
-          </div>
-  
-          <div class="d-grid gap-2 mt-4">
-            <button type="submit" class="btn btn-primary btn-lg" [disabled]="productForm.invalid || isLoading">
-              <span *ngIf="!isLoading">Create Product</span>
-              <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
-            </button>
-            <a routerLink="/products/my-products" class="btn btn-secondary btn-lg">Cancel</a>
-          </div>
-        </form>
-      </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="form-actions">
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="productForm.invalid || !selectedDigitalProduct"
+          >
+            <i class="fas fa-plus"></i>
+            Create Product
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="resetForm()"
+          >
+            <i class="fas fa-undo"></i>
+            Reset Form
+          </button>
+
+          <!-- Test button for debugging -->
+          <button 
+            type="button" 
+            class="btn btn-warning"
+            (click)="testCreateMinimalProduct()"
+            style="margin-left: 10px;"
+          >
+            <i class="fas fa-bug"></i>
+            Test Minimal Product
+          </button>
+        </div>
+      </form>
     </div>
   </div>
+</div>

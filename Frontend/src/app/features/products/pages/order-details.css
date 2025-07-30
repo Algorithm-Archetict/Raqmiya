@@ -1,0 +1,392 @@
+/* Order Details Page Styles */
+.order-details-container {
+  min-height: 70vh;
+}
+
+.order-title {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.order-title i {
+  color: #3498db;
+}
+
+/* Order Information */
+.order-info-item {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.order-info-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.order-info-item strong {
+  color: #2c3e50;
+  margin-right: 0.5rem;
+}
+
+.order-info-item .badge {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+}
+
+/* Order Items */
+.order-item {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f1f3f4;
+  transition: background-color 0.2s ease;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* Order Item Image */
+.order-item-image {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.order-item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.order-item-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  font-size: 1.5rem;
+}
+
+/* Order Item Details */
+.order-item-details {
+  padding: 0 0.5rem;
+}
+
+.order-item-title {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.order-item-creator {
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.order-item-price {
+  font-size: 0.9rem;
+}
+
+.price-amount {
+  font-weight: 600;
+  color: #27ae60;
+}
+
+/* Order Item Quantity */
+.order-item-quantity {
+  text-align: center;
+}
+
+.quantity-badge {
+  display: inline-block;
+  background: #e9ecef;
+  color: #495057;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Order Item Total */
+.order-item-total {
+  text-align: right;
+  padding: 0 0.5rem;
+}
+
+.total-amount {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+/* Order Item Actions */
+.order-item-actions {
+  text-align: center;
+}
+
+.order-item-actions .btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.order-item-actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Order Summary Card */
+.order-summary-card {
+  position: sticky;
+  top: 2rem;
+}
+
+.order-summary-card .card {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.order-summary-card .card-header {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  border: none;
+  padding: 1.25rem 1.5rem;
+}
+
+.order-summary-card .card-body {
+  padding: 1.5rem;
+}
+
+/* Summary Items */
+.summary-item {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.summary-item-name {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.summary-item-price {
+  font-weight: 600;
+  color: #27ae60;
+  font-size: 0.9rem;
+}
+
+/* Summary Totals */
+.summary-totals {
+  margin: 1.5rem 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.summary-row.total {
+  font-size: 1.1rem;
+  color: #2c3e50;
+  border-top: 2px solid #e9ecef;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.summary-row.total strong {
+  color: #27ae60;
+}
+
+/* Order Timeline */
+.order-timeline {
+  margin-top: 2rem;
+}
+
+.timeline-title {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e9ecef;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.timeline-item.completed {
+  opacity: 1;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -1.5rem;
+  top: 0.25rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #e9ecef;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.timeline-item.completed .timeline-marker {
+  background: #27ae60;
+  box-shadow: 0 0 0 2px #27ae60;
+}
+
+.timeline-content {
+  padding-left: 0.5rem;
+}
+
+.timeline-content strong {
+  color: #2c3e50;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-content small {
+  color: #6c757d;
+  font-size: 0.8rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .order-item {
+    padding: 1rem;
+  }
+  
+  .order-item-image {
+    height: 60px;
+  }
+  
+  .order-item-title {
+    font-size: 0.9rem;
+  }
+  
+  .order-item-creator {
+    font-size: 0.8rem;
+  }
+  
+  .quantity-badge {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+  }
+  
+  .total-amount {
+    font-size: 1rem;
+  }
+  
+  .order-summary-card {
+    position: static;
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .order-title {
+    font-size: 1.5rem;
+  }
+  
+  .order-item .row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .order-item-details,
+  .order-item-quantity,
+  .order-item-total,
+  .order-item-actions {
+    text-align: center;
+  }
+  
+  .order-item-image {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+  }
+  
+  .timeline {
+    padding-left: 1.5rem;
+  }
+  
+  .timeline-marker {
+    left: -1.25rem;
+  }
+}
+
+/* Animation for order items */
+.order-item {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hover effects */
+.order-item:hover .order-item-actions .btn {
+  transform: scale(1.05);
+}
+
+/* Focus states for accessibility */
+.order-item-actions .btn:focus {
+  box-shadow: 0 0 0 0.2rem rgba(39, 174, 96, 0.25);
+}
+
+/* Status badge animations */
+.badge {
+  transition: all 0.2s ease;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+} 

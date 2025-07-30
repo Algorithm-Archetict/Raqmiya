@@ -2,6 +2,8 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Product } from '../../../models/product.model';
+import { CartService } from '../../../core/services/cart.service';
+import { AuthService } from '../../../core/services/auth';
 
 @Component({
   selector: 'app-product-card',
@@ -18,6 +20,17 @@ export class ProductCardComponent {
 
   isHovered = false;
   isInWishlist = false; // This would be determined by a service
+  isInCart = false;
+
+  constructor(
+    private cartService: CartService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    // Check if product is in cart
+    this.isInCart = this.cartService.isProductInCart(this.product.id);
+  }
 
   onMouseEnter(): void {
     this.isHovered = true;
@@ -32,7 +45,28 @@ export class ProductCardComponent {
   }
 
   onAddToCart(): void {
-    this.addToCart.emit(this.product);
+    // Check if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      alert('Please log in to add items to your cart.');
+      return;
+    }
+
+    // Check if product is already in cart
+    if (this.cartService.isProductInCart(this.product.id)) {
+      alert('This product is already in your cart.');
+      return;
+    }
+
+    this.cartService.addToCart(this.product, 1).subscribe({
+      next: () => {
+        this.isInCart = true;
+        this.addToCart.emit(this.product);
+      },
+      error: (error) => {
+        console.error('Add to cart error:', error);
+        alert(error.message || 'Failed to add product to cart.');
+      }
+    });
   }
 
   onToggleWishlist(): void {

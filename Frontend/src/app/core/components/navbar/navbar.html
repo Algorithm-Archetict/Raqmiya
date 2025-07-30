@@ -38,10 +38,16 @@
             <li><a class="dropdown-item" routerLink="/products/list" (click)="closeCategoriesDropdown()"><i class="fas fa-th me-2"></i>All Products</a></li>
           </ul>
         </li>
-        <li class="nav-item" *ngIf="isLoggedIn">
+        <li class="nav-item" *ngIf="isLoggedIn && userRole === 'Creator'">
           <a class="nav-link d-flex align-items-center" routerLink="/products/my-products" routerLinkActive="active">
             <i class="fas fa-box me-1"></i>
             My Products
+          </a>
+        </li>
+        <li class="nav-item" *ngIf="isLoggedIn && userRole === 'Creator'">
+          <a class="nav-link d-flex align-items-center" routerLink="/products/create" routerLinkActive="active">
+            <i class="fas fa-plus me-1"></i>
+            Create Product
           </a>
         </li>
         <li class="nav-item" *ngIf="isLoggedIn">
@@ -60,6 +66,16 @@
             <i class="fas fa-search search-icon"></i>
             <input type="text" class="form-control search-input" placeholder="Search products..." aria-label="Search">
           </div>
+        </li>
+
+        <!-- Cart -->
+        <li class="nav-item me-3" *ngIf="isLoggedIn">
+          <a class="nav-link position-relative" routerLink="/products/cart" routerLinkActive="active">
+            <i class="fas fa-shopping-cart"></i>
+            <span *ngIf="cartItemCount > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+            </span>
+          </a>
         </li>
 
         <!-- Theme Toggle -->
@@ -90,11 +106,14 @@
               <i class="fas fa-user-circle"></i>
             </div>
             <span>{{ username || 'Account' }}</span>
+            <span *ngIf="userRole" class="badge bg-primary ms-2">{{ userRole }}</span>
             <i class="fas fa-chevron-down ms-1" [class.rotated]="isUserDropdownOpen"></i>
           </a>
           <ul class="dropdown-menu dropdown-menu-end" [class.show]="isUserDropdownOpen">
-            <li><a class="dropdown-item" routerLink="/products/my-products" (click)="closeUserDropdown()"><i class="fas fa-box me-2"></i>My Products</a></li>
+            <li *ngIf="userRole === 'Creator'"><a class="dropdown-item" routerLink="/products/my-products" (click)="closeUserDropdown()"><i class="fas fa-box me-2"></i>My Products</a></li>
+            <li *ngIf="userRole === 'Creator'"><a class="dropdown-item" routerLink="/products/create" (click)="closeUserDropdown()"><i class="fas fa-plus me-2"></i>Create Product</a></li>
             <li><a class="dropdown-item" routerLink="/products/my-wishlist" (click)="closeUserDropdown()"><i class="fas fa-heart me-2"></i>My Wishlist</a></li>
+            <li><a class="dropdown-item" routerLink="/products/cart" (click)="closeUserDropdown()"><i class="fas fa-shopping-cart me-2"></i>Shopping Cart <span *ngIf="cartItemCount > 0" class="badge bg-primary ms-2">{{ cartItemCount }}</span></a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#" (click)="navigateToProfile(); closeUserDropdown()"><i class="fas fa-user me-2"></i>Profile</a></li>
             <li><a class="dropdown-item" href="#" (click)="navigateToDashboard(); closeUserDropdown()"><i class="fas fa-chart-line me-2"></i>Dashboard</a></li>

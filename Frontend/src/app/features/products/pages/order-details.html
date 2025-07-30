@@ -1,0 +1,236 @@
+<div class="order-details-container mt-4">
+  <div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <h1 class="order-title">
+            <i class="fas fa-receipt me-3"></i>
+            Order Details
+          </h1>
+          <button (click)="goBack()" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Back to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading and Error States -->
+    <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+    <app-alert *ngIf="errorMessage" [message]="errorMessage" type="danger"></app-alert>
+
+    <!-- Order Details -->
+    <div *ngIf="!isLoading && order" class="row">
+      <div class="col-lg-8">
+        <!-- Order Information -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-info-circle me-2"></i>
+              Order Information
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="order-info-item">
+                  <strong>Order ID:</strong>
+                  <span class="text-muted">{{ order.id }}</span>
+                </div>
+                <div class="order-info-item">
+                  <strong>Order Date:</strong>
+                  <span class="text-muted">{{ order.createdAt | date:'medium' }}</span>
+                </div>
+                <div class="order-info-item">
+                  <strong>Last Updated:</strong>
+                  <span class="text-muted">{{ order.updatedAt | date:'medium' }}</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="order-info-item">
+                  <strong>Order Status:</strong>
+                  <span class="badge" [class]="getOrderStatusClass()">
+                    {{ getOrderStatusText() }}
+                  </span>
+                </div>
+                <div class="order-info-item">
+                  <strong>Payment Status:</strong>
+                  <span class="badge" [class]="getPaymentStatusClass()">
+                    {{ getPaymentStatusText() }}
+                  </span>
+                </div>
+                <div class="order-info-item" *ngIf="order.paymentMethod">
+                  <strong>Payment Method:</strong>
+                  <span class="text-muted">{{ order.paymentMethod }}</span>
+                </div>
+                <div class="order-info-item" *ngIf="order.transactionId">
+                  <strong>Transaction ID:</strong>
+                  <span class="text-muted">{{ order.transactionId }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">
+              <i class="fas fa-shopping-bag me-2"></i>
+              Order Items ({{ order.totalItems }})
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="order-item" *ngFor="let item of order.items; trackBy: trackByOrderItem">
+              <div class="row g-0 align-items-center">
+                <!-- Product Image -->
+                <div class="col-md-2 col-3">
+                  <div class="order-item-image">
+                    <img *ngIf="item.productImage; else noImage" 
+                         [src]="item.productImage" 
+                         [alt]="item.productName"
+                         class="img-fluid rounded">
+                    <ng-template #noImage>
+                      <div class="order-item-placeholder">
+                        <i class="fas fa-image"></i>
+                      </div>
+                    </ng-template>
+                  </div>
+                </div>
+
+                <!-- Product Details -->
+                <div class="col-md-4 col-6">
+                  <div class="order-item-details">
+                    <h6 class="order-item-title">{{ item.productName }}</h6>
+                    <p class="order-item-creator text-muted mb-1">
+                      <i class="fas fa-user me-1"></i>
+                      {{ item.creatorUsername }}
+                    </p>
+                    <p class="order-item-price mb-0">
+                      <span class="price-amount">
+                        {{ item.price | currency:item.currency:'symbol':'1.2-2' }}
+                      </span>
+                      <small class="text-muted">per item</small>
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Quantity -->
+                <div class="col-md-2 col-6">
+                  <div class="order-item-quantity text-center">
+                    <span class="quantity-badge">{{ item.quantity }}</span>
+                  </div>
+                </div>
+
+                <!-- Item Total -->
+                <div class="col-md-2 col-6">
+                  <div class="order-item-total text-end">
+                    <span class="total-amount">
+                      {{ getItemTotal(item) | currency:item.currency:'symbol':'1.2-2' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Download Button -->
+                <div class="col-md-2 col-6">
+                  <div class="order-item-actions text-center">
+                    <button 
+                      (click)="downloadProduct(item.productId)"
+                      class="btn btn-success btn-sm"
+                      [disabled]="order.status !== 'completed'">
+                      <i class="fas fa-download me-1"></i>
+                      Download
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="col-lg-4">
+        <div class="order-summary-card">
+          <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+              <h5 class="mb-0">
+                <i class="fas fa-calculator me-2"></i>
+                Order Summary
+              </h5>
+            </div>
+            <div class="card-body">
+              <!-- Summary Details -->
+              <div class="summary-item" *ngFor="let item of order.items">
+                <div class="d-flex justify-content-between">
+                  <span class="summary-item-name">{{ item.productName }}</span>
+                  <span class="summary-item-price">
+                    {{ getItemTotal(item) | currency:item.currency:'symbol':'1.2-2' }}
+                  </span>
+                </div>
+                <small class="text-muted">Qty: {{ item.quantity }}</small>
+              </div>
+
+              <hr>
+
+              <!-- Totals -->
+              <div class="summary-totals">
+                <div class="summary-row">
+                  <span>Subtotal:</span>
+                  <span>{{ order.subtotal | currency:order.currency:'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="summary-row">
+                  <span>Tax:</span>
+                  <span>Free (Digital Products)</span>
+                </div>
+                <div class="summary-row">
+                  <span>Shipping:</span>
+                  <span>Free (Digital Download)</span>
+                </div>
+                <hr>
+                <div class="summary-row total">
+                  <strong>Total:</strong>
+                  <strong>{{ order.total | currency:order.currency:'symbol':'1.2-2' }}</strong>
+                </div>
+              </div>
+
+              <!-- Order Status Timeline -->
+              <div class="order-timeline mt-4">
+                <h6 class="timeline-title">
+                  <i class="fas fa-clock me-2"></i>
+                  Order Timeline
+                </h6>
+                <div class="timeline">
+                  <div class="timeline-item completed">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <strong>Order Placed</strong>
+                      <small class="text-muted d-block">{{ order.createdAt | date:'short' }}</small>
+                    </div>
+                  </div>
+                  <div class="timeline-item completed">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <strong>Payment Processed</strong>
+                      <small class="text-muted d-block">{{ order.updatedAt | date:'short' }}</small>
+                    </div>
+                  </div>
+                  <div class="timeline-item" [class.completed]="order.status === 'completed'">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <strong>Order Completed</strong>
+                      <small class="text-muted d-block" *ngIf="order.status === 'completed'">
+                        {{ order.updatedAt | date:'short' }}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 
