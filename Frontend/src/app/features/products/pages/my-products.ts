@@ -16,7 +16,6 @@ import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinn
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     Alert,
     LoadingSpinner
   ],
@@ -231,7 +230,7 @@ export class MyProductsComponent implements OnInit, OnDestroy {
     }).format(price);
   }
 
-  formatDate(date: string | Date): string {
+  formatDate(date: string | Date | undefined): string {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',

@@ -1,6 +1,6 @@
 // src/app/features/products/pages/product-detail.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ProductService } from '../services/product.service';
@@ -14,6 +14,8 @@ import { LoadingSpinner } from '../../../shared/ui/loading-spinner/loading-spinn
   standalone: true,
   imports: [
     CommonModule,
+    CurrencyPipe,
+    DatePipe,
     RouterLink,
     Alert,
     LoadingSpinner
@@ -32,6 +34,9 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   canEdit = false;
   canDelete = false;
   isOwner = false;
+  isCreator = false;
+  userRole: string | null = null;
+  isDeleting = false;
 
   // UI state
   activeTab = 'overview';
@@ -86,14 +91,15 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     if (!this.product) return;
 
     const currentUser = this.authService.getCurrentUser();
-    const userRole = this.authService.getUserRole();
+    this.userRole = this.authService.getUserRole();
 
     // Check if user is the owner
     this.isOwner = currentUser?.id === this.product.creatorId;
+    this.isCreator = this.isOwner || this.userRole === 'Creator';
 
     // Set permissions based on role and ownership
-    this.canEdit = this.isOwner || userRole === 'Admin';
-    this.canDelete = this.isOwner || userRole === 'Admin';
+    this.canEdit = this.isOwner || this.userRole === 'Admin';
+    this.canDelete = this.isOwner || this.userRole === 'Admin';
   }
 
   onEditProduct(): void {
@@ -106,22 +112,23 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     if (!this.product) return;
 
     if (confirm(`Are you sure you want to delete "${this.product.name}"? This action cannot be undone.`)) {
-      this.isLoading = true;
+      this.isDeleting = true;
       this.errorMessage = null;
 
       this.productService.deleteProduct(this.product.id)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
+            this.isDeleting = false;
             this.successMessage = 'Product deleted successfully.';
             setTimeout(() => {
               this.router.navigate(['/products/my-products']);
             }, 2000);
           },
           error: (error) => {
+            this.isDeleting = false;
             console.error('Error deleting product:', error);
             this.errorMessage = error.message || 'Failed to delete product.';
-            this.isLoading = false;
           }
         });
     }
@@ -340,6 +347,43 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
         }, 3000);
       });
     }
+  }
+
+  onShareProduct(): void {
+    this.shareProduct();
+  }
+
+  getProductRating(): number {
+    return this.product?.averageRating || 0;
+  }
+
+  getProductStatusClass(): string {
+    switch (this.product?.status?.toLowerCase()) {
+      case 'published':
+        return 'bg-success';
+      case 'draft':
+        return 'bg-warning';
+      default:
+        return 'bg-secondary';
+    }
+  }
+
+  onAddToCart(): void {
+    if (!this.product) return;
+    
+    this.successMessage = 'Add to cart functionality coming soon!';
+    setTimeout(() => {
+      this.successMessage = null;
+    }, 3000);
+  }
+
+  onBuyNow(): void {
+    if (!this.product) return;
+    
+    this.successMessage = 'Buy now functionality coming soon!';
+    setTimeout(() => {
+      this.successMessage = null;
+    }, 3000);
   }
 
   // Download product (placeholder for future implementation)
