@@ -1,0 +1,117 @@
+<div class="security-section">
+  <div class="section-header">
+    <h2 class="section-title">Security Settings</h2>
+    <p class="section-description">Update your password and security preferences</p>
+  </div>
+
+  <div class="security-form">
+    <!-- Current Password -->
+    <div class="form-group">
+      <label for="currentPassword" class="form-label">Current Password</label>
+      <div class="password-input-container">
+        <input 
+          [type]="showCurrentPassword ? 'text' : 'password'"
+          id="currentPassword" 
+          name="currentPassword"
+          [(ngModel)]="securityData.currentPassword"
+          class="form-input"
+          placeholder="Enter your current password">
+        <button 
+          type="button" 
+          class="password-toggle"
+          (click)="toggleCurrentPassword()">
+          <i [class]="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- New Password -->
+    <div class="form-group">
+      <label for="newPassword" class="form-label">New Password</label>
+      <div class="password-input-container">
+        <input 
+          [type]="showNewPassword ? 'text' : 'password'"
+          id="newPassword" 
+          name="newPassword"
+          [(ngModel)]="securityData.newPassword"
+          class="form-input"
+          placeholder="Enter your new password">
+        <button 
+          type="button" 
+          class="password-toggle"
+          (click)="toggleNewPassword()">
+          <i [class]="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+        </button>
+      </div>
+      <div class="password-strength" *ngIf="securityData.newPassword">
+        <div class="strength-bar">
+          <div class="strength-fill" [class]="passwordStrengthClass"></div>
+        </div>
+        <span class="strength-text">{{ passwordStrengthText }}</span>
+      </div>
+    </div>
+
+    <!-- Confirm New Password -->
+    <div class="form-group">
+      <label for="confirmPassword" class="form-label">Confirm New Password</label>
+      <div class="password-input-container">
+        <input 
+          [type]="showConfirmPassword ? 'text' : 'password'"
+          id="confirmPassword" 
+          name="confirmPassword"
+          [(ngModel)]="securityData.confirmPassword"
+          class="form-input"
+          [class.error]="!passwordsMatch && securityData.confirmPassword"
+          placeholder="Confirm your new password">
+        <button 
+          type="button" 
+          class="password-toggle"
+          (click)="toggleConfirmPassword()">
+          <i [class]="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+        </button>
+      </div>
+      <div class="form-error" *ngIf="!passwordsMatch && securityData.confirmPassword">
+        Passwords do not match
+      </div>
+    </div>
+
+    <!-- Password Requirements -->
+    <div class="password-requirements">
+      <h4 class="requirements-title">Password Requirements</h4>
+      <ul class="requirements-list">
+        <li [class.met]="hasMinLength">
+          <i [class]="hasMinLength ? 'fas fa-check' : 'fas fa-times'"></i>
+          At least 8 characters long
+        </li>
+        <li [class.met]="hasUppercase">
+          <i [class]="hasUppercase ? 'fas fa-check' : 'fas fa-times'"></i>
+          Contains uppercase letter
+        </li>
+        <li [class.met]="hasLowercase">
+          <i [class]="hasLowercase ? 'fas fa-check' : 'fas fa-times'"></i>
+          Contains lowercase letter
+        </li>
+        <li [class.met]="hasNumber">
+          <i [class]="hasNumber ? 'fas fa-check' : 'fas fa-times'"></i>
+          Contains number
+        </li>
+        <li [class.met]="hasSpecialChar">
+          <i [class]="hasSpecialChar ? 'fas fa-check' : 'fas fa-times'"></i>
+          Contains special character
+        </li>
+      </ul>
+    </div>
+
+    <!-- Update Password Button -->
+    <div class="form-actions">
+      <button 
+        type="button" 
+        class="btn btn-primary"
+        [disabled]="!canUpdatePassword()"
+        (click)="updatePassword()">
+        <i class="fas fa-key"></i>
+        Update Password
+      </button>
+    </div>
+  </div>
+</div> 

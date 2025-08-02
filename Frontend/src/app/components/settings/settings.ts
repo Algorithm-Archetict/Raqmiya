@@ -10,5 +10,11 @@ import { DashboardSidebar } from '../dashboard-sidebar/dashboard-sidebar';
   styleUrl: './settings.css'
 })
 export class Settings {
-
+  
+  updateSettings() {
+    // TODO: Implement settings update logic
+    console.log('Updating settings...');
+    // This will be called when the "Update Settings" button is clicked
+    // You can add your API calls here to save all settings
+  }
 }

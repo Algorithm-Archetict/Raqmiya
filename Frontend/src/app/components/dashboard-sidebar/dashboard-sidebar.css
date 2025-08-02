@@ -2,6 +2,7 @@
   padding: 0 24px 32px;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 24px;
+  cursor: pointer;
 }
 
 .brand-title {
@@ -13,6 +14,7 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
+  
 }
 
 /* Sidebar */
