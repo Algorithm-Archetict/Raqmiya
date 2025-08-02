@@ -36,11 +36,11 @@
       <div class="d-flex" role="search">
         <!-- Anonymous Users -->
         <div *ngIf="!isLoggedIn" class="auth-buttons">
-          <a routerLink="/login" class="btn btn-outline me-2">
+          <a routerLink="/auth/login" class="btn btn-outline me-2">
             <i class="fas fa-sign-in-alt me-1"></i>
             Login
           </a>
-          <a routerLink="/register" class="btn btn-primary">
+          <a routerLink="/auth/register" class="btn btn-primary">
             <i class="fas fa-user-plus me-1"></i>
             Sign Up
           </a>

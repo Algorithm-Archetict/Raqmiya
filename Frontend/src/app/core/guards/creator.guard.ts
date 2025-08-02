@@ -20,7 +20,7 @@ export class CreatorGuard implements CanActivate {
       return false;
     } else {
       // User is not logged in
-      this.router.navigate(['/login']);
+      this.router.navigate(['/auth/login']);
       return false;
     }
   }
