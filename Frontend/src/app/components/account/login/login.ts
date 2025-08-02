@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LoginRequest } from '../../../core/models/auth/auth.model';
 import { Alert } from '../../shared/alert/alert';
@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../../shared/loading-spinner/loading-spinner';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, Alert, LoadingSpinner],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink,Alert, LoadingSpinner],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
