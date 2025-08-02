@@ -12,7 +12,7 @@ import { MockAuthService } from './mock-auth.service';
 })
 export class AuthService {
   private apiUrl = environment.apiUrl;
-  private useMockService = true; // Set to false when you have a real backend
+  private useMockService = false; // Set to false when you have a real backend
 
   // BehaviorSubject to track authentication status
   private _isLoggedIn = new BehaviorSubject<boolean>(this.hasToken());
@@ -115,7 +115,7 @@ export class AuthService {
     localStorage.removeItem('userData'); // Also remove user data
     this._isLoggedIn.next(false);
     this._currentUser.next(null);
-    this.router.navigate(['/login']); // Redirect to login page after logout
+    this.router.navigate(['/auth/login']); // Redirect to login page after logout
   }
 
   getToken(): string | null {

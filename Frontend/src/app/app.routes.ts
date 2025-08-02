@@ -24,8 +24,8 @@ export const routes: Routes = [
     // Public routes
     {path:"discover",component:Discover},
     {path:"discover/:id",component:ProductDetails},
-    {path:"login", component:Login},
-    {path:"register", component:Register},
+    {path:"auth/login", component:Login},
+    {path:"auth/register", component:Register},
 
     // Protected routes - require authentication
     {path:"checkout",component:Checkout, canActivate: [AuthGuard]},

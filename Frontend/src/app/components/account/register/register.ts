@@ -5,7 +5,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { RegisterRequest } from '../../../core/models/auth/auth.model';
-
+import { Alert } from '../../shared/alert/alert';
+import { LoadingSpinner } from '../../shared/loading-spinner/loading-spinner';
 
 @Component({
   selector: 'app-register',
@@ -14,7 +15,8 @@ import { RegisterRequest } from '../../../core/models/auth/auth.model';
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
-
+    Alert,
+    LoadingSpinner
   ],
   templateUrl: './register.html',
   styleUrl: './register.css'
@@ -36,8 +38,7 @@ export class Register implements OnInit {
       Username: ['', [Validators.required, Validators.minLength(3)]],
       Email: ['', [Validators.required, Validators.email]],
       Password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', Validators.required],
-      Role: ['Customer', [Validators.required]] // Default to Customer role
+      confirmPassword: ['', Validators.required]
     }, { validators: this.passwordMatchValidator }); // Add custom validator
   }
 
@@ -58,7 +59,7 @@ export class Register implements OnInit {
         Username: this.registerForm.value.Username,
         Email: this.registerForm.value.Email,
         Password: this.registerForm.value.Password,
-        Role: this.registerForm.value.Role // Use the selected role from form
+        Role: 'Customer' // Default to Customer role like old frontend
       };
 
       this.authService.register(registerPayload).subscribe({
@@ -68,7 +69,7 @@ export class Register implements OnInit {
           this.registerForm.reset(); // Clear form
           // Optionally redirect to login after a short delay
           setTimeout(() => {
-            this.router.navigate(['/login']);
+            this.router.navigate(['/auth/login']);
           }, 2000);
         },
         error: (err) => {
