@@ -9,7 +9,42 @@
       <div class="shape shape-4"></div>
     </div>
   </div>
-  
+
+  <!-- Creator Registration Prompt Modal -->
+  <!-- <div class="modal" id="creatorPromptModal" tabindex="-1" aria-labelledby="creatorPromptLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content epic-modal">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-info" id="creatorPromptLabel">
+            🌌 Become a Creator
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body text-info">
+          <p class="lead mb-3">
+            You’re currently exploring as a player.
+            <strong>Level up</strong> and start selling your digital creations today!
+          </p>
+
+          <ul class="list-unstyled ps-3 mb-4">
+            <li>🚀 Launch your own digital products</li>
+            <li>🎮 Sell games, music, eBooks, art, or software</li>
+            <li>📈 Get powerful analytics and insights</li>
+            <li>🪙 Earn money from your creativity</li>
+          </ul>
+
+          <p class="mb-0">Would you like to sign up as a Creator?</p>
+        </div>
+
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Maybe Later</button>
+          <button type="button" class="btn btn-primary" (click)="goToRegister()">Yes, Let's Go</button>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
   <div class="container">
     <div class="row align-items-center min-vh-100">
       <div class="col-lg-6">
@@ -18,15 +53,15 @@
             Turn Your <span class="text-gradient">Digital Creations</span> Into Success
           </h1>
           <p class="hero-subtitle">
-            Join thousands of creators selling digital products worldwide. From eBooks to templates, 
+            Join thousands of creators selling digital products worldwide. From eBooks to templates,
             graphics to audio - your next big sale is just a click away.
           </p>
           <div class="hero-actions">
-            <a routerLink="/auth/register" class="btn btn-primary btn-lg me-3 animate-pulse">
+            <a class="btn btn-primary btn-lg me-3 animate-pulse">
               <i class="fas fa-rocket me-2"></i>
               Start Selling Today
             </a>
-            <a routerLink="/products/list" class="btn btn-outline btn-lg">
+            <a routerLink="/products/new" class="btn btn-outline btn-lg">
               <i class="fas fa-search me-2"></i>
               Explore Products
             </a>
@@ -97,7 +132,7 @@
         </p>
       </div>
     </div>
-    
+
     <div class="row g-4">
       <div class="col-lg-4 col-md-6">
         <div class="value-card animate-fade-in-up" style="animation-delay: 0.1s;">
@@ -105,40 +140,44 @@
             <i class="fas fa-rocket"></i>
           </div>
           <h4>Lightning Fast Setup</h4>
-          <p>Get your digital products online in minutes, not hours. Our streamlined process makes selling effortless.</p>
+          <p>Get your digital products online in minutes, not hours. Our streamlined process makes selling effortless.
+          </p>
         </div>
       </div>
-      
+
       <div class="col-lg-4 col-md-6">
         <div class="value-card animate-fade-in-up" style="animation-delay: 0.2s;">
           <div class="value-icon">
             <i class="fas fa-shield-alt"></i>
           </div>
           <h4>Secure & Reliable</h4>
-          <p>Bank-level security ensures your products and payments are always protected. Sleep soundly knowing your business is safe.</p>
+          <p>Bank-level security ensures your products and payments are always protected. Sleep soundly knowing your
+            business is safe.</p>
         </div>
       </div>
-      
+
       <div class="col-lg-4 col-md-6">
         <div class="value-card animate-fade-in-up" style="animation-delay: 0.3s;">
           <div class="value-icon">
             <i class="fas fa-chart-line"></i>
           </div>
           <h4>Smart Analytics</h4>
-          <p>Track your sales, understand your audience, and optimize your strategy with detailed insights and reports.</p>
+          <p>Track your sales, understand your audience, and optimize your strategy with detailed insights and reports.
+          </p>
         </div>
       </div>
-      
+
       <div class="col-lg-4 col-md-6">
         <div class="value-card animate-fade-in-up" style="animation-delay: 0.4s;">
           <div class="value-icon">
             <i class="fas fa-globe"></i>
           </div>
           <h4>Global Reach</h4>
-          <p>Connect with customers worldwide. Our platform supports multiple currencies and languages for maximum reach.</p>
+          <p>Connect with customers worldwide. Our platform supports multiple currencies and languages for maximum
+            reach.</p>
         </div>
       </div>
-      
+
       <div class="col-lg-4 col-md-6">
         <div class="value-card animate-fade-in-up" style="animation-delay: 0.5s;">
           <div class="value-icon">
@@ -148,7 +187,7 @@
           <p>Your customers can browse and buy from anywhere. Our responsive design works perfectly on all devices.</p>
         </div>
       </div>
-      
+
       <div class="col-lg-4 col-md-6">
         <div class="value-card animate-fade-in-up" style="animation-delay: 0.6s;">
           <div class="value-icon">
@@ -175,7 +214,7 @@
         </p>
       </div>
     </div>
-    
+
     <div class="row g-4">
       <div class="col-lg-4">
         <div class="step-card animate-fade-in-up" style="animation-delay: 0.1s;">
@@ -187,7 +226,7 @@
           <p>Sign up for free and set up your creator profile in just a few minutes.</p>
         </div>
       </div>
-      
+
       <div class="col-lg-4">
         <div class="step-card animate-fade-in-up" style="animation-delay: 0.3s;">
           <div class="step-number">2</div>
@@ -198,7 +237,7 @@
           <p>Add your digital products, set prices, and customize your storefront.</p>
         </div>
       </div>
-      
+
       <div class="col-lg-4">
         <div class="step-card animate-fade-in-up" style="animation-delay: 0.5s;">
           <div class="step-number">3</div>
@@ -226,7 +265,7 @@
         </p>
       </div>
     </div>
-    
+
     <div class="row g-4">
       <div class="col-lg-3 col-md-6">
         <div class="category-card animate-fade-in-up" style="animation-delay: 0.1s;">
@@ -238,7 +277,7 @@
           <span class="category-count">2,500+ products</span>
         </div>
       </div>
-      
+
       <div class="col-lg-3 col-md-6">
         <div class="category-card animate-fade-in-up" style="animation-delay: 0.2s;">
           <div class="category-icon">
@@ -249,7 +288,7 @@
           <span class="category-count">1,800+ products</span>
         </div>
       </div>
-      
+
       <div class="col-lg-3 col-md-6">
         <div class="category-card animate-fade-in-up" style="animation-delay: 0.3s;">
           <div class="category-icon">
@@ -260,7 +299,7 @@
           <span class="category-count">1,200+ products</span>
         </div>
       </div>
-      
+
       <div class="col-lg-3 col-md-6">
         <div class="category-card animate-fade-in-up" style="animation-delay: 0.4s;">
           <div class="category-icon">

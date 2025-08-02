@@ -59,6 +59,12 @@
               <span class="username-text">{{ getUsername() }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" [class.show]="isUserDropdownOpen">
+              <li *ngIf="isLoggedIn">
+                <a class="dropdown-item" routerLink="/dashboard" (click)="closeUserDropdown()">
+                  <i class="fas fa-dashboard me-2"></i>
+                  Dashboard
+                </a>
+              </li>
               <li *ngIf="isCreator()">
                 <a class="dropdown-item" routerLink="/products" (click)="closeUserDropdown()">
                   <i class="fas fa-box me-2"></i>
