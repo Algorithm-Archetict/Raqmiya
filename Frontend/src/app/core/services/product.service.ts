@@ -1,0 +1,119 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+
+import { ProductCreateRequestDTO } from '../models/product/product-create-request.dto';
+import { ProductUpdateRequestDTO } from '../models/product/product-update-request.dto';
+import { ProductDetailDTO } from '../models/product/product-detail.dto';
+import { ProductListItemDTO } from '../models/product/product-list-item.dto';
+import { ProductListItemDTOPagedResultDTO } from '../models/product/product-list-item-paged-result.dto';
+import { ProductModerationRequestDTO } from '../models/product/product-moderation-request.dto';
+import { FileDTO } from '../models/product/file.dto';
+
+@Injectable({ providedIn: 'root' })
+export class ProductService {
+  private apiUrl = 'http://localhost:5255/api/Products';
+
+  constructor(private http: HttpClient) {}
+
+  // ======= CREATE =======
+  createProduct(product: ProductCreateRequestDTO): Observable<ProductDetailDTO> {
+    return this.http.post<ProductDetailDTO>(this.apiUrl, product);
+  }
+
+  // ======= READ =======
+  getAll(page = 1, size = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    return this.http.get<ProductListItemDTOPagedResultDTO>(
+      `${this.apiUrl}?pageNumber=${page}&pageSize=${size}`
+    );
+  }
+
+  getProductList(page = 1, size = 10): Observable<ProductListItemDTO[]> {
+    return this.getAll(page, size).pipe(map(res => res.items || []));
+  }
+
+  // Get products by current creator (authenticated user)
+  // TODO: Replace with proper backend endpoint when available
+  getMyProducts(page = 1, size = 10): Observable<ProductListItemDTO[]> {
+    // For now, we'll use the main products endpoint and filter on frontend
+    // This is a temporary solution until the backend provides /my-products endpoint
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}`);
+  }
+
+  getById(id: number): Observable<ProductDetailDTO> {
+    return this.http.get<ProductDetailDTO>(`${this.apiUrl}/${id}`);
+  }
+
+  getByPermalink(permalink: string): Observable<ProductDetailDTO> {
+    return this.http.get<ProductDetailDTO>(`${this.apiUrl}/permalink/${permalink}`);
+  }
+
+  // ======= UPDATE =======
+  updateProduct(id: number, product: ProductUpdateRequestDTO): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}`, product);
+  }
+
+  // ======= DELETE =======
+  deleteProduct(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  // ======= WISHLIST =======
+  addToWishlist(id: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${id}/wishlist`, {});
+  }
+
+  removeFromWishlist(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}/wishlist`);
+  }
+
+  getWishlist(): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/my-wishlist`);
+  }
+
+  // ======= ANALYTICS =======
+  getMostWished(): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/most-wished`);
+  }
+
+  getTopRated(): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/top-rated`);
+  }
+
+  getBestSelling(): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/best-selling`);
+  }
+
+  getTrendy(): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/trendy`);
+  }
+
+  // ======= FILES =======
+  uploadFile(productId: number, file: File): Observable<FileDTO[]> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<FileDTO[]>(`${this.apiUrl}/${productId}/files`, formData);
+  }
+
+  getFiles(productId: number): Observable<FileDTO[]> {
+    return this.http.get<FileDTO[]>(`${this.apiUrl}/${productId}/files`);
+  }
+
+  deleteFile(productId: number, fileId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${productId}/files/${fileId}`);
+  }
+
+  // ======= ADMIN / MODERATION =======
+  getByStatus(status: string): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/admin/by-status?status=${status}`);
+  }
+
+  approve(id: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/admin/${id}/approve`, {});
+  }
+
+  reject(id: number, reason: string): Observable<void> {
+    const payload: ProductModerationRequestDTO = { action: 'reject', reason };
+    return this.http.post<void>(`${this.apiUrl}/admin/${id}/reject`, payload);
+  }
+}
