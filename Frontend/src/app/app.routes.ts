@@ -1,28 +1,45 @@
-// src/app/app.routes.ts
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth-guard'; // Import auth guard for protected routes
+import { Home } from './components/home/home';
+import { NotFound } from './components/not-found/not-found';
+import { Discover } from './components/discover/discover';
+import { ProductDetails } from './components/products/product-details/product-details';
+import { Checkout } from './components/checkout/checkout';
+import { PurchasedPackage } from './components/purchased-package/purchased-package';
+import { Library } from './components/library/library';
+import { Login } from './components/account/login/login';
+import { Register } from './components/account/register/register';
+import { Dashboard } from './components/creator/dashboard/dashboard';
+import { Settings } from './components/settings/settings';
+import { AllProducts } from './components/creator/creator-product/all-products/all-products';
+import { AddNewProduct } from './components/creator/creator-product/add-new-product/add-new-product';
+import { ProductEdit } from './components/creator/creator-product/product-edit/product-edit';
+import { ProductEditContent } from './components/creator/creator-product/product-edit-content/product-edit-content';
+import { AuthGuard } from './core/guards/auth.guard';
+import { CreatorGuard } from './core/guards/creator.guard';
 
-export const ROUTES: Routes = [
-  { path: '', redirectTo: 'home', pathMatch: 'full' }, // Redirect root to home
-  {
-    path: 'home',
-    loadChildren: () => import('./features/home/home.routes').then(m => m.HOME_ROUTES)
-  },
-  {
-    path: 'auth',
-    loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES)
-  },
-  {
-    path: 'products',
-    loadChildren: () => import('./features/products/products.routes').then(m => m.PRODUCTS_ROUTES),
-    // You might want to protect all product routes or specific ones within the feature
-    // canActivate: [authGuard]
-  },
-  // Example for a profile route, protected by authGuard
-  {
-    path: 'profile',
-    loadComponent: () => import('./features/auth/components/login').then(m => m.LoginComponent), // Placeholder, replace with actual profile component
-    canActivate: [authGuard]
-  },
-  { path: '**', redirectTo: 'home' } // Wildcard route for 404 - redirect to home
+export const routes: Routes = [
+    {path:"",redirectTo:"home", pathMatch:"full"},
+    {path:"home",component:Home},
+
+    // Public routes
+    {path:"discover",component:Discover},
+    {path:"discover/:id",component:ProductDetails},
+    {path:"login", component:Login},
+    {path:"register", component:Register},
+
+    // Protected routes - require authentication
+    {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
+    {path:"package",component:PurchasedPackage, canActivate: [AuthGuard]},
+    {path:"library",component:Library, canActivate: [AuthGuard]},
+    {path:"settings",component:Settings, canActivate: [AuthGuard]},
+    {path:"dashboard",component:Dashboard, canActivate: [AuthGuard]}, // Both creators and customers can access dashboard
+
+    // Creator-only routes - require authentication and creator role
+    {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
+    {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
+    {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
+    {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
+    {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
+
+    {path:"**",component:NotFound},
 ];
