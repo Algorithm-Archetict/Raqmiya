@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { Subscription } from 'rxjs';
@@ -13,12 +13,26 @@ import { Subscription } from 'rxjs';
 export class Navbar implements OnInit, OnDestroy {
   isLoggedIn: boolean = false;
   currentUser: any = null;
+  isUserDropdownOpen: boolean = false;
   private authSubscription: Subscription = new Subscription();
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.dropdown')) {
+      this.isUserDropdownOpen = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    this.closeUserDropdown();
+  }
 
   ngOnInit() {
     // Subscribe to authentication status changes
@@ -39,7 +53,19 @@ export class Navbar implements OnInit, OnDestroy {
     this.authSubscription.unsubscribe();
   }
 
+  // User dropdown methods
+  toggleUserDropdown(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isUserDropdownOpen = !this.isUserDropdownOpen;
+  }
+
+  closeUserDropdown(): void {
+    this.isUserDropdownOpen = false;
+  }
+
   logout() {
+    this.closeUserDropdown();
     this.authService.logout();
   }
 
