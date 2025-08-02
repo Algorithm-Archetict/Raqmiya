@@ -4,17 +4,20 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LoginRequest } from '../../../core/models/auth/auth.model';
+import { Alert } from '../../shared/alert/alert';
+import { LoadingSpinner } from '../../shared/loading-spinner/loading-spinner';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, Alert, LoadingSpinner],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
 export class Login implements OnInit {
   loginForm: FormGroup;
   isLoading: boolean = false;
-  errorMessage: string = '';
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -40,10 +43,11 @@ export class Login implements OnInit {
   }
 
   onLogin() {
-    if (this.loginForm.valid) {
-      this.isLoading = true;
-      this.errorMessage = '';
+    this.isLoading = true;
+    this.errorMessage = null;
+    this.successMessage = null;
 
+    if (this.loginForm.valid) {
       const loginData: LoginRequest = {
         EmailOrUsername: this.loginForm.get('EmailOrUsername')?.value,
         Password: this.loginForm.get('Password')?.value
@@ -52,18 +56,19 @@ export class Login implements OnInit {
       this.authService.login(loginData).subscribe({
         next: (response) => {
           this.isLoading = false;
-          // Navigate based on user role
-          if (this.authService.isCreator()) {
-            this.router.navigate(['/home']);
-          } else {
-            this.router.navigate(['/home']);
-          }
+          this.successMessage = response.message || 'Login successful!';
+          // Navigate to products page like old frontend
+          this.router.navigate(['/products']);
         },
         error: (error) => {
           this.isLoading = false;
-          this.errorMessage = error.error?.message || 'Login failed. Please try again.';
+          console.error('Login error:', error);
+          this.errorMessage = error.error?.message || 'Login failed. Please check your credentials.';
         }
       });
+    } else {
+      this.isLoading = false;
+      this.errorMessage = 'Please fill out all required fields correctly.';
     }
   }
 }
