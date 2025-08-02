@@ -1,0 +1,47 @@
+<div class="add-product-container">
+  <!-- Left Sidebar -->
+  <app-dashboard-sidebar></app-dashboard-sidebar>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Header Section -->
+    <div class="product-header">
+      <div class="header-left">
+        <h1 class="header-title">{{ productName || 'Product Name' }}</h1>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+          <a class="nav-tab" routerLink="/products/{{ productId }}/edit">
+            <i class="fas fa-edit"></i>
+            Product
+          </a>
+          <a class="nav-tab active" routerLink="/products/{{ productId }}/edit/content">
+            <i class="fas fa-file-alt"></i>
+            Content
+          </a>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button class="btn btn-secondary" (click)="cancel()">
+          Cancel
+        </button>
+        <button class="btn btn-primary" [disabled]="!isFormValid" (click)="saveAndPublish()">
+          Save and publish
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <div class="content-step">
+        <div class="content-editor" [formGroup]="productForm">
+          <div id="content-editor" class="quill-editor-wrapper">
+            <div id="content-editor-inner" class="quill-editor-large"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,97 @@
+<div class="library-container">
+  <!-- Left Sidebar - Brand and Navigation -->
+  <app-dashboard-sidebar></app-dashboard-sidebar>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Header Section -->
+    <div class="library-header">
+      <h1 class="library-title">Library</h1>
+      
+      <!-- Tabs -->
+      <div class="tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'purchased'"
+          (click)="setActiveTab('purchased')"
+        >
+          Purchased
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'wishlist'"
+          (click)="setActiveTab('wishlist')"
+        >
+          Wishlist
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'reviews'"
+          (click)="setActiveTab('reviews')"
+        >
+          Reviews
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Products Grid -->
+      <div class="products-grid">
+        <div class="product-card" *ngFor="let product of getCurrentProducts()">
+          <div class="product-image">
+            <img [src]="product.image" [alt]="product.title" />
+          </div>
+          
+          <div class="product-info">
+            <h3 class="product-title">{{ product.title }}</h3>
+            
+            <div class="product-actions">
+              <a [href]="product.creatorLink" class="creator-link">
+                {{ product.creator }}
+              </a>
+              
+              <div class="action-menu">
+                <button class="menu-btn" (click)="openActionMenu(product.id)">
+                  <i class="fas fa-ellipsis-v"></i>
+                </button>
+                
+                <div class="menu-dropdown" *ngIf="product.showMenu">
+                  <button class="menu-item" (click)="deleteProduct(product)">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="closeDeleteModal()">
+      <i class="fas fa-times"></i>
+    </button>
+    
+    <div class="modal-body">
+      <h3 class="modal-title">Delete Product</h3>
+      <p class="modal-message">
+        Are you sure you want to delete <strong>{{ productToDelete?.title }}</strong>?
+      </p>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn btn-secondary" (click)="closeDeleteModal()">
+        Cancel
+      </button>
+      <button class="btn btn-danger" (click)="confirmDelete()">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
