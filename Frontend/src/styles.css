@@ -1,0 +1,979 @@
+/* Epic Games-Inspired Digital Marketplace Design System */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+/* CSS Custom Properties for Epic Games Theme */
+:root {
+  /* Epic Games Color Palette */
+  --epic-blue: #0074e4;
+  --epic-blue-dark: #005bb5;
+  --epic-blue-light: #4a9eff;
+  --epic-purple: #6c2bd9;
+  --epic-purple-dark: #4f1f9e;
+  --epic-purple-light: #8f5fff;
+  --epic-cyan: #00d4ff;
+  --epic-cyan-dark: #00a8cc;
+  --epic-cyan-light: #4de8ff;
+  
+  /* Primary Colors */
+  --primary-color: var(--epic-blue);
+  --primary-hover: var(--epic-blue-dark);
+  --secondary-color: var(--epic-purple);
+  --accent-color: var(--epic-cyan);
+  --success-color: #00e676;
+  --warning-color: #ffab00;
+  --danger-color: #ff1744;
+  
+  /* Dark Theme Background Colors (Epic Games Style) */
+  --bg-primary: #0f1419;
+  --bg-secondary: #1a1d23;
+  --bg-tertiary: #252a31;
+  --bg-card: #1a1d23;
+  --bg-overlay: rgba(15, 20, 25, 0.95);
+  --bg-glass: rgba(26, 29, 35, 0.8);
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #b8b9bc;
+  --text-muted: #7a7d85;
+  --text-inverse: #0f1419;
+  --text-accent: var(--epic-cyan);
+  
+  /* Border Colors */
+  --border-color: #2a2f38;
+  --border-hover: #3a3f48;
+  --border-accent: var(--epic-blue);
+  
+  /* Shadow Colors */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.6);
+  --shadow-2xl: 0 24px 48px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 20px rgba(0, 116, 228, 0.3);
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--epic-blue) 0%, var(--epic-purple) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--epic-purple) 0%, var(--epic-cyan) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--epic-cyan) 0%, var(--epic-blue) 100%);
+  --gradient-dark: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  --gradient-glow: linear-gradient(135deg, rgba(0, 116, 228, 0.1) 0%, rgba(108, 43, 217, 0.1) 100%);
+}
+
+/* Light Theme (Optional) */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-card: #ffffff;
+  --bg-overlay: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  
+  --text-primary: #0f1419;
+  --text-secondary: #495057;
+  --text-muted: #6c757d;
+  
+  --border-color: #dee2e6;
+  --border-hover: #adb5bd;
+}
+
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(0, 116, 228, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(108, 43, 217, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(0, 212, 255, 0.05) 0%, transparent 50%);
+  background-attachment: fixed;
+  transition: all var(--transition-normal);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Orbitron', 'Inter', sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: var(--spacing-md);
+  letter-spacing: -0.02em;
+}
+
+h1 { 
+  font-size: 3.5rem; 
+  font-weight: 900;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+h2 { 
+  font-size: 2.5rem; 
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+h3 { 
+  font-size: 2rem; 
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+h4 { 
+  font-size: 1.5rem; 
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+h5 { 
+  font-size: 1.25rem; 
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+h6 { 
+  font-size: 1.125rem; 
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+p {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-secondary);
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* Epic Games Style Buttons */
+.btn {
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  padding: var(--spacing-md) var(--spacing-xl);
+  transition: all var(--transition-normal);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
+  min-height: 48px;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-primary {
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary:hover {
+  background: var(--gradient-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  color: var(--text-inverse);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-outline:hover {
+  background: var(--bg-secondary);
+  border-color: var(--epic-blue);
+  color: var(--epic-blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success-color), #00c853);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #00c853, var(--success-color));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger-color), #d50000);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #d50000, var(--danger-color));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Epic Games Style Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+  overflow: hidden;
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
+  border-color: var(--border-accent);
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.card-header {
+  background: var(--gradient-dark);
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-body {
+  padding: var(--spacing-xl);
+}
+
+.card-footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
+}
+
+/* Epic Games Style Forms */
+.form-control, .form-select {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 1rem;
+  transition: all var(--transition-normal);
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus, .form-select:focus {
+  background: var(--bg-tertiary);
+  border-color: var(--epic-blue);
+  box-shadow: 0 0 0 3px rgba(0, 116, 228, 0.1);
+  color: var(--text-primary);
+}
+
+.form-control::placeholder {
+  color: var(--text-muted);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Epic Games Style Alerts */
+.alert {
+  border-radius: var(--radius-lg);
+  border: none;
+  padding: var(--spacing-lg);
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.alert-success {
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--success-color);
+  border-left: 4px solid var(--success-color);
+}
+
+.alert-danger {
+  background: rgba(255, 23, 68, 0.1);
+  color: var(--danger-color);
+  border-left: 4px solid var(--danger-color);
+}
+
+.alert-warning {
+  background: rgba(255, 171, 0, 0.1);
+  color: var(--warning-color);
+  border-left: 4px solid var(--warning-color);
+}
+
+.alert-info {
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--epic-cyan);
+  border-left: 4px solid var(--epic-cyan);
+}
+
+/* Epic Games Style Navigation */
+.navbar {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-md) 0;
+  box-shadow: var(--shadow-lg);
+}
+
+.navbar-brand {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-link {
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: all var(--transition-normal);
+  position: relative;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+  transition: all var(--transition-normal);
+  transform: translateX(-50%);
+}
+
+.nav-link:hover::after, .nav-link.active::after {
+  width: 100%;
+}
+
+/* Epic Games Style Dropdown */
+.dropdown-menu {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: var(--spacing-sm);
+}
+
+.dropdown-item {
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all var(--transition-normal);
+}
+
+.dropdown-item:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Epic Games Style Badges */
+.badge {
+  font-weight: 600;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-primary {
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+}
+
+.badge-secondary {
+  background: var(--gradient-dark);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.badge-success {
+  background: linear-gradient(135deg, var(--success-color), #00c853);
+  color: var(--text-inverse);
+}
+
+.badge-danger {
+  background: linear-gradient(135deg, var(--danger-color), #d50000);
+  color: var(--text-inverse);
+}
+
+/* Epic Games Style Progress Bars */
+.progress {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background: var(--gradient-primary);
+  border-radius: var(--radius-lg);
+  transition: width var(--transition-slow);
+}
+
+/* Epic Games Style Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: var(--shadow-md), var(--shadow-glow); }
+  50% { box-shadow: var(--shadow-lg), 0 0 30px rgba(0, 116, 228, 0.5); }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Animation Classes */
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Epic Games Style Utility Classes */
+.gradient-bg {
+  background: var(--gradient-primary);
+}
+
+.gradient-bg-secondary {
+  background: var(--gradient-secondary);
+}
+
+.gradient-bg-accent {
+  background: var(--gradient-accent);
+}
+
+.glass-effect {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-secondary {
+  background: var(--gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-accent {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.epic-border {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+              var(--gradient-primary) border-box;
+}
+
+.epic-shadow {
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+.epic-glow {
+  box-shadow: 0 0 20px rgba(0, 116, 228, 0.3);
+}
+
+/* Epic Games Style Grid System */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+.row {
+  margin: 0 calc(-1 * var(--spacing-md));
+}
+
+.col, .col-md, .col-lg {
+  padding: 0 var(--spacing-md);
+}
+
+/* Epic Games Style Responsive Design */
+@media (max-width: 768px) {
+  h1 { font-size: 2.5rem; }
+  h2 { font-size: 2rem; }
+  h3 { font-size: 1.75rem; }
+  
+  .btn {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-size: 1rem;
+    min-height: 56px;
+  }
+  
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .card-body {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 576px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.75rem; }
+  h3 { font-size: 1.5rem; }
+  
+  .btn {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: 0.875rem;
+    min-height: 48px;
+  }
+}
+
+/* Epic Games Style Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gradient-secondary);
+}
+
+/* Epic Games Style Focus States */
+*:focus {
+  outline: 2px solid var(--epic-blue);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Epic Games Style Selection */
+::selection {
+  background: var(--epic-blue);
+  color: var(--text-inverse);
+}
+
+/* Epic Games Style Loading Spinner */
+.spinner-border {
+  border: 3px solid var(--bg-secondary);
+  border-top: 3px solid var(--epic-blue);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Epic Games Style Modal */
+.modal-content {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2xl);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--gradient-dark);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+/* Epic Games Style Table */
+.table {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.table th {
+  background: var(--gradient-dark);
+  color: var(--text-primary);
+  font-weight: 600;
+  border: none;
+  padding: var(--spacing-lg);
+}
+
+.table td {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+  padding: var(--spacing-lg);
+}
+
+.table tbody tr:hover {
+  background: var(--bg-secondary);
+}
+
+/* Epic Games Style Pagination */
+.pagination {
+  gap: var(--spacing-sm);
+}
+
+.page-link {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all var(--transition-normal);
+}
+
+.page-link:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--epic-blue);
+  color: var(--epic-blue);
+  transform: translateY(-1px);
+}
+
+.page-item.active .page-link {
+  background: var(--gradient-primary);
+  border-color: var(--epic-blue);
+  color: var(--text-inverse);
+}
+
+/* Epic Games Style Tooltips */
+.tooltip {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* Epic Games Style File Upload */
+.file-upload {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-2xl);
+  text-align: center;
+  transition: all var(--transition-normal);
+  background: var(--bg-secondary);
+  cursor: pointer;
+}
+
+.file-upload:hover {
+  border-color: var(--epic-blue);
+  background: var(--bg-tertiary);
+  transform: translateY(-2px);
+}
+
+.file-upload.dragover {
+  border-color: var(--epic-blue);
+  background: var(--gradient-glow);
+  transform: scale(1.02);
+}
+
+/* Epic Games Style Product Cards */
+.product-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
+  border-color: var(--epic-blue);
+}
+
+.product-card-image {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+}
+
+.product-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.product-card:hover .product-card-image img {
+  transform: scale(1.1);
+}
+
+.product-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-card:hover .product-card-overlay {
+  opacity: 1;
+}
+
+/* Epic Games Style Hero Section */
+.hero-section {
+  background: var(--gradient-primary);
+  padding: var(--spacing-3xl) 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  opacity: 0.3;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: var(--text-inverse);
+}
+
+/* Epic Games Style Footer */
+.footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: var(--spacing-3xl) 0 var(--spacing-xl);
+  margin-top: var(--spacing-3xl);
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-2xl);
+}
+
+.footer-section h5 {
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-lg);
+  font-weight: 600;
+}
+
+.footer-section p, .footer-section a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-normal);
+}
+
+.footer-section a:hover {
+  color: var(--epic-blue);
+}
+
+.footer-bottom {
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-2xl);
+  text-align: center;
+  color: var(--text-muted);
+}
