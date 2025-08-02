@@ -1,0 +1,312 @@
+<!-- Product Details Page - Epic Games Style -->
+<div class="product-details-container">
+  <!-- Simplified Header -->
+  <header class="product-header">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <nav class="breadcrumb-nav">
+            <a routerLink="/discover" class="breadcrumb-link">
+              <i class="fas fa-arrow-left"></i>
+              Back to Discover
+            </a>
+            
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">{{ product?.category }}</span>
+            
+            <span><i class="bi bi-currency-dollar"></i> 17</span>
+          </nav>
+        </div>
+        <div class="col-lg-4 text-end">
+          <div class="header-actions">
+            <span class="product-rating">
+                <span class="stars">
+                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]" 
+                     [class.text-warning]="star <= (product?.rating || 0)"></i>
+                     
+                </span>
+                
+            </span>
+            <button class="btn btn-outline btn-sm" (click)="shareProduct()">
+              <i class="bi bi-share"></i>
+              Share
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="toggleWishlist()">
+              
+              Add To Cart
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Product Summary Section -->
+  <!-- <section class="product-summary">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <div class="product-info">
+            <h1 class="product-title">{{ product?.title }}</h1>
+            <p class="product-creator">by {{ product?.creator }}</p>
+            <div class="product-meta">
+              <div class="product-rating">
+                <div class="stars">
+                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]" 
+                     [class.text-warning]="star <= (product?.rating || 0)"></i>
+                </div>
+                <span class="rating-text">{{ product?.rating }} ({{ product?.ratingCount }} reviews)</span>
+              </div>
+              <div class="product-category">
+                <span class="category-badge">{{ product?.category }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <!-- <div class="purchase-card">
+            <div class="price-section">
+              <span class="product-price">${{ product?.price }}</span>
+              <span class="original-price" *ngIf="product?.originalPrice">${{ product?.originalPrice }}</span>
+            </div>
+            <div class="purchase-actions">
+              <button class="btn btn-primary btn-lg w-100 mb-3" (click)="addToCart()">
+                <i class="fas fa-shopping-cart"></i>
+                Add to Cart
+              </button>
+              <button class="btn btn-outline btn-lg w-100" (click)="buyNow()">
+                <i class="fas fa-bolt"></i>
+                Buy Now
+              </button>
+            </div>
+            <div class="product-badges" *ngIf="product?.badges?.length">
+              <span class="badge" *ngFor="let badge of product?.badges">{{ badge }}</span>
+            </div>
+          </div> -->
+        <!-- </div>
+      </div>
+    </div>
+  </section> --> 
+
+  <!-- Product Details Section -->
+  <section class="product-details-section">
+    <div class="container">
+      <div class="row">
+        <!-- Product Media Gallery -->
+        <div class="col-lg-8">
+          <div class="product-gallery">
+            <div class="main-media">
+              <div class="media-container" *ngIf="selectedMedia.type === 'image'">
+                <img [src]="selectedMedia.url" [alt]="product?.title" class="main-image">
+              </div>
+              <div class="media-container" *ngIf="selectedMedia.type === 'video'">
+                <iframe 
+                  [src]="selectedMedia.url" 
+                  title="Product Video"
+                  frameborder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                  referrerpolicy="strict-origin-when-cross-origin" 
+                  allowfullscreen
+                  class="main-video">
+                </iframe>
+              </div>
+            </div>
+            
+            <div class="media-thumbnails" *ngIf="(product?.media?.length || 0) > 1">
+              <div 
+                class="thumbnail" 
+                *ngFor="let media of product?.media; let i = index"
+                [class.active]="selectedMediaIndex === i"
+                (click)="selectMedia(i)"
+              >
+                <img [src]="media.thumbnail || media.url" [alt]="'Media ' + (i + 1)">
+                <div class="media-type-indicator" *ngIf="media.type === 'video'">
+                  <i class="fas fa-play"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Description -->
+          <div class="product-description">
+            <h3>Description</h3>
+            <div class="description-content" [innerHTML]="product?.description"></div>
+            
+            <!-- Product Features -->
+            <div class="product-features" *ngIf="product?.features?.length">
+              <h4>Features</h4>
+              <ul class="features-list">
+                <li *ngFor="let feature of product?.features">
+                  <i class="fas fa-check"></i>
+                  {{ feature }}
+                </li>
+              </ul>
+            </div>
+
+            <!-- Product Tags -->
+            <div class="product-tags" *ngIf="product?.tags?.length">
+              <h4>Tags</h4>
+              <div class="tags-container">
+                <span class="tag" *ngFor="let tag of product?.tags">{{ tag }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Sidebar -->
+        <div class="col-lg-4">
+          <div class="product-sidebar">
+            <!-- Purchase Card (Sticky) -->
+            <div class="purchase-card sticky">
+              <div class="price-section">
+                <span class="product-price">${{ product?.price }}</span>
+                <span class="original-price" *ngIf="product?.originalPrice">${{ product?.originalPrice }}</span>
+              </div>
+              <div class="purchase-actions">
+                <button class="btn btn-primary btn-lg w-100 mb-3" (click)="addToCart()">
+                  <i class="fas fa-shopping-cart"></i>
+                  Add To Cart
+                </button>
+                <button class="btn btn-outline btn-lg w-100" (click)="buyNow()">
+                  <i class="fas fa-bolt"></i>
+                  Add To Wishlist
+                </button>
+              </div>
+            </div>
+
+            <!-- Product Details -->
+            <div class="product-details-card">
+              <h5>Product Details</h5>
+              <div class="detail-item">
+                <span class="detail-label">File Size:</span>
+                <span class="detail-value">{{ product?.fileSize }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Format:</span>
+                <span class="detail-value">{{ product?.format }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Compatibility:</span>
+                <span class="detail-value">{{ product?.compatibility }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">License:</span>
+                <span class="detail-value">{{ product?.license }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Updates:</span>
+                <span class="detail-value">{{ product?.updates }}</span>
+              </div>
+            </div>
+
+            <!-- Creator Info -->
+            <!-- <div class="creator-card">
+              <div class="creator-header">
+                <img [src]="product?.creatorAvatar" [alt]="product?.creator" class="creator-avatar">
+                <div class="creator-info">
+                  <h6>{{ product?.creator }}</h6>
+                  <p class="creator-stats">{{ product?.creatorProducts }} products</p>
+                </div>
+              </div>
+              <button class="btn btn-outline w-100" (click)="viewCreator()">
+                <i class="fas fa-user"></i>
+                View Creator
+              </button>
+            </div> -->
+
+            <!-- Reviews Summary -->
+            <div class="reviews-summary">
+              <h5>Customer Reviews</h5>
+              <div class="overall-rating">
+                <div class="rating-stars">
+                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]" 
+                     [class.text-warning]="star <= (product?.rating || 0)"></i>
+                </div>
+                <span class="rating-number">{{ product?.rating }}/5</span>
+                <span class="rating-count">({{ product?.ratingCount }} reviews)</span>
+              </div>
+              
+              <!-- Rating Distribution -->
+              <div class="rating-distribution">
+                <div class="rating-bar" *ngFor="let rating of [5,4,3,2,1]">
+                  <span class="rating-label">{{ rating }}★</span>
+                  <div class="rating-progress">
+                    <div class="progress-bar" [style.width.%]="getRatingPercentage(rating)"></div>
+                  </div>
+                  <span class="rating-count">{{ getRatingCount(rating) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reviews Section -->
+  <section class="reviews-section">
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <h3>Customer Reviews</h3>
+          <div class="reviews-container">
+            <div class="review-item" *ngFor="let review of reviews">
+              <div class="review-header">
+                <div class="reviewer-info">
+                  <img [src]="review.avatar" [alt]="review.name" class="reviewer-avatar">
+                  <div>
+                    <h6>{{ review.name }}</h6>
+                    <div class="review-rating">
+                      <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]" 
+                         [class.text-warning]="star <= review.rating"></i>
+                    </div>
+                  </div>
+                </div>
+                <span class="review-date">{{ review.date | date }}</span>
+              </div>
+              <div class="review-content">
+                <p>{{ review.comment }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Load More Reviews -->
+          <div class="load-more-reviews text-center" *ngIf="hasMoreReviews">
+            <button class="btn btn-outline" (click)="loadMoreReviews()">
+              Load More Reviews
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Related Products -->
+  <!-- <section class="related-products">
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <h3>You Might Also Like</h3>
+          <div class="related-products-grid">
+            <div class="related-product-card" *ngFor="let relatedProduct of relatedProducts">
+              <div class="product-image">
+                <img [src]="relatedProduct.media[0].url" [alt]="relatedProduct.title">
+              </div>
+              <div class="product-info">
+                <h6>{{ relatedProduct.title }}</h6>
+                <p class="creator">by {{ relatedProduct.creator }}</p>
+                <div class="product-meta">
+                  <span class="price">${{ relatedProduct.price }}</span>
+                  <div class="rating">
+                    <i class="fas fa-star text-warning"></i>
+                    <span>{{ relatedProduct.rating }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section> -->
+</div>
