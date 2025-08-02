@@ -1,0 +1,175 @@
+<div class="products-container">
+  <!-- Left Sidebar -->
+  <app-dashboard-sidebar></app-dashboard-sidebar>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Header Section -->
+    <div class="products-header">
+      <h1 class="products-title">Products</h1>
+      <button class="new-product-btn" routerLink="/products/new">
+        <i class="fas fa-plus"></i>
+        New Product
+      </button>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="loading">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading products...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="error-state" *ngIf="error && !loading">
+        <div class="error-card">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Error Loading Products</h3>
+          <p>{{ error }}</p>
+          <button class="retry-btn" (click)="loadProducts()">
+            <i class="fas fa-redo"></i>
+            Try Again
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State - Show when no products -->
+      <div class="empty-state" *ngIf="!hasProducts && !loading && !error">
+        <div class="empty-card">
+          <div class="empty-image">
+            <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=300&fit=crop" alt="Create your first product" />
+          </div>
+          <div class="empty-content">
+            <h2 class="empty-title">We've never met an idea we didn't like.</h2>
+            <p class="empty-message">
+              Your first product doesn't need to be perfect. Just put it out there, and see if it sticks.
+            </p>
+            <button class="new-product-btn-large" routerLink="/products/new">
+              <i class="fas fa-plus"></i>
+              New Product
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Table - Show when products exist -->
+      <div class="products-table-container" *ngIf="hasProducts && !loading && !error">
+        <!-- Summary Row -->
+        <div class="summary-row">
+          <div class="summary-cell">
+            <span class="summary-label">Total Sales:</span>
+            <span class="summary-value">{{ totalSales }}</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-label">Total Revenue:</span>
+            <span class="summary-value">${{ totalRevenue }}</span>
+          </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="products-table">
+          <div class="table-header">
+            <div class="header-cell image-cell">Image</div>
+            <div class="header-cell title-cell">Title & Link</div>
+            <div class="header-cell sales-cell">Sales</div>
+            <div class="header-cell revenue-cell">Revenue</div>
+            <div class="header-cell price-cell">Price</div>
+            <div class="header-cell status-cell">Status</div>
+            <!-- <div class="header-cell actions-cell">Actions</div> -->
+          </div>
+
+          <div class="table-body">
+            <div class="table-row" *ngFor="let product of products">
+              <!-- Product Image -->
+              <div class="table-cell image-cell">
+                <img [src]="product.image" [alt]="product.title" class="product-image" />
+              </div>
+
+              <!-- Product Title & Link -->
+              <div class="table-cell title-cell">
+                <h3 class="product-title clickable" (click)="editProduct(product)">{{ product.title }}</h3>
+                <a [href]="'https://' + product.productLink" target="_blank" class="product-link">
+                  {{ product.productLink }}
+                </a>
+              </div>
+
+              <!-- Sales -->
+              <div class="table-cell sales-cell">
+                <span class="sales-value">{{ product.sales }}</span>
+              </div>
+
+              <!-- Revenue -->
+              <div class="table-cell revenue-cell">
+                <span class="revenue-value">${{ product.revenue }}</span>
+              </div>
+
+              <!-- Price -->
+              <div class="table-cell price-cell">
+                <span class="price-value">${{ product.price }}</span>
+              </div>
+
+              <!-- Status -->
+              <div class="table-cell status-cell">
+                <span class="status-badge" [class]="getStatusClass(product.status)">
+                  {{ getStatusText(product.status) }}
+                </span>
+              </div>
+
+              <!-- Actions -->
+              <div class="table-cell actions-cell">
+                <div class="action-menu">
+                  <button class="menu-btn" (click)="openActionMenu(product.id)">
+                    <i class="fas fa-ellipsis-h"></i>
+                  </button>
+                  
+                  <div class="menu-dropdown" *ngIf="product.showMenu">
+                    <button class="menu-item" [routerLink]="['/products', product.id, 'edit']">
+                      <i class="fas fa-edit"></i>
+                      Edit
+                    </button>
+                    <button class="menu-item" (click)="deleteProduct(product)">
+                      <i class="fas fa-trash"></i>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="closeDeleteModal()">
+      <i class="fas fa-times"></i>
+    </button>
+    
+    <div class="modal-body">
+      <h3 class="modal-title">Delete Product</h3>
+      <p class="modal-message">
+        Are you sure you want to delete <strong>{{ productToDelete?.title }}</strong>?
+      </p>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn btn-secondary" (click)="closeDeleteModal()">
+        Cancel
+      </button>
+      <button class="btn btn-danger" (click)="confirmDelete()">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+
