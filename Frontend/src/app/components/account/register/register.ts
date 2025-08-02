@@ -38,7 +38,8 @@ export class Register implements OnInit {
       Username: ['', [Validators.required, Validators.minLength(3)]],
       Email: ['', [Validators.required, Validators.email]],
       Password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', Validators.required]
+      confirmPassword: ['', Validators.required],
+      Role: ['Customer', [Validators.required]] // Default to Customer role
     }, { validators: this.passwordMatchValidator }); // Add custom validator
   }
 
@@ -59,7 +60,7 @@ export class Register implements OnInit {
         Username: this.registerForm.value.Username,
         Email: this.registerForm.value.Email,
         Password: this.registerForm.value.Password,
-        Role: 'Customer' // Default to Customer role like old frontend
+        Role: this.registerForm.value.Role // Use the selected role from form
       };
 
       this.authService.register(registerPayload).subscribe({
