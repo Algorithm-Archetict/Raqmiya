@@ -49,7 +49,7 @@
         <!-- Logged In Users -->
         <div *ngIf="isLoggedIn" class="user-menu">
           <div class="dropdown">
-            <button class="btn btn-outline dropdown-toggle user-avatar-btn" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-outline dropdown-toggle user-avatar-btn" type="button" (click)="toggleUserDropdown($event)">
               <div class="user-avatar">
                 <img *ngIf="getUserAvatar()" [src]="getUserAvatar()" [alt]="getUsername()" class="avatar-image">
                 <div *ngIf="!getUserAvatar()" class="avatar-fallback">
@@ -58,21 +58,21 @@
               </div>
               <span class="username-text">{{ getUsername() }}</span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+            <ul class="dropdown-menu dropdown-menu-end" [class.show]="isUserDropdownOpen">
               <li *ngIf="isCreator()">
-                <a class="dropdown-item" routerLink="/products">
+                <a class="dropdown-item" routerLink="/products" (click)="closeUserDropdown()">
                   <i class="fas fa-box me-2"></i>
                   My Products
                 </a>
               </li>
               <li *ngIf="isCreator()">
-                <a class="dropdown-item" routerLink="/products/new">
+                <a class="dropdown-item" routerLink="/products/new" (click)="closeUserDropdown()">
                   <i class="fas fa-plus me-2"></i>
                   Create Product
                 </a>
               </li>
               <li>
-                <a class="dropdown-item" routerLink="/settings">
+                <a class="dropdown-item" routerLink="/settings" (click)="closeUserDropdown()">
                   <i class="fas fa-cog me-2"></i>
                   Settings
                 </a>

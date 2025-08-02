@@ -233,7 +233,15 @@
   margin-left: 0.5rem;
 }
 
+/* Dropdown Styles */
+.dropdown {
+  position: relative;
+}
+
 .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -241,6 +249,17 @@
   padding: 0.5rem 0;
   min-width: 200px;
   margin-top: 0.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all var(--transition-normal);
+  z-index: 1001;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .dropdown-item {
@@ -255,6 +274,7 @@
   background: none;
   width: 100%;
   text-align: left;
+  cursor: pointer;
 }
 
 .dropdown-item:hover {
@@ -297,5 +317,10 @@
   
   .username-text {
     font-size: 0.875rem;
+  }
+  
+  .dropdown-menu {
+    right: -1rem;
+    min-width: 180px;
   }
 }
