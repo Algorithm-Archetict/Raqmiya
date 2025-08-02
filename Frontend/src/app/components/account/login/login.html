@@ -23,8 +23,8 @@
                         </div>
 
                         <!-- Alerts -->
-                        <!-- <app-alert *ngIf="errorMessage" [message]="errorMessage" type="danger"></app-alert>
-          <app-alert *ngIf="successMessage" [message]="successMessage" type="success"></app-alert> -->
+                        <app-alert *ngIf="errorMessage" [message]="errorMessage" type="danger"></app-alert>
+                        <app-alert *ngIf="successMessage" [message]="successMessage" type="success"></app-alert>
 
                         <!-- Login Form -->
                         <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-form">
@@ -70,7 +70,7 @@
                                     <span *ngIf="!isLoading">
                                         <i class="fas fa-sign-in-alt me-2"></i>Sign In
                                     </span>
-                                    <!-- <app-loading-spinner *ngIf="isLoading"></app-loading-spinner> -->
+                                    <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
                                 </button>
                             </div>
                         </form>

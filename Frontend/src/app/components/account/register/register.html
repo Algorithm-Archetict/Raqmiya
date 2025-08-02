@@ -23,12 +23,8 @@
           </div>
 
           <!-- Alerts -->
-          <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
-            {{ errorMessage }}
-          </div>
-          <div *ngIf="successMessage" class="alert alert-success" role="alert">
-            {{ successMessage }}
-          </div>
+          <app-alert *ngIf="errorMessage" [message]="errorMessage" type="danger"></app-alert>
+          <app-alert *ngIf="successMessage" [message]="successMessage" type="success"></app-alert>
 
           <!-- Register Form -->
           <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
@@ -136,57 +132,6 @@
               </div>
             </div>
 
-            <!-- Role Selection -->
-            <div class="form-group">
-              <label class="form-label">Account Type</label>
-              <div class="role-selection">
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <div class="role-option" [class.selected]="registerForm.get('Role')?.value === 'Customer'">
-                      <input
-                        type="radio"
-                        id="roleCustomer"
-                        name="Role"
-                        value="Customer"
-                        formControlName="Role"
-                        class="role-radio"
-                      >
-                      <label for="roleCustomer" class="role-label">
-                        <div class="role-icon">
-                          <i class="fas fa-shopping-cart"></i>
-                        </div>
-                        <div class="role-content">
-                          <h6>Customer</h6>
-                          <p>Browse and purchase digital products</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="role-option" [class.selected]="registerForm.get('Role')?.value === 'Creator'">
-                      <input
-                        type="radio"
-                        id="roleCreator"
-                        name="Role"
-                        value="Creator"
-                        formControlName="Role"
-                        class="role-radio"
-                      >
-                      <label for="roleCreator" class="role-label">
-                        <div class="role-icon">
-                          <i class="fas fa-palette"></i>
-                        </div>
-                        <div class="role-content">
-                          <h6>Creator</h6>
-                          <p>Create and sell your digital products</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <!-- Terms and Conditions -->
             <div class="form-group">
               <div class="form-check">
@@ -202,10 +147,7 @@
                 <span *ngIf="!isLoading">
                   <i class="fas fa-user-plus me-2"></i>Create Account
                 </span>
-                <div *ngIf="isLoading" class="loading-spinner">
-              <i class="fas fa-spinner fa-spin"></i>
-              <span>Loading...</span>
-            </div>
+                <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
               </button>
             </div>
           </form>
