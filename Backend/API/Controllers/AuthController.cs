@@ -1,4 +1,5 @@
 ﻿using API.Constants;
+using AutoMapper;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,13 @@ namespace API.Controllers
     {
         private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
+        private readonly IMapper _mapper;
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger, IMapper mapper)
         {
             _authService = authService;
             _logger = logger;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -34,16 +37,6 @@ namespace API.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterRequestDTO request)
         {
             _logger.LogInformation(LogMessages.RegistrationAttempt, request.Email, request.Username, request.Role);
-
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList();
-                _logger.LogWarning(LogMessages.RegistrationModelValidationFailed, string.Join(", ", errors));
-                return BadRequest(new { Errors = errors, ModelState = ModelState });
-            }
 
             // Restrict Admin registration to only authenticated admins
             if (request.Role == RoleConstants.Admin)
@@ -81,16 +74,6 @@ namespace API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO request)
         {
             _logger.LogInformation(LogMessages.LoginAttempt, request.EmailOrUsername);
-
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList();
-                _logger.LogWarning(LogMessages.LoginModelValidationFailed, string.Join(", ", errors));
-                return BadRequest(new { Errors = errors, ModelState = ModelState });
-            }
 
             try
             {
