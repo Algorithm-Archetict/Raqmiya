@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Shared.DTOs.AuthDTOs;
 using System.Security.Claims;
 using Raqmiya.Infrastructure;
+using AutoMapper;
 
 namespace API.Controllers
 {
@@ -19,12 +20,14 @@ namespace API.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IAuthService _authService;
         private readonly ILogger<AdminUsersController> _logger;
+        private readonly IMapper _mapper;
 
-        public AdminUsersController(IUserRepository userRepository, IAuthService authService, ILogger<AdminUsersController> logger)
+        public AdminUsersController(IUserRepository userRepository, IAuthService authService, ILogger<AdminUsersController> logger, IMapper mapper)
         {
             _userRepository = userRepository;
             _authService = authService;
             _logger = logger;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -35,9 +38,7 @@ namespace API.Controllers
         [ProducesResponseType(400)]
         public async Task<IActionResult> CreateAdmin([FromBody] RegisterRequestDTO request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            // Force role to Admin regardless of input
+            // ModelState check removed; FluentValidation will handle validation errors
             request.Role = RoleConstants.Admin;
             try
             {
@@ -65,7 +66,7 @@ namespace API.Controllers
             try
             {
                 var users = await _userRepository.GetAllAsync();
-                return Ok(users.Select(MapToProfileDto));
+                return Ok(_mapper.Map<IEnumerable<UserProfileDTO>>(users));
             }
             catch (Exception ex)
             {
@@ -86,7 +87,7 @@ namespace API.Controllers
             {
                 var user = await _userRepository.GetByIdAsync(id);
                 if (user == null) return NotFound();
-                return Ok(MapToProfileDto(user));
+                return Ok(_mapper.Map<UserProfileDTO>(user));
             }
             catch (Exception ex)
             {
@@ -140,17 +141,5 @@ namespace API.Controllers
                 return Problem("An error occurred while activating the user.");
             }
         }
-
-        private static UserProfileDTO MapToProfileDto(User user) => new UserProfileDTO
-        {
-            Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            Role = user.Role,
-            ProfileDescription = user.ProfileDescription,
-            ProfileImageUrl = user.ProfileImageUrl,
-            CreatedAt = user.CreatedAt,
-            IsActive = user.IsActive
-        };
     }
 }
