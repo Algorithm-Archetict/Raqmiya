@@ -1,391 +1,187 @@
 <div class="add-product-container">
-  <!-- Left Sidebar -->
   <app-dashboard-sidebar></app-dashboard-sidebar>
-
-  <!-- Main Content Area -->
   <div class="main-content">
-    <!-- Header Section -->
-    <div class="product-header">
-      <div class="header-left">
-        <h1 class="header-title" *ngIf="currentStep === 'create'">What will you be creating?</h1>
-        <h1 class="header-title" *ngIf="currentStep === 'customize'">{{ productForm.get('name')?.value || 'Product Name' }}</h1>
-        <h1 class="header-title" *ngIf="currentStep === 'content'">{{ productForm.get('name')?.value || 'Product Name' }}</h1>
-        
-        <!-- Navigation Tabs for Customize and Content steps -->
-        <div class="nav-tabs" *ngIf="currentStep === 'customize' || currentStep === 'content'">
-          <a class="nav-tab" [class.active]="currentStep === 'customize'" routerLink="/products/new">
-            <i class="fas fa-edit"></i>
-            Product
-          </a>
-          <a class="nav-tab" [class.active]="currentStep === 'content'" routerLink="/products/new/content">
-            <i class="fas fa-file-alt"></i>
-            Content
-          </a>
+    <form [formGroup]="productForm">
+      <div class="product-header">
+        <div class="header-left">
+          <h1 class="header-title" *ngIf="currentStep === 'create'">What will you be creating?</h1>
+          <div class="nav-tabs" *ngIf="currentStep === 'customize' || currentStep === 'content'">
+            <a class="nav-tab" [class.active]="currentStep === 'customize'" routerLink="/products/new">
+              <i class="fas fa-edit"></i> Product
+            </a>
+            <a class="nav-tab" [class.active]="currentStep === 'content'" routerLink="/products/new/content">
+              <i class="fas fa-file-alt"></i> Content
+            </a>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+          <button class="btn btn-primary" *ngIf="currentStep === 'create'" [disabled]="!isCreateStepValid" (click)="nextToCustomize()">Next: Customize</button>
+          <button class="btn btn-primary" *ngIf="currentStep === 'customize'" [disabled]="!isCustomizeStepValid" (click)="saveAndContinue()">Save and continue</button>
+          <button class="btn btn-primary" *ngIf="currentStep === 'content'" [disabled]="!productForm.valid || isSubmitting" (click)="saveAndPublish()">
+            <i class="fas fa-spinner fa-spin me-2" *ngIf="isSubmitting"></i>
+            {{ isSubmitting ? 'Creating Product...' : 'Save and publish' }}
+          </button>
         </div>
       </div>
-      
-      <div class="header-right">
-        <button class="btn btn-secondary" (click)="cancel()">
-          Cancel
-        </button>
-        <button 
-          class="btn btn-primary" 
-          *ngIf="currentStep === 'create'"
-          [disabled]="!isCreateStepValid"
-          (click)="nextToCustomize()"
-        >
-          Next: Customize
-        </button>
-        <button 
-          class="btn btn-primary" 
-          *ngIf="currentStep === 'customize'"
-          [disabled]="!isCustomizeStepValid"
-          (click)="saveAndContinue()"
-        >
-          Save and continue
-        </button>
-        <button 
-          class="btn btn-primary" 
-          *ngIf="currentStep === 'content'"
-          [disabled]="!productForm.valid || isSubmitting"
-          (click)="saveAndPublish()"
-        >
-          <i class="fas fa-spinner fa-spin me-2" *ngIf="isSubmitting"></i>
-          {{ isSubmitting ? 'Creating Product...' : 'Save and publish' }}
-        </button>
-      </div>
-    </div>
 
-    <!-- Error and Success Messages -->
-    <div class="messages-container" *ngIf="errorMessage || successMessage">
-      <div class="alert alert-danger" *ngIf="errorMessage">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        {{ errorMessage }}
+      <div class="messages-container" *ngIf="errorMessage || successMessage">
+        <div class="alert alert-danger" *ngIf="errorMessage">
+          <i class="fas fa-exclamation-triangle me-2"></i> {{ errorMessage }}
+        </div>
+        <div class="alert alert-success" *ngIf="successMessage">
+          <i class="fas fa-check-circle me-2"></i> {{ successMessage }}
+        </div>
       </div>
-      <div class="alert alert-success" *ngIf="successMessage">
-        <i class="fas fa-check-circle me-2"></i>
-        {{ successMessage }}
-      </div>
-    </div>
 
-    <!-- Content Area -->
-    <div class="content-area">
-      <!-- Step 1: Create Product -->
-      <div class="create-step" *ngIf="currentStep === 'create'">
+      <div class="content-area">
         <div class="step-content">
-          <div class="quote-section">
+          <div class="quote-section" *ngIf="currentStep === 'create'">
             <p class="quote-text">
-              Turn your idea into a live product in minutes. No fuss, just a few quick selections and you're ready to start selling. Whether it's digital downloads, online courses, or memberships — see what sticks.
+              Turn your idea into a live product in minutes. Whether it's digital downloads, online courses, or memberships — see what sticks.
             </p>
-          </div>
-          
-          <div class="form-section" [formGroup]="productForm">
             <div class="form-group">
-              <label for="productName"  class="form-label">Name *</label>
-              <input 
-                type="text" 
-                id="productName"
-                class="form-input"
-                [class.error]="productForm.get('name')?.invalid && productForm.get('name')?.touched"
-                placeholder="Name of your product"
-                [formControlName]="'name'"
-                (input)="onNameChange()"
-              >
-              <div class="error-message" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
-                <span *ngIf="productForm.get('name')?.errors?.['required']">Product name is required</span>
-                <span *ngIf="productForm.get('name')?.errors?.['minlength']">Product name must be at least 3 characters</span>
-              </div>
+              <label>Name *</label>
+              <input type="text" class="form-input" formControlName="name" placeholder="Name of your product">
             </div>
-            
             <div class="product-types">
-              <div 
-                class="product-type-card" 
-                *ngFor="let type of productTypes"
-                [class.selected]="type.selected"
-                (click)="selectProductType(type.id)"
-              >
-                <div class="type-icon">
-                  <i [class]="type.icon"></i>
-                </div>
-                <div class="type-content">
-                  <h3 class="type-name">{{ type.name }}</h3>
-                  <p class="type-description">{{ type.description }}</p>
-                </div>
+              <div class="product-type-card" *ngFor="let type of productTypes" [class.selected]="type.selected" (click)="selectProductType(type.id)">
+                <i [class]="type.icon"></i>
+                <h3>{{ type.name }}</h3>
+                <p>{{ type.description }}</p>
               </div>
             </div>
-            
             <div class="form-group">
-              <label for="productPrice" class="form-label">Price *</label>
-              <div class="price-input-group">
-                <input 
-                  type="number" 
-                  id="productPrice"
-                  class="form-input"
-                  [class.error]="productForm.get('price')?.invalid && productForm.get('price')?.touched"
-                  placeholder="Price your product"
-                  [formControlName]="'price'"
-                >
-                <select class="currency-select" [(ngModel)]="currency" [ngModelOptions]="{standalone: true}">
-                  <option value="EGP">EGP</option>
-                  <option value="USD">USD</option>
-                </select>
-              </div>
-              <div class="error-message" *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched">
-                <span *ngIf="productForm.get('price')?.errors?.['required']">Price is required</span>
-                <!-- <span *ngIf="productForm.get('price')?.errors?.['min']">Price must be greater than 0</span> -->
-              </div>
+              <label>Price *</label>
+              <input type="number" class="form-input" formControlName="price" placeholder="Product price">
+              <select formControlName="currency">
+                <option value="USD">USD</option>
+                <option value="EGP">EGP</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Permalink *</label>
+              <input type="text" class="form-input" formControlName="permalink" placeholder="product-slug">
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Step 2: Customize Product -->
-      <div class="customize-step" *ngIf="currentStep === 'customize'">
-        <div class="customize-layout">
-          <!-- Left Section - Form -->
-          <div class="form-section" [formGroup]="productForm">
-            <div class="form-group">
-              <label for="productNameEdit"  class="form-label">Name</label>
-              <input 
-                type="text" 
-                id="productNameEdit"
-                class="form-input"
-                [value] = "name"
-                placeholder="Name of your product"
-                [formControlName]="'name'"
-                (input)="onNameChange()"
-              >
-            </div>
-            
-            <div class="form-group">
-              <label for="productDescription" class="form-label">Description</label>
-              <textarea 
-                id="productDescription"
-                class="form-textarea"
-                placeholder="Describe your product..."
-                [formControlName]="'description'"
-                rows="6"
-              ></textarea>
-            </div>
-            
-            <div class="form-group">
-              <label for="productUrl" class="form-label">URL</label>
-              <input 
-                type="text" 
-                id="productUrl"
-                class="form-input"
-                [formControlName]="'url'"
-                readonly
-              >
-            </div>
-            
-            <!-- Cover Images Section -->
-            <div class="section-divider"></div>
-            <div class="form-group">
-              <label class="form-label">Cover Images</label>
-              <button 
-                class="upload-btn"
-                (click)="showCoverOptions = !showCoverOptions"
-              >
-                <i class="fas fa-upload"></i>
-                Upload a cover image
-              </button>
-              
-              <div class="upload-options" *ngIf="showCoverOptions">
-                <div class="upload-option">
-                  <input 
-                    type="file" 
-                    id="coverFile" 
-                    accept="image/*"
-                    (change)="uploadCoverImage($event)"
-                    style="display: none;"
-                  >
-                  <label for="coverFile" class="upload-option-btn">
-                    <i class="fas fa-folder-open"></i>
-                    Computer files
-                  </label>
-                </div>
-                <div class="upload-option">
-                  <div class="link-input-group">
-                    <input 
-                      type="url" 
-                      class="form-input"
-                      placeholder="Enter image URL"
-                      [(ngModel)]="coverImageLink"
-                      [ngModelOptions]="{standalone: true}"
-                    >
-                    <button 
-                      class="btn btn-secondary"
-                      (click)="uploadCoverFromLink()"
-                    >
-                      <i class="fas fa-upload"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <p class="upload-hint">
-                Images should be horizontal, at least 1280x720px, and 72 DPI (dots per inch).
-              </p>
-              
-              <!-- Cover Images Preview -->
-              <div class="cover-images-preview" *ngIf="coverImages.length > 0">
-                <div class="cover-image-item" *ngFor="let image of coverImages; let i = index">
-                  <img [src]="image" [alt]="'Cover image ' + (i + 1)">
-                  <button class="remove-btn" (click)="removeCoverImage(i)">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Thumbnail Section -->
-            <div class="section-divider"></div>
-            <div class="form-group">
-              <label class="form-label">Thumbnail</label>
-              <input 
-                type="file" 
-                id="thumbnailFile" 
-                accept="image/*"
-                (change)="uploadThumbnail($event)"
-                style="display: none;"
-              >
-              <label for="thumbnailFile" class="upload-btn">
-                <i class="fas fa-upload"></i>
-                Upload thumbnail
-              </label>
-              
-              <p class="upload-hint">
-                This image appears in the Raqmiya Library, Discover and Profile pages. Your image should be square, at least 600x600px, and JPG, PNG or GIF format.
-              </p>
-              
-              <!-- Thumbnail Preview -->
-              <div class="thumbnail-preview" *ngIf="thumbnailImage">
-                <img [src]="thumbnailImage" alt="Thumbnail">
-              </div>
-            </div>
-            
-            <!-- Product Info Section -->
-            <div class="section-divider"></div>
-            <div class="form-group">
-              <label for="productSummary" class="form-label">Summary</label>
-              <input 
-                type="text" 
-                id="productSummary"
-                class="form-input"
-                placeholder="You will get..."
-                [formControlName]="'summary'"
-              >
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">Additional details</label>
-              <div class="details-card">
-                <p class="details-hint">
-                  Call out important features of your product that help your customers decide to buy
-                </p>
-                <button 
-                  class="btn btn-secondary"
-                  (click)="showDetailsForm = true"
-                  *ngIf="!showDetailsForm"
-                >
-                  Add details
-                </button>
-                
-                <div class="details-form" *ngIf="showDetailsForm">
-                  <div class="detail-inputs">
-                    <input 
-                      type="text" 
-                      class="form-input"
-                      placeholder="Attribute (e.g., File size)"
-                      [(ngModel)]="newDetail.attribute"
-                      [ngModelOptions]="{standalone: true}"
-                    >
-                    <input 
-                      type="text" 
-                      class="form-input"
-                      placeholder="Value (e.g., 100MB)"
-                      [(ngModel)]="newDetail.value"
-                      [ngModelOptions]="{standalone: true}"
-                    >
-                  </div>
-                  <button 
-                    class="btn btn-primary"
-                    (click)="addProductDetail()"
-                  >
-                    Add details
-                  </button>
-                </div>
-                
-                <!-- Existing Details -->
-                <div class="existing-details" *ngIf="productDetails.length > 0">
-                  <div class="detail-item" *ngFor="let detail of productDetails; let i = index">
-                    <span class="detail-attribute">{{ detail.attribute }}:</span>
-                    <span class="detail-value">{{ detail.value }}</span>
-                    <button class="remove-detail-btn" (click)="removeProductDetail(i)">
-                      <i class="fas fa-times"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Right Section - Preview -->
-          <!-- <div class="preview-section">
-            <div class="preview-card">
-              <div class="preview-image" *ngIf="coverImages.length > 0">
-                <img [src]="coverImages[0]" alt="Product preview">
-              </div>
-              <div class="preview-content">
-                <h3 class="preview-title">{{ productForm.get('name')?.value || 'Product Name' }}</h3>
-                <p class="preview-description">{{ productForm.get('description')?.value || 'Product description will appear here...' }}</p>
-                <div class="preview-price">
-                  <span class="price-amount">{{ productForm.get('price')?.value || '0' }}</span>
-                  <span class="price-currency">{{ currency }}</span>
-                </div>
-                <button class="preview-buy-btn">Buy now</button>
-              </div>
-            </div>
-          </div> -->
-        </div>
-      </div>
+          <app-product-edit *ngIf="currentStep === 'customize'" [productForm]="productForm" [productId]="productId" (save)="saveAndContinue()"></app-product-edit>
+          <app-product-edit-content 
+  *ngIf="currentStep === 'content' && productId"
+  [productForm]="productForm"
+  [productId]="productId"
+  (save)="saveAndPublish()">
+</app-product-edit-content>
 
-      <!-- Step 3: Content -->
-      <div class="content-step" *ngIf="currentStep === 'content'">
-        <div class="content-editor" [formGroup]="productForm">
-          <div class="editor-toolbar">
-            <button class="toolbar-btn">
-              <i class="fas fa-bold"></i>
-            </button>
-            <button class="toolbar-btn">
-              <i class="fas fa-italic"></i>
-            </button>
-            <button class="toolbar-btn">
-              <i class="fas fa-underline"></i>
-            </button>
-            <button class="toolbar-btn">
-              <i class="fas fa-link"></i>
-            </button>
-            <button class="toolbar-btn">
-              <i class="fas fa-upload"></i>
-            </button>
-          </div>
-          
-          <div class="editor-content">
-            <textarea 
-              class="content-textarea"
-              placeholder="Enter the content you want to sell. Upload your files or start typing."
-              [formControlName]="'content'"
-              rows="20"
-            ></textarea>
-          </div>
-          
-          <div class="content-hint">
-            <p>This is what buyers will see when they purchase your product. Only customers who have bought your product can access this content.</p>
-          </div>
         </div>
       </div>
-    </div>
+    </form>
   </div>
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- =================================================================================================
+ 
+
+
+-->
+
+
+<!-- <div class="add-product-container">
+  <app-dashboard-sidebar></app-dashboard-sidebar>
+
+  <div class="main-content">
+    Header and buttons omitted for brevity -->
+
+    <!-- <form [formGroup]="productForm">
+      Step 1: Basic Info -->
+      <!-- <ng-container *ngIf="currentStep === 'create'">
+
+        Your existing create step content -->
+
+        <!-- <div class="form-group">
+          <label for="productName"  class="form-label">Name *</label>
+          <input 
+            type="text" 
+            id="productName"
+            class="form-input"
+            [class.error]="productForm.get('name')?.invalid && productForm.get('name')?.touched"
+            placeholder="Name of your product"
+            [formControlName]="'name'"
+            (input)="onNameChange()"
+          >
+          <div class="error-message" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
+            <span *ngIf="productForm.get('name')?.errors?.['required']">Product name is required</span>
+            <span *ngIf="productForm.get('name')?.errors?.['minlength']">Product name must be at least 3 characters</span>
+          </div>
+        </div> -->
+        
+        <!-- <div class="product-types">
+          <div 
+            class="product-type-card" 
+            *ngFor="let type of productTypes"
+            [class.selected]="type.selected"
+            (click)="selectProductType(type.id)"
+          >
+            <div class="type-icon">
+              <i [class]="type.icon"></i>
+            </div>
+            <div class="type-content">
+              <h3 class="type-name">{{ type.name }}</h3>
+              <p class="type-description">{{ type.description }}</p>
+            </div>
+          </div>
+        </div> -->
+        
+        <!-- <div class="form-group">
+          <label for="productPrice" class="form-label">Price *</label>
+          <div class="price-input-group">
+            <input 
+              type="number" 
+              id="productPrice"
+              class="form-input"
+              [class.error]="productForm.get('price')?.invalid && productForm.get('price')?.touched"
+              placeholder="Price your product"
+              [formControlName]="'price'"
+            >
+            <select class="currency-select" [(ngModel)]="currency" [ngModelOptions]="{standalone: true}">
+              <option value="EGP">EGP</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+          <div class="error-message" *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched">
+            <span *ngIf="productForm.get('price')?.errors?.['required']">Price is required</span>
+             <span *ngIf="productForm.get('price')?.errors?.['min']">Price must be greater than 0</span> -->
+          <!-- </div>
+        </div> --> 
+      <!-- </ng-container> --> 
+
+      <!-- Step 2: Customize -->
+      <!-- <app-product-edit 
+        *ngIf="currentStep === 'customize'" 
+        [productForm]="productForm"
+        [productId]="productId"
+        (save)="saveAndContinue()">
+      </app-product-edit> -->
+
+      <!-- Step 3: Content Upload -->
+      <!-- <app-product-edit-content 
+        *ngIf="currentStep === 'content'" 
+        [productForm]="productForm"
+        [productId]="productId"
+        (save)="saveAndPublish()">
+      </app-product-edit-content>
+    </form> --> 
+  <!-- </div>
+</div> -->

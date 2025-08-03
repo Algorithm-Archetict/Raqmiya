@@ -50,7 +50,7 @@ export const routes: Routes = [
     // Creator-only routes - require authentication and creator role
     {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
     {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
-    {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
+    {path:"products/edit",component:ProductEdit, canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
 

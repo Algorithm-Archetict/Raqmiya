@@ -152,7 +152,7 @@ font-family: 'Orbitron', sans-serif;
 
 
 /* Floating Shapes Animation */
-.fun-element {
+/* .fun-element {
   position: absolute;
   top: 0;
   left: 0;
@@ -206,7 +206,7 @@ font-family: 'Orbitron', sans-serif;
   bottom: 10%;
   right: 10%;
   animation-delay: 1s;
-}
+} */
 
 /* Animations */
 @keyframes pulse {
