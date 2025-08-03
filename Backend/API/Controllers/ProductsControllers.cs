@@ -5,6 +5,7 @@ using Shared.DTOs.ProductDTOs;
 using System.Security.Claims;
 using API.Constants;
 using Shared.Constants;
+using AutoMapper;
 
 namespace API.Controllers
 {
@@ -17,11 +18,13 @@ namespace API.Controllers
     {
         private readonly IProductService _productService;
         private readonly ILogger<ProductsController> _logger;
+        private readonly IMapper _mapper;
 
-        public ProductsController(IProductService productService, ILogger<ProductsController> logger)
+        public ProductsController(IProductService productService, ILogger<ProductsController> logger, IMapper mapper)
         {
             _productService = productService;
             _logger = logger;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -87,7 +90,7 @@ namespace API.Controllers
         [ProducesResponseType(400)]
         public async Task<IActionResult> CreateProduct([FromBody] ProductCreateRequestDTO request)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            // ModelState check removed; FluentValidation will handle validation errors
             try
             {
                 var creatorId = GetCurrentUserId();
@@ -118,7 +121,7 @@ namespace API.Controllers
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductUpdateRequestDTO request)
         {
             if (id != request.Id) return BadRequest("Product ID in URL does not match ID in request body.");
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            // ModelState check removed; FluentValidation will handle validation errors
             try
             {
                 var creatorId = GetCurrentUserId();
@@ -127,8 +130,8 @@ namespace API.Controllers
             }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
             catch (UnauthorizedAccessException ex) { return Forbid(ex.Message); }
-            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); return BadRequest(ModelState); }
-            catch (ArgumentException ex) { ModelState.AddModelError("", ex.Message); return BadRequest(ModelState); }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating product {ProductId}", id);
