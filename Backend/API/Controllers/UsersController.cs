@@ -5,6 +5,7 @@ using Shared.DTOs.AuthDTOs;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using Raqmiya.Infrastructure;
+using AutoMapper;
 
 namespace API.Controllers
 {
@@ -17,11 +18,13 @@ namespace API.Controllers
     {
         private readonly IUserRepository _userRepository;
         private readonly ILogger<UsersController> _logger;
+        private readonly IMapper _mapper;
 
-        public UsersController(IUserRepository userRepository, ILogger<UsersController> logger)
+        public UsersController(IUserRepository userRepository, ILogger<UsersController> logger, IMapper mapper)
         {
             _userRepository = userRepository;
             _logger = logger;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -38,7 +41,7 @@ namespace API.Controllers
                 var userId = GetCurrentUserId();
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null) return NotFound();
-                return Ok(MapToProfileDto(user));
+                return Ok(_mapper.Map<UserProfileDTO>(user));
             }
             catch (Exception ex)
             {
@@ -57,7 +60,7 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> UpdateMe([FromBody] UserUpdateDTO dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            // ModelState check removed; FluentValidation will handle validation errors
             try
             {
                 var userId = GetCurrentUserId();
@@ -67,7 +70,7 @@ namespace API.Controllers
                 if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) user.ProfileDescription = dto.ProfileDescription;
                 if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) user.ProfileImageUrl = dto.ProfileImageUrl;
                 await _userRepository.UpdateAsync(user);
-                return Ok(MapToProfileDto(user));
+                return Ok(_mapper.Map<UserProfileDTO>(user));
             }
             catch (Exception ex)
             {
@@ -86,7 +89,7 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            // ModelState check removed; FluentValidation will handle validation errors
             try
             {
                 var userId = GetCurrentUserId();
@@ -125,18 +128,6 @@ namespace API.Controllers
                 throw new UnauthorizedAccessException("User ID claim missing or invalid.");
             return userId;
         }
-
-        private static UserProfileDTO MapToProfileDto(User user) => new UserProfileDTO
-        {
-            Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            Role = user.Role,
-            ProfileDescription = user.ProfileDescription,
-            ProfileImageUrl = user.ProfileImageUrl,
-            CreatedAt = user.CreatedAt,
-            IsActive = user.IsActive
-        };
 
         private static string GenerateSalt()
         {
