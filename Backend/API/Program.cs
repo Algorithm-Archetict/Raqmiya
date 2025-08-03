@@ -147,6 +147,25 @@ namespace API
             app.UseAuthentication();
             app.UseAuthorization();
 
+            app.UseExceptionHandler(errorApp =>
+            {
+                errorApp.Run(async context =>
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json";
+                    var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+                    if (error != null)
+                    {
+                        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("GlobalExceptionHandler");
+                        logger.LogError(error.Error, "Unhandled exception: {Message}", error.Error.Message);
+                        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new {
+                            error = "An unexpected error occurred.",
+                            details = error.Error.Message
+                        }));
+                    }
+                });
+            });
+
             app.MapControllers();
 
             app.Run();
