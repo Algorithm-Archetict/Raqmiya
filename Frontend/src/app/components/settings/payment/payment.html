@@ -1,0 +1,235 @@
+<div class="payment-section">
+  <div class="section-header">
+    <h2 class="section-title">Payment Settings</h2>
+    <p class="section-description">Manage your payment methods and view transaction history</p>
+  </div>
+
+  <!-- Fee Information -->
+  <div class="fee-info">
+    <div class="info-card">
+      <div class="info-header">
+        <i class="fab fa-paypal"></i>
+        <h3>PayPal Integration</h3>
+      </div>
+      <div class="info-content">
+        <p class="fee-text">PayPal payouts are subject to a 2% processing fee.</p>
+        <p class="fee-breakdown">
+          <strong>All sales will incur fees based on how customers find your product:</strong>
+        </p>
+        <ul class="fee-list">
+          <li><strong>Direct sales:</strong> 5% + 5% Raqmiya fee + 2.9% + 30¢ PayPal fee</li>
+          <li><strong>Discover sales:</strong> 30% flat</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Form -->
+  <div class="payment-form">
+    <h3 class="form-title">Payment Information</h3>
+    
+    <!-- PayPal Email -->
+    <div class="form-group">
+      <label for="paypalEmail" class="form-label">PayPal Email</label>
+      <input 
+        type="email" 
+        id="paypalEmail" 
+        name="paypalEmail"
+        [(ngModel)]="paymentData.paypalEmail"
+        class="form-input"
+        placeholder="Enter your PayPal email address">
+    </div>
+
+    <!-- Name Fields -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="firstName" class="form-label">First Name</label>
+        <input 
+          type="text" 
+          id="firstName" 
+          name="firstName"
+          [(ngModel)]="paymentData.firstName"
+          class="form-input"
+          placeholder="Enter your first name">
+      </div>
+      <div class="form-group">
+        <label for="lastName" class="form-label">Last Name</label>
+        <input 
+          type="text" 
+          id="lastName" 
+          name="lastName"
+          [(ngModel)]="paymentData.lastName"
+          class="form-input"
+          placeholder="Enter your last name">
+      </div>
+    </div>
+
+    <!-- Address -->
+    <div class="form-group">
+      <label for="address" class="form-label">Address</label>
+      <input 
+        type="text" 
+        id="address" 
+        name="address"
+        [(ngModel)]="paymentData.address"
+        class="form-input"
+        placeholder="Enter your street address">
+    </div>
+
+    <!-- City and Postal Code -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="city" class="form-label">City</label>
+        <input 
+          type="text" 
+          id="city" 
+          name="city"
+          [(ngModel)]="paymentData.city"
+          class="form-input"
+          placeholder="Enter your city">
+      </div>
+      <div class="form-group">
+        <label for="postalCode" class="form-label">Postal Code</label>
+        <input 
+          type="text" 
+          id="postalCode" 
+          name="postalCode"
+          [(ngModel)]="paymentData.postalCode"
+          class="form-input"
+          placeholder="Enter postal code">
+      </div>
+    </div>
+
+    <!-- Country -->
+    <div class="form-group">
+      <label for="country" class="form-label">Country</label>
+      <select 
+        id="country" 
+        name="country"
+        [(ngModel)]="paymentData.country"
+        class="form-select">
+        <option value="">Select a country</option>
+        <option value="EG">Egypt</option>
+        <option value="US">United States</option>
+        <option value="GB">United Kingdom</option>
+        <option value="CA">Canada</option>
+        <option value="AU">Australia</option>
+        <option value="DE">Germany</option>
+        <option value="FR">France</option>
+        <option value="IT">Italy</option>
+        <option value="ES">Spain</option>
+        <option value="JP">Japan</option>
+        <option value="CN">China</option>
+        <option value="IN">India</option>
+        <option value="BR">Brazil</option>
+        <option value="MX">Mexico</option>
+        <option value="SA">Saudi Arabia</option>
+        <option value="AE">United Arab Emirates</option>
+        <option value="TR">Turkey</option>
+        <option value="RU">Russia</option>
+        <option value="KR">South Korea</option>
+      </select>
+    </div>
+
+    <!-- Date of Birth -->
+    <div class="form-group">
+      <label class="form-label">Date of Birth</label>
+      <div class="date-row">
+        <select 
+          name="birthDay"
+          [(ngModel)]="paymentData.birthDay"
+          class="form-select">
+          <option value="">Day</option>
+          <option *ngFor="let day of days" [value]="day">{{ day }}</option>
+        </select>
+        <select 
+          name="birthMonth"
+          [(ngModel)]="paymentData.birthMonth"
+          class="form-select">
+          <option value="">Month</option>
+          <option *ngFor="let month of months; let i = index" [value]="i + 1">
+            {{ month }}
+          </option>
+        </select>
+        <select 
+          name="birthYear"
+          [(ngModel)]="paymentData.birthYear"
+          class="form-select">
+          <option value="">Year</option>
+          <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Border Bottom -->
+    <div class="form-divider"></div>
+
+    <!-- PayPal Account Section -->
+    <div class="paypal-account-section">
+      <div class="account-header">
+        <div class="account-info">
+          <i class="fab fa-paypal"></i>
+          <span>PayPal</span>
+        </div>
+        <div class="fee-summary">
+          <p><strong>All sales will incur fees based on how customers find your product:</strong></p>
+          <ul>
+            <li><strong>Direct sales:</strong> 5% + 5%</li>
+            <li><strong>Discover sales:</strong> 30% flat</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="account-status">
+        <label class="form-label">PayPal Account</label>
+        <div class="connected-account" *ngIf="isPayPalConnected">
+          <div class="account-details">
+            <i class="fab fa-paypal"></i>
+            <span>{{ connectedPayPalAccount }}</span>
+            <span class="status-badge connected">Connected</span>
+          </div>
+          <button type="button" class="btn btn-outline-danger" (click)="disconnectPayPal()">
+            <i class="fas fa-unlink"></i>
+            Disconnect
+          </button>
+        </div>
+        <div class="not-connected" *ngIf="!isPayPalConnected">
+          <p class="no-account-text">No PayPal account connected</p>
+          <button type="button" class="btn btn-primary" (click)="connectPayPal()">
+            <i class="fab fa-paypal"></i>
+            Connect PayPal
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment History -->
+  <div class="payment-history">
+    <h3 class="history-title">Payment History</h3>
+    <div class="history-table">
+      <div class="table-header">
+        <div class="header-cell">Date</div>
+        <div class="header-cell">Description</div>
+        <div class="header-cell">Amount</div>
+        <div class="header-cell">Status</div>
+      </div>
+      <div class="table-body">
+        <div class="table-row" *ngFor="let transaction of paymentHistory">
+          <div class="table-cell">{{ transaction.date | date:'short' }}</div>
+          <div class="table-cell">{{ transaction.description }}</div>
+          <div class="table-cell">{{ transaction.amount | currency }}</div>
+          <div class="table-cell">
+            <span class="status-badge" [class]="transaction.status">
+              {{ transaction.status }}
+            </span>
+          </div>
+        </div>
+        <div class="no-transactions" *ngIf="paymentHistory.length === 0">
+          <i class="fas fa-receipt"></i>
+          <p>No payment history available</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

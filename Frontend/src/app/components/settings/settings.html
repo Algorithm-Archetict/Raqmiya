@@ -1,9 +1,45 @@
-<div class="dashboard-container">
+<div class="settings-container">
+  <!-- Sidebar -->
   <app-dashboard-sidebar></app-dashboard-sidebar>
+
+  <!-- Main Content -->
   <div class="main-content">
-    <div class="settings-page">
-      <h1>Settings</h1>
-      <p>Settings page content will go here.</p>
+    <!-- Sticky Header -->
+    <header class="settings-header">
+      <div class="header-content">
+        <h1 class="header-title">Settings</h1>
+        <button class="update-settings-btn" (click)="updateSettings()">
+          <i class="fas fa-save"></i>
+          Update Settings
+        </button>
+      </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <nav class="settings-tabs">
+      <a routerLink="/settings/profile" 
+         routerLinkActive="active" 
+         class="tab-link">
+        <i class="fas fa-user"></i>
+        Profile
+      </a>
+      <a routerLink="/settings/security" 
+         routerLinkActive="active" 
+         class="tab-link">
+        <i class="fas fa-shield-alt"></i>
+        Security
+      </a>
+      <a routerLink="/settings/payment" 
+         routerLinkActive="active" 
+         class="tab-link">
+        <i class="fas fa-credit-card"></i>
+        Payment
+      </a>
+    </nav>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <router-outlet></router-outlet>
     </div>
   </div>
 </div>

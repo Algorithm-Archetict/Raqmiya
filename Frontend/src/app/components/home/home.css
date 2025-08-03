@@ -109,6 +109,53 @@
   gap: var(--spacing-xl);
   flex-wrap: wrap;
 }
+/* Start Modal Styles */
+/* .epic-modal {
+  display: flex;
+  background: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(0, 116, 228, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(108, 43, 217, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(0, 212, 255, 0.15) 0%, transparent 50%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.05);
+  border-radius: 16px;
+  color:var(--gradient-primary);;
+  font-family: 'Orbitron','Segoe UI', 'Roboto', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.epic-modal .modal-header {
+  background: linear-gradient(to right, #1e1e2f, #2c2c3d);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.epic-modal .modal-footer {
+  background-color: transparent;
+}
+
+.epic-modal .btn-primary {
+  background: #0d6efd;
+  border: none;
+  transition: background 0.3s ease;
+}
+
+.epic-modal .btn-primary:hover {
+  background: #1805f0;
+  color:aliceblue;
+}
+
+.epic-modal .btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: aliceblue;
+}
+
+.epic-modal .list-unstyled li {
+  margin-bottom: 0.5rem;
+  font-size: 15px;
+} */
+/* End Modal Styles */
 
 .stat-item {
   text-align: center;

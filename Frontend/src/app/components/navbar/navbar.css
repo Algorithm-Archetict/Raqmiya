@@ -20,6 +20,7 @@
   background-clip: text;
   text-decoration: none;
   transition: all var(--transition-normal);
+  cursor: pointer;
 }
 
 .navbar-brand:hover {
