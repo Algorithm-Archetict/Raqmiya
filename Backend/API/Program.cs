@@ -32,10 +32,11 @@ namespace API
             builder.Services.AddScoped<ITagRepository, TagRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>(); // NEW: User Repository
             builder.Services.AddScoped<IAuthRepository, AuthRepository>(); // Register AuthRepository for IAuthRepository
-
+            builder.Services.AddScoped<IOrderRepository,OrderRepository>(); // Register OrderRepository
             // --- 3. Configure Services (Core/Business Logic Layer) ---
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAuthService, AuthService>(); // NEW: Auth Service
+            builder.Services.AddScoped<IOrderService, Core.Services.OrderService>(); // Register OrderService
 
             // --- 4. Configure Logging ---
             builder.Logging.AddConsole();

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Raqmiya.Infrastructure; // OrderItem is in this namespace
+using Raqmiya.Infrastructure;
 
 namespace Raqmiya.Infrastructure
 {
@@ -28,7 +28,6 @@ namespace Raqmiya.Infrastructure
         // Navigation properties
         public User Creator { get; set; } = null!; // Required navigation property
         public ICollection<AddedFile> Files { get; set; } = new List<AddedFile>();
-        public ICollection<Order> Orders { get; set; } = new List<Order>(); // Products can be in many orders
         public ICollection<Variant> Variants { get; set; } = new List<Variant>();
         public ICollection<OfferCode> OfferCodes { get; set; } = new List<OfferCode>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();

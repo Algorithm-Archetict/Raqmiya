@@ -83,7 +83,7 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                 .Include(p => p.WishlistItems)
-                .Include(p => p.Orders)
+                .Include(p => p.OrderItems)
                 .Include(p => p.ProductViews)
                 .FirstOrDefaultAsync(p => p.Permalink == permalink);
 
@@ -348,7 +348,7 @@ namespace Raqmiya.Infrastructure
             return await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Creator)
-                .OrderByDescending(p => p.Orders.Count()) // Assuming one order item per product
+                .OrderByDescending(p => p.OrderItems.Count()) // Assuming one order item per product
                 .Take(count)
                 .ToListAsync();
         }
@@ -366,7 +366,7 @@ namespace Raqmiya.Infrastructure
                 .Select(p => new
                 {
                     Product = p,
-                    RecentSales = p.Orders.Count(o => o.OrderedAt >= cutoffDate),
+                    RecentSales = p.OrderItems.Count(oi => oi.Order.OrderedAt >= cutoffDate),
                     RecentWishlistAdds = p.WishlistItems.Count(wi => wi.AddedAt >= cutoffDate),
                     RecentViews = p.ProductViews.Count(pv => pv.ViewedAt >= cutoffDate),
                     AverageRating = p.Reviews.Any() ? p.Reviews.Average(r => r.Rating) : 0 // Include rating as a factor
@@ -411,7 +411,7 @@ namespace Raqmiya.Infrastructure
                     Name = p.Name,
                     Creator = p.Creator,
                     Reviews = p.Reviews,
-                    Orders = p.Orders,
+                    OrderItems = p.OrderItems,
                     PublishedAt = p.PublishedAt,
                     IsPublic = p.IsPublic,
                     Status = p.Status
@@ -433,7 +433,7 @@ namespace Raqmiya.Infrastructure
                     Name = p.Name,
                     Creator = p.Creator,
                     Reviews = p.Reviews,
-                    Orders = p.Orders,
+                    OrderItems = p.OrderItems,
                     PublishedAt = p.PublishedAt,
                     IsPublic = p.IsPublic,
                     Status = p.Status
@@ -447,7 +447,7 @@ namespace Raqmiya.Infrastructure
         {
             return await _context.Products
                 .Where(p => p.Status == "published" && p.IsPublic)
-                .OrderByDescending(p => p.Orders.Count())
+                .OrderByDescending(p => p.OrderItems.Count())
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new Product {
@@ -455,7 +455,7 @@ namespace Raqmiya.Infrastructure
                     Name = p.Name,
                     Creator = p.Creator,
                     Reviews = p.Reviews,
-                    Orders = p.Orders,
+                    OrderItems = p.OrderItems,
                     PublishedAt = p.PublishedAt,
                     IsPublic = p.IsPublic,
                     Status = p.Status
@@ -472,7 +472,7 @@ namespace Raqmiya.Infrastructure
                 .Where(p => p.Status == "published" && p.IsPublic)
                 .OrderByDescending(p => p.ProductViews.Count(pv => pv.ViewedAt >= cutoffDate) +
                                          p.WishlistItems.Count(wi => wi.AddedAt >= cutoffDate) +
-                                         p.Orders.Count(o => o.OrderedAt >= cutoffDate))
+                                         p.OrderItems.Count(o => o.CreatedAt >= cutoffDate))
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new Product {
@@ -480,7 +480,7 @@ namespace Raqmiya.Infrastructure
                     Name = p.Name,
                     Creator = p.Creator,
                     Reviews = p.Reviews,
-                    Orders = p.Orders,
+                    OrderItems = p.OrderItems,
                     PublishedAt = p.PublishedAt,
                     IsPublic = p.IsPublic,
                     Status = p.Status
