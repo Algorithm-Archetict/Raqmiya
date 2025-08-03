@@ -18,12 +18,15 @@
   
   /* Primary Colors */
   --primary-color: var(--epic-blue);
+  --primary-dark: var(--epic-blue-dark);
   --primary-hover: var(--epic-blue-dark);
+  --primary-color-rgb: 0, 116, 228;
   --secondary-color: var(--epic-purple);
   --accent-color: var(--epic-cyan);
   --success-color: #00e676;
   --warning-color: #ffab00;
   --danger-color: #ff1744;
+  --error-color: #ff1744;
   
   /* Dark Theme Background Colors (Epic Games Style) */
   --bg-primary: #0f1419;

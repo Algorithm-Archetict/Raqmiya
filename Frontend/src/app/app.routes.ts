@@ -10,6 +10,9 @@ import { Login } from './components/account/login/login';
 import { Register } from './components/account/register/register';
 import { Dashboard } from './components/creator/dashboard/dashboard';
 import { Settings } from './components/settings/settings';
+import { Profile } from './components/settings/profile/profile';
+import { Security } from './components/settings/security/security';
+import { Payment } from './components/settings/payment/payment';
 import { AllProducts } from './components/creator/creator-product/all-products/all-products';
 import { AddNewProduct } from './components/creator/creator-product/add-new-product/add-new-product';
 import { ProductEdit } from './components/creator/creator-product/product-edit/product-edit';
@@ -31,13 +34,23 @@ export const routes: Routes = [
     {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
     {path:"package",component:PurchasedPackage, canActivate: [AuthGuard]},
     {path:"library",component:Library, canActivate: [AuthGuard]},
-    {path:"settings",component:Settings, canActivate: [AuthGuard]},
+    {
+        path:"settings",
+        component:Settings, 
+        canActivate: [AuthGuard],
+        children: [
+            {path:"", redirectTo:"profile", pathMatch:"full"},
+            {path:"profile", component:Profile},
+            {path:"security", component:Security},
+            {path:"payment", component:Payment}
+        ]
+    },
     {path:"dashboard",component:Dashboard, canActivate: [AuthGuard]}, // Both creators and customers can access dashboard
 
     // Creator-only routes - require authentication and creator role
     {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
     {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
-    {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
+    {path:"products/edit",component:ProductEdit, canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
 
