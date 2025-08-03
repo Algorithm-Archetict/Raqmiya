@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using API.Constants;
 using Shared.Constants;
+using AutoMapper;
 
 namespace API.Controllers
 {
@@ -17,11 +18,13 @@ namespace API.Controllers
     {
         private readonly ICategoryRepository _categoryRepository;
         private readonly ILogger<CategoryController> _logger;
+        private readonly IMapper _mapper;
 
-        public CategoryController(ICategoryRepository categoryRepository, ILogger<CategoryController> logger)
+        public CategoryController(ICategoryRepository categoryRepository, ILogger<CategoryController> logger, IMapper mapper)
         {
             _categoryRepository = categoryRepository;
             _logger = logger;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -32,7 +35,7 @@ namespace API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var categories = await _categoryRepository.GetAllCategoriesAsync();
-            var result = categories.ConvertAll(c => new CategoryDTO { Id = c.Id, Name = c.Name, Description = c.Description });
+            var result = _mapper.Map<IEnumerable<CategoryDTO>>(categories);
             return Ok(result);
         }
 
@@ -46,7 +49,7 @@ namespace API.Controllers
         {
             var category = await _categoryRepository.GetByIdAsync(id);
             if (category == null) return NotFound();
-            return Ok(new CategoryDTO { Id = category.Id, Name = category.Name, Description = category.Description });
+            return Ok(_mapper.Map<CategoryDTO>(category));
         }
 
         /// <summary>
@@ -58,9 +61,9 @@ namespace API.Controllers
         public async Task<IActionResult> Create([FromBody] CategoryCreateUpdateDTO dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var category = new Category { Name = dto.Name, Description = dto.Description };
+            var category = _mapper.Map<Category>(dto);
             await _categoryRepository.AddAsync(category);
-            return CreatedAtAction(nameof(GetById), new { id = category.Id }, new CategoryDTO { Id = category.Id, Name = category.Name, Description = category.Description });
+            return CreatedAtAction(nameof(GetById), new { id = category.Id }, _mapper.Map<CategoryDTO>(category));
         }
 
         /// <summary>
@@ -75,10 +78,9 @@ namespace API.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var category = await _categoryRepository.GetByIdAsync(id);
             if (category == null) return NotFound();
-            category.Name = dto.Name;
-            category.Description = dto.Description;
+            _mapper.Map(dto, category);
             await _categoryRepository.UpdateAsync(category);
-            return Ok(new CategoryDTO { Id = category.Id, Name = category.Name, Description = category.Description });
+            return Ok(_mapper.Map<CategoryDTO>(category));
         }
 
         /// <summary>
@@ -96,4 +98,3 @@ namespace API.Controllers
         }
     }
 }
-
