@@ -56,7 +56,7 @@ namespace Core.Services
                 Tags = product.ProductTags.Select(pt => new TagDTO { Id = pt.Tag.Id, Name = pt.Tag.Name }).ToList(),
                 WishlistCount = product.WishlistItems.Count(),
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
-                SalesCount = product.Orders.Count(),
+                SalesCount = product.OrderItems.Count(),
                 ViewsCount = product.ProductViews.Count(),
                 IsInWishlist = isInWishlist
             };
@@ -74,7 +74,7 @@ namespace Core.Services
                 CoverImageUrl = product.CoverImageUrl,
                 CreatorUsername = product.Creator?.Username ?? "N/A",
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
-                SalesCount = product.Orders.Count(),
+                SalesCount = product.OrderItems.Count(),
                 Status = product.Status,
                 IsPublic = product.IsPublic
             };
@@ -302,7 +302,7 @@ namespace Core.Services
             }
 
             // Add any business rules before deletion (e.g., cannot delete if active sales)
-            // if (product.Orders.Any(o => o.Status == "active")) { ... throw new InvalidOperationException }
+            // if (product.OrderItems.Any(oi => oi.Order.Status == "active")) { ... throw new InvalidOperationException }
 
             await _productRepository.DeleteAsync(productId);
         }

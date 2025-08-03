@@ -1,4 +1,5 @@
-﻿namespace Raqmiya.Infrastructure
+﻿
+namespace Raqmiya.Infrastructure
 {
     public class License
     {
