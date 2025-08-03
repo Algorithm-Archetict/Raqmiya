@@ -1,10 +1,10 @@
+using API.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Raqmiya.Infrastructure;
 using Shared.DTOs.AuthDTOs;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
+using Raqmiya.Infrastructure;
 
 namespace API.Controllers
 {
@@ -12,7 +12,7 @@ namespace API.Controllers
     /// Controller for user profile management.
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route(UserRoutes.Users)]
     public class UsersController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
@@ -38,12 +38,12 @@ namespace API.Controllers
                 var userId = GetCurrentUserId();
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null) return NotFound();
-                return Ok(MapToProfileDTO(user));
+                return Ok(MapToProfileDto(user));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting current user profile");
-                return Problem("An error occurred while fetching the profile.");
+                _logger.LogError(ex, LogMessages.UserGetProfileError);
+                return Problem(ErrorMessages.UserGetProfile);
             }
         }
 
@@ -67,12 +67,12 @@ namespace API.Controllers
                 if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) user.ProfileDescription = dto.ProfileDescription;
                 if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) user.ProfileImageUrl = dto.ProfileImageUrl;
                 await _userRepository.UpdateAsync(user);
-                return Ok(MapToProfileDTO(user));
+                return Ok(MapToProfileDto(user));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating user profile");
-                return Problem("An error occurred while updating the profile.");
+                _logger.LogError(ex, LogMessages.UserUpdateProfileError);
+                return Problem(ErrorMessages.UserUpdateProfile);
             }
         }
 
@@ -97,7 +97,7 @@ namespace API.Controllers
                 {
                     var hash = Convert.ToBase64String(pbkdf2.GetBytes(32));
                     if (hash != user.HashedPassword)
-                        return BadRequest("Current password is incorrect.");
+                        return BadRequest(ErrorMessages.UserCurrentPasswordIncorrect);
                 }
                 var newSalt = GenerateSalt();
                 var newHash = HashPassword(dto.NewPassword, newSalt);
@@ -126,7 +126,7 @@ namespace API.Controllers
             return userId;
         }
 
-        private static UserProfileDTO MapToProfileDTO(User user) => new UserProfileDTO
+        private static UserProfileDTO MapToProfileDto(User user) => new UserProfileDTO
         {
             Id = user.Id,
             Username = user.Username,

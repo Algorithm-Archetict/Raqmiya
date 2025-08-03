@@ -2,11 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.DTOs.ProductDTOs;
-using Shared.DTOs.AuthDTOs;
-using Microsoft.AspNetCore.Http;
-using Raqmiya.Infrastructure;
-using System.IO;
 using System.Security.Claims;
+using API.Constants;
+using Shared.Constants;
 
 namespace API.Controllers
 {
@@ -14,7 +12,7 @@ namespace API.Controllers
     /// Controller for product management, search, wishlist, and analytics.
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route(ProductRoutes.Products)]
     public class ProductsController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -75,8 +73,8 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting product by permalink");
-                return Problem("An error occurred while fetching the product.");
+                _logger.LogError(ex, LogMessages.ProductGetByPermalinkError);
+                return Problem(ErrorMessages.ProductGetByPermalink);
             }
         }
 
@@ -301,7 +299,7 @@ namespace API.Controllers
             var allowedTypes = new[] { "application/pdf", "application/zip", "image/jpeg", "image/png", "video/mp4" };
             if (!allowedTypes.Contains(file.ContentType))
                 return BadRequest("File type not allowed.");
-            var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "products", id.ToString());
+            var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), FileStorageConstants.ProductUploadsRoot, id.ToString());
             Directory.CreateDirectory(uploadsRoot);
             var fileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
             var filePath = Path.Combine(uploadsRoot, fileName);
@@ -309,7 +307,7 @@ namespace API.Controllers
             {
                 await file.CopyToAsync(stream);
             }
-            var fileUrl = $"/uploads/products/{id}/{fileName}";
+            var fileUrl = $"/{FileStorageConstants.UploadsFolder}/products/{id}/{fileName}";
             var fileDto = await _productService.AddProductFileAsync(id, creatorId, file.FileName, fileUrl, file.Length, file.ContentType);
             return Created(fileUrl, fileDto);
         }
@@ -352,7 +350,7 @@ namespace API.Controllers
         [HttpGet("admin/by-status")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
-        public async Task<IActionResult> GetProductsByStatus([FromQuery] string status = "pending", [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetProductsByStatus([FromQuery] string status = ProductStatus.Pending, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             return Ok(await _productService.GetProductsByStatusAsync(status, pageNumber, pageSize));
         }
@@ -382,7 +380,7 @@ namespace API.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> RejectProduct(int id, [FromBody] ProductModerationRequestDTO request)
         {
-            if (request.Action?.ToLower() != "reject" || string.IsNullOrWhiteSpace(request.Reason))
+            if (request.Action?.ToLower() != ProductModerationActions.Reject || string.IsNullOrWhiteSpace(request.Reason))
                 return BadRequest("Rejection reason is required.");
             var adminId = GetCurrentUserId();
             var result = await _productService.RejectProductAsync(id, adminId, request.Reason!);
