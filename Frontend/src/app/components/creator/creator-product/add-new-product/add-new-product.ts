@@ -1,235 +1,118 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, RouterLink } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DashboardSidebar } from '../../../dashboard-sidebar/dashboard-sidebar';
 import { ProductDetailDTO } from '../../../../core/models/product/product-detail.dto';
 import { ProductCreateRequestDTO } from '../../../../core/models/product/product-create-request.dto';
 import { ProductService } from '../../../../core/services/product.service';
+import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
+import { ProductEdit } from '../product-edit/product-edit';
+import { ProductEditContent } from '../product-edit-content/product-edit-content';
 
 @Component({
   selector: 'app-add-new-product',
-  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, DashboardSidebar],
+  imports: [
+    CommonModule,
+            RouterModule,
+            FormsModule,
+            ReactiveFormsModule,
+            DashboardSidebar, 
+            RouterLink,
+            ProductEdit,
+            ProductEditContent
+          ],
   templateUrl: './add-new-product.html',
   styleUrl: './add-new-product.css'
 })
 export class AddNewProduct implements OnInit {
   productForm!: FormGroup;
-  name: string = '';
   currentStep: 'create' | 'customize' | 'content' = 'create';
-  currency: string = 'EGP';
-  coverImageLink: string = '';
-  showCoverOptions: boolean = false;
-  showDetailsForm: boolean = false;
-  coverImages: string[] = [];
-  thumbnailImage: string = '';
-  productDetails: Array<{attribute: string, value: string}> = [];
-  newDetail: {attribute: string, value: string} = {attribute: '', value: ''};
-  isSubmitting: boolean = false;
-  errorMessage: string = '';
-  successMessage: string = '';
+  productId?: number;
+  isSubmitting = false;
+  successMessage: string | null = null;
+  errorMessage: string | null = null;
 
   productTypes = [
-    {
-      id: 'digital-download',
-      name: 'Digital Download',
-      description: 'Sell files, documents, or digital assets',
-      icon: 'fas fa-download',
-      selected: false
-    },
-    {
-      id: 'online-course',
-      name: 'Online Course',
-      description: 'Create and sell educational content',
-      icon: 'fas fa-graduation-cap',
-      selected: false
-    },
-    {
-      id: 'Audio-MP3',
-      name: 'Audio & MP3',
-      description: 'Recurring access to audio files',
-      icon: 'fas fa-music',
-      selected: false
-    },
-    {
-      id: 'software',
-      name: 'Software',
-      description: 'Sell applications or tools',
-      icon: 'fas fa-code',
-      selected: false
-    }
+    { id: 'digital', name: 'Digital', description: 'Downloadable files', icon: 'fas fa-file', selected: false },
+    { id: 'course', name: 'Course', description: 'Online video content', icon: 'fas fa-video', selected: false },
+    { id: 'membership', name: 'Membership', description: 'Recurring access to content', icon: 'fas fa-users', selected: false }
   ];
 
-  selectedProductType: string = '';
+  constructor(private fb: FormBuilder, private productService: ProductService) {}
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private productService: ProductService
-  ) {
-    this.initializeForm();
-  }
-
-  ngOnInit() {
-    this.generateProductUrl();
-    
-    // Set initial values
-    this.productForm.patchValue({
-      name: '',
-      description: '',
-      url: 'my-product.raqmiya.com',
-      price: '',
-      summary: '',
-      content: ''
-    });
-  }
-
-  private initializeForm() {
+  ngOnInit(): void {
     this.productForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
-      description: ['', [Validators.maxLength(5000)]],
-      url: [''],
-      price: ['', [Validators.required, Validators.min(0.01), Validators.max(1000000)]],
-      summary: [''],
-      content: ['']
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      description: [''],
+      price: [0, [Validators.required, Validators.min(0.01)]],
+      currency: ['USD', [Validators.required]],
+      productType: ['', Validators.required],
+      permalink: ['', [Validators.required, Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
+      isPublic: [true]
     });
   }
 
   get isCreateStepValid(): boolean {
-    return !!this.productForm.get('name')?.valid && 
-           !!this.productForm.get('price')?.valid && 
-           this.selectedProductType !== '';
+    return !!this.productForm.get('name')?.valid &&
+           !!this.productForm.get('price')?.valid &&
+           !!this.productForm.get('productType')?.valid &&
+           !!this.productForm.get('permalink')?.valid;
   }
 
   get isCustomizeStepValid(): boolean {
-    return !!this.productForm.get('name')?.valid && 
-           !!this.productForm.get('price')?.valid;
+    return !!this.productForm.get('description')?.valid && this.productForm.get('isPublic') !== null;
   }
 
-  onNameChange() {
-    this.generateProductUrl();
+  selectProductType(typeId: string): void {
+    this.productForm.get('productType')?.setValue(typeId);
+    this.productTypes.forEach(type => type.selected = type.id === typeId);
   }
 
-  generateProductUrl() {
-    const name = this.productForm.get('name')?.value || '';
-    if (name) {
-      const permalink = name.toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-      this.productForm.patchValue({
-        url: `${permalink}.raqmiya.com`
-      });
-    }
-  }
-
-  selectProductType(typeId: string) {
-    this.productTypes.forEach(type => {
-      type.selected = type.id === typeId;
-    });
-    this.selectedProductType = typeId;
-  }
-
-  nextToCustomize() {
-    if (this.isCreateStepValid) {
+  nextToCustomize(): void {
+    if (this.productForm.valid) {
       this.currentStep = 'customize';
     }
   }
 
-  uploadCoverImage(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.coverImages.push(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  uploadCoverFromLink() {
-    if (this.coverImageLink) {
-      this.coverImages.push(this.coverImageLink);
-      this.coverImageLink = '';
-    }
-  }
-
-  removeCoverImage(index: number) {
-    this.coverImages.splice(index, 1);
-  }
-
-  uploadThumbnail(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.thumbnailImage = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  addProductDetail() {
-    if (this.newDetail.attribute && this.newDetail.value) {
-      this.productDetails.push({...this.newDetail});
-      this.newDetail = {attribute: '', value: ''};
-    }
-  }
-
-  removeProductDetail(index: number) {
-    this.productDetails.splice(index, 1);
-  }
-
-  saveAndContinue() {
-    if (this.isCustomizeStepValid) {
-      this.currentStep = 'content';
-    }
-  }
-
-  async saveAndPublish() {
-    if (!this.productForm.valid) {
-      return;
-    }
-
+  saveAndContinue(): void {
+    if (this.productForm.invalid) return;
     this.isSubmitting = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
-    try {
-      const formValue = this.productForm.value;
-      
-      const productData: ProductCreateRequestDTO = {
-        name: formValue.name,
-        description: formValue.description || '',
-        price: parseFloat(formValue.price),
-        currency: this.currency,
-        productType: this.selectedProductType,
-        coverImageUrl: this.coverImages.length > 0 ? this.coverImages[0] : undefined,
-        previewVideoUrl: undefined, // Not implemented in UI yet
-        isPublic: true, // Default to public
-        permalink: formValue.url.replace('.raqmiya.com', ''), // Extract permalink from URL
-        categoryIds: [], // Not implemented in UI yet
-        tagIds: [] // Not implemented in UI yet
-      };
-
-      const result = await this.productService.createProduct(productData).toPromise();
-      
-      if (result) {
-        this.successMessage = 'Product created successfully!';
-        setTimeout(() => {
-          this.router.navigate(['/products']);
-        }, 2000);
+    const dto: ProductCreateRequestDTO = this.productForm.value;
+    this.productService.createProduct(dto).subscribe({
+      next: (res) => {
+        this.productId = res.id;
+        this.currentStep = 'content';
+        this.isSubmitting = false;
+        this.successMessage = 'Product saved.';
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.errorMessage = 'Failed to create product.';
       }
-    } catch (error) {
-      console.error('Error creating product:', error);
-      this.errorMessage = 'Failed to create product. Please try again.';
-    } finally {
-      this.isSubmitting = false;
-    }
+    });
   }
 
-  cancel() {
-    this.router.navigate(['/products']);
+  saveAndPublish(): void {
+    if (!this.productId || this.productForm.invalid) return;
+    const dto = this.productForm.value;
+    this.productService.updateProduct(this.productId, dto).subscribe({
+      next: () => {
+        this.successMessage = 'Product published!';
+      },
+      error: () => {
+        this.errorMessage = 'Failed to publish product.';
+      }
+    });
   }
+
+  cancel(): void {
+    this.currentStep = 'create';
+    this.productForm.reset();
+    this.productId = undefined;
+    this.successMessage = null;
+    this.errorMessage = null;
+  }
+  
 }
+
