@@ -1,4 +1,5 @@
-﻿using Core.Interfaces;
+﻿using API.Constants;
+using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.DTOs.AuthDTOs;
@@ -10,7 +11,7 @@ namespace API.Controllers
     /// Controller for authentication (register, login, get current user).
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route(AuthRoutes.Auth)]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -32,8 +33,7 @@ namespace API.Controllers
         [ProducesResponseType(403)]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDTO request)
         {
-            _logger.LogInformation("Registration attempt received: Email={Email}, Username={Username}, Role={Role}", 
-                request.Email, request.Username, request.Role);
+            _logger.LogInformation(LogMessages.RegistrationAttempt, request.Email, request.Username, request.Role);
 
             if (!ModelState.IsValid)
             {
@@ -41,7 +41,7 @@ namespace API.Controllers
                     .SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
-                _logger.LogWarning("Model validation failed: {Errors}", string.Join(", ", errors));
+                _logger.LogWarning(LogMessages.RegistrationModelValidationFailed, string.Join(", ", errors));
                 return BadRequest(new { Errors = errors, ModelState = ModelState });
             }
 
@@ -50,7 +50,7 @@ namespace API.Controllers
             {
                 if (!User.Identity?.IsAuthenticated ?? true || !User.IsInRole(RoleConstants.Admin))
                 {
-                    return Forbid("Only authenticated admins can create new admin accounts.");
+                    return Forbid(ErrorMessages.AdminRegistrationForbidden);
                 }
             }
 
@@ -65,8 +65,8 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during user registration: {Message}", ex.Message);
-                return Problem("An internal server error occurred during registration.");
+                _logger.LogError(ex, LogMessages.RegistrationError, ex.Message);
+                return Problem(ErrorMessages.RegistrationError);
             }
         }
 
@@ -80,7 +80,7 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO request)
         {
-            _logger.LogInformation("Login attempt received: EmailOrUsername={EmailOrUsername}", request.EmailOrUsername);
+            _logger.LogInformation(LogMessages.LoginAttempt, request.EmailOrUsername);
 
             if (!ModelState.IsValid)
             {
@@ -88,7 +88,7 @@ namespace API.Controllers
                     .SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
-                _logger.LogWarning("Login model validation failed: {Errors}", string.Join(", ", errors));
+                _logger.LogWarning(LogMessages.LoginModelValidationFailed, string.Join(", ", errors));
                 return BadRequest(new { Errors = errors, ModelState = ModelState });
             }
 
@@ -97,17 +97,16 @@ namespace API.Controllers
                 var response = await _authService.LoginAsync(request);
                 if (response.Success)
                 {
-                    _logger.LogInformation("Login successful for user: {EmailOrUsername}", request.EmailOrUsername);
+                    _logger.LogInformation(LogMessages.LoginSuccess, request.EmailOrUsername);
                     return Ok(response);
                 }
-                _logger.LogWarning("Login failed for user: {EmailOrUsername}, Message: {Message}", 
-                    request.EmailOrUsername, response.Message);
+                _logger.LogWarning(LogMessages.LoginFailed, request.EmailOrUsername, response.Message);
                 return Unauthorized(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during user login: {Message}", ex.Message);
-                return Problem("An internal server error occurred during login.");
+                _logger.LogError(ex, LogMessages.LoginError, ex.Message);
+                return Problem(ErrorMessages.LoginError);
             }
         }
 
