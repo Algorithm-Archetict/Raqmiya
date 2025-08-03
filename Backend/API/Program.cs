@@ -1,5 +1,8 @@
+using AutoMapper;
 using Core.Interfaces;
 using Core.Services;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.OpenApi.Models;
 using Raqmiya.Infrastructure;
 using Raqmiya.Infrastructure.Data;
@@ -57,8 +60,10 @@ namespace API
                 };
             });
 
-            // --- 5. Configure Authorization ---
-            builder.Services.AddAuthorization();
+            // --- 5. Register AutoMapper and FluentValidation ---
+            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            builder.Services.AddFluentValidationAutoValidation();
+            builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
             // --- 6. Add Controllers and API-specific features ---
             builder.Services.AddControllers();
@@ -115,7 +120,6 @@ namespace API
                         .AllowAnyMethod()
                         .AllowCredentials()); // If you're sending cookies/auth headers
             });
-
 
             var app = builder.Build();
 
