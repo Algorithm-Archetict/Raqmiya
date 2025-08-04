@@ -95,6 +95,12 @@ export class ProductService {
     return this.http.post<FileDTO[]>(`${this.apiUrl}/${productId}/files`, formData);
   }
 
+  uploadImage(productId: number, image: File, type: 'cover' | 'thumbnail'): Observable<any> {
+    const formData = new FormData();
+    formData.append('image', image);
+    return this.http.post(`${this.apiUrl}/${productId}/images?type=${type}`, formData);
+  }
+
   getFiles(productId: number): Observable<FileDTO[]> {
     return this.http.get<FileDTO[]>(`${this.apiUrl}/${productId}/files`);
   }

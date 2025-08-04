@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Core.Services
@@ -43,11 +44,17 @@ namespace Core.Services
                 Currency = product.Currency,
                 ProductType = product.ProductType,
                 CoverImageUrl = product.CoverImageUrl,
+                ThumbnailImageUrl = product.ThumbnailImageUrl,
                 PreviewVideoUrl = product.PreviewVideoUrl,
                 PublishedAt = product.PublishedAt,
                 Status = product.Status,
                 IsPublic = product.IsPublic,
                 Permalink = product.Permalink,
+                // NEW: Enhanced product details
+                Features = JsonSerializer.Deserialize<List<string>>(product.Features) ?? new List<string>(),
+                Compatibility = product.Compatibility,
+                License = product.License,
+                Updates = product.Updates,
                 Files = product.Files.Select(f => new FileDTO { Id = f.Id, Name = f.Name, FileUrl = f.FileUrl }).ToList(),
                 Variants = product.Variants.Select(v => new VariantDTO { Id = v.Id, Name = v.Name, PriceAdjustment = v.PriceAdjustment }).ToList(),
                 OfferCodes = product.OfferCodes.Select(oc => new OfferCodeDTO { Id = oc.Id, Code = oc.Code, DiscountValue = oc.DiscountValue }).ToList(),
@@ -164,11 +171,17 @@ namespace Core.Services
                 Currency = productDto.Currency,
                 ProductType = productDto.ProductType,
                 CoverImageUrl = productDto.CoverImageUrl,
+                ThumbnailImageUrl = productDto.ThumbnailImageUrl,
                 PreviewVideoUrl = productDto.PreviewVideoUrl,
                 IsPublic = productDto.IsPublic,
                 Permalink = productDto.Permalink,
                 Status = "draft", // Default status for new products
-                PublishedAt = productDto.IsPublic ? DateTime.UtcNow : (DateTime?)null // Use UTC
+                PublishedAt = productDto.IsPublic ? DateTime.UtcNow : (DateTime?)null, // Use UTC
+                // NEW: Enhanced product details
+                Features = JsonSerializer.Serialize(productDto.Features),
+                Compatibility = productDto.Compatibility,
+                License = productDto.License,
+                Updates = productDto.Updates
             };
 
             // Add categories and tags
@@ -228,9 +241,15 @@ namespace Core.Services
             product.Currency = productDto.Currency;
             product.ProductType = productDto.ProductType;
             product.CoverImageUrl = productDto.CoverImageUrl;
+            product.ThumbnailImageUrl = productDto.ThumbnailImageUrl;
             product.PreviewVideoUrl = productDto.PreviewVideoUrl;
             product.Permalink = productDto.Permalink;
             product.Status = productDto.Status;
+            // NEW: Enhanced product details
+            product.Features = JsonSerializer.Serialize(productDto.Features);
+            product.Compatibility = productDto.Compatibility;
+            product.License = productDto.License;
+            product.Updates = productDto.Updates;
 
             if (product.IsPublic != productDto.IsPublic)
             {
