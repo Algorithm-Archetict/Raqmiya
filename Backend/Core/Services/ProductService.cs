@@ -33,7 +33,7 @@ namespace Core.Services
         // --- Helper for mapping (consider AutoMapper for complex scenarios) ---
         private ProductDetailDTO MapToProductDetailDTO(Product product, bool isInWishlist = false)
         {
-            return new ProductDetailDTO
+            var dto = new ProductDetailDTO
             {
                 Id = product.Id,
                 CreatorId = product.CreatorId,
@@ -67,6 +67,12 @@ namespace Core.Services
                 ViewsCount = product.ProductViews.Count(),
                 IsInWishlist = isInWishlist
             };
+            
+            // Log the mapped DTO image URLs
+            _logger.LogInformation("MapToProductDetailDTO - Product ID: {ProductId}, DTO CoverImageUrl: {CoverImageUrl}, DTO ThumbnailImageUrl: {ThumbnailImageUrl}", 
+                product.Id, dto.CoverImageUrl, dto.ThumbnailImageUrl);
+            
+            return dto;
         }
 
         private ProductListItemDTO MapToProductListItemDTO(Product product)
@@ -128,6 +134,10 @@ namespace Core.Services
             {
                 return null;
             }
+
+            // Log the product data fetched from database
+            _logger.LogInformation("GetProductDetailsByIdAsync - Product ID: {ProductId}, CoverImageUrl: {CoverImageUrl}, ThumbnailImageUrl: {ThumbnailImageUrl}", 
+                productId, product.CoverImageUrl, product.ThumbnailImageUrl);
 
             // Authorization check can be done here or in the controller if it's purely API route-based
             // For now, assuming controller will handle basic creator check for this endpoint.
@@ -240,8 +250,17 @@ namespace Core.Services
             product.Price = productDto.Price;
             product.Currency = productDto.Currency;
             product.ProductType = productDto.ProductType;
-            product.CoverImageUrl = productDto.CoverImageUrl;
-            product.ThumbnailImageUrl = productDto.ThumbnailImageUrl;
+            
+            // Only update image URLs if they are provided (not null/undefined)
+            if (!string.IsNullOrEmpty(productDto.CoverImageUrl))
+            {
+                product.CoverImageUrl = productDto.CoverImageUrl;
+            }
+            if (!string.IsNullOrEmpty(productDto.ThumbnailImageUrl))
+            {
+                product.ThumbnailImageUrl = productDto.ThumbnailImageUrl;
+            }
+            
             product.PreviewVideoUrl = productDto.PreviewVideoUrl;
             product.Permalink = productDto.Permalink;
             product.Status = productDto.Status;
@@ -562,7 +581,26 @@ namespace Core.Services
 
         public async Task<bool> RejectProductAsync(int productId, int adminId, string reason)
         {
-            return await _productRepository.RejectProductAsync(productId, adminId, reason);
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null) return false;
+            
+            product.Status = "rejected";
+            product.RejectionReason = reason;
+            
+            await _productRepository.UpdateAsync(product);
+            return true;
+        }
+
+        // --- Entity-level operations for image uploads ---
+        
+        public async Task<Raqmiya.Infrastructure.Product?> GetByIdAsync(int productId)
+        {
+            return await _productRepository.GetByIdAsync(productId);
+        }
+        
+        public async Task UpdateAsync(Raqmiya.Infrastructure.Product product)
+        {
+            await _productRepository.UpdateAsync(product);
         }
     }
 }

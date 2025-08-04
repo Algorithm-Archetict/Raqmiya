@@ -52,6 +52,23 @@ export class Discover implements OnInit {
     this.applyFilters();
   }
 
+  // Helper method to ensure image URLs are full URLs
+  private ensureFullUrl(url: string | null | undefined): string {
+    if (!url) return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&h=200&fit=crop';
+    
+    // If it's already a full URL, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // If it's a relative URL, convert to full backend URL
+    if (url.startsWith('/')) {
+      return `http://localhost:5255${url}`;
+    }
+    
+    return url;
+  }
+
   // Initialize product data from API
   initializeProducts() {
     this.loading = true;
@@ -65,7 +82,7 @@ export class Discover implements OnInit {
           price: product.price,
           rating: product.averageRating,
           ratingCount: product.salesCount, // Using sales count as rating count for demo
-          image: product.coverImageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&h=200&fit=crop',
+          image: this.ensureFullUrl(product.coverImageUrl),
           category: 'design', // Default category, you might want to add this to the DTO
           tags: ['Design'], // Default tags, you might want to add this to the DTO
           badge: product.isPublic ? 'Public' : 'Private'
