@@ -15,6 +15,7 @@ namespace Raqmiya.Infrastructure
         public string Currency { get; set; } = string.Empty; // e.g., "USD", "EUR"
         public string ProductType { get; set; } = string.Empty; // e.g., "digital_download", "subscription", "course"
         public string? CoverImageUrl { get; set; } // Nullable
+        public string? ThumbnailImageUrl { get; set; } // Nullable - NEW
         public string? PreviewVideoUrl { get; set; } // Nullable
         public DateTime? PublishedAt { get; set; } // Nullable, if not published yet
         /// <summary>
@@ -24,6 +25,12 @@ namespace Raqmiya.Infrastructure
         public string? RejectionReason { get; set; } // Nullable, set if rejected by admin
         public bool IsPublic { get; set; }
         public string Permalink { get; set; } = string.Empty;
+        
+        // NEW: Enhanced product details
+        public string Features { get; set; } = "[]"; // JSON string of features
+        public string? Compatibility { get; set; } // e.g., "Unity, Unreal Engine, Blender"
+        public string? License { get; set; } // e.g., "Standard License", "Commercial License"
+        public string? Updates { get; set; } // e.g., "Lifetime Updates", "1 Year Updates"
 
         // Navigation properties
         public User Creator { get; set; } = null!; // Required navigation property

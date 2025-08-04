@@ -13,14 +13,14 @@
         
         <!-- Navigation Tabs for Customize and Content steps -->
         <div class="nav-tabs" *ngIf="currentStep === 'customize' || currentStep === 'content'">
-          <a class="nav-tab" [class.active]="currentStep === 'customize'" routerLink="/products/new">
+          <button class="nav-tab" [class.active]="currentStep === 'customize'" (click)="goToCustomize()">
             <i class="fas fa-edit"></i>
             Product
-          </a>
-          <a class="nav-tab" [class.active]="currentStep === 'content'" routerLink="/products/new/content">
+          </button>
+          <button class="nav-tab" [class.active]="currentStep === 'content'" (click)="goToContent()">
             <i class="fas fa-file-alt"></i>
             Content
-          </a>
+          </button>
         </div>
       </div>
       
@@ -329,6 +329,84 @@
                 </div>
               </div>
             </div>
+            
+            <!-- Product Features Section -->
+            <div class="section-divider"></div>
+            <div class="form-group">
+              <label class="form-label">Product Features</label>
+              <div class="features-card">
+                <p class="features-hint">
+                  List the key features and benefits of your product
+                </p>
+                <div class="features-input-group">
+                  <input 
+                    type="text" 
+                    class="form-input"
+                    placeholder="Add a feature (e.g., 10 fully rigged 3D characters)"
+                    [(ngModel)]="newFeature"
+                    [ngModelOptions]="{standalone: true}"
+                  >
+                  <button 
+                    class="btn btn-primary"
+                    (click)="addFeature()"
+                    [disabled]="!newFeature.trim()"
+                  >
+                    Add Feature
+                  </button>
+                </div>
+                
+                <!-- Existing Features -->
+                <div class="existing-features" *ngIf="productFeatures.length > 0">
+                  <div class="feature-item" *ngFor="let feature of productFeatures; let i = index">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="feature-text">{{ feature }}</span>
+                    <button class="remove-feature-btn" (click)="removeFeature(i)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Product Specifications Section -->
+            <div class="section-divider"></div>
+            <div class="form-group">
+              <label class="form-label">Product Specifications</label>
+              <div class="specs-grid">
+                <div class="spec-item">
+                  <label for="compatibility" class="spec-label">Compatibility</label>
+                  <input 
+                    type="text" 
+                    id="compatibility"
+                    class="form-input"
+                    placeholder="e.g., Unity, Unreal Engine, Blender"
+                    [formControlName]="'compatibility'"
+                  >
+                </div>
+                
+                <div class="spec-item">
+                  <label for="license" class="spec-label">License Type</label>
+                  <select id="license" class="form-input" [formControlName]="'license'">
+                    <option value="">Select License</option>
+                    <option value="Standard">Standard License</option>
+                    <option value="Commercial">Commercial License</option>
+                    <option value="Extended">Extended License</option>
+                    <option value="Custom">Custom License</option>
+                  </select>
+                </div>
+                
+                <div class="spec-item">
+                  <label for="updates" class="spec-label">Update Policy</label>
+                  <select id="updates" class="form-input" [formControlName]="'updates'">
+                    <option value="">Select Update Policy</option>
+                    <option value="Lifetime Updates">Lifetime Updates</option>
+                    <option value="1 Year Updates">1 Year Updates</option>
+                    <option value="6 Months Updates">6 Months Updates</option>
+                    <option value="No Updates">No Updates</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
           
           <!-- Right Section - Preview -->
@@ -353,36 +431,87 @@
 
       <!-- Step 3: Content -->
       <div class="content-step" *ngIf="currentStep === 'content'">
-        <div class="content-editor" [formGroup]="productForm">
-          <div class="editor-toolbar">
-            <button class="toolbar-btn">
-              <i class="fas fa-bold"></i>
-            </button>
-            <button class="toolbar-btn">
-              <i class="fas fa-italic"></i>
-            </button>
-            <button class="toolbar-btn">
-              <i class="fas fa-underline"></i>
-            </button>
-            <button class="toolbar-btn">
-              <i class="fas fa-link"></i>
-            </button>
-            <button class="toolbar-btn">
-              <i class="fas fa-upload"></i>
-            </button>
+        <div class="content-layout">
+          <!-- Left Section - Text Editor -->
+          <div class="content-editor" [formGroup]="productForm">
+            <div class="editor-toolbar">
+              <button class="toolbar-btn">
+                <i class="fas fa-bold"></i>
+              </button>
+              <button class="toolbar-btn">
+                <i class="fas fa-italic"></i>
+              </button>
+              <button class="toolbar-btn">
+                <i class="fas fa-underline"></i>
+              </button>
+              <button class="toolbar-btn">
+                <i class="fas fa-link"></i>
+              </button>
+            </div>
+            <div class="editor-content">
+              <textarea 
+                class="content-textarea"
+                placeholder="Enter the content you want to sell. Describe your product, add instructions, or any additional information."
+                [formControlName]="'content'"
+                rows="15"
+              ></textarea>
+            </div>
+            <div class="content-hint">
+              <p>This is what buyers will see when they purchase your product. Add descriptions, instructions, or any additional information.</p>
+            </div>
           </div>
-          
-          <div class="editor-content">
-            <textarea 
-              class="content-textarea"
-              placeholder="Enter the content you want to sell. Upload your files or start typing."
-              [formControlName]="'content'"
-              rows="20"
-            ></textarea>
-          </div>
-          
-          <div class="content-hint">
-            <p>This is what buyers will see when they purchase your product. Only customers who have bought your product can access this content.</p>
+
+          <!-- Right Section - File Upload -->
+          <div class="file-upload-section">
+            <div class="upload-header">
+              <h3 class="upload-title">Product Files</h3>
+              <p class="upload-subtitle">Upload the actual files customers will download</p>
+            </div>
+            <div class="file-upload-area">
+              <input 
+                type="file" 
+                id="productFiles" 
+                multiple
+                accept=".pdf,.zip,.jpg,.jpeg,.png,.mp4"
+                (change)="onFileSelected($event)"
+                style="display: none;"
+              >
+              <label for="productFiles" class="upload-btn">
+                <i class="fas fa-upload"></i>
+                Upload product files
+              </label>
+              <p class="upload-hint">
+                Supported formats: PDF, ZIP, JPG, PNG, MP4. Maximum file size: 50MB per file.
+              </p>
+            </div>
+            <!-- File Preview -->
+            <div class="file-preview" *ngIf="productFiles.length > 0">
+              <div class="file-item" *ngFor="let file of productFiles; let i = index">
+                <div class="file-info">
+                  <i class="fas fa-file"></i>
+                  <span class="file-name">{{ file.name }}</span>
+                  <span class="file-size">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
+                </div>
+                <button class="remove-btn" (click)="removeFile(i)">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <!-- Upload Progress -->
+            <div class="upload-progress" *ngIf="isUploading">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+              </div>
+              <span class="progress-text">Uploading files... {{ uploadProgress }}%</span>
+            </div>
+            <!-- Uploaded Files -->
+            <div class="uploaded-files" *ngIf="uploadedFiles.length > 0">
+              <h4 class="uploaded-title">Uploaded Files</h4>
+              <div class="uploaded-file-item" *ngFor="let file of uploadedFiles">
+                <i class="fas fa-check-circle"></i>
+                <span class="file-name">{{ file.name }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

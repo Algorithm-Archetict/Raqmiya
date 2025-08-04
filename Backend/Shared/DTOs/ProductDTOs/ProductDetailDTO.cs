@@ -11,11 +11,18 @@
         public string Currency { get; set; } = string.Empty;
         public string ProductType { get; set; } = string.Empty;
         public string? CoverImageUrl { get; set; }
+        public string? ThumbnailImageUrl { get; set; }
         public string? PreviewVideoUrl { get; set; }
         public DateTime? PublishedAt { get; set; }
         public string Status { get; set; } = string.Empty;
         public bool IsPublic { get; set; }
         public string Permalink { get; set; } = string.Empty;
+
+        // NEW: Enhanced product details
+        public List<string> Features { get; set; } = new List<string>();
+        public string? Compatibility { get; set; }
+        public string? License { get; set; }
+        public string? Updates { get; set; }
 
         // Sub-DTOs for nested data
         public List<FileDTO> Files { get; set; } = new List<FileDTO>();

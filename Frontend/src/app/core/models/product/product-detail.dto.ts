@@ -8,27 +8,34 @@ import { VariantDTO } from "./variant.dto";
 export interface ProductDetailDTO {
   id: number;
   creatorId: number;
-  creatorUsername?: string;
-  name?: string;
-  description?: string;
+  creatorUsername: string;
+  name: string;
+  description: string;
   price: number;
-  currency?: string;
-  productType?: string;
+  currency: string;
+  productType: string;
   coverImageUrl?: string;
+  thumbnailImageUrl?: string;
   previewVideoUrl?: string;
   publishedAt?: string;
-  status?: string;
+  status: string;
   isPublic: boolean;
-  permalink?: string;
-  files?: FileDTO[];
-  variants?: VariantDTO[];
-  offerCodes?: OfferCodeDTO[];
-  reviews?: ReviewDTO[];
-  categories?: CategoryDTO[];
-  tags?: TagDTO[];
+  permalink: string;
+  // NEW: Enhanced product details
+  features: string[];
+  compatibility?: string;
+  license?: string;
+  updates?: string;
+  // Sub-DTOs for nested data
+  files: FileDTO[];
+  variants: VariantDTO[];
+  offerCodes: OfferCodeDTO[];
+  reviews: ReviewDTO[];
+  categories: CategoryDTO[];
+  tags: TagDTO[];
   wishlistCount: number;
   averageRating: number;
   salesCount: number;
   viewsCount: number;
-  isInWishlist: boolean;
+  isInWishlist: boolean; // Specific to user context
 }
