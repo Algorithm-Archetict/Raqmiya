@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace Raqmiya.Infrastructure
 {
-    // midas added
     public class OrderItem
     {
         [Key] // Denotes this property as the primary key
@@ -46,4 +45,3 @@ namespace Raqmiya.Infrastructure
         public decimal TotalPrice => Quantity * UnitPrice;
     }
 }
-

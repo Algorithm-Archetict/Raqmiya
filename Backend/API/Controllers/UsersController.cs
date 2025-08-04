@@ -1,10 +1,11 @@
+using API.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Raqmiya.Infrastructure;
 using Shared.DTOs.AuthDTOs;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
+using Raqmiya.Infrastructure;
+using AutoMapper;
 
 namespace API.Controllers
 {
@@ -12,16 +13,18 @@ namespace API.Controllers
     /// Controller for user profile management.
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route(UserRoutes.Users)]
     public class UsersController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
         private readonly ILogger<UsersController> _logger;
+        private readonly IMapper _mapper;
 
-        public UsersController(IUserRepository userRepository, ILogger<UsersController> logger)
+        public UsersController(IUserRepository userRepository, ILogger<UsersController> logger, IMapper mapper)
         {
             _userRepository = userRepository;
             _logger = logger;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -38,12 +41,12 @@ namespace API.Controllers
                 var userId = GetCurrentUserId();
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null) return NotFound();
-                return Ok(MapToProfileDTO(user));
+                return Ok(_mapper.Map<UserProfileDTO>(user));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting current user profile");
-                return Problem("An error occurred while fetching the profile.");
+                _logger.LogError(ex, LogMessages.UserGetProfileError);
+                return Problem(ErrorMessages.UserGetProfile);
             }
         }
 
@@ -57,7 +60,7 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> UpdateMe([FromBody] UserUpdateDTO dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            // ModelState check removed; FluentValidation will handle validation errors
             try
             {
                 var userId = GetCurrentUserId();
@@ -67,12 +70,12 @@ namespace API.Controllers
                 if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) user.ProfileDescription = dto.ProfileDescription;
                 if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) user.ProfileImageUrl = dto.ProfileImageUrl;
                 await _userRepository.UpdateAsync(user);
-                return Ok(MapToProfileDTO(user));
+                return Ok(_mapper.Map<UserProfileDTO>(user));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating user profile");
-                return Problem("An error occurred while updating the profile.");
+                _logger.LogError(ex, LogMessages.UserUpdateProfileError);
+                return Problem(ErrorMessages.UserUpdateProfile);
             }
         }
 
@@ -86,7 +89,7 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            // ModelState check removed; FluentValidation will handle validation errors
             try
             {
                 var userId = GetCurrentUserId();
@@ -97,7 +100,7 @@ namespace API.Controllers
                 {
                     var hash = Convert.ToBase64String(pbkdf2.GetBytes(32));
                     if (hash != user.HashedPassword)
-                        return BadRequest("Current password is incorrect.");
+                        return BadRequest(ErrorMessages.UserCurrentPasswordIncorrect);
                 }
                 var newSalt = GenerateSalt();
                 var newHash = HashPassword(dto.NewPassword, newSalt);
@@ -125,18 +128,6 @@ namespace API.Controllers
                 throw new UnauthorizedAccessException("User ID claim missing or invalid.");
             return userId;
         }
-
-        private static UserProfileDTO MapToProfileDTO(User user) => new UserProfileDTO
-        {
-            Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            Role = user.Role,
-            ProfileDescription = user.ProfileDescription,
-            ProfileImageUrl = user.ProfileImageUrl,
-            CreatedAt = user.CreatedAt,
-            IsActive = user.IsActive
-        };
 
         private static string GenerateSalt()
         {
