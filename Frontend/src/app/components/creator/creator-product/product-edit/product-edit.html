@@ -1,29 +1,282 @@
-<!-- <div class="product-edit-section" [formGroup]="productForm">
-  <h3>Edit Details</h3>
-  <div class="form-group">
-    <label for="description">Description</label>
-    <textarea id="description" class="form-input" formControlName="description"></textarea>
-  </div>
-  <div class="form-group">
-    <label for="isPublic">
-      <input id="isPublic" type="checkbox" formControlName="isPublic" /> Public
-    </label>
-  </div>
-  <button class="btn btn-primary" (click)="onSaveClick()">Save and continue</button>
-</div> -->
+<div class="add-product-container">
+  <!-- Left Sidebar -->
+  <app-dashboard-sidebar></app-dashboard-sidebar>
 
-<div class="product-edit-section" [formGroup]="productForm">
-  <h3 class="header-title">Edit Details</h3>
-  <div class="form-group">
-    <label for="description" class="form-label">Description</label>
-    <textarea id="description" class="form-textarea" formControlName="description"></textarea>
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Header Section -->
+    <div class="product-header">
+      <div class="header-left">
+        <h1 class="header-title">{{ productForm.get('name')?.value || 'Product Name' }}</h1>
+        
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+          <a class="nav-tab active" routerLink="/products/{{ productId }}/edit">
+            <i class="fas fa-edit"></i>
+            Product
+          </a>
+          <a class="nav-tab" routerLink="/products/{{ productId }}/edit/content">
+            <i class="fas fa-file-alt"></i>
+            Content
+          </a>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <button class="btn btn-secondary" (click)="cancel()">
+          Cancel
+        </button>
+        <button 
+          class="btn btn-primary" 
+          [disabled]="!isFormValid"
+          (click)="saveAndContinue()"
+        >
+          Save and continue
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Customize Product -->
+      <div class="customize-step">
+        <div class="customize-layout">
+          <!-- Left Section - Form -->
+          <div class="form-section" [formGroup]="productForm">
+            <div class="form-group">
+              <label for="productNameEdit" class="form-label">Name</label>
+              <input 
+                type="text" 
+                id="productNameEdit"
+                class="form-input"
+                placeholder="Name of your product"
+                [formControlName]="'name'"
+                (input)="onNameChange()"
+              >
+            </div>
+            
+            <!-- Rich text editor for description -->
+            <div class="form-group">
+              <label for="productDescription" class="form-label">Description</label>
+              <div id="description-editor" class="quill-editor"></div>
+            </div>
+            
+            <div class="form-group">
+              <label for="productUrl" class="form-label">URL</label>
+              <input 
+                type="text" 
+                id="productUrl"
+                class="form-input"
+                [formControlName]="'url'"
+                readonly
+              >
+            </div>
+            
+            <!-- Cover Images Section -->
+            <div class="section-divider"></div>
+            <div class="form-group">
+              <label class="form-label">Cover Images</label>
+              <button 
+                class="upload-btn"
+                (click)="showCoverOptions = !showCoverOptions"
+              >
+                <i class="fas fa-upload"></i>
+                Upload a cover image
+              </button>
+              
+              <div class="upload-options" *ngIf="showCoverOptions">
+                <div class="upload-option">
+                  <input 
+                    type="file" 
+                    id="coverFile" 
+                    accept="image/*"
+                    (change)="uploadCoverImage($event)"
+                    style="display: none;"
+                  >
+                  <label for="coverFile" class="upload-option-btn">
+                    <i class="fas fa-folder-open"></i>
+                    Computer files
+                  </label>
+                </div>
+                <div class="upload-option">
+                  <div class="link-input-group">
+                    <input 
+                      type="url" 
+                      class="form-input"
+                      placeholder="Enter image URL"
+                      [(ngModel)]="coverImageLink"
+                      [ngModelOptions]="{standalone: true}"
+                    >
+                    <button 
+                      class="btn btn-secondary"
+                      (click)="uploadCoverFromLink()"
+                    >
+                      <i class="fas fa-upload"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <p class="upload-hint">
+                Images should be horizontal, at least 1280x720px, and 72 DPI (dots per inch).
+              </p>
+              
+              <!-- Cover Images Preview -->
+              <div class="cover-images-preview" *ngIf="coverImages.length > 0">
+                <div class="cover-image-item" *ngFor="let image of coverImages; let i = index">
+                  <img [src]="image" [alt]="'Cover image ' + (i + 1)">
+                  <button class="remove-btn" (click)="removeCoverImage(i)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Thumbnail Section -->
+            <div class="section-divider"></div>
+            <div class="form-group">
+              <label class="form-label">Thumbnail</label>
+              <input 
+                type="file" 
+                id="thumbnailFile" 
+                accept="image/*"
+                (change)="uploadThumbnail($event)"
+                style="display: none;"
+              >
+              <label for="thumbnailFile" class="upload-btn">
+                <i class="fas fa-upload"></i>
+                Upload thumbnail
+              </label>
+              
+              <p class="upload-hint">
+                This image appears in the Raqmiya Library, Discover and Profile pages. Your image should be square, at least 600x600px, and JPG, PNG or GIF format.
+              </p>
+              
+              <!-- Thumbnail Preview only show if the user upload a thumbnail -->
+              <div class="thumbnail-preview" *ngIf="thumbnailImage">
+                <img [src]="thumbnailImage" alt="Thumbnail">
+              </div>
+            </div>
+            
+            <!-- Product Info Section -->
+            <div class="section-divider"></div>
+            <div class="form-group">
+              <label for="productSummary" class="form-label">Summary</label>
+              <input 
+                type="text" 
+                id="productSummary"
+                class="form-input"
+                placeholder="You will get..."
+                [formControlName]="'summary'"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Additional details</label>
+              <div class="details-card">
+                <p class="details-hint">
+                  Call out important features of your product that help your customers decide to buy
+                </p>
+                <button 
+                  class="btn btn-secondary"
+                  (click)="showDetailsForm = true"
+                  *ngIf="!showDetailsForm"
+                >
+                  Add details
+                </button>
+                
+                <div class="details-form" *ngIf="showDetailsForm">
+                  <div class="detail-inputs">
+                    <input 
+                      type="text" 
+                      class="form-input"
+                      placeholder="Attribute (e.g., File size)"
+                      [(ngModel)]="newDetail.attribute"
+                      [ngModelOptions]="{standalone: true}"
+                    >
+                    <input 
+                      type="text" 
+                      class="form-input"
+                      placeholder="Value (e.g., 100MB)"
+                      [(ngModel)]="newDetail.value"
+                      [ngModelOptions]="{standalone: true}"
+                    >
+                  </div>
+                  <button 
+                    class="btn btn-primary"
+                    (click)="addProductDetail()"
+                  >
+                    Add details
+                  </button>
+                </div>
+                
+                <!-- Existing Details -->
+                <div class="existing-details" *ngIf="productDetails.length > 0">
+                  <div class="detail-item" *ngFor="let detail of productDetails; let i = index">
+                    <span class="detail-attribute">{{ detail.attribute }}:</span>
+                    <span class="detail-value">{{ detail.value }}</span>
+                    <button class="remove-detail-btn" (click)="removeProductDetail(i)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Section - Real Preview -->
+          <div class="preview-section">
+            <div class="real-preview">
+              <div class="preview-header">
+                <h3>Product Preview</h3>
+                <p>This is how your product will appear to customers</p>
+              </div>
+              
+              <div class="preview-content">
+                <!-- Product Image -->
+                <div class="preview-image-container" *ngIf="coverImages.length > 0">
+                  <img [src]="coverImages[0]" alt="Product preview" class="preview-main-image">
+                </div>
+                <div class="preview-image-placeholder" *ngIf="coverImages.length === 0">
+                  <i class="fas fa-image"></i>
+                  <p>Upload a cover image to see preview</p>
+                </div>
+                
+                <!-- Product Info -->
+                <div class="preview-info">
+                  <h2 class="preview-title">{{ productForm.get('name')?.value || 'Product Name' }}</h2>
+                  <p class="preview-description">{{ productForm.get('description')?.value || 'Product description will appear here...' }}</p>
+                  
+                  <!-- Product Details -->
+                  <div class="preview-details" *ngIf="productDetails.length > 0">
+                    <h4>What you'll get:</h4>
+                    <ul class="details-list">
+                      <li *ngFor="let detail of productDetails">
+                        <strong>{{ detail.attribute }}:</strong> {{ detail.value }}
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <!-- Summary -->
+                  <div class="preview-summary" *ngIf="productForm.get('summary')?.value">
+                    <p><strong>Summary:</strong> {{ productForm.get('summary')?.value }}</p>
+                  </div>
+                  
+                  <!-- Price -->
+                  <div class="preview-price-section">
+                    <div class="price-display">
+                      <span class="price-amount">{{ productForm.get('price')?.value || '0' }}</span>
+                      <span class="price-currency">{{ currency }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="form-group">
-    <label for="isPublic" class="form-label">
-      <input id="isPublic" type="checkbox" formControlName="isPublic" /> Public
-    </label>
-  </div>
-  <button class="btn btn-primary" (click)="onSaveClick()">Save and continue</button>
 </div>
 
 
