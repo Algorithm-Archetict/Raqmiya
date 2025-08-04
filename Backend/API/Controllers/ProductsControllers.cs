@@ -55,6 +55,11 @@ namespace API.Controllers
         {
             var product = await _productService.GetProductDetailsByIdAsync(id);
             if (product == null) return NotFound();
+            
+            // Log the product details being returned
+            _logger.LogInformation("GetProductById - Product ID: {ProductId}, CoverImageUrl: {CoverImageUrl}, ThumbnailImageUrl: {ThumbnailImageUrl}", 
+                id, product.CoverImageUrl, product.ThumbnailImageUrl);
+            
             return Ok(product);
         }
 
@@ -312,12 +317,17 @@ namespace API.Controllers
             }
             var fileUrl = $"/{FileStorageConstants.UploadsFolder}/products/{id}/{fileName}";
             
-            // Log the file upload details for debugging
-            _logger.LogInformation("File uploaded successfully. Product ID: {ProductId}, File: {FileName}, URL: {FileUrl}, Size: {Size} bytes, Type: {ContentType}", 
-                id, fileName, fileUrl, file.Length, file.ContentType);
+            // For frontend access, we need to include the backend base URL
+            var backendBaseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fullFileUrl = $"{backendBaseUrl}{fileUrl}";
             
-            var fileDto = await _productService.AddProductFileAsync(id, creatorId, file.FileName, fileUrl, file.Length, file.ContentType);
-            return Created(fileUrl, fileDto);
+            // Log the file upload details for debugging
+            _logger.LogInformation("File uploaded successfully. Product ID: {ProductId}, File: {FileName}, URL: {FileUrl}, Full URL: {FullFileUrl}, Size: {Size} bytes, Type: {ContentType}", 
+                id, fileName, fileUrl, fullFileUrl, file.Length, file.ContentType);
+            
+            var fileDto = await _productService.AddProductFileAsync(id, creatorId, fileName, fullFileUrl, file.Length, file.ContentType);
+            
+            return CreatedAtAction(nameof(GetProductFiles), new { id }, fileDto);
         }
 
         /// <summary>
@@ -356,43 +366,44 @@ namespace API.Controllers
             
             var imageUrl = $"/{FileStorageConstants.UploadsFolder}/products/{id}/images/{fileName}";
             
-            // Log the upload details for debugging
-            _logger.LogInformation("Image uploaded successfully. Product ID: {ProductId}, Type: {Type}, File: {FileName}, URL: {ImageUrl}, Size: {Size} bytes", 
-                id, type, fileName, imageUrl, image.Length);
+            // For frontend access, we need to include the backend base URL
+            var backendBaseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fullImageUrl = $"{backendBaseUrl}{imageUrl}";
             
-            // Update the product with the new image URL
-            var product = await _productService.GetProductDetailsByIdAsync(id, creatorId);
+            // Log the upload details for debugging
+            _logger.LogInformation("Image uploaded successfully. Product ID: {ProductId}, Type: {Type}, File: {FileName}, URL: {ImageUrl}, Full URL: {FullImageUrl}, Size: {Size} bytes, Scheme: {Scheme}, Host: {Host}", 
+                id, type, fileName, imageUrl, fullImageUrl, image.Length, Request.Scheme, Request.Host);
+            
+            // Update the product with the new image URL (store the full URL)
+            var product = await _productService.GetByIdAsync(id);
             if (product == null)
                 return NotFound("Product not found.");
             
-            var updateDto = new ProductUpdateRequestDTO
-            {
-                Id = id,
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                Currency = product.Currency,
-                ProductType = product.ProductType,
-                CoverImageUrl = type == "cover" ? imageUrl : product.CoverImageUrl,
-                ThumbnailImageUrl = type == "thumbnail" ? imageUrl : product.ThumbnailImageUrl,
-                PreviewVideoUrl = product.PreviewVideoUrl,
-                Permalink = product.Permalink,
-                Status = product.Status,
-                IsPublic = product.IsPublic,
-                Features = product.Features,
-                Compatibility = product.Compatibility,
-                License = product.License,
-                Updates = product.Updates,
-                CategoryIds = product.Categories.Select(c => c.Id).ToList(),
-                TagIds = product.Tags.Select(t => t.Id).ToList()
-            };
+            if (product.CreatorId != creatorId)
+                return Forbid("Only the product creator can upload images.");
             
-            await _productService.UpdateProductAsync(id, creatorId, updateDto);
+            // Log the current state before update
+            _logger.LogInformation("Before update - Product ID: {ProductId}, Current CoverImageUrl: {CurrentCoverUrl}, Current ThumbnailImageUrl: {CurrentThumbnailUrl}", 
+                id, product.CoverImageUrl, product.ThumbnailImageUrl);
             
-            return Ok(new { 
-                message = $"{type} image uploaded successfully.", 
-                imageUrl = imageUrl 
-            });
+            if (type.ToLower() == "cover")
+                product.CoverImageUrl = fullImageUrl;
+            else if (type.ToLower() == "thumbnail")
+                product.ThumbnailImageUrl = fullImageUrl;
+            else
+                return BadRequest("Invalid image type. Use 'cover' or 'thumbnail'.");
+            
+            // Log the state after setting the URL
+            _logger.LogInformation("After setting URL - Product ID: {ProductId}, New CoverImageUrl: {NewCoverUrl}, New ThumbnailImageUrl: {NewThumbnailUrl}", 
+                id, product.CoverImageUrl, product.ThumbnailImageUrl);
+            
+            await _productService.UpdateAsync(product);
+            
+            // Log the state after database update
+            _logger.LogInformation("After database update - Product ID: {ProductId}, Final CoverImageUrl: {FinalCoverUrl}, Final ThumbnailImageUrl: {FinalThumbnailUrl}", 
+                id, product.CoverImageUrl, product.ThumbnailImageUrl);
+            
+            return Ok(new { url = fullImageUrl });
         }
 
         /// <summary>

@@ -135,12 +135,38 @@ export class ProductDetails implements OnInit {
     }
   }
 
+  // Helper method to ensure image URLs are full URLs
+  private ensureFullUrl(url: string | null | undefined): string | undefined {
+    if (!url) {
+      console.log('ensureFullUrl: URL is null/undefined');
+      return undefined;
+    }
+    
+    console.log('ensureFullUrl: Processing URL:', url);
+    
+    // If it's already a full URL, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      console.log('ensureFullUrl: Already full URL, returning as is:', url);
+      return url;
+    }
+    
+    // If it's a relative URL, convert to full backend URL
+    if (url.startsWith('/')) {
+      const fullUrl = `http://localhost:5255${url}`;
+      console.log('ensureFullUrl: Converted relative URL to full URL:', fullUrl);
+      return fullUrl;
+    }
+    
+    console.log('ensureFullUrl: Unknown URL format, returning as is:', url);
+    return url;
+  }
+
   mapBackendToUI(backendProduct: ProductDetailDTO): Product {
     return {
       id: backendProduct.id,
       title: backendProduct.name || 'Untitled Product',
       creator: backendProduct.creatorUsername || 'Unknown Creator',
-      creatorAvatar: `https://via.placeholder.com/50x50/0074e4/ffffff?text=${backendProduct.creatorUsername?.charAt(0) || 'U'}`,
+      creatorAvatar: this.getPlaceholderAvatar(backendProduct.creatorUsername?.charAt(0) || 'U'),
       creatorProducts: 0, // TODO: Get from backend if available
       price: backendProduct.price,
       originalPrice: undefined, // TODO: Add to backend if needed
@@ -159,8 +185,8 @@ export class ProductDetails implements OnInit {
       media: this.createMediaFromProduct(backendProduct),
       currency: backendProduct.currency || 'USD',
       productType: backendProduct.productType || 'digital',
-      coverImageUrl: backendProduct.coverImageUrl,
-      previewVideoUrl: backendProduct.previewVideoUrl,
+      coverImageUrl: this.ensureFullUrl(backendProduct.coverImageUrl),
+      previewVideoUrl: this.ensureFullUrl(backendProduct.previewVideoUrl),
       files: backendProduct.files || [],
       permalink: backendProduct.permalink,
       isInWishlist: backendProduct.isInWishlist || false,
@@ -170,33 +196,51 @@ export class ProductDetails implements OnInit {
     };
   }
 
+  // Helper method to generate placeholder avatar
+  private getPlaceholderAvatar(initial: string): string {
+    const colors = ['#0074e4', '#e4007f', '#00d4ff', '#6c2bd9', '#ff6b35'];
+    const color = colors[initial.charCodeAt(0) % colors.length];
+    return `data:image/svg+xml;base64,${btoa(`
+      <svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
+        <rect width="50" height="50" fill="${color}"/>
+        <text x="25" y="32" font-family="Arial" font-size="20" fill="white" text-anchor="middle">${initial.toUpperCase()}</text>
+      </svg>
+    `)}`;
+  }
+
   createMediaFromProduct(backendProduct: ProductDetailDTO): MediaItem[] {
     const media: MediaItem[] = [];
     
     // Add cover image if available
     if (backendProduct.coverImageUrl) {
-      media.push({
-        type: 'image',
-        url: backendProduct.coverImageUrl,
-        thumbnail: backendProduct.coverImageUrl
-      });
+      const fullCoverUrl = this.ensureFullUrl(backendProduct.coverImageUrl);
+      if (fullCoverUrl) {
+        media.push({
+          type: 'image',
+          url: fullCoverUrl,
+          thumbnail: fullCoverUrl
+        });
+      }
     }
     
     // Add preview video if available
     if (backendProduct.previewVideoUrl) {
-      media.push({
-        type: 'video',
-        url: backendProduct.previewVideoUrl,
-        thumbnail: backendProduct.coverImageUrl
-      });
+      const fullVideoUrl = this.ensureFullUrl(backendProduct.previewVideoUrl);
+      if (fullVideoUrl) {
+        media.push({
+          type: 'video',
+          url: fullVideoUrl,
+          thumbnail: this.ensureFullUrl(backendProduct.coverImageUrl) || fullVideoUrl
+        });
+      }
     }
     
     // Add file previews if no media available
     if (media.length === 0 && backendProduct.files && backendProduct.files.length > 0) {
       media.push({
         type: 'image',
-        url: 'https://via.placeholder.com/800x450/2a2a2a/ffffff?text=Product+Files',
-        thumbnail: 'https://via.placeholder.com/150x150/2a2a2a/ffffff?text=Files'
+        url: this.getPlaceholderImage('Product Files', '#2a2a2a'),
+        thumbnail: this.getPlaceholderImage('Files', '#2a2a2a')
       });
     }
     
@@ -235,7 +279,7 @@ export class ProductDetails implements OnInit {
       {
         id: 1,
         name: 'John Doe',
-        avatar: 'https://via.placeholder.com/40x40/0074e4/ffffff?text=JD',
+        avatar: this.getPlaceholderAvatar('J'),
         rating: 5,
         comment: 'Excellent quality! The 3D models are very detailed and well-optimized.',
         date: new Date('2024-01-15')
@@ -243,7 +287,7 @@ export class ProductDetails implements OnInit {
       {
         id: 2,
         name: 'Sarah Smith',
-        avatar: 'https://via.placeholder.com/40x40/e4007f/ffffff?text=SS',
+        avatar: this.getPlaceholderAvatar('S'),
         rating: 4,
         comment: 'Great value for money. The documentation is comprehensive.',
         date: new Date('2024-01-10')
@@ -258,7 +302,7 @@ export class ProductDetails implements OnInit {
         id: 2,
         title: 'Fantasy Character Pack',
         creator: 'DigitalArt Studio',
-        creatorAvatar: 'https://via.placeholder.com/50x50/0074e4/ffffff?text=DS',
+        creatorAvatar: this.getPlaceholderAvatar('D'),
         creatorProducts: 24,
         price: 24.99,
         rating: 4.7,
@@ -273,7 +317,7 @@ export class ProductDetails implements OnInit {
         compatibility: 'Unity, Unreal',
         license: 'Commercial',
         updates: '1 Year Updates',
-        media: [{ type: 'image', url: 'https://via.placeholder.com/300x200/6c2bd9/ffffff?text=Fantasy+Pack' }],
+        media: [{ type: 'image', url: this.getPlaceholderImage('Fantasy Pack', '#6c2bd9') }],
         currency: 'USD',
         productType: 'digital',
         isInWishlist: false,
@@ -285,7 +329,7 @@ export class ProductDetails implements OnInit {
         id: 3,
         title: 'Sci-Fi Environment Kit',
         creator: 'DigitalArt Studio',
-        creatorAvatar: 'https://via.placeholder.com/50x50/0074e4/ffffff?text=DS',
+        creatorAvatar: this.getPlaceholderAvatar('D'),
         creatorProducts: 24,
         price: 34.99,
         rating: 4.9,
@@ -300,7 +344,7 @@ export class ProductDetails implements OnInit {
         compatibility: 'Unity, Unreal, Blender',
         license: 'Commercial',
         updates: 'Lifetime Updates',
-        media: [{ type: 'image', url: 'https://via.placeholder.com/300x200/00d4ff/ffffff?text=Sci-Fi+Kit' }],
+        media: [{ type: 'image', url: this.getPlaceholderImage('Sci-Fi Kit', '#00d4ff') }],
         currency: 'USD',
         productType: 'digital',
         isInWishlist: false,
@@ -309,6 +353,16 @@ export class ProductDetails implements OnInit {
         viewsCount: 0
       }
     ];
+  }
+
+  // Helper method to generate placeholder product images
+  private getPlaceholderImage(title: string, color: string): string {
+    return `data:image/svg+xml;base64,${btoa(`
+      <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="300" height="200" fill="${color}"/>
+        <text x="150" y="100" font-family="Arial" font-size="16" fill="white" text-anchor="middle">${title}</text>
+      </svg>
+    `)}`;
   }
 
   // Media gallery methods
