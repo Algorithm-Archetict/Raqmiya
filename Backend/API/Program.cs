@@ -108,6 +108,9 @@ namespace API
                 {
                     c.IncludeXmlComments(xmlPath);
                 }
+
+                // Use full type name as schemaId to avoid conflicts
+                c.CustomSchemaIds(type => type.FullName);
             });
 
             // --- 8. Configure CORS ---

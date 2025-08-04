@@ -1,6 +1,6 @@
 namespace Shared.DTOs.CategoryDTOs
 {
-    public class CategoryDTO
+    public class GeneralCategoryDTO
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
