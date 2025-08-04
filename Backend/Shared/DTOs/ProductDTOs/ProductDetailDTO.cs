@@ -22,7 +22,7 @@
         public List<VariantDTO> Variants { get; set; } = new List<VariantDTO>();
         public List<OfferCodeDTO> OfferCodes { get; set; } = new List<OfferCodeDTO>();
         public List<ReviewDTO> Reviews { get; set; } = new List<ReviewDTO>();
-        public List<CategoryDTO> Categories { get; set; } = new List<CategoryDTO>();
+        public List<ProductCategoryDTO> Categories { get; set; } = new List<ProductCategoryDTO>();
         public List<TagDTO> Tags { get; set; } = new List<TagDTO>();
 
         public int WishlistCount { get; set; }

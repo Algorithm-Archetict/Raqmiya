@@ -31,11 +31,11 @@ namespace API.Controllers
         /// Get all categories.
         /// </summary>
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<CategoryDTO>), 200)]
+        [ProducesResponseType(typeof(IEnumerable<GeneralCategoryDTO>), 200)]
         public async Task<IActionResult> GetAll()
         {
             var categories = await _categoryRepository.GetAllCategoriesAsync();
-            var result = _mapper.Map<IEnumerable<CategoryDTO>>(categories);
+            var result = _mapper.Map<IEnumerable<GeneralCategoryDTO>>(categories);
             return Ok(result);
         }
 
@@ -43,34 +43,34 @@ namespace API.Controllers
         /// Get a category by ID.
         /// </summary>
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(CategoryDTO), 200)]
+        [ProducesResponseType(typeof(GeneralCategoryDTO), 200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetById(int id)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
             if (category == null) return NotFound();
-            return Ok(_mapper.Map<CategoryDTO>(category));
+            return Ok(_mapper.Map<GeneralCategoryDTO>(category));
         }
 
         /// <summary>
         /// Create a new category.
         /// </summary>
         [HttpPost]
-        [ProducesResponseType(typeof(CategoryDTO), 201)]
+        [ProducesResponseType(typeof(GeneralCategoryDTO), 201)]
         [ProducesResponseType(400)]
         public async Task<IActionResult> Create([FromBody] CategoryCreateUpdateDTO dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var category = _mapper.Map<Category>(dto);
             await _categoryRepository.AddAsync(category);
-            return CreatedAtAction(nameof(GetById), new { id = category.Id }, _mapper.Map<CategoryDTO>(category));
+            return CreatedAtAction(nameof(GetById), new { id = category.Id }, _mapper.Map<GeneralCategoryDTO>(category));
         }
 
         /// <summary>
         /// Update an existing category.
         /// </summary>
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(CategoryDTO), 200)]
+        [ProducesResponseType(typeof(GeneralCategoryDTO), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> Update(int id, [FromBody] CategoryCreateUpdateDTO dto)
@@ -80,7 +80,7 @@ namespace API.Controllers
             if (category == null) return NotFound();
             _mapper.Map(dto, category);
             await _categoryRepository.UpdateAsync(category);
-            return Ok(_mapper.Map<CategoryDTO>(category));
+            return Ok(_mapper.Map<GeneralCategoryDTO>(category));
         }
 
         /// <summary>

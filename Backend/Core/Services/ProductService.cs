@@ -52,7 +52,7 @@ namespace Core.Services
                 Variants = product.Variants.Select(v => new VariantDTO { Id = v.Id, Name = v.Name, PriceAdjustment = v.PriceAdjustment }).ToList(),
                 OfferCodes = product.OfferCodes.Select(oc => new OfferCodeDTO { Id = oc.Id, Code = oc.Code, DiscountValue = oc.DiscountValue }).ToList(),
                 Reviews = product.Reviews.Select(r => new ReviewDTO { Id = r.Id, Rating = r.Rating, Comment = r.Comment, UserName = r.User?.Username ?? "Anonymous", CreatedAt = r.CreatedAt }).ToList(),
-                Categories = product.ProductCategories.Select(pc => new CategoryDTO { Id = pc.Category.Id, Name = pc.Category.Name, ParentCategoryId = pc.Category.ParentCategoryId }).ToList(),
+                Categories = product.ProductCategories.Select(pc => new ProductCategoryDTO { Id = pc.Category.Id, Name = pc.Category.Name, ParentCategoryId = pc.Category.ParentCategoryId }).ToList(),
                 Tags = product.ProductTags.Select(pt => new TagDTO { Id = pt.Tag.Id, Name = pt.Tag.Name }).ToList(),
                 WishlistCount = product.WishlistItems.Count(),
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
@@ -417,10 +417,10 @@ namespace Core.Services
             };
         }
 
-        public async Task<List<CategoryDTO>> GetAllCategoriesAsync()
+        public async Task<List<ProductCategoryDTO>> GetAllCategoriesAsync()
         {
             var categories = await _categoryRepository.GetAllCategoriesAsync();
-            return categories.Select(c => new CategoryDTO { Id = c.Id, Name = c.Name, ParentCategoryId = c.ParentCategoryId }).ToList();
+            return categories.Select(c => new ProductCategoryDTO { Id = c.Id, Name = c.Name, ParentCategoryId = c.ParentCategoryId }).ToList();
         }
 
         public async Task<List<TagDTO>> GetAllTagsAsync()

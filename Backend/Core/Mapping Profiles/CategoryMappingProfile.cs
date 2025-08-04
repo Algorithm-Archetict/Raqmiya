@@ -8,9 +8,8 @@ namespace Core.Mapping_Profiles
     {
         public CategoryMappingProfile()
         {
-            CreateMap<Category, CategoryDTO>();
+            CreateMap<Category, GeneralCategoryDTO>();
             CreateMap<CategoryCreateUpdateDTO, Category>();
         }
     }
 }
-
