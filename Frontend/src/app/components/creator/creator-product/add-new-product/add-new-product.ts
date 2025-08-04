@@ -7,8 +7,11 @@ import { ProductDetailDTO } from '../../../../core/models/product/product-detail
 import { ProductCreateRequestDTO } from '../../../../core/models/product/product-create-request.dto';
 import { ProductService } from '../../../../core/services/product.service';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
-import { ProductEdit } from '../product-edit/product-edit';
-import { ProductEditContent } from '../product-edit-content/product-edit-content';
+
+interface ProductDetail {
+  attribute: string;
+  value: string;
+}
 
 @Component({
   selector: 'app-add-new-product',
@@ -18,9 +21,7 @@ import { ProductEditContent } from '../product-edit-content/product-edit-content
             FormsModule,
             ReactiveFormsModule,
             DashboardSidebar, 
-            RouterLink,
-            ProductEdit,
-            ProductEditContent
+            RouterLink
           ],
   templateUrl: './add-new-product.html',
   styleUrl: './add-new-product.css'
@@ -32,6 +33,17 @@ export class AddNewProduct implements OnInit {
   isSubmitting = false;
   successMessage: string | null = null;
   errorMessage: string | null = null;
+  
+  // Additional properties for the template
+  currency: string = 'USD';
+  name: string = '';
+  showCoverOptions: boolean = false;
+  coverImageLink: string = '';
+  coverImages: string[] = [];
+  thumbnailImage: string | null = null;
+  showDetailsForm: boolean = false;
+  productDetails: ProductDetail[] = [];
+  newDetail: ProductDetail = { attribute: '', value: '' };
 
   productTypes = [
     { id: 'digital', name: 'Digital', description: 'Downloadable files', icon: 'fas fa-file', selected: false },
@@ -49,7 +61,10 @@ export class AddNewProduct implements OnInit {
       currency: ['USD', [Validators.required]],
       productType: ['', Validators.required],
       permalink: ['', [Validators.required, Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
-      isPublic: [true]
+      isPublic: [true],
+      url: [''],
+      summary: [''],
+      content: ['']
     });
   }
 
@@ -69,6 +84,24 @@ export class AddNewProduct implements OnInit {
     this.productTypes.forEach(type => type.selected = type.id === typeId);
   }
 
+  onNameChange(): void {
+    const nameValue = this.productForm.get('name')?.value;
+    this.name = nameValue || '';
+    // Generate URL and permalink from name like the old frontend
+    if (nameValue) {
+      const permalink = nameValue.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      this.productForm.get('url')?.setValue(`${permalink}.raqmiya.com`);
+      this.productForm.get('permalink')?.setValue(permalink);
+    } else {
+      this.productForm.get('url')?.setValue('');
+      this.productForm.get('permalink')?.setValue('');
+    }
+  }
+
   nextToCustomize(): void {
     if (this.productForm.valid) {
       this.currentStep = 'customize';
@@ -78,7 +111,14 @@ export class AddNewProduct implements OnInit {
   saveAndContinue(): void {
     if (this.productForm.invalid) return;
     this.isSubmitting = true;
-    const dto: ProductCreateRequestDTO = this.productForm.value;
+    
+    const formValue = this.productForm.value;
+    const dto: ProductCreateRequestDTO = {
+      ...formValue,
+      permalink: formValue.url.replace('.raqmiya.com', ''), // Extract permalink from URL
+      price: parseFloat(formValue.price)
+    };
+    
     this.productService.createProduct(dto).subscribe({
       next: (res) => {
         this.productId = res.id;
@@ -95,7 +135,14 @@ export class AddNewProduct implements OnInit {
 
   saveAndPublish(): void {
     if (!this.productId || this.productForm.invalid) return;
-    const dto = this.productForm.value;
+    
+    const formValue = this.productForm.value;
+    const dto: ProductUpdateRequestDTO = {
+      ...formValue,
+      permalink: formValue.url.replace('.raqmiya.com', ''), // Extract permalink from URL
+      price: parseFloat(formValue.price)
+    };
+    
     this.productService.updateProduct(this.productId, dto).subscribe({
       next: () => {
         this.successMessage = 'Product published!';
@@ -113,6 +160,52 @@ export class AddNewProduct implements OnInit {
     this.successMessage = null;
     this.errorMessage = null;
   }
-  
+
+  // Image upload methods
+  uploadCoverImage(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.coverImages.push(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  uploadCoverFromLink(): void {
+    if (this.coverImageLink) {
+      this.coverImages.push(this.coverImageLink);
+      this.coverImageLink = '';
+    }
+  }
+
+  removeCoverImage(index: number): void {
+    this.coverImages.splice(index, 1);
+  }
+
+  uploadThumbnail(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.thumbnailImage = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // Product details methods
+  addProductDetail(): void {
+    if (this.newDetail.attribute && this.newDetail.value) {
+      this.productDetails.push({ ...this.newDetail });
+      this.newDetail = { attribute: '', value: '' };
+      this.showDetailsForm = false;
+    }
+  }
+
+  removeProductDetail(index: number): void {
+    this.productDetails.splice(index, 1);
+  }
 }
 
