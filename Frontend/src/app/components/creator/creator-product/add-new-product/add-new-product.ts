@@ -328,9 +328,7 @@ export class AddNewProduct implements OnInit {
         price: parseFloat(formValue.price),
         currency: formValue.currency,
         productType: formValue.productType,
-        // Don't send image data in update - images are uploaded separately
-        coverImageUrl: undefined,
-        thumbnailImageUrl: undefined,
+        // Don't include image URLs - they are uploaded separately and should not be overwritten
         previewVideoUrl: formValue.previewVideoUrl,
         isPublic: true, // Set to public when publishing
         permalink: formValue.permalink,
