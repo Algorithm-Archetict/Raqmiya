@@ -19,8 +19,19 @@ export class ProductEditContent{
   @Input() productId?: number;
   @Output() save = new EventEmitter<void>();
 
+  // Additional properties for the template
+  productName: string = '';
+  isFormValid: boolean = true;
+
   onSaveAndPublish(): void {
     this.save.emit();
   }
-  
+
+  saveAndPublish(): void {
+    this.save.emit();
+  }
+
+  cancel(): void {
+    // Handle cancel action
+  }
 }
