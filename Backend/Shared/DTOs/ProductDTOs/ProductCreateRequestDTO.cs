@@ -33,6 +33,10 @@ namespace Shared.DTOs.ProductDTOs
         public string? CoverImageUrl { get; set; }
 
         [Url(ErrorMessage = "Invalid URL format.")]
+        [StringLength(500, ErrorMessage = "Thumbnail image URL cannot exceed 500 characters.")]
+        public string? ThumbnailImageUrl { get; set; }
+
+        [Url(ErrorMessage = "Invalid URL format.")]
         [StringLength(500, ErrorMessage = "Preview video URL cannot exceed 500 characters.")]
         public string? PreviewVideoUrl { get; set; }
 
@@ -42,6 +46,18 @@ namespace Shared.DTOs.ProductDTOs
         [StringLength(200, MinimumLength = 3, ErrorMessage = "Permalink must be between 3 and 200 characters.")]
         [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$", ErrorMessage = "Permalink must be lowercase alphanumeric with hyphens (e.g., my-awesome-product).")]
         public string Permalink { get; set; } = string.Empty;
+
+        // NEW: Enhanced product details
+        public List<string> Features { get; set; } = new List<string>();
+
+        [StringLength(500, ErrorMessage = "Compatibility cannot exceed 500 characters.")]
+        public string? Compatibility { get; set; }
+
+        [StringLength(100, ErrorMessage = "License cannot exceed 100 characters.")]
+        public string? License { get; set; }
+
+        [StringLength(100, ErrorMessage = "Updates cannot exceed 100 characters.")]
+        public string? Updates { get; set; }
 
         public List<int> CategoryIds { get; set; } = new List<int>();
         public List<int> TagIds { get; set; } = new List<int>();

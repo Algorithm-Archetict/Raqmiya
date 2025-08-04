@@ -1067,3 +1067,55 @@
 .dark-theme .reviews-section {
   background: #0a0a0a;
 }
+
+/* Loading and Error States */
+.loading-container,
+.error-container {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.loading-content,
+.error-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.error-actions {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.error-actions .btn {
+  min-width: 150px;
+}
+
+/* Responsive adjustments for loading/error states */
+@media (max-width: 768px) {
+  .loading-container,
+  .error-container {
+    min-height: 50vh;
+    padding: 1rem;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .error-actions .btn {
+    width: 100%;
+    max-width: 200px;
+  }
+}

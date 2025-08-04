@@ -2,6 +2,9 @@ import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
+import { ProductService } from '../../../core/services/product.service';
+import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
+import { FileDTO } from '../../../core/models/product/file.dto';
 
 interface Product {
   id: number;
@@ -24,6 +27,16 @@ interface Product {
   license: string;
   updates: string;
   media: MediaItem[];
+  currency: string;
+  productType: string;
+  coverImageUrl?: string;
+  previewVideoUrl?: string;
+  files?: FileDTO[];
+  permalink?: string;
+  isInWishlist: boolean;
+  wishlistCount: number;
+  salesCount: number;
+  viewsCount: number;
 }
 
 interface MediaItem {
@@ -56,161 +69,244 @@ export class ProductDetails implements OnInit {
   relatedProducts: Product[] = [];
   hasMoreReviews: boolean = true;
   isDarkTheme: boolean = false;
+  
+  // Loading and error states
+  isLoading: boolean = false;
+  error: string | null = null;
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private productService: ProductService
   ) {}
 
   ngOnInit() {
     this.loadProduct();
-    this.loadReviews();
-    this.loadRelatedProducts();
     this.loadTheme();
   }
 
-  // Load product data
+  // Load product data from backend
   loadProduct() {
-    // Mock product data - in real app, this would come from API
-    this.product = {
-      id: 1,
-      title: 'Epic 3D Character Pack - Professional Game Assets',
-      creator: 'DigitalArt Studio',
-      creatorAvatar: 'https://via.placeholder.com/50x50/0074e4/ffffff?text=DS',
-      creatorProducts: 24,
-      price: 29.99,
-      originalPrice: 39.99,
-      rating: 4.8,
-      ratingCount: 156,
-      category: '3D Design',
-      description: `
-        <p>This comprehensive 3D character pack includes everything you need to create stunning game characters. 
-        Perfect for indie developers and professional studios alike.</p>
-        
-        <h4>What's Included:</h4>
-        <ul>
-          <li>10 fully rigged 3D characters</li>
-          <li>Multiple texture variations</li>
-          <li>Animation sets for each character</li>
-          <li>LOD models for performance optimization</li>
-          <li>Complete documentation and setup guides</li>
-        </ul>
-        
-        <p>All models are optimized for real-time rendering and include normal maps, 
-        specular maps, and ambient occlusion maps for maximum visual quality.</p>
-      `,
-      features: [
-        '10 fully rigged 3D characters',
-        'Multiple texture variations',
-        'Animation sets included',
-        'LOD models for performance',
-        'Complete documentation',
-        'Commercial license included'
-      ],
-      tags: ['3D', 'Character', 'Game Assets', 'Rigged', 'Animated'],
-      badges: ['Popular', 'Best Seller'],
-      fileSize: '2.4 GB',
-      format: 'FBX, OBJ, PNG',
-      compatibility: 'Unity, Unreal Engine, Blender',
-      license: 'Commercial',
-      updates: 'Free updates for 1 year',
-      media: [
-        {
-          type: 'image',
-          url: 'https://images.unsplash.com/photo-1744359678374-4769eacf44d6?q=80&w=764&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-        },
-        {
-          type: 'video',
-          url: 'https://www.youtube.com/embed/gA6r7iVzP6M?si=5IyIzh7I4fK7EfzO'
-        },
-        {
-          type: 'image',
-          url: 'https://via.placeholder.com/800x600/6c2bd9/ffffff?text=Character+Preview+2'
-        },
-        {
-          type: 'image',
-          url: 'https://via.placeholder.com/800x600/00d4ff/ffffff?text=Character+Preview+3'
-        }
-      ]
-    };
-
-    this.selectedMedia = this.product.media[0];
+    this.route.params.subscribe(params => {
+      const productId = params['id'];
+      if (productId) {
+        this.fetchProduct(productId);
+      } else {
+        this.error = 'Product ID not found';
+      }
+    });
   }
 
-  // Load reviews
+  fetchProduct(productId: string) {
+    this.isLoading = true;
+    this.error = null;
+    
+    // Try to parse as number first, then as permalink
+    const numericId = parseInt(productId);
+    if (!isNaN(numericId)) {
+      this.productService.getById(numericId).subscribe({
+        next: (backendProduct) => {
+          this.product = this.mapBackendToUI(backendProduct);
+          this.setupMedia();
+          this.loadReviews();
+          this.loadRelatedProducts();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          this.error = 'Product not found';
+          this.isLoading = false;
+        }
+      });
+    } else {
+      // Try as permalink
+      this.productService.getByPermalink(productId).subscribe({
+        next: (backendProduct) => {
+          this.product = this.mapBackendToUI(backendProduct);
+          this.setupMedia();
+          this.loadReviews();
+          this.loadRelatedProducts();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          this.error = 'Product not found';
+          this.isLoading = false;
+        }
+      });
+    }
+  }
+
+  mapBackendToUI(backendProduct: ProductDetailDTO): Product {
+    return {
+      id: backendProduct.id,
+      title: backendProduct.name || 'Untitled Product',
+      creator: backendProduct.creatorUsername || 'Unknown Creator',
+      creatorAvatar: `https://via.placeholder.com/50x50/0074e4/ffffff?text=${backendProduct.creatorUsername?.charAt(0) || 'U'}`,
+      creatorProducts: 0, // TODO: Get from backend if available
+      price: backendProduct.price,
+      originalPrice: undefined, // TODO: Add to backend if needed
+      rating: backendProduct.averageRating || 0,
+      ratingCount: backendProduct.reviews?.length || 0,
+      category: backendProduct.categories?.[0]?.name || 'Digital',
+      description: backendProduct.description || 'No description available.',
+      features: backendProduct.features || [], // Use actual features from backend
+      tags: backendProduct.tags?.map(tag => tag.name || '').filter(name => name !== '') || [],
+      badges: [], // TODO: Add to backend if needed
+      fileSize: this.calculateTotalFileSize(backendProduct.files),
+      format: this.getFileFormats(backendProduct.files),
+      compatibility: backendProduct.compatibility || 'Universal', // Use actual compatibility from backend
+      license: backendProduct.license || 'Standard License', // Use actual license from backend
+      updates: backendProduct.updates || 'Lifetime Updates', // Use actual updates from backend
+      media: this.createMediaFromProduct(backendProduct),
+      currency: backendProduct.currency || 'USD',
+      productType: backendProduct.productType || 'digital',
+      coverImageUrl: backendProduct.coverImageUrl,
+      previewVideoUrl: backendProduct.previewVideoUrl,
+      files: backendProduct.files || [],
+      permalink: backendProduct.permalink,
+      isInWishlist: backendProduct.isInWishlist || false,
+      wishlistCount: backendProduct.wishlistCount || 0,
+      salesCount: backendProduct.salesCount || 0,
+      viewsCount: backendProduct.viewsCount || 0
+    };
+  }
+
+  createMediaFromProduct(backendProduct: ProductDetailDTO): MediaItem[] {
+    const media: MediaItem[] = [];
+    
+    // Add cover image if available
+    if (backendProduct.coverImageUrl) {
+      media.push({
+        type: 'image',
+        url: backendProduct.coverImageUrl,
+        thumbnail: backendProduct.coverImageUrl
+      });
+    }
+    
+    // Add preview video if available
+    if (backendProduct.previewVideoUrl) {
+      media.push({
+        type: 'video',
+        url: backendProduct.previewVideoUrl,
+        thumbnail: backendProduct.coverImageUrl
+      });
+    }
+    
+    // Add file previews if no media available
+    if (media.length === 0 && backendProduct.files && backendProduct.files.length > 0) {
+      media.push({
+        type: 'image',
+        url: 'https://via.placeholder.com/800x450/2a2a2a/ffffff?text=Product+Files',
+        thumbnail: 'https://via.placeholder.com/150x150/2a2a2a/ffffff?text=Files'
+      });
+    }
+    
+    return media;
+  }
+
+  calculateTotalFileSize(files?: FileDTO[]): string {
+    if (!files || files.length === 0) return '0 MB';
+    
+    // Mock calculation - in real app, you'd get actual file sizes from backend
+    const totalSize = files.length * 10; // 10MB per file for demo
+    return `${totalSize} MB`;
+  }
+
+  getFileFormats(files?: FileDTO[]): string {
+    if (!files || files.length === 0) return 'N/A';
+    
+    const formats = new Set<string>();
+    files.forEach(file => {
+      const extension = file.name?.split('.').pop()?.toUpperCase();
+      if (extension) formats.add(extension);
+    });
+    
+    return Array.from(formats).join(', ');
+  }
+
+  setupMedia() {
+    if (this.product && this.product.media && this.product.media.length > 0) {
+      this.selectedMedia = this.product.media[0];
+    }
+  }
+
   loadReviews() {
+    // Mock reviews data - in real app, this would come from API
     this.reviews = [
       {
         id: 1,
-        name: 'Alex Johnson',
-        avatar: 'https://via.placeholder.com/40x40/0074e4/ffffff?text=AJ',
+        name: 'John Doe',
+        avatar: 'https://via.placeholder.com/40x40/0074e4/ffffff?text=JD',
         rating: 5,
-        comment: 'Amazing quality! The characters are well-rigged and the textures are fantastic. Highly recommend for any game project.',
+        comment: 'Excellent quality! The 3D models are very detailed and well-optimized.',
         date: new Date('2024-01-15')
       },
       {
         id: 2,
-        name: 'Sarah Chen',
-        avatar: 'https://via.placeholder.com/40x40/6c2bd9/ffffff?text=SC',
+        name: 'Sarah Smith',
+        avatar: 'https://via.placeholder.com/40x40/e4007f/ffffff?text=SS',
         rating: 4,
-        comment: 'Great value for money. The models work perfectly in Unity. Only giving 4 stars because the documentation could be more detailed.',
+        comment: 'Great value for money. The documentation is comprehensive.',
         date: new Date('2024-01-10')
-      },
-      {
-        id: 3,
-        name: 'Mike Rodriguez',
-        avatar: 'https://via.placeholder.com/40x40/00d4ff/ffffff?text=MR',
-        rating: 5,
-        comment: 'Perfect for my indie game! The animations are smooth and the file sizes are optimized. Will definitely buy more from this creator.',
-        date: new Date('2024-01-08')
       }
     ];
   }
 
-  // Load related products
   loadRelatedProducts() {
+    // Mock related products data - in real app, this would come from API
     this.relatedProducts = [
       {
         id: 2,
-        title: 'Modern UI Design Kit',
-        creator: 'Design Masters',
-        creatorAvatar: 'https://via.placeholder.com/50x50/6c2bd9/ffffff?text=DM',
-        creatorProducts: 15,
-        price: 19.99,
-        rating: 4.9,
+        title: 'Fantasy Character Pack',
+        creator: 'DigitalArt Studio',
+        creatorAvatar: 'https://via.placeholder.com/50x50/0074e4/ffffff?text=DS',
+        creatorProducts: 24,
+        price: 24.99,
+        rating: 4.7,
         ratingCount: 89,
-        category: 'Design',
-        description: 'Modern UI design kit',
-        features: ['UI', 'Design', 'Templates'],
-        tags: ['Design', 'UI', 'Templates'],
-        badges: [],
-        fileSize: '150 MB',
-        format: 'Figma, Sketch, PNG',
-        compatibility: 'Figma, Sketch, Adobe XD',
+        category: '3D Design',
+        description: 'Fantasy character collection with unique designs.',
+        features: ['5 fantasy characters', 'Multiple animations', 'Texture variations'],
+        tags: ['Fantasy', '3D', 'Characters'],
+        badges: ['Popular'],
+        fileSize: '1.8 GB',
+        format: 'FBX, OBJ',
+        compatibility: 'Unity, Unreal',
         license: 'Commercial',
-        updates: 'Free updates',
-        media: [{ type: 'image', url: 'https://via.placeholder.com/300x200/6c2bd9/ffffff?text=UI+Kit' }]
+        updates: '1 Year Updates',
+        media: [{ type: 'image', url: 'https://via.placeholder.com/300x200/6c2bd9/ffffff?text=Fantasy+Pack' }],
+        currency: 'USD',
+        productType: 'digital',
+        isInWishlist: false,
+        wishlistCount: 0,
+        salesCount: 0,
+        viewsCount: 0
       },
       {
         id: 3,
-        title: 'Epic Sound Effects Bundle',
-        creator: 'Audio Pro',
-        creatorAvatar: 'https://via.placeholder.com/50x50/00d4ff/ffffff?text=AP',
-        creatorProducts: 32,
-        price: 15.99,
-        rating: 4.7,
-        ratingCount: 234,
-        category: 'Sound',
-        description: 'Epic sound effects bundle',
-        features: ['Audio', 'Sound Effects', 'Game Audio'],
-        tags: ['Audio', 'Sound Effects', 'Game Audio'],
-        badges: [],
-        fileSize: '500 MB',
-        format: 'WAV, MP3',
-        compatibility: 'All DAWs',
+        title: 'Sci-Fi Environment Kit',
+        creator: 'DigitalArt Studio',
+        creatorAvatar: 'https://via.placeholder.com/50x50/0074e4/ffffff?text=DS',
+        creatorProducts: 24,
+        price: 34.99,
+        rating: 4.9,
+        ratingCount: 156,
+        category: '3D Design',
+        description: 'Complete sci-fi environment with modular pieces.',
+        features: ['Modular design', 'PBR textures', 'Lighting setup'],
+        tags: ['Sci-Fi', 'Environment', 'Modular'],
+        badges: ['Best Seller'],
+        fileSize: '3.2 GB',
+        format: 'FBX, OBJ, PNG',
+        compatibility: 'Unity, Unreal, Blender',
         license: 'Commercial',
-        updates: 'Free updates',
-        media: [{ type: 'image', url: 'https://via.placeholder.com/300x200/00d4ff/ffffff?text=Sound+Effects' }]
+        updates: 'Lifetime Updates',
+        media: [{ type: 'image', url: 'https://via.placeholder.com/300x200/00d4ff/ffffff?text=Sci-Fi+Kit' }],
+        currency: 'USD',
+        productType: 'digital',
+        isInWishlist: false,
+        wishlistCount: 0,
+        salesCount: 0,
+        viewsCount: 0
       }
     ];
   }
