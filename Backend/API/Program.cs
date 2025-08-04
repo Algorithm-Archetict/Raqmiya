@@ -1,5 +1,8 @@
+using AutoMapper;
 using Core.Interfaces;
 using Core.Services;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.OpenApi.Models;
 using Raqmiya.Infrastructure;
 using Raqmiya.Infrastructure.Data;
@@ -29,10 +32,11 @@ namespace API
             builder.Services.AddScoped<ITagRepository, TagRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>(); // NEW: User Repository
             builder.Services.AddScoped<IAuthRepository, AuthRepository>(); // Register AuthRepository for IAuthRepository
-
+            builder.Services.AddScoped<IOrderRepository,OrderRepository>(); // Register OrderRepository
             // --- 3. Configure Services (Core/Business Logic Layer) ---
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAuthService, AuthService>(); // NEW: Auth Service
+            builder.Services.AddScoped<IOrderService, Core.Services.OrderService>(); // Register OrderService
 
             // --- 4. Configure Logging ---
             builder.Logging.AddConsole();
@@ -57,8 +61,10 @@ namespace API
                 };
             });
 
-            // --- 5. Configure Authorization ---
-            builder.Services.AddAuthorization();
+            // --- 5. Register AutoMapper and FluentValidation ---
+            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            builder.Services.AddFluentValidationAutoValidation();
+            builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
             // --- 6. Add Controllers and API-specific features ---
             builder.Services.AddControllers();
@@ -102,6 +108,9 @@ namespace API
                 {
                     c.IncludeXmlComments(xmlPath);
                 }
+
+                // Use full type name as schemaId to avoid conflicts
+                c.CustomSchemaIds(type => type.FullName);
             });
 
             // --- 8. Configure CORS ---
@@ -115,7 +124,6 @@ namespace API
                         .AllowAnyMethod()
                         .AllowCredentials()); // If you're sending cookies/auth headers
             });
-
 
             var app = builder.Build();
 
@@ -146,6 +154,25 @@ namespace API
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.UseExceptionHandler(errorApp =>
+            {
+                errorApp.Run(async context =>
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json";
+                    var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+                    if (error != null)
+                    {
+                        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("GlobalExceptionHandler");
+                        logger.LogError(error.Error, "Unhandled exception: {Message}", error.Error.Message);
+                        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new {
+                            error = "An unexpected error occurred.",
+                            details = error.Error.Message
+                        }));
+                    }
+                });
+            });
 
             app.MapControllers();
 
