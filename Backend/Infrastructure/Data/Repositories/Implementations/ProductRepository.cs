@@ -36,8 +36,33 @@ namespace Raqmiya.Infrastructure
 
         public async Task UpdateAsync(Product product)
         {
-            _context.Products.Update(product);
-            await _context.SaveChangesAsync();
+            // Log the incoming product data
+            Console.WriteLine($"UpdateAsync - Product ID: {product.Id}");
+            Console.WriteLine($"UpdateAsync - CoverImageUrl: {product.CoverImageUrl}");
+            Console.WriteLine($"UpdateAsync - ThumbnailImageUrl: {product.ThumbnailImageUrl}");
+            
+            // Ensure the entity is tracked by Entity Framework
+            var existingProduct = await _context.Products.FindAsync(product.Id);
+            if (existingProduct != null)
+            {
+                Console.WriteLine($"UpdateAsync - Found existing product, updating properties");
+                // Update the existing entity's properties
+                _context.Entry(existingProduct).CurrentValues.SetValues(product);
+            }
+            else
+            {
+                Console.WriteLine($"UpdateAsync - Product not found, attaching entity");
+                // If not found, attach the entity
+                _context.Products.Update(product);
+            }
+            
+            var result = await _context.SaveChangesAsync();
+            Console.WriteLine($"UpdateAsync - SaveChanges result: {result} rows affected");
+            
+            // Verify the update by re-fetching
+            var updatedProduct = await _context.Products.FindAsync(product.Id);
+            Console.WriteLine($"UpdateAsync - After save - CoverImageUrl: {updatedProduct?.CoverImageUrl}");
+            Console.WriteLine($"UpdateAsync - After save - ThumbnailImageUrl: {updatedProduct?.ThumbnailImageUrl}");
         }
 
         public async Task DeleteAsync(int id)
