@@ -311,8 +311,88 @@ namespace API.Controllers
                 await file.CopyToAsync(stream);
             }
             var fileUrl = $"/{FileStorageConstants.UploadsFolder}/products/{id}/{fileName}";
+            
+            // Log the file upload details for debugging
+            _logger.LogInformation("File uploaded successfully. Product ID: {ProductId}, File: {FileName}, URL: {FileUrl}, Size: {Size} bytes, Type: {ContentType}", 
+                id, fileName, fileUrl, file.Length, file.ContentType);
+            
             var fileDto = await _productService.AddProductFileAsync(id, creatorId, file.FileName, fileUrl, file.Length, file.ContentType);
             return Created(fileUrl, fileDto);
+        }
+
+        /// <summary>
+        /// Upload an image for a product (cover or thumbnail). Images are stored in wwwroot/uploads/products/{productId}/images/.
+        /// Only the product's creator can upload images. Allowed types: JPG, PNG, GIF.
+        /// </summary>
+        [HttpPost("{id}/images")]
+        [Authorize(Roles = "Creator")]
+        [RequestSizeLimit(10_000_000)] // 10 MB limit for images
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        public async Task<IActionResult> UploadProductImage(int id, [FromForm] IFormFile image, [FromQuery] string type = "cover")
+        {
+            var creatorId = GetCurrentUserId();
+            if (image == null || image.Length == 0)
+                return BadRequest("No image uploaded.");
+            
+            var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif" };
+            if (!allowedTypes.Contains(image.ContentType))
+                return BadRequest("Image type not allowed. Only JPG, PNG, and GIF are supported.");
+            
+            if (type != "cover" && type != "thumbnail")
+                return BadRequest("Image type must be 'cover' or 'thumbnail'.");
+
+            var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), FileStorageConstants.ProductUploadsRoot, id.ToString(), "images");
+            Directory.CreateDirectory(uploadsRoot);
+            var fileName = Path.GetRandomFileName() + Path.GetExtension(image.FileName);
+            var filePath = Path.Combine(uploadsRoot, fileName);
+            
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await image.CopyToAsync(stream);
+            }
+            
+            var imageUrl = $"/{FileStorageConstants.UploadsFolder}/products/{id}/images/{fileName}";
+            
+            // Log the upload details for debugging
+            _logger.LogInformation("Image uploaded successfully. Product ID: {ProductId}, Type: {Type}, File: {FileName}, URL: {ImageUrl}, Size: {Size} bytes", 
+                id, type, fileName, imageUrl, image.Length);
+            
+            // Update the product with the new image URL
+            var product = await _productService.GetProductDetailsByIdAsync(id, creatorId);
+            if (product == null)
+                return NotFound("Product not found.");
+            
+            var updateDto = new ProductUpdateRequestDTO
+            {
+                Id = id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Currency = product.Currency,
+                ProductType = product.ProductType,
+                CoverImageUrl = type == "cover" ? imageUrl : product.CoverImageUrl,
+                ThumbnailImageUrl = type == "thumbnail" ? imageUrl : product.ThumbnailImageUrl,
+                PreviewVideoUrl = product.PreviewVideoUrl,
+                Permalink = product.Permalink,
+                Status = product.Status,
+                IsPublic = product.IsPublic,
+                Features = product.Features,
+                Compatibility = product.Compatibility,
+                License = product.License,
+                Updates = product.Updates,
+                CategoryIds = product.Categories.Select(c => c.Id).ToList(),
+                TagIds = product.Tags.Select(t => t.Id).ToList()
+            };
+            
+            await _productService.UpdateProductAsync(id, creatorId, updateDto);
+            
+            return Ok(new { 
+                message = $"{type} image uploaded successfully.", 
+                imageUrl = imageUrl 
+            });
         }
 
         /// <summary>

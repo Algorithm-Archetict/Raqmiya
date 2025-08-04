@@ -149,6 +149,9 @@ namespace API
 
             app.UseHttpsRedirection();
 
+            // --- Use Static Files Middleware ---
+            app.UseStaticFiles(); // Enable serving files from wwwroot
+
             // --- Use CORS Middleware ---
             app.UseCors("AllowSpecificOrigin");
 
