@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { DashboardSidebar } from '../../../dashboard-sidebar/dashboard-sidebar';
@@ -40,6 +40,20 @@ export class AllProducts implements OnInit {
   ngOnInit() {
     // Load products - in a real app, this would fetch from an API
     this.loadProducts();
+  }
+
+  // Handle clicks outside dropdown menus
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event) {
+    // Check if the click was outside any menu button or dropdown
+    const target = event.target as HTMLElement;
+    const isMenuButton = target.closest('.menu-btn');
+    const isMenuDropdown = target.closest('.menu-dropdown');
+    
+    // If click was outside both menu button and dropdown, close all menus
+    if (!isMenuButton && !isMenuDropdown) {
+      this.closeAllMenus();
+    }
   }
 
   loadProducts() {
@@ -108,14 +122,21 @@ export class AllProducts implements OnInit {
   }
 
   openActionMenu(productId: number) {
+    // Find the clicked product
+    const clickedProduct = this.products.find(p => p.id === productId);
+    if (!clickedProduct) return;
+    
+    // If this menu is already open, close it
+    if (clickedProduct.showMenu) {
+      clickedProduct.showMenu = false;
+      return;
+    }
+    
     // Close all other menus first
     this.closeAllMenus();
     
-    // Find and open the clicked product's menu
-    const product = this.products.find(p => p.id === productId);
-    if (product) {
-      product.showMenu = true;
-    }
+    // Open the clicked product's menu
+    clickedProduct.showMenu = true;
   }
 
   closeAllMenus() {
