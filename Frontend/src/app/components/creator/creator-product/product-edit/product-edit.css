@@ -646,6 +646,211 @@
   color: var(--text-secondary);
 }
 
+/* Loading and Error States */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  flex-direction: column;
+}
+
+.loading-spinner {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.loading-spinner i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: var(--primary-color);
+}
+
+.error-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.error-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  text-align: center;
+  max-width: 400px;
+}
+
+.error-card i {
+  font-size: 48px;
+  color: var(--error-color);
+  margin-bottom: 16px;
+}
+
+.error-card h3 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+.error-card p {
+  margin: 0 0 24px 0;
+  color: var(--text-secondary);
+}
+
+.retry-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition-normal);
+}
+
+.retry-btn:hover {
+  background: var(--primary-hover);
+}
+
+.success-message {
+  margin: 16px 64px;
+}
+
+.alert {
+  padding: 16px 24px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.alert-success {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
+}
+
+.alert i {
+  font-size: 20px;
+}
+
+/* Form Validation */
+.error-message {
+  color: var(--error-color);
+  font-size: 14px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Enhanced Product Details */
+.price-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.price-input-group .form-input {
+  flex: 1;
+}
+
+.price-input-group .form-select {
+  width:15%;
+}
+
+.form-select {
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 16px;
+  transition: var(--transition-normal);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-color-alpha);
+}
+
+.checkbox-group {
+  margin-top: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+}
+
+/* Features Management */
+.features-input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.features-input-group .form-input {
+  flex: 1;
+}
+
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.feature-text {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.remove-feature-btn {
+  background: none;
+  border: none;
+  color: var(--error-color);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-normal);
+}
+
+.remove-feature-btn:hover {
+  background: var(--error-color-alpha);
+}
+
+/* Section Dividers */
+.section-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 32px 0;
+  opacity: 0.5;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .product-header {
@@ -763,5 +968,31 @@
   
   .preview-title {
     font-size: 18px;
+  }
+}
+
+/* Responsive Design for New Features */
+@media (max-width: 768px) {
+  .price-input-group {
+    flex-direction: column;
+  }
+  
+  .features-input-group {
+    flex-direction: column;
+  }
+  
+  .feature-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .error-card {
+    margin: 16px;
+    padding: 24px;
+  }
+  
+  .success-message {
+    margin: 16px;
   }
 }

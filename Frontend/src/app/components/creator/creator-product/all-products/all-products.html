@@ -125,7 +125,7 @@
                     <i class="fas fa-ellipsis-h"></i>
                   </button>
                   
-                  <div class="menu-dropdown" *ngIf="product.showMenu">
+                  <div class="menu-dropdown" *ngIf="product.showMenu" (click)="$event.stopPropagation()">
                     <button class="menu-item" [routerLink]="['/products', product.id, 'edit']">
                       <i class="fas fa-edit"></i>
                       Edit

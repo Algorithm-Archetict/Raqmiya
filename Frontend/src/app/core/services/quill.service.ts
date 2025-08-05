@@ -10,6 +10,15 @@ export class QuillService {
   constructor() {}
 
   initializeQuill(selector: string, placeholder: string = '', type: 'description' | 'content' = 'description'): Quill {
+    // Check if element exists
+    const element = document.querySelector(selector);
+    if (!element) {
+      throw new Error(`Quill container not found: ${selector}`);
+    }
+
+    // Destroy existing instance if any
+    this.destroy();
+
     let toolbarOptions: any[] = [];
 
     if (type === 'description') {
@@ -38,8 +47,13 @@ export class QuillService {
       theme: 'snow'
     };
 
-    this.quill = new Quill(selector, options);
-    return this.quill;
+    try {
+      this.quill = new Quill(selector, options);
+      return this.quill;
+    } catch (error) {
+      console.error('Error initializing Quill:', error);
+      throw new Error(`Failed to initialize Quill editor: ${error}`);
+    }
   }
 
   getQuill(): Quill | null {
@@ -62,8 +76,12 @@ export class QuillService {
 
   destroy(): void {
     if (this.quill) {
-      // Clean up if needed
-      this.quill = null;
+      try {
+        // Clean up Quill instance if needed
+        this.quill = null;
+      } catch (error) {
+        console.error('Error destroying Quill instance:', error);
+      }
     }
   }
 } 
