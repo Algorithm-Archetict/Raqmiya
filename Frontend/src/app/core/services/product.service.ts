@@ -49,8 +49,8 @@ export class ProductService {
   }
 
   // ======= UPDATE =======
-  updateProduct(id: number, product: ProductUpdateRequestDTO): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/${id}`, product);
+  updateProduct(id: number, product: ProductUpdateRequestDTO): Observable<ProductDetailDTO> {
+    return this.http.put<ProductDetailDTO>(`${this.apiUrl}/${id}`, product);
   }
 
   // ======= DELETE =======
@@ -105,8 +105,8 @@ export class ProductService {
     return this.http.get<FileDTO[]>(`${this.apiUrl}/${productId}/files`);
   }
 
-  deleteFile(productId: number, fileId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${productId}/files/${fileId}`);
+  deleteFile(productId: number, fileId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${productId}/files/${fileId}`);
   }
 
   // ======= ADMIN / MODERATION =======
