@@ -55,11 +55,11 @@ namespace API.Controllers
         {
             var product = await _productService.GetProductDetailsByIdAsync(id);
             if (product == null) return NotFound();
-            
+
             // Log the product details being returned
-            _logger.LogInformation("GetProductById - Product ID: {ProductId}, CoverImageUrl: {CoverImageUrl}, ThumbnailImageUrl: {ThumbnailImageUrl}", 
+            _logger.LogInformation("GetProductById - Product ID: {ProductId}, CoverImageUrl: {CoverImageUrl}, ThumbnailImageUrl: {ThumbnailImageUrl}",
                 id, product.CoverImageUrl, product.ThumbnailImageUrl);
-            
+
             return Ok(product);
         }
 
@@ -316,17 +316,17 @@ namespace API.Controllers
                 await file.CopyToAsync(stream);
             }
             var fileUrl = $"/{FileStorageConstants.UploadsFolder}/products/{id}/{fileName}";
-            
+
             // For frontend access, we need to include the backend base URL
             var backendBaseUrl = $"{Request.Scheme}://{Request.Host}";
             var fullFileUrl = $"{backendBaseUrl}{fileUrl}";
-            
+
             // Log the file upload details for debugging
-            _logger.LogInformation("File uploaded successfully. Product ID: {ProductId}, File: {FileName}, URL: {FileUrl}, Full URL: {FullFileUrl}, Size: {Size} bytes, Type: {ContentType}", 
+            _logger.LogInformation("File uploaded successfully. Product ID: {ProductId}, File: {FileName}, URL: {FileUrl}, Full URL: {FullFileUrl}, Size: {Size} bytes, Type: {ContentType}",
                 id, fileName, fileUrl, fullFileUrl, file.Length, file.ContentType);
-            
+
             var fileDto = await _productService.AddProductFileAsync(id, creatorId, fileName, fullFileUrl, file.Length, file.ContentType);
-            
+
             return CreatedAtAction(nameof(GetProductFiles), new { id }, fileDto);
         }
 
@@ -346,11 +346,11 @@ namespace API.Controllers
             var creatorId = GetCurrentUserId();
             if (image == null || image.Length == 0)
                 return BadRequest("No image uploaded.");
-            
+
             var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif" };
             if (!allowedTypes.Contains(image.ContentType))
                 return BadRequest("Image type not allowed. Only JPG, PNG, and GIF are supported.");
-            
+
             if (type != "cover" && type != "thumbnail")
                 return BadRequest("Image type must be 'cover' or 'thumbnail'.");
 
@@ -358,51 +358,51 @@ namespace API.Controllers
             Directory.CreateDirectory(uploadsRoot);
             var fileName = Path.GetRandomFileName() + Path.GetExtension(image.FileName);
             var filePath = Path.Combine(uploadsRoot, fileName);
-            
+
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await image.CopyToAsync(stream);
             }
-            
+
             var imageUrl = $"/{FileStorageConstants.UploadsFolder}/products/{id}/images/{fileName}";
-            
+
             // For frontend access, we need to include the backend base URL
             var backendBaseUrl = $"{Request.Scheme}://{Request.Host}";
             var fullImageUrl = $"{backendBaseUrl}{imageUrl}";
-            
+
             // Log the upload details for debugging
-            _logger.LogInformation("Image uploaded successfully. Product ID: {ProductId}, Type: {Type}, File: {FileName}, URL: {ImageUrl}, Full URL: {FullImageUrl}, Size: {Size} bytes, Scheme: {Scheme}, Host: {Host}", 
+            _logger.LogInformation("Image uploaded successfully. Product ID: {ProductId}, Type: {Type}, File: {FileName}, URL: {ImageUrl}, Full URL: {FullImageUrl}, Size: {Size} bytes, Scheme: {Scheme}, Host: {Host}",
                 id, type, fileName, imageUrl, fullImageUrl, image.Length, Request.Scheme, Request.Host);
-            
+
             // Update the product with the new image URL (store the full URL)
             var product = await _productService.GetByIdAsync(id);
             if (product == null)
                 return NotFound("Product not found.");
-            
+
             if (product.CreatorId != creatorId)
                 return Forbid("Only the product creator can upload images.");
-            
+
             // Log the current state before update
-            _logger.LogInformation("Before update - Product ID: {ProductId}, Current CoverImageUrl: {CurrentCoverUrl}, Current ThumbnailImageUrl: {CurrentThumbnailUrl}", 
+            _logger.LogInformation("Before update - Product ID: {ProductId}, Current CoverImageUrl: {CurrentCoverUrl}, Current ThumbnailImageUrl: {CurrentThumbnailUrl}",
                 id, product.CoverImageUrl, product.ThumbnailImageUrl);
-            
+
             if (type.ToLower() == "cover")
                 product.CoverImageUrl = fullImageUrl;
             else if (type.ToLower() == "thumbnail")
                 product.ThumbnailImageUrl = fullImageUrl;
             else
                 return BadRequest("Invalid image type. Use 'cover' or 'thumbnail'.");
-            
+
             // Log the state after setting the URL
-            _logger.LogInformation("After setting URL - Product ID: {ProductId}, New CoverImageUrl: {NewCoverUrl}, New ThumbnailImageUrl: {NewThumbnailUrl}", 
+            _logger.LogInformation("After setting URL - Product ID: {ProductId}, New CoverImageUrl: {NewCoverUrl}, New ThumbnailImageUrl: {NewThumbnailUrl}",
                 id, product.CoverImageUrl, product.ThumbnailImageUrl);
-            
+
             await _productService.UpdateAsync(product);
-            
+
             // Log the state after database update
-            _logger.LogInformation("After database update - Product ID: {ProductId}, Final CoverImageUrl: {FinalCoverUrl}, Final ThumbnailImageUrl: {FinalThumbnailUrl}", 
+            _logger.LogInformation("After database update - Product ID: {ProductId}, Final CoverImageUrl: {FinalCoverUrl}, Final ThumbnailImageUrl: {FinalThumbnailUrl}",
                 id, product.CoverImageUrl, product.ThumbnailImageUrl);
-            
+
             return Ok(new { url = fullImageUrl });
         }
 
@@ -434,6 +434,42 @@ namespace API.Controllers
             if (!result) return NotFound();
             // Optionally: delete the file from disk as well
             return Ok("File deleted.");
+        }
+
+        /// <summary>
+        /// Add a review to a product.
+        /// </summary>
+        [HttpPost("{id}/reviews")]
+        [Authorize] // Require authentication to post reviews
+        public async Task<IActionResult> AddReview(int id, [FromBody] ReviewDTO reviewDto)
+        {
+            if (reviewDto == null || reviewDto.Rating < 1 || reviewDto.Rating > 5 || string.IsNullOrWhiteSpace(reviewDto.Comment))
+            {
+                return BadRequest("Invalid review: rating must be 1-5 and comment must not be empty.");
+            }
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _productService.AddReviewAsync(id, userId, reviewDto);
+
+                // Return the updated ReviewDTO with the user's name and avatar
+                return Ok(reviewDto);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // This is for cases like "already reviewed"
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                // This is for validation errors
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error adding review for product {id}");
+                return Problem("An error occurred while adding the review.");
+            }
         }
 
         // --- Admin Endpoints ---

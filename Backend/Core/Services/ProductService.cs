@@ -1,4 +1,5 @@
 ﻿using Core.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Raqmiya.Infrastructure;
 using Shared.DTOs.ProductDTOs;
@@ -17,17 +18,20 @@ namespace Core.Services
         private readonly ICategoryRepository _categoryRepository;
         private readonly ITagRepository _tagRepository;
         private readonly ILogger<ProductService> _logger;
+        private readonly RaqmiyaDbContext _context;
 
         public ProductService(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
             ITagRepository tagRepository,
-            ILogger<ProductService> logger)
+            ILogger<ProductService> logger,
+            RaqmiyaDbContext context)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _tagRepository = tagRepository;
             _logger = logger;
+            _context = context;
         }
 
         // --- Helper for mapping (consider AutoMapper for complex scenarios) ---
@@ -55,10 +59,17 @@ namespace Core.Services
                 Compatibility = product.Compatibility,
                 License = product.License,
                 Updates = product.Updates,
-                Files = product.Files.Select(f => new FileDTO { Id = f.Id, Name = f.Name, FileUrl = f.FileUrl }).ToList(),
+                Files = product.Files.Select(f => new FileDTO { Id = f.Id, Name = f.Name, FileUrl = f.FileUrl, Size = f.Size }).ToList(),
                 Variants = product.Variants.Select(v => new VariantDTO { Id = v.Id, Name = v.Name, PriceAdjustment = v.PriceAdjustment }).ToList(),
                 OfferCodes = product.OfferCodes.Select(oc => new OfferCodeDTO { Id = oc.Id, Code = oc.Code, DiscountValue = oc.DiscountValue }).ToList(),
-                Reviews = product.Reviews.Select(r => new ReviewDTO { Id = r.Id, Rating = r.Rating, Comment = r.Comment, UserName = r.User?.Username ?? "Anonymous", CreatedAt = r.CreatedAt }).ToList(),
+                Reviews = product.Reviews.Select(r => new ReviewDTO {
+                    Id = r.Id,
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    UserName = r.User?.Username ?? "Anonymous",
+                    UserAvatar = r.User?.ProfileImageUrl, // Use profile image URL
+                    CreatedAt = r.CreatedAt
+                }).ToList(),
                 Categories = product.ProductCategories.Select(pc => new ProductCategoryDTO { Id = pc.Category.Id, Name = pc.Category.Name, ParentCategoryId = pc.Category.ParentCategoryId }).ToList(),
                 Tags = product.ProductTags.Select(pt => new TagDTO { Id = pt.Tag.Id, Name = pt.Tag.Name }).ToList(),
                 WishlistCount = product.WishlistItems.Count(),
@@ -531,13 +542,13 @@ namespace Core.Services
             if (product.CreatorId != creatorId)
                 throw new UnauthorizedAccessException("You are not authorized to add files to this product.");
             var file = await _productRepository.AddProductFileAsync(productId, originalName, fileUrl, size, contentType);
-            return new FileDTO { Id = file.Id, Name = file.Name, FileUrl = file.FileUrl };
+            return new FileDTO { Id = file.Id, Name = file.Name, FileUrl = file.FileUrl, Size = file.Size };
         }
 
         public async Task<List<FileDTO>> GetProductFilesAsync(int productId)
         {
             var files = await _productRepository.GetProductFilesAsync(productId);
-            return files.Select(f => new FileDTO { Id = f.Id, Name = f.Name, FileUrl = f.FileUrl }).ToList();
+            return files.Select(f => new FileDTO { Id = f.Id, Name = f.Name, FileUrl = f.FileUrl, Size = f.Size }).ToList();
         }
 
         public async Task<bool> DeleteProductFileAsync(int productId, int fileId, int creatorId)
@@ -601,6 +612,49 @@ namespace Core.Services
         public async Task UpdateAsync(Raqmiya.Infrastructure.Product product)
         {
             await _productRepository.UpdateAsync(product);
+        }
+
+        public async Task AddReviewAsync(int productId, int userId, ReviewDTO reviewDto)
+        {
+            // Validate input (should already be validated in controller)
+            if (reviewDto == null || reviewDto.Rating < 1 || reviewDto.Rating > 5 || string.IsNullOrWhiteSpace(reviewDto.Comment))
+                throw new ArgumentException("Invalid review: rating must be 1-5 and comment must not be empty.");
+
+            // Verify user exists
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                throw new ArgumentException("Invalid user ID");
+
+            // Verify product exists
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null)
+                throw new ArgumentException("Invalid product ID");
+
+            // Verify user hasn't already reviewed this product
+            var existingReview = await _context.Reviews
+                .FirstOrDefaultAsync(r => r.UserId == userId && r.ProductId == productId);
+            if (existingReview != null)
+                throw new InvalidOperationException("You have already reviewed this product");
+
+            var review = new Review
+            {
+                ProductId = productId,
+                UserId = userId,
+                Rating = reviewDto.Rating,
+                Comment = reviewDto.Comment,
+                CreatedAt = DateTime.UtcNow,
+                IsApproved = true, // or false if moderation is needed
+                User = user // Explicitly set user for immediate mapping
+            };
+
+            _logger.LogInformation($"Adding review for product {productId} by user {user.Username}");
+            
+            _context.Reviews.Add(review);
+            await _context.SaveChangesAsync();
+
+            // Update the DTO with the actual username for immediate display
+            reviewDto.UserName = user.Username;
+            reviewDto.UserAvatar = user.ProfileImageUrl;
         }
     }
 }

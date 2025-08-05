@@ -9,6 +9,7 @@ import { ProductListItemDTO } from '../models/product/product-list-item.dto';
 import { ProductListItemDTOPagedResultDTO } from '../models/product/product-list-item-paged-result.dto';
 import { ProductModerationRequestDTO } from '../models/product/product-moderation-request.dto';
 import { FileDTO } from '../models/product/file.dto';
+import { ReviewDTO } from '../models/product/review.dto';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
@@ -121,5 +122,14 @@ export class ProductService {
   reject(id: number, reason: string): Observable<void> {
     const payload: ProductModerationRequestDTO = { action: 'reject', reason };
     return this.http.post<void>(`${this.apiUrl}/admin/${id}/reject`, payload);
+  }
+
+  // ======= REVIEWS =======
+  getReviews(productId: number): Observable<ReviewDTO[]> {
+    return this.http.get<ReviewDTO[]>(`${this.apiUrl}/${productId}/reviews`);
+  }
+
+  submitReview(productId: number, review: { rating: number; comment: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${productId}/reviews`, review);
   }
 }

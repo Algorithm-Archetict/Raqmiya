@@ -10,29 +10,29 @@
               <i class="fas fa-arrow-left"></i>
               Back to Discover
             </a>
-            
+
             <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current">{{ product?.category }}</span>
-            
-            <span><i class="bi bi-currency-dollar"></i> {{ product?.price }}</span>
+            <span class="breadcrumb-current">{{ product?.categories?.[0]?.name }}</span>
+
+            <span><i class="bi bi-currency-dollar"></i> {{ product?.price | currency:product?.currency:'symbol' }}</span>
           </nav>
         </div>
         <div class="col-lg-4 text-end">
           <div class="header-actions">
             <span class="product-rating">
                 <span class="stars">
-                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]" 
-                     [class.text-warning]="star <= (product?.rating || 0)"></i>
-                     
+                  <i class="bi bi-star-fill" *ngFor="let star of [1,2,3,4,5]"
+                     [class.text-warning]="star <= (product?.averageRating || 0)"
+                     [class.text-muted]="star > (product?.averageRating || 0)"></i>
                 </span>
-                
+
             </span>
             <button class="btn btn-outline btn-sm" (click)="shareProduct()">
               <i class="bi bi-share"></i>
               Share
             </button>
             <button class="btn btn-outline btn-sm" (click)="toggleWishlist()">
-              
+
               Add To Cart
             </button>
           </div>
@@ -52,7 +52,7 @@
             <div class="product-meta">
               <div class="product-rating">
                 <div class="stars">
-                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]" 
+                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]"
                      [class.text-warning]="star <= (product?.rating || 0)"></i>
                 </div>
                 <span class="rating-text">{{ product?.rating }} ({{ product?.ratingCount }} reviews)</span>
@@ -86,7 +86,7 @@
         <!-- </div>
       </div>
     </div>
-  </section> --> 
+  </section> -->
 
   <!-- Product Details Section -->
   <section class="product-details-section">
@@ -96,31 +96,31 @@
         <div class="col-lg-8">
           <div class="product-gallery">
             <div class="main-media">
-              <div class="media-container" *ngIf="selectedMedia.type === 'image'">
-                <img [src]="selectedMedia.url" [alt]="product?.title" class="main-image">
+              <div class="media-container" *ngIf="!selectedMedia.type || selectedMedia.type === 'image'">
+                <img [src]="product?.coverImageUrl || selectedMedia.url" [alt]="product?.name" class="main-image">
               </div>
               <div class="media-container" *ngIf="selectedMedia.type === 'video'">
-                <iframe 
-                  [src]="selectedMedia.url" 
+                <iframe
+                  [src]="product?.previewVideoUrl || selectedMedia.url"
                   title="Product Video"
-                  frameborder="0" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                  referrerpolicy="strict-origin-when-cross-origin" 
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerpolicy="strict-origin-when-cross-origin"
                   allowfullscreen
                   class="main-video">
                 </iframe>
               </div>
             </div>
-            
-            <div class="media-thumbnails" *ngIf="(product?.media?.length || 0) > 1">
-              <div 
-                class="thumbnail" 
-                *ngFor="let media of product?.media; let i = index"
+
+            <div class="media-thumbnails" *ngIf="product?.coverImageUrl || product?.previewVideoUrl">
+              <div
+                class="thumbnail"
+                *ngFor="let mediaItem of getMediaItems(); let i = index"
                 [class.active]="selectedMediaIndex === i"
                 (click)="selectMedia(i)"
               >
-                <img [src]="media.thumbnail || media.url" [alt]="'Media ' + (i + 1)">
-                <div class="media-type-indicator" *ngIf="media.type === 'video'">
+                <img [src]="mediaItem.thumbnail || mediaItem.url" [alt]="product?.name">
+                <div class="media-type-indicator" *ngIf="mediaItem.type === 'video'">
                   <i class="fas fa-play"></i>
                 </div>
               </div>
@@ -131,7 +131,7 @@
           <div class="product-description">
             <h3>Description</h3>
             <div class="description-content" [innerHTML]="product?.description"></div>
-            
+
             <!-- Product Features -->
             <div class="product-features" *ngIf="product?.features?.length">
               <h4>Features</h4>
@@ -147,7 +147,7 @@
             <div class="product-tags" *ngIf="product?.tags?.length">
               <h4>Tags</h4>
               <div class="tags-container">
-                <span class="tag" *ngFor="let tag of product?.tags">{{ tag }}</span>
+                <span class="tag" *ngFor="let tag of product?.tags">{{ tag.name }}</span>
               </div>
             </div>
           </div>
@@ -159,8 +159,7 @@
             <!-- Purchase Card (Sticky) -->
             <div class="purchase-card sticky">
               <div class="price-section">
-                <span class="product-price">${{ product?.price }}</span>
-                <span class="original-price" *ngIf="product?.originalPrice">${{ product?.originalPrice }}</span>
+                <span class="product-price">{{ product?.price | currency:product?.currency:'symbol' }}</span>
               </div>
               <div class="purchase-actions">
                 <button class="btn btn-primary btn-lg w-100 mb-3" (click)="addToCart()">
@@ -177,13 +176,13 @@
             <!-- Product Details -->
             <div class="product-details-card">
               <h5>Product Details</h5>
-              <div class="detail-item">
-                <span class="detail-label">File Size:</span>
-                <span class="detail-value">{{ product?.fileSize }}</span>
+              <div class="detail-item" *ngIf="product?.files?.length">
+                <span class="detail-label">Files:</span>
+                <span class="detail-value">{{ product?.files?.length }} files</span>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">Format:</span>
-                <span class="detail-value">{{ product?.format }}</span>
+              <div class="detail-item" *ngIf="calculateTotalFileSize(product?.files)">
+                <span class="detail-label">Total Size:</span>
+                <span class="detail-value">{{ calculateTotalFileSize(product?.files) }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Compatibility:</span>
@@ -219,13 +218,13 @@
               <h5>Customer Reviews</h5>
               <div class="overall-rating">
                 <div class="rating-stars">
-                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]" 
-                     [class.text-warning]="star <= (product?.rating || 0)"></i>
+                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]"
+                     [class.text-warning]="star <= (product?.averageRating || 0)"></i>
                 </div>
-                <span class="rating-number">{{ product?.rating }}/5</span>
-                <span class="rating-count">({{ product?.ratingCount }} reviews)</span>
+                <span class="rating-number">{{ product?.averageRating }}/5</span>
+                <span class="rating-count">({{ product?.reviews?.length || 0 }} reviews)</span>
               </div>
-              
+
               <!-- Rating Distribution -->
               <div class="rating-distribution">
                 <div class="rating-bar" *ngFor="let rating of [5,4,3,2,1]">
@@ -236,6 +235,14 @@
                   <span class="rating-count">{{ getRatingCount(rating) }}</span>
                 </div>
               </div>
+            </div>
+
+            <!-- View All Reviews Link -->
+            <div class="view-all-reviews text-center mt-4">
+              <a [routerLink]="['/products', product?.id, 'reviews']" class="btn btn-outline-primary load-reviews-btn">
+                <i class="fas fa-list me-2"></i>
+                View All Reviews
+              </a>
             </div>
           </div>
         </div>
@@ -249,31 +256,66 @@
       <div class="row">
         <div class="col-12">
           <h3>Customer Reviews</h3>
+
+          <!-- Add Review Form -->
+          <div class="add-review-form mb-4">
+            <h4>Write a Review</h4>
+            <div class="rating-input mb-3">
+              <span>Your Rating: </span>
+              <div class="stars">
+                <i class="bi bi-star-fill" *ngFor="let star of [1,2,3,4,5]"
+                   [class.text-warning]="star <= userRating"
+                   [class.text-muted]="star > userRating"
+                   (click)="setUserRating(star)"
+                   style="cursor: pointer;"></i>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="reviewComment">Your Review:</label>
+              <textarea class="form-control" id="reviewComment" rows="4"
+                        [(ngModel)]="userReview"
+                        [disabled]="submittingReview"></textarea>
+            </div>
+            <button class="btn btn-primary mt-3"
+                    (click)="submitReview()"
+                    [disabled]="submittingReview || !userRating || !userReview.trim()">
+              {{ submittingReview ? 'Submitting...' : 'Submit Review' }}
+            </button>
+          </div>
+
           <div class="reviews-container">
-            <div class="review-item" *ngFor="let review of reviews">
-              <div class="review-header">
-                <div class="reviewer-info">
-                  <img [src]="review.avatar" [alt]="review.name" class="reviewer-avatar">
-                  <div>
-                    <h6>{{ review.name }}</h6>
-                    <div class="review-rating">
-                      <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]" 
-                         [class.text-warning]="star <= review.rating"></i>
+            <div class="review-item card mb-3" *ngFor="let review of reviews.slice(0, 3)">
+              <div class="card-body">
+                <div class="review-header d-flex justify-content-between align-items-start mb-3">
+                  <div class="reviewer-info d-flex align-items-center">
+                    <img [src]="review.userAvatar || getPlaceholderAvatar(review.UserName)"
+                         [alt]="review.UserName"
+                         class="reviewer-avatar rounded-circle me-3"
+                         style="width: 48px; height: 48px; object-fit: cover;">
+                    <div>
+                      <h6 class="mb-1">{{ review.UserName || 'Anonymous' }}</h6>
+                      <div class="review-rating">
+                        <i class="bi bi-star-fill"
+                           *ngFor="let star of [1,2,3,4,5]"
+                           [class.text-warning]="star <= review.rating"
+                           [class.text-muted]="star > review.rating"></i>
+                      </div>
                     </div>
                   </div>
+                  <small class="text-muted">{{ review.createdAt | date:'mediumDate' }}</small>
                 </div>
-                <span class="review-date">{{ review.date | date }}</span>
-              </div>
-              <div class="review-content">
-                <p>{{ review.comment }}</p>
+                <div class="review-content">
+                  <p class="mb-0">{{ review.comment }}</p>
+                </div>
               </div>
             </div>
           </div>
-          
-          <!-- Load More Reviews -->
-          <div class="load-more-reviews text-center" *ngIf="hasMoreReviews">
-            <button class="btn btn-outline" (click)="loadMoreReviews()">
-              Load More Reviews
+
+          <!-- View All Reviews Button -->
+          <div class="view-all-reviews text-center mt-4">
+            <button class="btn btn-outline-primary" [routerLink]="['/products', product?.id, 'reviews']">
+              <i class="bi bi-list me-2"></i>
+              View All Reviews ({{ product?.reviews?.length || 0 }})
             </button>
           </div>
         </div>
