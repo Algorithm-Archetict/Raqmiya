@@ -82,7 +82,7 @@ export class Discover implements OnInit {
           price: product.price,
           rating: product.averageRating,
           ratingCount: product.salesCount, // Using sales count as rating count for demo
-          image: this.ensureFullUrl(product.coverImageUrl),
+          image: this.ensureFullUrl(product.thumbnailImageUrl || product.coverImageUrl), // Use thumbnail first, fallback to cover
           category: 'design', // Default category, you might want to add this to the DTO
           tags: ['Design'], // Default tags, you might want to add this to the DTO
           badge: product.isPublic ? 'Public' : 'Private'

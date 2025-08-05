@@ -289,12 +289,12 @@ namespace API.Controllers
         }
 
         /// <summary>
-        /// Upload a file for a product. Files are stored in wwwroot/uploads/products/{productId}/.
-        /// Only the product's creator can upload files. Allowed types: PDF, ZIP, JPG, PNG, MP4, etc.
+        /// Upload a file for a product. Files are stored in wwwroot/uploads/products/{productId}/files/.
+        /// Only the product's creator can upload files. Allowed types: PDF, ZIP, TXT, JPG, PNG, GIF, MP4, MP3.
         /// </summary>
         [HttpPost("{id}/files")]
         [Authorize(Roles = "Creator")]
-        [RequestSizeLimit(50_000_000)] // 50 MB limit
+        [RequestSizeLimit(250_000_000)] // 250 MB limit
         [ProducesResponseType(typeof(FileDTO), 201)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
@@ -304,7 +304,7 @@ namespace API.Controllers
             var creatorId = GetCurrentUserId();
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
-            var allowedTypes = new[] { "application/pdf", "application/zip", "image/jpeg", "image/png", "video/mp4" };
+            var allowedTypes = new[] { "application/pdf", "application/zip", "text/plain", "image/jpeg", "image/png", "image/gif", "video/mp4", "audio/mpeg", "audio/mp3" };
             if (!allowedTypes.Contains(file.ContentType))
                 return BadRequest("File type not allowed.");
             var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), FileStorageConstants.ProductUploadsRoot, id.ToString());
@@ -480,6 +480,32 @@ namespace API.Controllers
             var result = await _productService.RejectProductAsync(id, adminId, request.Reason!);
             if (!result) return NotFound();
             return Ok("Product rejected.");
+        }
+
+        /// <summary>
+        /// Hard delete a product (admin only) - use with caution as this permanently removes the product
+        /// </summary>
+        [HttpDelete("admin/{id}/hard-delete")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> HardDeleteProduct(int id)
+        {
+            var adminId = GetCurrentUserId();
+            try
+            {
+                await _productService.HardDeleteProductAsync(id, adminId);
+                return Ok("Product permanently deleted.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("Product not found.");
+            }
         }
 
         // --- Helpers ---

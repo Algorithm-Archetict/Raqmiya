@@ -14,6 +14,8 @@ export interface ProductCreateRequestDTO {
   compatibility?: string; // Optional, maxLength: 500
   license?: string; // Optional, maxLength: 100
   updates?: string; // Optional, maxLength: 100
+  // NEW: Multiple cover images support
+  coverImages?: string[]; // Optional, array of cover image URLs
   categoryIds?: number[]; // Optional
   tagIds?: number[]; // Optional
 }

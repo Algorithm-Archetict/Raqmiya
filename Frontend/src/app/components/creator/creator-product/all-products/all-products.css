@@ -180,7 +180,7 @@
   width: 400px;
   height: 300px;
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  /* overflow: hidden; */
   box-shadow: var(--shadow-md);
 }
 
@@ -239,7 +239,7 @@
   backdrop-filter: blur(10px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
-  overflow: hidden;
+  /* overflow: hidden; */
   box-shadow: var(--shadow-lg);
 }
 
@@ -477,7 +477,7 @@
   z-index: 1000;
   min-width: 140px;
   margin-top: 8px;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .menu-item {
@@ -529,7 +529,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .modal-close {

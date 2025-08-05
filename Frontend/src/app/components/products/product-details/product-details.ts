@@ -5,6 +5,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
+import { RouterModule, RouterLink } from '@angular/router';
 
 interface Product {
   id: number;
@@ -56,7 +57,7 @@ interface Review {
 
 @Component({
   selector: 'app-product-details',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule, RouterLink],
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })
@@ -211,8 +212,22 @@ export class ProductDetails implements OnInit {
   createMediaFromProduct(backendProduct: ProductDetailDTO): MediaItem[] {
     const media: MediaItem[] = [];
     
-    // Add cover image if available
-    if (backendProduct.coverImageUrl) {
+    // Add multiple cover images if available
+    if (backendProduct.coverImages && backendProduct.coverImages.length > 0) {
+      backendProduct.coverImages.forEach(imageUrl => {
+        const fullImageUrl = this.ensureFullUrl(imageUrl);
+        if (fullImageUrl) {
+          media.push({
+            type: 'image',
+            url: fullImageUrl,
+            thumbnail: fullImageUrl
+          });
+        }
+      });
+    }
+    
+    // Fallback to single cover image if no multiple cover images
+    if (media.length === 0 && backendProduct.coverImageUrl) {
       const fullCoverUrl = this.ensureFullUrl(backendProduct.coverImageUrl);
       if (fullCoverUrl) {
         media.push({

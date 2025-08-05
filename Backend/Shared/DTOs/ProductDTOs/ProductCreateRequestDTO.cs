@@ -59,6 +59,9 @@ namespace Shared.DTOs.ProductDTOs
         [StringLength(100, ErrorMessage = "Updates cannot exceed 100 characters.")]
         public string? Updates { get; set; }
 
+        // NEW: Multiple cover images support
+        public List<string> CoverImages { get; set; } = new List<string>();
+
         public List<int> CategoryIds { get; set; } = new List<int>();
         public List<int> TagIds { get; set; } = new List<int>();
     }

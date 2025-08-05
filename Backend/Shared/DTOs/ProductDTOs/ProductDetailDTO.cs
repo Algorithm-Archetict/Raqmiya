@@ -24,6 +24,9 @@
         public string? License { get; set; }
         public string? Updates { get; set; }
 
+        // NEW: Multiple cover images support
+        public List<string> CoverImages { get; set; } = new List<string>();
+
         // Sub-DTOs for nested data
         public List<FileDTO> Files { get; set; } = new List<FileDTO>();
         public List<VariantDTO> Variants { get; set; } = new List<VariantDTO>();

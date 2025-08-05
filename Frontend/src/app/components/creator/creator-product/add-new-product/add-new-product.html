@@ -472,7 +472,7 @@
                 type="file" 
                 id="productFiles" 
                 multiple
-                accept=".pdf,.zip,.jpg,.jpeg,.png,.mp4"
+                accept=".pdf,.zip,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3"
                 (change)="onFileSelected($event)"
                 style="display: none;"
               >
@@ -480,9 +480,9 @@
                 <i class="fas fa-upload"></i>
                 Upload product files
               </label>
-              <p class="upload-hint">
-                Supported formats: PDF, ZIP, JPG, PNG, MP4. Maximum file size: 50MB per file.
-              </p>
+                              <p class="upload-hint">
+                  Supported formats: PDF, ZIP, TXT, JPG, PNG, GIF, MP4, MP3. Maximum file size: 250MB per file.
+                </p>
             </div>
             <!-- File Preview -->
             <div class="file-preview" *ngIf="productFiles.length > 0">

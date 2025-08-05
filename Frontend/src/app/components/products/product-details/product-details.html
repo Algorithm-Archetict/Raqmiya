@@ -1,7 +1,7 @@
 <!-- Product Details Page - Epic Games Style -->
 <div class="product-details-container" *ngIf="!isLoading && !error">
   <!-- Simplified Header -->
-  <header class="product-header">
+  <header class="product-header sticky">
     <div class="container">
       <div class="row align-items-center">
         <div class="col-lg-8">
@@ -64,7 +64,7 @@
           </div>
         </div>
         <div class="col-lg-4">
-          <!-- <div class="purchase-card">
+         <div class="purchase-card">
             <div class="price-section">
               <span class="product-price">${{ product?.price }}</span>
               <span class="original-price" *ngIf="product?.originalPrice">${{ product?.originalPrice }}</span>
@@ -157,7 +157,7 @@
         <div class="col-lg-4">
           <div class="product-sidebar">
             <!-- Purchase Card (Sticky) -->
-            <div class="purchase-card sticky">
+            <div class="purchase-card">
               <div class="price-section">
                 <span class="product-price">${{ product?.price }}</span>
                 <span class="original-price" *ngIf="product?.originalPrice">${{ product?.originalPrice }}</span>

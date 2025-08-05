@@ -55,6 +55,8 @@ namespace Core.Services
                 Compatibility = product.Compatibility,
                 License = product.License,
                 Updates = product.Updates,
+                // NEW: Multiple cover images support
+                CoverImages = JsonSerializer.Deserialize<List<string>>(product.CoverImages) ?? new List<string>(),
                 Files = product.Files.Select(f => new FileDTO { Id = f.Id, Name = f.Name, FileUrl = f.FileUrl }).ToList(),
                 Variants = product.Variants.Select(v => new VariantDTO { Id = v.Id, Name = v.Name, PriceAdjustment = v.PriceAdjustment }).ToList(),
                 OfferCodes = product.OfferCodes.Select(oc => new OfferCodeDTO { Id = oc.Id, Code = oc.Code, DiscountValue = oc.DiscountValue }).ToList(),
@@ -69,8 +71,8 @@ namespace Core.Services
             };
             
             // Log the mapped DTO image URLs
-            _logger.LogInformation("MapToProductDetailDTO - Product ID: {ProductId}, DTO CoverImageUrl: {CoverImageUrl}, DTO ThumbnailImageUrl: {ThumbnailImageUrl}", 
-                product.Id, dto.CoverImageUrl, dto.ThumbnailImageUrl);
+            _logger.LogInformation("MapToProductDetailDTO - Product ID: {ProductId}, DTO CoverImageUrl: {CoverImageUrl}, DTO ThumbnailImageUrl: {ThumbnailImageUrl}, CoverImages Count: {CoverImagesCount}", 
+                product.Id, dto.CoverImageUrl, dto.ThumbnailImageUrl, dto.CoverImages.Count);
             
             return dto;
         }
@@ -85,6 +87,7 @@ namespace Core.Services
                 Price = product.Price,
                 Currency = product.Currency,
                 CoverImageUrl = product.CoverImageUrl,
+                ThumbnailImageUrl = product.ThumbnailImageUrl,
                 CreatorUsername = product.Creator?.Username ?? "N/A",
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
                 SalesCount = product.OrderItems.Count(),
@@ -191,7 +194,9 @@ namespace Core.Services
                 Features = JsonSerializer.Serialize(productDto.Features),
                 Compatibility = productDto.Compatibility,
                 License = productDto.License,
-                Updates = productDto.Updates
+                Updates = productDto.Updates,
+                // NEW: Multiple cover images support
+                CoverImages = JsonSerializer.Serialize(productDto.CoverImages ?? new List<string>())
             };
 
             // Add categories and tags
@@ -263,7 +268,16 @@ namespace Core.Services
             
             product.PreviewVideoUrl = productDto.PreviewVideoUrl;
             product.Permalink = productDto.Permalink;
-            product.Status = productDto.Status;
+            
+            // Set status to 'updated' when product is modified (unless explicitly set to something else)
+            if (string.IsNullOrEmpty(productDto.Status) || productDto.Status == "published")
+            {
+                product.Status = "updated";
+            }
+            else
+            {
+                product.Status = productDto.Status;
+            }
             // NEW: Enhanced product details
             product.Features = JsonSerializer.Serialize(productDto.Features);
             product.Compatibility = productDto.Compatibility;
@@ -339,10 +353,38 @@ namespace Core.Services
                 throw new UnauthorizedAccessException("You are not authorized to delete this product.");
             }
 
-            // Add any business rules before deletion (e.g., cannot delete if active sales)
-            // if (product.OrderItems.Any(oi => oi.Order.Status == "active")) { ... throw new InvalidOperationException }
+            // Implement soft deletion instead of hard deletion
+            // This ensures that customers who purchased the product can still access it
+            product.SoftDeleted = true;
+            product.DeletedAt = DateTime.UtcNow;
+            product.Status = "deleted";
+            product.IsPublic = false; // Hide from public listings
+            
+            await _productRepository.UpdateAsync(product);
+            
+            _logger.LogInformation("Product {ProductId} soft deleted by creator {CreatorId}", productId, creatorId);
+        }
+
+        /// <summary>
+        /// Hard delete a product (admin only) - use with caution as this permanently removes the product
+        /// </summary>
+        public async Task HardDeleteProductAsync(int productId, int adminId)
+        {
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null)
+            {
+                throw new KeyNotFoundException($"Product with ID {productId} not found.");
+            }
+
+            // Check if product has any sales - if so, we should not hard delete
+            if (product.OrderItems.Any())
+            {
+                throw new InvalidOperationException("Cannot hard delete a product that has been purchased. Use soft deletion instead.");
+            }
 
             await _productRepository.DeleteAsync(productId);
+            
+            _logger.LogWarning("Product {ProductId} hard deleted by admin {AdminId}", productId, adminId);
         }
 
         // --- Wishlist operations ---

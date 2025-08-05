@@ -26,6 +26,8 @@ export interface ProductDetailDTO {
   compatibility?: string;
   license?: string;
   updates?: string;
+  // NEW: Multiple cover images support
+  coverImages: string[];
   // Sub-DTOs for nested data
   files: FileDTO[];
   variants: VariantDTO[];

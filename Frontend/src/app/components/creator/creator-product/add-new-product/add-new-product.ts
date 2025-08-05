@@ -129,6 +129,13 @@ export class AddNewProduct implements OnInit {
   goToContent(): void {
     this.currentStep = 'content';
   }
+generatePermalink(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')     // Replace non-alphanumerics with hyphens
+    .replace(/^-+|-+$/g, '');        // Remove leading/trailing hyphens
+}
 
   saveAndContinue(): void {
     if (this.productForm.valid) {
@@ -138,26 +145,30 @@ export class AddNewProduct implements OnInit {
       const formValue = this.productForm.value;
       
       // Create the product DTO with all required fields (without image data)
-      const productDto: ProductCreateRequestDTO = {
-        name: formValue.name,
-        description: formValue.description || '',
-        price: parseFloat(formValue.price),
-        currency: formValue.currency,
-        productType: formValue.productType,
-        // Don't send image data in initial creation - will upload separately
-        coverImageUrl: undefined,
-        thumbnailImageUrl: undefined,
-        previewVideoUrl: formValue.previewVideoUrl,
-        isPublic: formValue.isPublic,
-        permalink: formValue.permalink,
-        // NEW: Enhanced product details
-        features: this.productFeatures,
-        compatibility: formValue.compatibility,
-        license: formValue.license,
-        updates: formValue.updates,
-        categoryIds: [], // TODO: Add category selection
-        tagIds: [] // TODO: Add tag selection
-      };
+const productDto: ProductCreateRequestDTO = {
+  name: formValue.name,
+  description: formValue.description || '',
+  price: parseFloat(formValue.price),
+  currency: formValue.currency,
+  productType: formValue.productType,
+  coverImageUrl: undefined,
+  thumbnailImageUrl: undefined,
+  previewVideoUrl: formValue.previewVideoUrl,
+  isPublic: formValue.isPublic,
+  permalink: formValue.permalink?.trim()
+    ? formValue.permalink.trim()
+    : this.generatePermalink(formValue.name),
+  features: this.productFeatures,
+  compatibility: formValue.compatibility,
+  license: formValue.license,
+  updates: formValue.updates,
+  coverImages: this.coverImages, // NEW: Include multiple cover images
+  categoryIds: [],
+  tagIds: []
+};
+
+
+      
 
       this.productService.createProduct(productDto).subscribe({
         next: (createdProduct) => {
@@ -245,17 +256,21 @@ export class AddNewProduct implements OnInit {
     const allowedTypes = [
       'application/pdf',
       'application/zip',
+      'text/plain',
       'image/jpeg',
       'image/png',
-      'video/mp4'
+      'image/gif',
+      'video/mp4',
+      'audio/mpeg',
+      'audio/mp3'
     ];
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    const maxSize = 250 * 1024 * 1024; // 250MB
     if (!allowedTypes.includes(file.type)) {
       this.errorMessage = 'File type not allowed: ' + file.name;
       return false;
     }
     if (file.size > maxSize) {
-      this.errorMessage = 'File too large (max 50MB): ' + file.name;
+      this.errorMessage = 'File too large (max 250MB): ' + file.name;
       return false;
     }
     return true;

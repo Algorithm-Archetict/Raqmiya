@@ -14,7 +14,7 @@ namespace Raqmiya.Infrastructure
         public decimal Price { get; set; }
         public string Currency { get; set; } = string.Empty; // e.g., "USD", "EUR"
         public string ProductType { get; set; } = string.Empty; // e.g., "digital_download", "subscription", "course"
-        public string? CoverImageUrl { get; set; } // Nullable
+        public string? CoverImageUrl { get; set; } // Nullable - Primary cover image (for backward compatibility)
         public string? ThumbnailImageUrl { get; set; } // Nullable - NEW
         public string? PreviewVideoUrl { get; set; } // Nullable
         public DateTime? PublishedAt { get; set; } // Nullable, if not published yet
@@ -31,6 +31,13 @@ namespace Raqmiya.Infrastructure
         public string? Compatibility { get; set; } // e.g., "Unity, Unreal Engine, Blender"
         public string? License { get; set; } // e.g., "Standard License", "Commercial License"
         public string? Updates { get; set; } // e.g., "Lifetime Updates", "1 Year Updates"
+        
+        // NEW: Multiple cover images support
+        public string CoverImages { get; set; } = "[]"; // JSON array of cover image URLs
+        
+        // NEW: Soft deletion support
+        public bool SoftDeleted { get; set; } = false; // Soft delete flag
+        public DateTime? DeletedAt { get; set; } // When the product was soft deleted
 
         // Navigation properties
         public User Creator { get; set; } = null!; // Required navigation property

@@ -23,6 +23,9 @@ namespace Core.Interfaces
         Task<ProductDetailDTO> UpdateProductAsync(int productId, int creatorId, ProductUpdateRequestDTO productDto);
         Task DeleteProductAsync(int productId, int creatorId);
         
+        // Admin-specific product management
+        Task HardDeleteProductAsync(int productId, int adminId);
+        
         // Entity-level operations for image uploads
         Task<Raqmiya.Infrastructure.Product?> GetByIdAsync(int productId);
         Task UpdateAsync(Raqmiya.Infrastructure.Product product);

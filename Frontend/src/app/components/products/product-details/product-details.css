@@ -3,6 +3,10 @@
   min-height: 100vh;
   background: var(--bg-primary);
 }
+.product-header.sticky {
+  position: sticky;
+  top: 0px;
+}
 
 /* Product Header */
 .product-header {
@@ -297,10 +301,6 @@
   box-shadow: var(--shadow-md);
 }
 
-.purchase-card.sticky {
-  position: sticky;
-  top: 100px;
-}
 
 .price-section {
   margin-bottom: var(--spacing-lg);
