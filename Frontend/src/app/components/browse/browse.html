@@ -1,0 +1,66 @@
+<div class="browse-container">
+  <!-- Hero Search Section -->
+  <app-search-header
+    (searchQueryChange)="onSearch($event)"
+    (categoryFilterChange)="filterByCategory($event)"
+  ></app-search-header>
+
+  <!-- Products Grid Section -->
+  <section class="products-section">
+    <div class="container">
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="loading">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading products...</p>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="products-grid" *ngIf="!loading">
+        <div class="row">
+          <div class="col-lg-4 col-md-6 mb-4" *ngFor="let product of filteredProducts">
+            <div class="product-card" (click)="viewProduct(product.id)">
+              <div class="product-image">
+                <img [src]="product.image" [alt]="product.title" />
+                <div class="product-overlay">
+                  <i class="fas fa-eye"></i>
+                </div>
+                <div class="product-badge" *ngIf="product.badge">
+                  {{ product.badge }}
+                </div>
+              </div>
+              
+              <div class="product-info">
+                <h3 class="product-title">{{ product.title }}</h3>
+                <p class="product-creator">by {{ product.creator }}</p>
+                
+                <div class="product-meta">
+                  <div class="product-price">${{ product.price }}</div>
+                  <div class="product-rating">
+                    <i class="fas fa-star"></i>
+                    <span>{{ product.rating }}</span>
+                    <span class="rating-count">({{ product.ratingCount }})</span>
+                  </div>
+                </div>
+                
+                <div class="product-tags">
+                  <span class="tag" *ngFor="let tag of product.tags">{{ tag }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="filteredProducts.length === 0 && !loading">
+          <div class="empty-content">
+            <i class="fas fa-search"></i>
+            <h3>No products found</h3>
+            <p>Try adjusting your search criteria or browse all categories.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div> 

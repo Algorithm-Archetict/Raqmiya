@@ -4,44 +4,176 @@
 
   <!-- Main Content Area -->
   <div class="main-content">
-    <!-- Header Section -->
-    <div class="product-header">
-      <div class="header-left">
-        <h1 class="header-title">{{ productName || 'Product Name' }}</h1>
-
-        <!-- Navigation Tabs -->
-        <div class="nav-tabs">
-          <a class="nav-tab" routerLink="/products/{{ productId }}/edit">
-            <i class="fas fa-edit"></i>
-            Product
-          </a>
-          <a class="nav-tab active" routerLink="/products/{{ productId }}/edit/content">
-            <i class="fas fa-file-alt"></i>
-            Content
-          </a>
-        </div>
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading product content...</p>
       </div>
+    </div>
 
-      <div class="header-right">
-        <button class="btn btn-secondary" (click)="cancel()">
-          Cancel
-        </button>
-        <button class="btn btn-primary" [disabled]="!isFormValid" (click)="saveAndPublish()">
-          Save and publish
+    <!-- Error State -->
+    <div class="error-state" *ngIf="errorMessage && !loading">
+      <div class="error-card">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h3>Error Loading Product</h3>
+        <p>{{ errorMessage }}</p>
+        <button class="retry-btn" (click)="loadProduct()">
+          <i class="fas fa-redo"></i>
+          Try Again
         </button>
       </div>
     </div>
 
-    <!-- Content Area -->
-    <div class="content-area">
-      <div class="content-step">
-        <div class="content-editor" [formGroup]="productForm">
-          <div id="content-editor" class="quill-editor-wrapper">
-            <div id="content-editor-inner" class="quill-editor-large"></div>
+    <!-- Success Message -->
+    <div class="success-message" *ngIf="successMessage">
+      <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        {{ successMessage }}
+      </div>
+    </div>
+
+    <!-- Main Content (only show when not loading and no error) -->
+    <div *ngIf="!loading && !errorMessage">
+      <!-- Header Section -->
+      <div class="product-header">
+        <div class="header-left">
+          <h1 class="header-title">{{ productName || 'Product Name' }}</h1>
+
+          <!-- Navigation Tabs -->
+          <div class="nav-tabs">
+            <a class="nav-tab" routerLink="/products/{{ productId }}/edit">
+              <i class="fas fa-edit"></i>
+              Product
+            </a>
+            <a class="nav-tab active" routerLink="/products/{{ productId }}/edit/content">
+              <i class="fas fa-file-alt"></i>
+              Content
+            </a>
+          </div>
+        </div>
+        
+        <div class="header-right">
+          <button class="btn btn-secondary" (click)="cancel()">
+            Cancel
+          </button>
+          <button 
+            class="btn btn-primary" 
+            [disabled]="!isFormValid || isSubmitting"
+            (click)="saveAndPublish()"
+          >
+            <i class="fas fa-spinner fa-spin" *ngIf="isSubmitting"></i>
+            {{ isSubmitting ? 'Saving...' : 'Save and publish' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="content-area">
+        <div class="content-layout">
+          <!-- Left Section - Content Editor -->
+          <div class="content-editor" [formGroup]="productForm">
+            <div class="editor-toolbar">
+              <button class="toolbar-btn">
+                <i class="fas fa-bold"></i>
+              </button>
+              <button class="toolbar-btn">
+                <i class="fas fa-italic"></i>
+              </button>
+              <button class="toolbar-btn">
+                <i class="fas fa-underline"></i>
+              </button>
+              <button class="toolbar-btn">
+                <i class="fas fa-link"></i>
+              </button>
+            </div>
+            <div class="editor-content">
+              <textarea 
+                class="content-textarea"
+                placeholder="Enter the content you want to sell. Describe your product, add instructions, or any additional information."
+                [formControlName]="'content'"
+                (input)="onContentChange()"
+                rows="15"
+              ></textarea>
+            </div>
+            <div class="content-hint">
+              <p>This is what buyers will see when they purchase your product. Add descriptions, instructions, or any additional information.</p>
+            </div>
+          </div>
+
+          <!-- Right Section - File Management -->
+          <div class="file-management">
+            <div class="file-upload-section">
+              <div class="file-upload-header">
+                <h4>Product Files</h4>
+                <p>Upload files that will be included with your product</p>
+              </div>
+              
+              <div class="file-upload-area">
+                <input 
+                  type="file" 
+                  id="file-upload" 
+                  multiple 
+                  (change)="onFileSelected($event)"
+                  style="display: none;"
+                >
+                <label for="file-upload" class="file-upload-btn">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Choose Files</span>
+                  <small>PDF, ZIP, Images, Videos</small>
+                </label>
+              </div>
+
+              <!-- Upload Progress -->
+              <div class="upload-progress" *ngIf="isUploading">
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+                </div>
+                <div class="progress-text">Uploading... {{ uploadProgress | number:'1.0-0' }}%</div>
+              </div>
+
+              <!-- New Files to Upload -->
+              <div class="new-files-list" *ngIf="newFiles.length > 0">
+                <h5>Files to Upload:</h5>
+                <div class="file-item" *ngFor="let file of newFiles; let i = index">
+                  <div class="file-info">
+                    <i class="fas fa-file"></i>
+                    <div class="file-details">
+                      <div class="file-name">{{ file.name }}</div>
+                      <div class="file-size">File</div>
+                    </div>
+                  </div>
+                  <button class="remove-file-btn" (click)="removeNewFile(i)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Existing Files -->
+              <div class="existing-files-list" *ngIf="productFiles.length > 0">
+                <h5>Uploaded Files:</h5>
+                <div class="file-item" *ngFor="let file of productFiles">
+                  <div class="file-info">
+                    <i class="fas fa-file"></i>
+                    <div class="file-details">
+                      <div class="file-name">{{ file.name }}</div>
+                      <div class="file-size">File</div>
+                    </div>
+                  </div>
+                  <button class="remove-file-btn" (click)="deleteFile(file.id)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- No Files Message -->
+              <div class="no-files" *ngIf="productFiles.length === 0 && newFiles.length === 0">
+                <p>No files uploaded yet</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
   </div>
 </div>

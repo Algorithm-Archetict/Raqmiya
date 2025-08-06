@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
+import { SearchHeader } from '../shared/search-header/search-header';
 
 interface Product {
   id: number;
@@ -20,7 +21,7 @@ interface Product {
 
 @Component({
   selector: 'app-discover',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SearchHeader],
   templateUrl: './discover.html',
   styleUrl: './discover.css'
 })
@@ -104,7 +105,8 @@ export class Discover implements OnInit {
   }
 
   // Search functionality
-  onSearch() {
+  onSearch(query: string) {
+    this.searchQuery = query;
     this.applyFilters();
   }
 
