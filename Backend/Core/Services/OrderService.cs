@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 
+
 namespace Core.Services
 {
     public class OrderService : IOrderService
@@ -87,6 +88,7 @@ namespace Core.Services
             
             order.TotalAmount = order.OrderItems.Sum(i => i.UnitPrice);
             await _orderRepository.AddAsync(order);
+
             
             // Generate licenses for each product
             await GenerateLicensesAsync(order);
@@ -94,6 +96,26 @@ namespace Core.Services
             _logger.LogInformation("Order {OrderId} created for user {UserId} with {ItemCount} items", 
                 order.Id, userId, order.OrderItems.Count);
             
+// =======
+
+//             // Generate a permanent license for each product in the order
+//             foreach (var item in order.OrderItems)
+//             {
+//                 var license = new License
+//                 {
+//                     OrderId = order.Id,
+//                     ProductId = item.ProductId,
+//                     BuyerId = userId,
+//                     LicenseKey = Guid.NewGuid().ToString(),
+//                     AccessGrantedAt = DateTime.UtcNow,
+//                     ExpiresAt = null, // Permanent license
+//                     Status = "active"
+//                 };
+//                 order.Licenses.Add(license);
+//             }
+//             await _orderRepository.UpdateAsync(order);
+
+// >>>>>>> main
             return _mapper.Map<OrderDTO>(order);
         }
 
