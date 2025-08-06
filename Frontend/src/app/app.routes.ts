@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Home } from './components/home/home';
 import { NotFound } from './components/not-found/not-found';
 import { Discover } from './components/discover/discover';
+import { Browse } from './components/browse/browse';
 import { ProductDetails } from './components/products/product-details/product-details';
 import { Checkout } from './components/checkout/checkout';
 import { CartCheckout } from './components/cart-checkout/cart-checkout';
@@ -21,6 +22,7 @@ import { ProductEdit } from './components/creator/creator-product/product-edit/p
 import { ProductEditContent } from './components/creator/creator-product/product-edit-content/product-edit-content';
 import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
+import { AllReviews } from './components/products/all-reviews/all-reviews';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -28,9 +30,11 @@ export const routes: Routes = [
 
     // Public routes
     {path:"discover",component:Discover},
+    {path:"browse",component:Browse},
     {path:"discover/:id",component:ProductDetails},
     {path:"auth/login", component:Login},
     {path:"auth/register", component:Register},
+    { path: "products/:id/reviews", component: AllReviews },
 
     // Protected routes - require authentication
     {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
@@ -40,7 +44,7 @@ export const routes: Routes = [
     {path:"library",component:Library, canActivate: [AuthGuard]},
     {
         path:"settings",
-        component:Settings, 
+        component:Settings,
         canActivate: [AuthGuard],
         children: [
             {path:"", redirectTo:"profile", pathMatch:"full"},
