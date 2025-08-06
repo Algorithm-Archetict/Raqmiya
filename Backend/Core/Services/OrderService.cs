@@ -4,6 +4,8 @@ using Shared.DTOs.OrderDTOs;
 using AutoMapper;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System;
+using System.Linq;
 
 namespace Core.Services
 {
@@ -46,6 +48,24 @@ namespace Core.Services
             };
             order.TotalAmount = order.OrderItems.Sum(i => i.UnitPrice * i.Quantity);
             await _orderRepository.AddAsync(order);
+
+            // Generate a permanent license for each product in the order
+            foreach (var item in order.OrderItems)
+            {
+                var license = new License
+                {
+                    OrderId = order.Id,
+                    ProductId = item.ProductId,
+                    BuyerId = userId,
+                    LicenseKey = Guid.NewGuid().ToString(),
+                    AccessGrantedAt = DateTime.UtcNow,
+                    ExpiresAt = null, // Permanent license
+                    Status = "active"
+                };
+                order.Licenses.Add(license);
+            }
+            await _orderRepository.UpdateAsync(order);
+
             return _mapper.Map<OrderDTO>(order);
         }
 

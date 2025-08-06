@@ -36,7 +36,7 @@ export class Discover implements OnInit {
   selectedTags: string[] = [];
   sortBy: string = 'relevance';
   loading: boolean = false;
-
+  noMoreProducts: boolean = false;
   // Product Data
   allProducts: Product[] = [];
   filteredProducts: Product[] = [];
@@ -56,24 +56,24 @@ export class Discover implements OnInit {
   // Helper method to ensure image URLs are full URLs
   private ensureFullUrl(url: string | null | undefined): string {
     if (!url) return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&h=200&fit=crop';
-    
+
     // If it's already a full URL, return as is
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    
+
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
       return `http://localhost:5255${url}`;
     }
-    
+
     return url;
   }
 
   // Initialize product data from API
   initializeProducts() {
     this.loading = true;
-    
+
     this.productService.getProductList(1, 100).subscribe({
       next: (products: ProductListItemDTO[]) => {
         this.allProducts = products.map(product => ({
@@ -88,7 +88,7 @@ export class Discover implements OnInit {
           tags: ['Design'], // Default tags, you might want to add this to the DTO
           badge: product.isPublic ? 'Public' : 'Private'
         }));
-        
+
         this.recommendedProducts = this.allProducts.slice(0, 6);
         this.filteredProducts = [...this.allProducts];
         this.loading = false;
@@ -109,6 +109,15 @@ export class Discover implements OnInit {
     this.searchQuery = query;
     this.applyFilters();
   }
+
+  resetFilters() {
+  this.selectedCategory = 'all';
+  this.priceRange = 50;
+  this.selectedRating = 0;
+  this.selectedTags = [];
+  this.searchQuery = '';
+  this.applyFilters();
+}
 
   // Category filtering
   filterByCategory(category: string) {
@@ -150,7 +159,7 @@ export class Discover implements OnInit {
     // Search filter
     if (this.searchQuery.trim()) {
       const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.title.toLowerCase().includes(query) ||
         product.creator.toLowerCase().includes(query) ||
         product.tags.some(tag => tag.toLowerCase().includes(query))
@@ -172,7 +181,7 @@ export class Discover implements OnInit {
 
     // Tags filter
     if (this.selectedTags.length > 0) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         this.selectedTags.some(tag => product.tags.includes(tag))
       );
     }
@@ -206,7 +215,7 @@ export class Discover implements OnInit {
   scrollCarousel(direction: 'left' | 'right') {
     const container = this.carouselContainer.nativeElement;
     const scrollAmount = 300;
-    
+
     if (direction === 'left') {
       container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
     } else {
@@ -216,42 +225,47 @@ export class Discover implements OnInit {
 
   // Load more products
   loadMoreProducts() {
-    this.loading = true;
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Add more mock products
-      const newProducts: Product[] = [
-        {
-          id: 9,
-          title: 'Advanced 3D Modeling Kit',
-          creator: '3D Expert',
-          price: 59.99,
-          rating: 4.8,
-          ratingCount: 145,
-          image: 'https://via.placeholder.com/300x200/0074e4/ffffff?text=3D+Modeling',
-          category: '3d',
-          tags: ['3D', 'Modeling', 'Advanced']
-        },
-        {
-          id: 10,
-          title: 'Premium Font Collection',
-          creator: 'Typography Pro',
-          price: 18.99,
-          rating: 4.7,
-          ratingCount: 89,
-          image: 'https://via.placeholder.com/300x200/6c2bd9/ffffff?text=Font+Collection',
-          category: 'design',
-          tags: ['Fonts', 'Typography', 'Design']
+  this.loading = true;
+
+  // Calculate next page based on current product count
+  const nextPage = Math.floor(this.allProducts.length / 100) + 1;
+
+  this.productService.getProductList(nextPage, 100).subscribe({
+    next: (products: ProductListItemDTO[]) => {
+      if (products.length === 0) {
+        this.noMoreProducts = true;
+      } else {
+        // Filter out products that already exist
+        const newProducts = products.filter(
+          product => !this.allProducts.some(p => p.id === product.id)
+        );
+
+        if (newProducts.length > 0) {
+          const mappedProducts = newProducts.map(product => ({
+            id: product.id,
+            title: product.name || 'Untitled Product',
+            creator: product.creatorUsername || 'Unknown Creator',
+            price: product.price,
+            rating: product.averageRating,
+            ratingCount: product.salesCount,
+            image: this.ensureFullUrl(product.coverImageUrl),
+            category: 'design',
+            tags: ['Design'],
+            badge: product.isPublic ? 'Public' : 'Private'
+          }));
+
+          this.allProducts.push(...mappedProducts);
+          this.applyFilters();
         }
-      ];
-
-      this.allProducts.push(...newProducts);
-      this.applyFilters();
+      }
       this.loading = false;
-    }, 1000);
-  }
-
+    },
+    error: (error: any) => {
+      console.error('Error loading more products:', error);
+      this.loading = false;
+    }
+  });
+}
   // Navigate to product details
   viewProduct(productId: number) {
     this.router.navigate(['/discover', productId]);

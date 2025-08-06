@@ -89,7 +89,7 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.Files)
                 .Include(p => p.Variants)
                 .Include(p => p.OfferCodes)
-                .Include(p => p.Reviews)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .Include(p => p.Subscriptions)
                 .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
@@ -133,6 +133,7 @@ namespace Raqmiya.Infrastructure
                 .AsNoTracking()
                 .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId));
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
@@ -145,6 +146,7 @@ namespace Raqmiya.Infrastructure
                 .Take(pageSize)
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
         }
         public async Task<List<Product>> GetProductsByTagIdAsync(int tagId, int? pageNumber = 1, int? pageSize = 10)
@@ -153,6 +155,7 @@ namespace Raqmiya.Infrastructure
                 .AsNoTracking()
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .Where(p => p.ProductTags.Any(pt => pt.TagId == tagId));
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
@@ -165,6 +168,7 @@ namespace Raqmiya.Infrastructure
                 .Take(pageSize)
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
         }
         public async Task<List<Product>> SearchProductsAsync(string searchTerm, int? pageNumber = 1, int? pageSize = 10)
@@ -172,6 +176,7 @@ namespace Raqmiya.Infrastructure
             var query = _context.Products
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm));
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
@@ -184,6 +189,7 @@ namespace Raqmiya.Infrastructure
                 .Take(pageSize)
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
         }
         public async Task<List<Product>> GetProductsByCreatorIdAsync(int creatorId, int? pageNumber = 1, int? pageSize = 10)
@@ -191,6 +197,7 @@ namespace Raqmiya.Infrastructure
             var query = _context.Products
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .Where(p => p.CreatorId == creatorId);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
@@ -203,6 +210,7 @@ namespace Raqmiya.Infrastructure
                 .Take(pageSize)
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
         }
         public async Task<List<Product>> GetPublishedProductsAsync(int? pageNumber = 1, int? pageSize = 10)
@@ -211,6 +219,7 @@ namespace Raqmiya.Infrastructure
                 .AsNoTracking()
                 .Include(p => p.Creator)
                 .Include(p => p.Files)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .Where(p => p.Status == "published" && p.IsPublic);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
@@ -224,6 +233,7 @@ namespace Raqmiya.Infrastructure
                 .Take(pageSize)
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
         }
 
