@@ -1,8 +1,8 @@
 export interface ReviewDTO {
   id: number;
   rating: number;
-  comment?: string;
-  UserName: string; // Changed to match backend case
+  comment?: string; 
+  userName:string;
   userAvatar?: string;
   createdAt: string;
 }

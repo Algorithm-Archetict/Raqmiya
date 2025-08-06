@@ -6,6 +6,8 @@ import { ProductService } from '../../../core/services/product.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
+import Swal from 'sweetalert2';
+
 
 interface MediaItem {
   type: 'image' | 'video';
@@ -263,49 +265,75 @@ export class ProductDetails implements OnInit {
   }
 
   submitReview(): void {
-    if (!this.userRating || !this.userReview.trim()) {
-      // Show error - both rating and review are required
-      return;
-    }
-
-    this.submittingReview = true;
-    this.productService.submitReview(this.product!.id, {
-      rating: this.userRating,
-      comment: this.userReview
-    }).subscribe({
-      next: (review: ReviewDTO) => {
-        // Add the new review to the reviews array (no need to refresh the whole product)
-        const newReview = {
-          id: review.id,
-          rating: review.rating,
-          comment: review.comment || '',
-          UserName: review.UserName, // matches backend property case
-          userAvatar: review.userAvatar,
-          createdAt: review.createdAt
-        };
-        this.product!.reviews.unshift(newReview); // Add to beginning of array
-
-        // Update average rating
-        const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
-        this.product!.averageRating = totalRatings / this.product!.reviews.length;
-
-        this.userReview = '';
-        this.userRating = 0;
-        this.submittingReview = false;
-      },
-      error: (error) => {
-        console.error('Error submitting review:', error);
-        this.submittingReview = false;
-        if (error.error) {
-          // Show the error message from the backend
-          alert(error.error);
-        } else {
-          alert('Error submitting review. Please try again.');
-        }
+  if (!this.userRating || !this.userReview.trim()) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Missing Information',
+      text: 'Both rating and review are required to submit your feedback!',
+      customClass: {
+        confirmButton: 'btn btn-primary'
       }
     });
+    return;
   }
 
+  this.submittingReview = true;
+  this.productService.submitReview(this.product!.id, {
+    rating: this.userRating,
+    comment: this.userReview
+  }).subscribe({
+    next: (review: ReviewDTO) => {
+      // Add the new review to the reviews array (no need to refresh the whole product)
+      const newReview = {
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment || '',
+        userName: review.userName,
+        userAvatar: review.userAvatar,
+        createdAt: review.createdAt
+      };
+      this.product!.reviews.unshift(newReview);
+
+      // Update average rating
+      const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
+      this.product!.averageRating = totalRatings / this.product!.reviews.length;
+
+      // Reset form
+      this.userReview = '';
+      this.userRating = 0;
+      this.submittingReview = false;
+
+      // Show success notification
+      Swal.fire({
+        icon: 'success',
+        title: 'Thank You!',
+        text: 'Your review has been submitted successfully.',
+        customClass: {
+          confirmButton: 'btn btn-primary'
+        },
+        timer: 3000
+      });
+    },
+    error: (error) => {
+      console.error('Error submitting review:', error);
+      this.submittingReview = false;
+
+      // Handle error messages
+      const errorMessage = error.error?.includes('already reviewed')
+        ? 'You have already reviewed this product'
+        : error.error || 'Error submitting review. Please try again.';
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Submission Failed',
+        text: errorMessage,
+        customClass: {
+          confirmButton: 'btn btn-primary'
+        }
+      });
+    }
+  });
+}
   loadRelatedProducts() {
     // TODO: Implement API call to get related products
     this.relatedProducts = [];
