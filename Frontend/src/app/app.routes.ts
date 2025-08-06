@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Home } from './components/home/home';
 import { NotFound } from './components/not-found/not-found';
 import { Discover } from './components/discover/discover';
+import { Browse } from './components/browse/browse';
 import { ProductDetails } from './components/products/product-details/product-details';
 import { Checkout } from './components/checkout/checkout';
 import { PurchasedPackage } from './components/purchased-package/purchased-package';
@@ -27,6 +28,7 @@ export const routes: Routes = [
 
     // Public routes
     {path:"discover",component:Discover},
+    {path:"browse",component:Browse},
     {path:"discover/:id",component:ProductDetails},
     {path:"auth/login", component:Login},
     {path:"auth/register", component:Register},
@@ -52,7 +54,7 @@ export const routes: Routes = [
     // Creator-only routes - require authentication and creator role
     {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
     {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
-    {path:"products/edit",component:ProductEdit, canActivate: [CreatorGuard]},
+    {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
 
