@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
+import { CartService } from '../../../core/services/cart.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
@@ -37,7 +38,8 @@ export class ProductDetails implements OnInit {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private productService: ProductService
+    private productService: ProductService,
+    private cartService: CartService
   ) {}
 
   ngOnInit() {
@@ -362,10 +364,29 @@ export class ProductDetails implements OnInit {
 
   // Purchase methods
   addToCart() {
-    // Add to cart logic
-    console.log('Added to cart:', this.product?.name);
-    // Redirect to checkout page
-    this.router.navigate(['/checkout']);
+
+    if (!this.product) return;
+    
+    this.cartService.addToCart(this.product.id, 1).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('Added to cart:', this.product?.title);
+          // Redirect to cart-checkout page
+          this.router.navigate(['/cart-checkout']);
+        } else {
+          console.error('Failed to add to cart:', response.message);
+        }
+      },
+      error: (error) => {
+        console.error('Error adding to cart:', error);
+      }
+    });
+// =======
+//     // Add to cart logic
+//     console.log('Added to cart:', this.product?.name);
+//     // Redirect to checkout page
+//     this.router.navigate(['/checkout']);
+
   }
 
   buyNow() {

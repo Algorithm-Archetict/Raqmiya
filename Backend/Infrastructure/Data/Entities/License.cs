@@ -1,4 +1,5 @@
-﻿
+﻿using System;
+
 namespace Raqmiya.Infrastructure
 {
     public class License
@@ -18,5 +19,8 @@ namespace Raqmiya.Infrastructure
         public Product Product { get; set; } = null!; // Required navigation property
         public User Buyer { get; set; } = null!; // Required navigation property
 
+        // Computed properties
+        public bool IsActive => Status == "active" && (ExpiresAt == null || ExpiresAt > DateTime.UtcNow);
+        public bool CanRepurchase => Status == "expired" || Status == "revoked";
     }
 }

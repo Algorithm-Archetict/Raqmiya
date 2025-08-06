@@ -19,9 +19,9 @@
           </a>
         </li>
         <li class="nav-item" *ngIf="isLoggedIn">
-          <a class="nav-link" routerLink="/library" routerLinkActive="active">
+          <a class="nav-link" routerLink="/purchased-products" routerLinkActive="active">
             <i class="fas fa-book me-1"></i>
-            Library
+            My Library
           </a>
         </li>
         <li class="nav-item" *ngIf="isLoggedIn">
@@ -63,6 +63,12 @@
                 <a class="dropdown-item" routerLink="/dashboard" (click)="closeUserDropdown()">
                   <i class="fas fa-dashboard me-2"></i>
                   Dashboard
+                </a>
+              </li>
+              <li *ngIf="isLoggedIn">
+                <a class="dropdown-item" routerLink="/purchased-products" (click)="closeUserDropdown()">
+                  <i class="fas fa-book me-2"></i>
+                  My Library
                 </a>
               </li>
               <li *ngIf="isCreator()">
