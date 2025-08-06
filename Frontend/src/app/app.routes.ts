@@ -17,8 +17,13 @@ import { AllProducts } from './components/creator/creator-product/all-products/a
 import { AddNewProduct } from './components/creator/creator-product/add-new-product/add-new-product';
 import { ProductEdit } from './components/creator/creator-product/product-edit/product-edit';
 import { ProductEditContent } from './components/creator/creator-product/product-edit-content/product-edit-content';
+import { AdminDashboard } from './components/Admin/admin-dashboard';
+import { AdminUserList } from './components/Admin/admin-user-list/admin-user-list';
+import { AdminUserCreate } from './components/Admin/admin-user-create/admin-user-create';
+import { AdminUserDetail } from './components/Admin/admin-user-detail/admin-user-detail';
 import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
+import { AdminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -50,9 +55,22 @@ export const routes: Routes = [
     // Creator-only routes - require authentication and creator role
     {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
     {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
-    {path:"products/edit",component:ProductEdit, canActivate: [CreatorGuard]},
+    {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
+
+    // Admin routes - require authentication and admin role
+    {
+        path:"admin",
+        component:AdminDashboard,
+        canActivate: [AuthGuard, AdminGuard],
+        children: [
+            {path:"", redirectTo:"users", pathMatch:"full"},
+            {path:"users", component:AdminUserList},
+            {path:"users/create", component:AdminUserCreate},
+            {path:"users/:id", component:AdminUserDetail}
+        ]
+    },
 
     {path:"**",component:NotFound},
 ];

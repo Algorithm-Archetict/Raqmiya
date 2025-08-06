@@ -1,0 +1,155 @@
+<div class="admin-user-list">
+  <div class="container">
+    <!-- Header -->
+    <div class="list-header">
+      <div class="header-content">
+        <h2 class="section-title">User Management</h2>
+        <p class="section-subtitle">Manage platform users and their permissions</p>
+      </div>
+      <div class="header-actions">
+        <a routerLink="/admin/users/create" class="btn btn-primary">
+          <i class="bi bi-person-plus-fill"></i> Create New User
+        </a>
+      </div>
+    </div>
+
+    <!-- Filter Controls -->
+    <div class="filter-controls">
+      <div class="filter-group">
+        <label for="roleFilter" class="form-label">Filter by Role:</label>
+        <select id="roleFilter" class="form-select" [(ngModel)]="selectedRole">
+          <option value="all">All Roles</option>
+          <option value="Admin">Admin</option>
+          <option value="Creator">Creator</option>
+          <option value="Customer">Customer</option>
+        </select>
+      </div>
+      <div class="stats-summary">
+        <div class="stat-item">
+          <span class="stat-number">{{ getFilteredUsers().length }}</span>
+          <span class="stat-label">Total Users</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">{{ getCreatorsCount() }}</span>
+          <span class="stat-label">Creators</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">{{ getCustomersCount() }}</span>
+          <span class="stat-label">Customers</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="loading-text">Loading users...</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="error-container">
+      <div class="alert alert-danger">
+        <div class="error-content">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div class="error-message">
+            <h5>Error Loading Users</h5>
+            <p>{{ error }}</p>
+          </div>
+        </div>
+        <button class="btn btn-outline-danger" (click)="retryLoad()">
+          <i class="bi bi-arrow-clockwise"></i> Retry
+        </button>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div *ngIf="!loading && !error" class="users-table-container">
+      <div *ngIf="getFilteredUsers().length === 0" class="empty-state">
+        <div class="empty-content">
+          <i class="bi bi-people"></i>
+          <h4>No Users Found</h4>
+          <p>No users match the current filter criteria.</p>
+          <button class="btn btn-primary" (click)="selectedRole = 'all'">
+            Show All Users
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="getFilteredUsers().length > 0" class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th *ngIf="selectedRole === 'Creator' || selectedRole === 'all'">Products</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of getFilteredUsers()" class="user-row">
+              <td>
+                <div class="user-info">
+                  <div class="user-avatar">
+                    {{ getUserInitials(user.username) }}
+                  </div>
+                  <div class="user-details">
+                    <div class="username">{{ user.username }}</div>
+                    <div class="user-id">ID: {{ user.id }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="email-cell">
+                  <i class="bi bi-envelope"></i>
+                  {{ user.email }}
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getRoleBadgeClass(user.role)">
+                  {{ user.role }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(user.isActive)">
+                  {{ user.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td *ngIf="selectedRole === 'Creator' || selectedRole === 'all'">
+                <div *ngIf="user.role === 'Creator'" class="product-count">
+                  <i class="bi bi-box-seam"></i>
+                  {{ user.productCount || 0 }} products
+                </div>
+                <div *ngIf="user.role !== 'Creator'" class="text-muted">
+                  <i class="bi bi-dash"></i>
+                  N/A
+                </div>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <a [routerLink]="['/admin/users', user.id]" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> View
+                  </a>
+                  <button 
+                    class="btn btn-sm" 
+                    [ngClass]="user.isActive ? 'btn-outline-danger' : 'btn-outline-success'"
+                    (click)="toggleActivation(user)"
+                    [disabled]="loading">
+                    <i class="bi" [ngClass]="user.isActive ? 'bi-person-x' : 'bi-person-check'"></i>
+                    {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+  
