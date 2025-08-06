@@ -5,7 +5,9 @@ import { Discover } from './components/discover/discover';
 import { Browse } from './components/browse/browse';
 import { ProductDetails } from './components/products/product-details/product-details';
 import { Checkout } from './components/checkout/checkout';
+import { CartCheckout } from './components/cart-checkout/cart-checkout';
 import { PurchasedPackage } from './components/purchased-package/purchased-package';
+import { PurchasedProducts } from './components/purchased-products/purchased-products';
 import { Library } from './components/library/library';
 import { Login } from './components/account/login/login';
 import { Register } from './components/account/register/register';
@@ -36,7 +38,9 @@ export const routes: Routes = [
 
     // Protected routes - require authentication
     {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
-    {path:"package",component:PurchasedPackage, canActivate: [AuthGuard]},
+    {path:"cart-checkout",component:CartCheckout, canActivate: [AuthGuard]},
+    {path:"package/:id",component:PurchasedPackage, canActivate: [AuthGuard]},
+    {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]},
     {path:"library",component:Library, canActivate: [AuthGuard]},
     {
         path:"settings",

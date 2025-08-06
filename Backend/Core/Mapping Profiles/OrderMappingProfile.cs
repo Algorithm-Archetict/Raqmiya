@@ -11,7 +11,7 @@ namespace Core.Mapping_Profiles
             CreateMap<Order, OrderDTO>();
             CreateMap<OrderItem, OrderItemDTO>();
             CreateMap<OrderCreateDTO, Order>()
-                .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => src.Items));
+                .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => src.items));
             CreateMap<OrderItemCreateDTO, OrderItem>();
             CreateMap<OrderUpdateDTO, Order>();
         }

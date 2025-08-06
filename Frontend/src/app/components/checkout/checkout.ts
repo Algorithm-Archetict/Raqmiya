@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -215,18 +215,23 @@ export class Checkout implements OnInit, OnDestroy {
       };
 
       // Create order
-      const orderResponse = await this.orderService.createOrder(
-        this.cart,
-        this.selectedPaymentMethod,
-        this.contactInfo
-      ).toPromise();
+      const orderData = {
+        items: this.cartItems.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity
+        })),
+        paymentMethod: this.selectedPaymentMethod,
+        customerInfo: this.contactInfo
+      };
+      
+      const orderResponse = await firstValueFrom(this.orderService.createOrder(orderData));
 
       if (orderResponse?.success && orderResponse.order) {
         // Process payment
-        const paymentResponse = await this.orderService.processMockPayment(
+        const paymentResponse = await firstValueFrom(this.orderService.processMockPayment(
           orderResponse.order,
           paymentData
-        ).toPromise();
+        ));
 
         if (paymentResponse?.success) {
           this.successMessage = 'Payment processed successfully!';
