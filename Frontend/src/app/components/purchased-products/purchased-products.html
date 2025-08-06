@@ -1,0 +1,73 @@
+<div class="purchased-products-container">
+  <div class="container">
+    <div class="page-header">
+      <h1>My Purchased Products</h1>
+      <p>Access all your digital products and downloads</p>
+    </div>
+    
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <p>Loading your purchased products...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div class="error-state" *ngIf="errorMessage">
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ errorMessage }}
+        <button class="btn btn-outline-danger btn-sm" (click)="loadPurchasedProducts()">
+          Try Again
+        </button>
+      </div>
+    </div>
+    
+    <!-- Products Grid -->
+    <div class="products-grid" *ngIf="!isLoading && !errorMessage">
+      <div class="product-card" *ngFor="let product of purchasedProducts">
+        <div class="product-image">
+          <img [src]="product.coverImageUrl" [alt]="product.productName">
+          <div class="license-badge" [class]="getLicenseStatusClass(product.licenseStatus)">
+            {{ getLicenseStatusText(product.licenseStatus) }}
+          </div>
+        </div>
+        
+        <div class="product-info">
+          <h3>{{ product.productName }}</h3>
+          <p class="creator">by {{ product.creatorUsername }}</p>
+          <p class="purchase-date">
+            Purchased: {{ product.purchaseDate | date:'mediumDate' }}
+          </p>
+          <p class="purchase-price">
+            {{ product.purchasePrice | currency:'USD' }}
+          </p>
+          
+          <div class="product-actions">
+            <button class="btn btn-primary" (click)="viewProduct(product.productId)">
+              <i class="fas fa-eye"></i>
+              View Details
+            </button>
+            <button class="btn btn-secondary" (click)="downloadProduct(product.productId)">
+              <i class="fas fa-download"></i>
+              Download
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!isLoading && !errorMessage && purchasedProducts.length === 0">
+      <div class="empty-content">
+        <i class="fas fa-shopping-bag"></i>
+        <h3>No purchased products yet</h3>
+        <p>Start building your digital library by purchasing some products!</p>
+        <a routerLink="/discover" class="btn btn-primary">
+          Browse Products
+        </a>
+      </div>
+    </div>
+  </div>
+</div> 

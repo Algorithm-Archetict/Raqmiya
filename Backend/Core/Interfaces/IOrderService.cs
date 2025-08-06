@@ -12,6 +12,8 @@ namespace Core.Interfaces
         Task<OrderDTO> CreateOrderAsync(int userId, OrderCreateDTO dto);
         Task UpdateOrderStatusAsync(int orderId, string status);
         Task DeleteOrderAsync(int orderId);
+        Task<List<PurchasedProductDTO>> GetUserPurchasedProductsAsync(int userId);
+        Task<PurchasedProductDTO?> GetUserPurchasedProductAsync(int userId, int productId);
     }
 }
 

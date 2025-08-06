@@ -33,10 +33,13 @@ namespace API
             builder.Services.AddScoped<IUserRepository, UserRepository>(); // NEW: User Repository
             builder.Services.AddScoped<IAuthRepository, AuthRepository>(); // Register AuthRepository for IAuthRepository
             builder.Services.AddScoped<IOrderRepository,OrderRepository>(); // Register OrderRepository
+            builder.Services.AddScoped<ILicenseRepository, LicenseRepository>(); // NEW: License Repository
             // --- 3. Configure Services (Core/Business Logic Layer) ---
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAuthService, AuthService>(); // NEW: Auth Service
             builder.Services.AddScoped<IOrderService, Core.Services.OrderService>(); // Register OrderService
+            builder.Services.AddScoped<IPurchaseValidationService, PurchaseValidationService>(); // NEW: Purchase Validation Service
+            builder.Services.AddScoped<ICartService, Core.Services.CartService>(); // NEW: Cart Service
 
             // --- 4. Configure Logging ---
             builder.Logging.AddConsole();
@@ -70,6 +73,8 @@ namespace API
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
+            
+
 
             // --- 7. Configure Swagger/OpenAPI for JWT Authentication ---
             builder.Services.AddSwaggerGen(c =>
@@ -147,7 +152,7 @@ namespace API
                 // Check "Generate a file with API documentation"
             }
 
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection(); // Disabled for HTTP-only development
 
             // --- Use Static Files Middleware ---
             app.UseStaticFiles(); // Enable serving files from wwwroot
