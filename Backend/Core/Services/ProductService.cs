@@ -66,8 +66,8 @@ namespace Core.Services
                     Id = r.Id,
                     Rating = r.Rating,
                     Comment = r.Comment,
-                    UserName = r.User?.Username ?? "Anonymous",
-                    UserAvatar = r.User?.ProfileImageUrl, // Use profile image URL
+                    userName = r.User.Username,
+                    UserAvatar = r.User.ProfileImageUrl, // Use profile image URL
                     CreatedAt = r.CreatedAt
                 }).ToList(),
                 Categories = product.ProductCategories.Select(pc => new ProductCategoryDTO { Id = pc.Category.Id, Name = pc.Category.Name, ParentCategoryId = pc.Category.ParentCategoryId }).ToList(),
@@ -653,7 +653,7 @@ namespace Core.Services
             await _context.SaveChangesAsync();
 
             // Update the DTO with the actual username for immediate display
-            reviewDto.UserName = user.Username;
+            reviewDto.userName = user.Username;
             reviewDto.UserAvatar = user.ProfileImageUrl;
         }
     }

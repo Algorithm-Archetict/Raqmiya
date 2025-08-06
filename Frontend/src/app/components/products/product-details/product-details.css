@@ -19,6 +19,10 @@
   transition: all var(--transition-normal);
 }
 
+.product-header {
+  position:sticky;
+}
+
 .product-header::before {
   content: '';
   position: absolute;
@@ -313,10 +317,10 @@
   box-shadow: var(--shadow-md);
 }
 
-.purchase-card.sticky {
+/* .purchase-card.sticky {
   position: sticky;
   top: 100px;
-}
+} */
 
 .price-section {
   margin-bottom: var(--spacing-lg);

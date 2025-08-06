@@ -86,10 +86,7 @@ export class AllReviews implements OnInit {
             allProperties: Object.keys(review),
             rawData: review,
             username: {
-              UserName: review.UserName,
-              userName: review.UserName,
-              Username: review.UserName,
-              username: review.UserName
+              UserName: review.userName,
             }
           });
         });
@@ -97,7 +94,7 @@ export class AllReviews implements OnInit {
         // Create fresh review objects without spreading to avoid property conflicts
         let displayReviews = backendProduct.reviews.map(review => ({
           id: review.id,
-          UserName: review.UserName || 'Anonymous',
+          userName: review.userName,
           rating: review.rating,
           comment: review.comment || '',
           createdAt: review.createdAt,
@@ -118,11 +115,11 @@ export class AllReviews implements OnInit {
         // Handle profile images
         displayReviews = displayReviews.map(review => ({
           id: review.id,
-          UserName: review.UserName || 'Anonymous',
+          userName: review.userName,
           rating: review.rating,
           comment: review.comment || '',
           createdAt: review.createdAt,
-          userAvatar: review.userAvatar ? this.ensureFullUrl(review.userAvatar) : this.getPlaceholderAvatar(review.UserName?.charAt(0) || 'A')
+          userAvatar: review.userAvatar ? this.ensureFullUrl(review.userAvatar) : this.getPlaceholderAvatar(review.userName?.charAt(0) || 'A')
         }));
 
         // Sort reviews

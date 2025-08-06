@@ -12,14 +12,14 @@
             <p class="search-subtitle">
               Find the perfect digital assets for your next project
             </p>
-            
+
             <!-- Search Bar -->
             <div class="search-bar-container">
               <div class="search-input-group">
                 <i class="fas fa-search search-icon"></i>
-                <input 
-                  type="text" 
-                  class="form-control search-input" 
+                <input
+                  type="text"
+                  class="form-control search-input"
                   placeholder="Search for products, creators, or categories..."
                   [(ngModel)]="searchQuery"
                   [ngModelOptions]="{standalone: true}"
@@ -30,44 +30,44 @@
                 </button>
               </div>
             </div>
-            
+
             <!-- Category Filters -->
             <div class="category-filters">
               <div class="filter-buttons">
-                <button 
-                  class="filter-btn" 
+                <button
+                  class="filter-btn"
                   [class.active]="selectedCategory === 'all'"
                   (click)="filterByCategory('all')"
                 >
                   <i class="fas fa-th-large"></i>
                   All
                 </button>
-                <button 
-                  class="filter-btn" 
+                <button
+                  class="filter-btn"
                   [class.active]="selectedCategory === '3d'"
                   (click)="filterByCategory('3d')"
                 >
                   <i class="fas fa-cube"></i>
                   3D Design
                 </button>
-                <button 
-                  class="filter-btn" 
+                <button
+                  class="filter-btn"
                   [class.active]="selectedCategory === 'design'"
                   (click)="filterByCategory('design')"
                 >
                   <i class="fas fa-palette"></i>
                   Design
                 </button>
-                <button 
-                  class="filter-btn" 
+                <button
+                  class="filter-btn"
                   [class.active]="selectedCategory === 'sound'"
                   (click)="filterByCategory('sound')"
                 >
                   <i class="fas fa-music"></i>
                   Sound
                 </button>
-                <button 
-                  class="filter-btn" 
+                <button
+                  class="filter-btn"
                   [class.active]="selectedCategory === 'other'"
                   (click)="filterByCategory('other')"
                 >
@@ -101,11 +101,11 @@
               </button>
             </div>
           </div>
-          
+
           <div class="products-carousel" #carouselContainer>
             <div class="carousel-track">
-              <div 
-                class="product-card carousel-item" 
+              <div
+                class="product-card carousel-item"
                 *ngFor="let product of recommendedProducts; let i = index"
                 (click)="viewProduct(product.id)"
               >
@@ -148,7 +148,7 @@
           </h2>
         </div>
       </div>
-      
+
       <div class="row">
         <!-- Sidebar Filters -->
         <div class="col-lg-3">
@@ -158,16 +158,16 @@
                 <i class="fas fa-filter"></i>
                 Filters
               </h5>
-              
+
               <!-- Price Range -->
               <div class="filter-group">
                 <label class="filter-label">Price Range</label>
                 <div class="price-range">
-                  <input 
-                    type="range" 
-                    class="form-range" 
-                    min="0" 
-                    max="100" 
+                  <input
+                    type="range"
+                    class="form-range"
+                    min="0"
+                    max="100"
                     [(ngModel)]="priceRange"
                     [ngModelOptions]="{standalone: true}"
                     (input)="onPriceRangeChange()"
@@ -179,13 +179,13 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- Rating Filter -->
               <div class="filter-group">
                 <label class="filter-label">Minimum Rating</label>
                 <div class="rating-filter">
-                  <div 
-                    class="rating-option" 
+                  <div
+                    class="rating-option"
                     *ngFor="let rating of [5,4,3,2,1]"
                     [class.active]="selectedRating === rating"
                     (click)="filterByRating(rating)"
@@ -197,13 +197,13 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- Tags Filter -->
               <div class="filter-group">
                 <label class="filter-label">Popular Tags</label>
                 <div class="tags-filter">
-                  <span 
-                    class="tag" 
+                  <span
+                    class="tag"
                     *ngFor="let tag of popularTags"
                     [class.active]="selectedTags.includes(tag)"
                     (click)="toggleTag(tag)"
@@ -212,7 +212,7 @@
                   </span>
                 </div>
               </div>
-              
+
               <!-- Sort Options -->
               <div class="filter-group">
                 <label class="filter-label">Sort By</label>
@@ -228,15 +228,27 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Products Grid -->
         <div class="col-lg-9">
           <div class="products-grid">
-            <div class="row g-4">
-              <div 
-                class="col-lg-4 col-md-6" 
+            <!-- Empty State Message -->
+            <div *ngIf="filteredProducts.length === 0 && !loading" class="empty-state text-center py-5">
+              <i class="fas fa-box-open fa-4x text-primary mb-4"></i>
+              <h3 style="color: #f8f9fa;" >No products available</h3>
+              <p class="mb-4" style="color: #e9ecef;">We couldn't find any products matching your criteria.</p>
+              <button class="btn btn-primary" (click)="resetFilters()">
+                Reset Filters
+              </button>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="row g-4" *ngIf="filteredProducts.length > 0">
+              <div
+                class="col-lg-4 col-md-6"
                 *ngFor="let product of filteredProducts; let i = index"
               >
+
                 <div class="product-card grid-item" (click)="viewProduct(product.id)">
                   <div class="product-image">
                     <img [src]="product.image" [alt]="product.title">
@@ -268,17 +280,17 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Load More Button -->
-            <div class="load-more-section text-center mt-5">
-              <button 
+            <div class="load-more-section text-center mt-5" *ngIf="filteredProducts.length > 0">
+              <button
                 class="btn btn-outline btn-lg load-more-btn"
                 (click)="loadMoreProducts()"
-                [disabled]="loading"
+                [disabled]="loading || noMoreProducts"
               >
                 <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
                 <i class="fas fa-plus" *ngIf="!loading"></i>
-                {{ loading ? 'Loading...' : 'Load More Products' }}
+                {{ loading ? 'Loading...' : (noMoreProducts ? 'No More Products' : 'Load More Products') }}
               </button>
             </div>
           </div>
