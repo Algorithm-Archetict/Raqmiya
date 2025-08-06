@@ -53,5 +53,6 @@ namespace Core.Interfaces
         Task<PagedResultDTO<ProductListItemDTO>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize);
         Task<bool> ApproveProductAsync(int productId, int adminId);
         Task<bool> RejectProductAsync(int productId, int adminId, string reason);
+        Task AddReviewAsync(int productId, int userId, Shared.DTOs.ProductDTOs.ReviewDTO reviewDto);
     }
 }

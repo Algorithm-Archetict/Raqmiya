@@ -1,43 +1,13 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
+import { ReviewDTO } from '../../../core/models/product/review.dto';
+import Swal from 'sweetalert2';
 
-interface Product {
-  id: number;
-  title: string;
-  creator: string;
-  creatorAvatar: string;
-  creatorProducts: number;
-  price: number;
-  originalPrice?: number;
-  rating: number;
-  ratingCount: number;
-  category: string;
-  description: string;
-  features: string[];
-  tags: string[];
-  badges: string[];
-  fileSize: string;
-  format: string;
-  compatibility: string;
-  license: string;
-  updates: string;
-  media: MediaItem[];
-  currency: string;
-  productType: string;
-  coverImageUrl?: string;
-  previewVideoUrl?: string;
-  files?: FileDTO[];
-  permalink?: string;
-  isInWishlist: boolean;
-  wishlistCount: number;
-  salesCount: number;
-  viewsCount: number;
-}
 
 interface MediaItem {
   type: 'image' | 'video';
@@ -45,31 +15,21 @@ interface MediaItem {
   thumbnail?: string;
 }
 
-interface Review {
-  id: number;
-  name: string;
-  avatar: string;
-  rating: number;
-  comment: string;
-  date: Date;
-}
-
 @Component({
   selector: 'app-product-details',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })
 export class ProductDetails implements OnInit {
-  product: Product | null = null;
+  product: ProductDetailDTO | null = null;
   selectedMediaIndex: number = 0;
   selectedMedia: MediaItem = { type: 'image', url: '' };
   isInWishlist: boolean = false;
-  reviews: Review[] = [];
-  relatedProducts: Product[] = [];
-  hasMoreReviews: boolean = true;
+  reviews: ReviewDTO[] = [];
+  relatedProducts: ProductDetailDTO[] = [];
   isDarkTheme: boolean = false;
-  
+
   // Loading and error states
   isLoading: boolean = false;
   error: string | null = null;
@@ -100,15 +60,14 @@ export class ProductDetails implements OnInit {
   fetchProduct(productId: string) {
     this.isLoading = true;
     this.error = null;
-    
+
     // Try to parse as number first, then as permalink
     const numericId = parseInt(productId);
     if (!isNaN(numericId)) {
       this.productService.getById(numericId).subscribe({
-        next: (backendProduct) => {
-          this.product = this.mapBackendToUI(backendProduct);
-          this.setupMedia();
-          this.loadReviews();
+        next: (product) => {
+          this.product = product;
+          this.reviews = product.reviews;
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -120,10 +79,9 @@ export class ProductDetails implements OnInit {
     } else {
       // Try as permalink
       this.productService.getByPermalink(productId).subscribe({
-        next: (backendProduct) => {
-          this.product = this.mapBackendToUI(backendProduct);
-          this.setupMedia();
-          this.loadReviews();
+        next: (product) => {
+          this.product = product;
+          this.reviews = product.reviews;
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -141,54 +99,42 @@ export class ProductDetails implements OnInit {
       console.log('ensureFullUrl: URL is null/undefined');
       return undefined;
     }
-    
+
     console.log('ensureFullUrl: Processing URL:', url);
-    
+
     // If it's already a full URL, return as is
     if (url.startsWith('http://') || url.startsWith('https://')) {
       console.log('ensureFullUrl: Already full URL, returning as is:', url);
       return url;
     }
-    
+
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
       const fullUrl = `http://localhost:5255${url}`;
       console.log('ensureFullUrl: Converted relative URL to full URL:', fullUrl);
       return fullUrl;
     }
-    
+
     console.log('ensureFullUrl: Unknown URL format, returning as is:', url);
     return url;
   }
 
-  mapBackendToUI(backendProduct: ProductDetailDTO): Product {
+  mapBackendToUI(backendProduct: ProductDetailDTO): ProductDetailDTO {
     return {
-      id: backendProduct.id,
-      title: backendProduct.name || 'Untitled Product',
-      creator: backendProduct.creatorUsername || 'Unknown Creator',
-      creatorAvatar: this.getPlaceholderAvatar(backendProduct.creatorUsername?.charAt(0) || 'U'),
-      creatorProducts: 0, // TODO: Get from backend if available
-      price: backendProduct.price,
-      originalPrice: undefined, // TODO: Add to backend if needed
-      rating: backendProduct.averageRating || 0,
-      ratingCount: backendProduct.reviews?.length || 0,
-      category: backendProduct.categories?.[0]?.name || 'Digital',
-      description: backendProduct.description || 'No description available.',
-      features: backendProduct.features || [], // Use actual features from backend
-      tags: backendProduct.tags?.map(tag => tag.name || '').filter(name => name !== '') || [],
-      badges: [], // TODO: Add to backend if needed
-      fileSize: this.calculateTotalFileSize(backendProduct.files),
-      format: this.getFileFormats(backendProduct.files),
-      compatibility: backendProduct.compatibility || 'Universal', // Use actual compatibility from backend
-      license: backendProduct.license || 'Standard License', // Use actual license from backend
-      updates: backendProduct.updates || 'Lifetime Updates', // Use actual updates from backend
-      media: this.createMediaFromProduct(backendProduct),
-      currency: backendProduct.currency || 'USD',
-      productType: backendProduct.productType || 'digital',
+      ...backendProduct,
+      name: backendProduct.name || 'Untitled Product',
+      description: backendProduct.description || 'No description available',
+      averageRating: backendProduct.averageRating || 0,
+      files: backendProduct.files || [],
+      features: backendProduct.features || [],
+      reviews: backendProduct.reviews || [],
+      tags: backendProduct.tags || [],
+      categories: backendProduct.categories || [],
+      compatibility: backendProduct.compatibility || 'Universal',
+      license: backendProduct.license || 'Standard License',
+      updates: backendProduct.updates || 'Lifetime Updates',
       coverImageUrl: this.ensureFullUrl(backendProduct.coverImageUrl),
       previewVideoUrl: this.ensureFullUrl(backendProduct.previewVideoUrl),
-      files: backendProduct.files || [],
-      permalink: backendProduct.permalink,
       isInWishlist: backendProduct.isInWishlist || false,
       wishlistCount: backendProduct.wishlistCount || 0,
       salesCount: backendProduct.salesCount || 0,
@@ -197,7 +143,8 @@ export class ProductDetails implements OnInit {
   }
 
   // Helper method to generate placeholder avatar
-  private getPlaceholderAvatar(initial: string): string {
+  getPlaceholderAvatar(username: string | undefined): string {
+    const initial = (username || 'A').charAt(0);
     const colors = ['#0074e4', '#e4007f', '#00d4ff', '#6c2bd9', '#ff6b35'];
     const color = colors[initial.charCodeAt(0) % colors.length];
     return `data:image/svg+xml;base64,${btoa(`
@@ -208,9 +155,28 @@ export class ProductDetails implements OnInit {
     `)}`;
   }
 
+  getMediaItems(): MediaItem[] {
+    const items: MediaItem[] = [];
+    if (this.product?.coverImageUrl) {
+      items.push({
+        type: 'image',
+        url: this.ensureFullUrl(this.product.coverImageUrl) || '',
+        thumbnail: this.ensureFullUrl(this.product.coverImageUrl)
+      });
+    }
+    if (this.product?.previewVideoUrl) {
+      items.push({
+        type: 'video',
+        url: this.ensureFullUrl(this.product.previewVideoUrl) || '',
+        thumbnail: this.ensureFullUrl(this.product.coverImageUrl)
+      });
+    }
+    return items;
+  }
+
   createMediaFromProduct(backendProduct: ProductDetailDTO): MediaItem[] {
     const media: MediaItem[] = [];
-    
+
     // Add cover image if available
     if (backendProduct.coverImageUrl) {
       const fullCoverUrl = this.ensureFullUrl(backendProduct.coverImageUrl);
@@ -222,7 +188,7 @@ export class ProductDetails implements OnInit {
         });
       }
     }
-    
+
     // Add preview video if available
     if (backendProduct.previewVideoUrl) {
       const fullVideoUrl = this.ensureFullUrl(backendProduct.previewVideoUrl);
@@ -234,7 +200,7 @@ export class ProductDetails implements OnInit {
         });
       }
     }
-    
+
     // Add file previews if no media available
     if (media.length === 0 && backendProduct.files && backendProduct.files.length > 0) {
       media.push({
@@ -243,116 +209,134 @@ export class ProductDetails implements OnInit {
         thumbnail: this.getPlaceholderImage('Files', '#2a2a2a')
       });
     }
-    
+
     return media;
   }
 
   calculateTotalFileSize(files?: FileDTO[]): string {
     if (!files || files.length === 0) return '0 MB';
-    
-    // Mock calculation - in real app, you'd get actual file sizes from backend
-    const totalSize = files.length * 10; // 10MB per file for demo
-    return `${totalSize} MB`;
+
+    const totalBytes = files.reduce((sum, file) => sum + (file.size || 0), 0);
+
+    if (totalBytes < 1024) {
+      return `${totalBytes} B`;
+    } else if (totalBytes < 1024 * 1024) {
+      return `${(totalBytes / 1024).toFixed(2)} KB`;
+    } else if (totalBytes < 1024 * 1024 * 1024) {
+      return `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
+    } else {
+      return `${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    }
   }
 
   getFileFormats(files?: FileDTO[]): string {
     if (!files || files.length === 0) return 'N/A';
-    
+
     const formats = new Set<string>();
     files.forEach(file => {
       const extension = file.name?.split('.').pop()?.toUpperCase();
       if (extension) formats.add(extension);
     });
-    
+
     return Array.from(formats).join(', ');
   }
 
   setupMedia() {
-    if (this.product && this.product.media && this.product.media.length > 0) {
-      this.selectedMedia = this.product.media[0];
+    if (this.product && this.product.files && this.product.files.length > 0) {
+      this.selectedMedia = {
+        type: 'image',
+        url: this.product.files[0].fileUrl
+      };
     }
   }
 
-  loadReviews() {
-    // Mock reviews data - in real app, this would come from API
-    this.reviews = [
-      {
-        id: 1,
-        name: 'John Doe',
-        avatar: this.getPlaceholderAvatar('J'),
-        rating: 5,
-        comment: 'Excellent quality! The 3D models are very detailed and well-optimized.',
-        date: new Date('2024-01-15')
-      },
-      {
-        id: 2,
-        name: 'Sarah Smith',
-        avatar: this.getPlaceholderAvatar('S'),
-        rating: 4,
-        comment: 'Great value for money. The documentation is comprehensive.',
-        date: new Date('2024-01-10')
-      }
-    ];
+  loadReviewsFromProduct(backendProduct: ProductDetailDTO) {
+    this.reviews = backendProduct.reviews;
   }
 
-  loadRelatedProducts() {
-    // Mock related products data - in real app, this would come from API
-    this.relatedProducts = [
-      {
-        id: 2,
-        title: 'Fantasy Character Pack',
-        creator: 'DigitalArt Studio',
-        creatorAvatar: this.getPlaceholderAvatar('D'),
-        creatorProducts: 24,
-        price: 24.99,
-        rating: 4.7,
-        ratingCount: 89,
-        category: '3D Design',
-        description: 'Fantasy character collection with unique designs.',
-        features: ['5 fantasy characters', 'Multiple animations', 'Texture variations'],
-        tags: ['Fantasy', '3D', 'Characters'],
-        badges: ['Popular'],
-        fileSize: '1.8 GB',
-        format: 'FBX, OBJ',
-        compatibility: 'Unity, Unreal',
-        license: 'Commercial',
-        updates: '1 Year Updates',
-        media: [{ type: 'image', url: this.getPlaceholderImage('Fantasy Pack', '#6c2bd9') }],
-        currency: 'USD',
-        productType: 'digital',
-        isInWishlist: false,
-        wishlistCount: 0,
-        salesCount: 0,
-        viewsCount: 0
-      },
-      {
-        id: 3,
-        title: 'Sci-Fi Environment Kit',
-        creator: 'DigitalArt Studio',
-        creatorAvatar: this.getPlaceholderAvatar('D'),
-        creatorProducts: 24,
-        price: 34.99,
-        rating: 4.9,
-        ratingCount: 156,
-        category: '3D Design',
-        description: 'Complete sci-fi environment with modular pieces.',
-        features: ['Modular design', 'PBR textures', 'Lighting setup'],
-        tags: ['Sci-Fi', 'Environment', 'Modular'],
-        badges: ['Best Seller'],
-        fileSize: '3.2 GB',
-        format: 'FBX, OBJ, PNG',
-        compatibility: 'Unity, Unreal, Blender',
-        license: 'Commercial',
-        updates: 'Lifetime Updates',
-        media: [{ type: 'image', url: this.getPlaceholderImage('Sci-Fi Kit', '#00d4ff') }],
-        currency: 'USD',
-        productType: 'digital',
-        isInWishlist: false,
-        wishlistCount: 0,
-        salesCount: 0,
-        viewsCount: 0
+  // Add review form logic
+  userReview: string = '';
+  userRating: number = 0;
+  submittingReview: boolean = false;
+  visibleReviews: number = 3;
+
+  setUserRating(star: number): void {
+    this.userRating = star;
+  }
+
+  submitReview(): void {
+  if (!this.userRating || !this.userReview.trim()) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Missing Information',
+      text: 'Both rating and review are required to submit your feedback!',
+      customClass: {
+        confirmButton: 'btn btn-primary'
       }
-    ];
+    });
+    return;
+  }
+
+  this.submittingReview = true;
+  this.productService.submitReview(this.product!.id, {
+    rating: this.userRating,
+    comment: this.userReview
+  }).subscribe({
+    next: (review: ReviewDTO) => {
+      // Add the new review to the reviews array (no need to refresh the whole product)
+      const newReview = {
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment || '',
+        userName: review.userName,
+        userAvatar: review.userAvatar,
+        createdAt: review.createdAt
+      };
+      this.product!.reviews.unshift(newReview);
+
+      // Update average rating
+      const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
+      this.product!.averageRating = totalRatings / this.product!.reviews.length;
+
+      // Reset form
+      this.userReview = '';
+      this.userRating = 0;
+      this.submittingReview = false;
+
+      // Show success notification
+      Swal.fire({
+        icon: 'success',
+        title: 'Thank You!',
+        text: 'Your review has been submitted successfully.',
+        customClass: {
+          confirmButton: 'btn btn-primary'
+        },
+        timer: 3000
+      });
+    },
+    error: (error) => {
+      console.error('Error submitting review:', error);
+      this.submittingReview = false;
+
+      // Handle error messages
+      const errorMessage = error.error?.includes('already reviewed')
+        ? 'You have already reviewed this product'
+        : error.error || 'Error submitting review. Please try again.';
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Submission Failed',
+        text: errorMessage,
+        customClass: {
+          confirmButton: 'btn btn-primary'
+        }
+      });
+    }
+  });
+}
+  loadRelatedProducts() {
+    // TODO: Implement API call to get related products
+    this.relatedProducts = [];
   }
 
   // Helper method to generate placeholder product images
@@ -368,20 +352,25 @@ export class ProductDetails implements OnInit {
   // Media gallery methods
   selectMedia(index: number) {
     this.selectedMediaIndex = index;
-    this.selectedMedia = this.product!.media[index];
+    if (this.product && this.product.files && this.product.files[index]) {
+      this.selectedMedia = {
+        type: 'image',
+        url: this.product.files[index].fileUrl
+      };
+    }
   }
 
   // Purchase methods
   addToCart() {
     // Add to cart logic
-    console.log('Added to cart:', this.product?.title);
+    console.log('Added to cart:', this.product?.name);
     // Redirect to checkout page
     this.router.navigate(['/checkout']);
   }
 
   buyNow() {
     // Buy now logic
-    console.log('Buying now:', this.product?.title);
+    console.log('Buying now:', this.product?.name);
     this.router.navigate(['/checkout']);
   }
 
@@ -395,8 +384,8 @@ export class ProductDetails implements OnInit {
   shareProduct() {
     if (navigator.share) {
       navigator.share({
-        title: this.product?.title,
-        text: `Check out this amazing product: ${this.product?.title}`,
+        title: this.product?.name,
+        text: `Check out this amazing product: ${this.product?.name}`,
         url: window.location.href
       });
     } else {
@@ -409,20 +398,13 @@ export class ProductDetails implements OnInit {
   // Creator methods
   viewCreator() {
     // Navigate to creator profile
-    console.log('Viewing creator:', this.product?.creator);
-  }
-
-  // Review methods
-  loadMoreReviews() {
-    // Load more reviews logic
-    console.log('Loading more reviews...');
-    this.hasMoreReviews = false;
+    console.log('Viewing creator:', { id: this.product?.creatorId, username: this.product?.creatorUsername });
   }
 
   // Rating distribution methods
   getRatingPercentage(rating: number): number {
     if (!this.product) return 0;
-    const totalReviews = this.product.ratingCount;
+    const totalReviews = this.product.reviews.length;
     // Mock distribution - in real app, this would come from API
     const distribution = { 5: 60, 4: 25, 3: 10, 2: 3, 1: 2 };
     return (distribution[rating as keyof typeof distribution] || 0);
@@ -431,7 +413,7 @@ export class ProductDetails implements OnInit {
   getRatingCount(rating: number): number {
     if (!this.product) return 0;
     const percentage = this.getRatingPercentage(rating);
-    return Math.round((percentage / 100) * this.product.ratingCount);
+    return Math.round((percentage / 100) * this.product.reviews.length);
   }
 
   // Theme methods
