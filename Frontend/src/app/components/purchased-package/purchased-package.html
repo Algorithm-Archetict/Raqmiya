@@ -10,7 +10,7 @@
   <!-- Product Header Section -->
   <div class="product-header-section">
     <div class="product-header-content">
-      <h1 class="product-title">{{ product?.title }}</h1>
+      <h1 class="product-title">{{ product?.productName }}</h1>
     </div>
   </div>
 
@@ -83,9 +83,9 @@
 
       <!-- Product Info -->
       <div class="product-info">
-        <h3>{{ product?.title }}</h3>
+        <h3>{{ product?.productName }}</h3>
         <p class="creator-link" (click)="viewCreator()">
-          by {{ product?.creator }}
+          by {{ product?.creatorUsername }}
         </p>
       </div>
     </div>
@@ -105,8 +105,8 @@
               <div class="file-details">
                 <h4 class="file-name">{{ file.name }}</h4>
                 <div class="file-meta">
-                  <span class="file-type">{{ file.type }}</span>
-                  <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                  <span class="file-type">{{ file.type || getFileType(file.name) }}</span>
+                  <span class="file-size">{{ formatFileSize(file.size || 'Unknown') }}</span>
                 </div>
               </div>
             </div>
@@ -136,12 +136,22 @@
       <!-- Product Description -->
       <div class="description-section">
         <h3>About This Product</h3>
-        <div class="description-content" [innerHTML]="product?.description"></div>
+        <div class="description-content" [innerHTML]="product?.productDescription"></div>
       </div>
 
       <!-- Download Guide -->
       <div class="guide-section">
         <div class="guide-content" [innerHTML]="product?.downloadGuide"></div>
+      </div>
+
+      <!-- Browse More Products -->
+      <div class="browse-more-section">
+        <h3>Discover More Products</h3>
+        <p>Find more amazing digital products from our creators</p>
+        <button class="btn btn-primary" (click)="browseMoreProducts()">
+          <i class="fas fa-search"></i>
+          Browse Products
+        </button>
       </div>
     </div>
   </div>

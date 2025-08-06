@@ -1,32 +1,35 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { OrderService } from '../../core/services/order.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface PurchasedProduct {
-  id: string;
-  title: string;
-  creator: string;
-  creatorId: string;
-  price: number;
+  productId: number;
+  productName: string;
+  productPermalink: string;
+  coverImageUrl?: string;
+  creatorUsername: string;
+  purchasePrice: number;
   purchaseDate: Date;
   orderId: string;
-  rating: number;
-  userRating?: number;
-  userReview?: string;
+  licenseStatus: string;
+  licenseExpiresAt?: Date;
   files: ProductFile[];
-  description: string;
+  productDescription: string;
   downloadGuide: string;
-  image: string;
 }
 
 interface ProductFile {
-  id: string;
+  id: number;
   name: string;
-  type: string;
-  size: string;
-  url: string;
-  icon: string;
+  fileUrl: string;
+  type?: string;
+  size?: string;
+  icon?: string;
 }
 
 @Component({
@@ -42,89 +45,59 @@ export class PurchasedPackage implements OnInit {
   isRatingSubmitted: boolean = false;
   isDownloading: boolean = false;
   downloadProgress: number = 0;
+  isLoading: boolean = false;
+  errorMessage: string = '';
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private orderService: OrderService,
+    private http: HttpClient
+  ) {}
 
   ngOnInit() {
     this.loadPurchasedProduct();
   }
 
   loadPurchasedProduct() {
-    // Mock purchased product data - in real app, this would come from API
-    this.product = {
-      id: '1',
-      title: 'Epic 3D Character Pack - Professional Game Assets',
-      creator: 'DigitalArt Studio',
-      creatorId: 'creator-1',
-      price: 29.99,
-      purchaseDate: new Date('2024-01-20'),
-      orderId: 'ORD-2024-001',
-      rating: 4.8,
-      userRating: 0,
-      userReview: '',
-      image: 'https://images.unsplash.com/photo-1744359678374-4769eacf44d6?q=80&w=764&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      files: [
-        {
-          id: '1',
-          name: '3D_Character_Pack_v1.0.zip',
-          type: 'ZIP Archive',
-          size: '2.4 GB',
-          url: '#',
-          icon: 'fas fa-file-archive'
-        },
-        {
-          id: '2',
-          name: 'Documentation.pdf',
-          type: 'PDF Document',
-          size: '15.2 MB',
-          url: '#',
-          icon: 'fas fa-file-pdf'
-        },
-        {
-          id: '3',
-          name: 'Setup_Guide.txt',
-          type: 'Text Document',
-          size: '2.1 MB',
-          url: '#',
-          icon: 'fas fa-file-alt'
-        }
-      ],
-      description: `
-        <p>This comprehensive 3D character pack includes everything you need to create stunning game characters. 
-        Perfect for indie developers and professional studios alike.</p>
-        
-        <h4>What's Included:</h4>
-        <ul>
-          <li>10 fully rigged 3D characters</li>
-          <li>Multiple texture variations</li>
-          <li>Animation sets for each character</li>
-          <li>LOD models for performance optimization</li>
-          <li>Complete documentation and setup guides</li>
-        </ul>
-      `,
-      downloadGuide: `
-        <h4>Download Instructions:</h4>
-        <ol>
-          <li>Click the "Download" button next to the file you want to download</li>
-          <li>Wait for the download to complete</li>
-          <li>Extract the ZIP file to your desired location</li>
-          <li>Follow the setup guide included in the package</li>
-          <li>Import the assets into your game engine</li>
-        </ol>
-        
-        <p><strong>Note:</strong> You can download these files unlimited times. Keep your purchase receipt for future reference.</p>
-      `
-    };
+    this.isLoading = true;
+    this.errorMessage = '';
+    
+    // Get product ID from route params
+    this.route.params.subscribe(params => {
+      const productId = params['id'];
+      if (productId) {
+        this.getProductDetails(productId);
+      } else {
+        this.errorMessage = 'Product ID not found.';
+        this.isLoading = false;
+      }
+    });
+  }
 
-    // Load user's previous rating if exists
-    if (this.product.userRating) {
-      this.userRating = this.product.userRating;
-      this.isRatingSubmitted = true;
-    }
+  getProductDetails(productId: number) {
+    // Get the specific purchased product directly
+    this.orderService.getPurchasedProduct(productId).subscribe({
+      next: (product) => {
+        console.log('Found product:', product);
+        this.product = product;
+        if (!this.product) {
+          this.errorMessage = 'Product not found or you do not have access to it.';
+        } else {
+          console.log('Product files:', this.product.files);
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading product details:', error);
+        this.errorMessage = 'Failed to load product details.';
+        this.isLoading = false;
+      }
+    });
   }
 
   backToLibrary() {
-    this.router.navigate(['/library']);
+    this.router.navigate(['/purchased-products']);
   }
 
   setRating(rating: number) {
@@ -136,12 +109,6 @@ export class PurchasedPackage implements OnInit {
       // In real app, this would send to API
       console.log('Rating submitted:', this.userRating, 'Review:', this.userReview);
       this.isRatingSubmitted = true;
-      
-      // Update the product rating
-      if (this.product) {
-        this.product.userRating = this.userRating;
-        this.product.userReview = this.userReview;
-      }
     }
   }
 
@@ -150,9 +117,10 @@ export class PurchasedPackage implements OnInit {
   }
 
   viewReceipt() {
-    // In real app, this would open receipt modal or navigate to receipt page
-    console.log('Viewing receipt for order:', this.product?.orderId);
-    alert(`Receipt for Order: ${this.product?.orderId}\nDate: ${this.product?.purchaseDate.toLocaleDateString()}\nAmount: $${this.product?.price}`);
+    if (this.product) {
+      console.log('Viewing receipt for order:', this.product.orderId);
+      alert(`Receipt for Order: ${this.product.orderId}\nDate: ${this.product.purchaseDate.toLocaleDateString()}\nAmount: $${this.product.purchasePrice}`);
+    }
   }
 
   resendReceipt() {
@@ -162,28 +130,91 @@ export class PurchasedPackage implements OnInit {
   }
 
   async downloadFile(file: ProductFile) {
+    console.log('Download file called:', file);
+    if (!this.product) {
+      console.error('No product found');
+      return;
+    }
+    
     this.isDownloading = true;
     this.downloadProgress = 0;
 
-    // Simulate download progress
-    const interval = setInterval(() => {
-      this.downloadProgress += Math.random() * 20;
-      if (this.downloadProgress >= 100) {
-        this.downloadProgress = 100;
-        clearInterval(interval);
-        this.isDownloading = false;
+    try {
+      // Simulate download progress
+      const interval = setInterval(() => {
+        this.downloadProgress += Math.random() * 20;
+        if (this.downloadProgress >= 100) {
+          this.downloadProgress = 100;
+          clearInterval(interval);
+          this.isDownloading = false;
+          
+          // Trigger actual download
+          this.triggerDownload(file);
+        }
+      }, 200);
+    } catch (error) {
+      console.error('Download error:', error);
+      this.isDownloading = false;
+      alert('Download failed. Please try again.');
+    }
+  }
+
+  private triggerDownload(file: ProductFile) {
+    console.log('Trigger download called for file:', file);
+    if (!this.product) {
+      console.error('No product found in triggerDownload');
+      return;
+    }
+    
+    // Create download URL using the correct API endpoint
+    const downloadUrl = `${environment.apiUrl}/download/file/${this.product.productId}/${file.id}`;
+    console.log('Download URL:', downloadUrl);
+    
+    // Use HTTP client to download file with proper authentication
+    this.http.get(downloadUrl, { 
+      responseType: 'blob',
+      observe: 'response'
+    }).subscribe({
+      next: (response) => {
+        // Create blob URL and trigger download
+        const blob = new Blob([response.body!], { type: response.headers.get('content-type') || 'application/octet-stream' });
+        const url = window.URL.createObjectURL(blob);
         
-        // In real app, this would trigger actual file download
-        console.log('Downloading file:', file.name);
-        alert(`Download started for: ${file.name}`);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up blob URL
+        window.URL.revokeObjectURL(url);
+        
+        console.log('Download completed successfully for:', file.name);
+        alert('Download completed successfully!');
+      },
+      error: (error) => {
+        console.error('Download failed:', error);
+        if (error.status === 401) {
+          alert('Download failed: Please log in again to download files.');
+        } else if (error.status === 403) {
+          alert('Download failed: You do not have access to this file.');
+        } else if (error.status === 404) {
+          alert('Download failed: File not found.');
+        } else {
+          alert('Download failed: Please try again later.');
+        }
       }
-    }, 200);
+    });
   }
 
   viewCreator() {
     // In real app, this would navigate to creator profile
-    console.log('Viewing creator:', this.product?.creator);
-    // this.router.navigate(['/creator', this.product?.creatorId]);
+    console.log('Viewing creator:', this.product?.creatorUsername);
+  }
+
+  browseMoreProducts() {
+    this.router.navigate(['/discover']);
   }
 
   getFileIcon(file: ProductFile): string {
@@ -212,6 +243,24 @@ export class PurchasedPackage implements OnInit {
 
   formatFileSize(size: string): string {
     return size;
+  }
+
+  getFileType(fileName: string): string {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const typeMap: { [key: string]: string } = {
+      'pdf': 'PDF Document',
+      'zip': 'ZIP Archive',
+      'jpg': 'JPEG Image',
+      'jpeg': 'JPEG Image',
+      'png': 'PNG Image',
+      'mp4': 'MP4 Video',
+      'txt': 'Text File',
+      'doc': 'Word Document',
+      'docx': 'Word Document',
+      'xls': 'Excel Spreadsheet',
+      'xlsx': 'Excel Spreadsheet'
+    };
+    return typeMap[extension || ''] || 'File';
   }
 
   getRatingText(): string {
