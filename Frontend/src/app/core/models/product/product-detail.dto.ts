@@ -38,4 +38,11 @@ export interface ProductDetailDTO {
   salesCount: number;
   viewsCount: number;
   isInWishlist: boolean; // Specific to user context
+  // Additional properties for UI
+  downloadCount?: number;
+  creator?: {
+    name: string;
+    avatarUrl?: string;
+    productsCount?: number;
+  };
 }
