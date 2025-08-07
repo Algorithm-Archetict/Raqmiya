@@ -12,7 +12,7 @@
             </a>
 
             <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current">{{ product?.categories?.[0]?.name }}</span>
+            <span class="breadcrumb-current">{{ product?.category?.name }}</span>
 
             <span><i class="bi bi-currency-dollar"></i> {{ product?.price | currency:product?.currency:'symbol' }}</span>
           </nav>

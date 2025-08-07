@@ -238,14 +238,14 @@
 }
 
 /* Product Types */
-.product-types {
+.product-categories {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 32px;
 }
 
-.product-type-card {
+.product-category-card {
   width: 253px;
   padding: 24px;
   background: var(--bg-secondary);
@@ -256,13 +256,13 @@
   position: relative;
 }
 
-.product-type-card:hover {
+.product-category-card:hover {
   border-color: var(--primary-color);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-.product-type-card.selected {
+.product-category-card.selected {
   border-color: var(--primary-color);
   background: var(--bg-glass);
   box-shadow: var(--shadow-lg);

@@ -97,10 +97,10 @@
               </div>
             </div>
             
-            <div class="product-types">
+            <div class="product-categories">
               <div 
-                class="product-type-card" 
-                *ngFor="let type of productTypes"
+                class="product-category-card" 
+                *ngFor="let type of productCategories"
                 [class.selected]="type.selected"
                 (click)="selectProductType(type.id)"
               >

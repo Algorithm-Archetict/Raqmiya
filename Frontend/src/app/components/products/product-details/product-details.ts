@@ -131,7 +131,7 @@ export class ProductDetails implements OnInit {
       features: backendProduct.features || [],
       reviews: backendProduct.reviews || [],
       tags: backendProduct.tags || [],
-      categories: backendProduct.categories || [],
+      category: backendProduct.category,
       compatibility: backendProduct.compatibility || 'Universal',
       license: backendProduct.license || 'Standard License',
       updates: backendProduct.updates || 'Lifetime Updates',

@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
 import { SearchHeader } from '../shared/search-header/search-header';
+import { CategoryDTO } from '../../core/models/product/category.dto';
 
 interface Product {
   id: number;
@@ -14,7 +15,7 @@ interface Product {
   rating: number;
   ratingCount: number;
   image: string;
-  category: string;
+  category: CategoryDTO;
   tags: string[];
   badge?: string;
 }
@@ -84,8 +85,8 @@ export class Discover implements OnInit {
           rating: product.averageRating,
           ratingCount: product.salesCount, // Using sales count as rating count for demo
           image: this.ensureFullUrl(product.coverImageUrl),
-          category: 'design', // Default category, you might want to add this to the DTO
-          tags: ['Design'], // Default tags, you might want to add this to the DTO
+          category: product.category, // Use the actual category object
+          tags: [], // Assuming tags are not directly in ProductListItemDTO for now
           badge: product.isPublic ? 'Public' : 'Private'
         }));
 
@@ -168,7 +169,7 @@ export class Discover implements OnInit {
 
     // Category filter
     if (this.selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category === this.selectedCategory);
+      filtered = filtered.filter(product => product.category.name.toLowerCase() === this.selectedCategory.toLowerCase());
     }
 
     // Price filter
@@ -249,7 +250,7 @@ export class Discover implements OnInit {
             rating: product.averageRating,
             ratingCount: product.salesCount,
             image: this.ensureFullUrl(product.coverImageUrl),
-            category: 'design',
+            category: product.category,
             tags: ['Design'],
             badge: product.isPublic ? 'Public' : 'Private'
           }));

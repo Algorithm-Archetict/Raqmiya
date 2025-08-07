@@ -143,6 +143,22 @@
                   <span *ngIf="productForm.get('productType')?.errors?.['required']">Product type is required</span>
                 </div>
               </div>
+
+              <div class="form-group">
+                <label for="productCategory" class="form-label">Category *</label>
+                <select 
+                  id="productCategory"
+                  class="form-select"
+                  formControlName="categoryId"
+                  [class.error]="productForm.get('categoryId')?.invalid && productForm.get('categoryId')?.touched"
+                >
+                  <option value="">Select a category</option>
+                  <!-- <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option> -->
+                </select>
+                <div class="error-message" *ngIf="productForm.get('categoryId')?.invalid && productForm.get('categoryId')?.touched">
+                  <span *ngIf="productForm.get('categoryId')?.errors?.['required']">Category is required</span>
+                </div>
+              </div>
               
               <div class="form-group">
                 <label for="productPermalink" class="form-label">Permalink</label>
