@@ -48,14 +48,21 @@ export class AuthService {
           const user = JSON.parse(userData);
           this._currentUser.next(user);
           this._isLoggedIn.next(true);
+          // Refresh user data from server to ensure it's up to date
+          this.fetchUserProfile().subscribe();
         } catch (error) {
           console.error('Error parsing user data:', error);
           // Clear invalid data and redirect to login
           this.logout();
         }
       } else {
-        // No user data found, clear token and redirect to login
-        this.logout();
+        // No user data found, try to fetch from server
+        this.fetchUserProfile().subscribe({
+          error: () => {
+            // If fetch fails, clear token and redirect to login
+            this.logout();
+          }
+        });
       }
     }
   }
@@ -85,17 +92,8 @@ export class AuthService {
         tap(response => {
           if (response.success && response.token) {
             localStorage.setItem('authToken', response.token);
-            if (response.username) {
-              const user: User = {
-                id: '1',
-                username: response.username,
-                email: response.email || '',
-                roles: response.roles || []
-              };
-              localStorage.setItem('userData', JSON.stringify(user));
-              this._currentUser.next(user);
-            }
-            this._isLoggedIn.next(true);
+            // Fetch complete user profile after successful login
+            this.fetchUserProfile().subscribe();
           }
         })
       );
@@ -154,6 +152,21 @@ export class AuthService {
   getUserRole(): string | null {
     const user = this._currentUser.getValue();
     return user?.roles?.[0] || null;
+  }
+
+  // Fetch complete user profile from backend
+  fetchUserProfile(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/users/me`).pipe(
+      tap(user => {
+        if (user) {
+          // Add roles array for compatibility
+          user.roles = user.role ? [user.role] : [];
+          localStorage.setItem('userData', JSON.stringify(user));
+          this._currentUser.next(user);
+          this._isLoggedIn.next(true);
+        }
+      })
+    );
   }
 
   // Example: Check token validity (e.g., against an API endpoint)

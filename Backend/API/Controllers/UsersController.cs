@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Raqmiya.Infrastructure;
 using AutoMapper;
+using Core.Interfaces;
 
 namespace API.Controllers
 {
@@ -13,18 +14,27 @@ namespace API.Controllers
     /// Controller for user profile management.
     /// </summary>
     [ApiController]
-    [Route(UserRoutes.Users)]
+    [Route("api/users")]
     public class UsersController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
         private readonly ILogger<UsersController> _logger;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
+        private readonly IWebHostEnvironment _environment;
 
-        public UsersController(IUserRepository userRepository, ILogger<UsersController> logger, IMapper mapper)
+        public UsersController(
+            IUserRepository userRepository, 
+            ILogger<UsersController> logger, 
+            IMapper mapper,
+            IEmailService emailService,
+            IWebHostEnvironment environment)
         {
             _userRepository = userRepository;
             _logger = logger;
             _mapper = mapper;
+            _emailService = emailService;
+            _environment = environment;
         }
 
         /// <summary>
@@ -41,7 +51,18 @@ namespace API.Controllers
                 var userId = GetCurrentUserId();
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null) return NotFound();
-                return Ok(_mapper.Map<UserProfileDTO>(user));
+                
+                var userProfile = _mapper.Map<UserProfileDTO>(user);
+                
+                // Convert relative image URL to full URL if it exists
+                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) && !userProfile.ProfileImageUrl.StartsWith("http"))
+                {
+                    var request = HttpContext.Request;
+                    var baseUrl = $"{request.Scheme}://{request.Host}";
+                    userProfile.ProfileImageUrl = $"{baseUrl}{userProfile.ProfileImageUrl}";
+                }
+                
+                return Ok(userProfile);
             }
             catch (Exception ex)
             {
@@ -55,22 +76,42 @@ namespace API.Controllers
         /// </summary>
         [HttpPut("me")]
         [Authorize]
-        [ProducesResponseType(typeof(UserProfileDTO), 200)]
+        [ProducesResponseType(typeof(UserProfileUpdateResponseDTO), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
-        public async Task<IActionResult> UpdateMe([FromBody] UserUpdateDTO dto)
+        public async Task<ActionResult<UserProfileUpdateResponseDTO>> UpdateMe([FromBody] UserUpdateDTO dto)
         {
-            // ModelState check removed; FluentValidation will handle validation errors
             try
             {
                 var userId = GetCurrentUserId();
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null) return NotFound();
+
+                // Update user properties
                 if (!string.IsNullOrWhiteSpace(dto.Username)) user.Username = dto.Username;
                 if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) user.ProfileDescription = dto.ProfileDescription;
                 if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) user.ProfileImageUrl = dto.ProfileImageUrl;
+
                 await _userRepository.UpdateAsync(user);
-                return Ok(_mapper.Map<UserProfileDTO>(user));
+
+                var userProfile = _mapper.Map<UserProfileDTO>(user);
+                
+                // Convert relative image URL to full URL if it exists
+                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) && !userProfile.ProfileImageUrl.StartsWith("http"))
+                {
+                    var request = HttpContext.Request;
+                    var baseUrl = $"{request.Scheme}://{request.Host}";
+                    userProfile.ProfileImageUrl = $"{baseUrl}{userProfile.ProfileImageUrl}";
+                }
+
+                var response = new UserProfileUpdateResponseDTO
+                {
+                    Success = true,
+                    Message = "Profile updated successfully",
+                    User = userProfile
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -84,35 +125,169 @@ namespace API.Controllers
         /// </summary>
         [HttpPost("me/change-password")]
         [Authorize]
-        [ProducesResponseType(200)]
+        [ProducesResponseType(typeof(ChangePasswordResponseDTO), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
+        public async Task<ActionResult<ChangePasswordResponseDTO>> ChangePassword([FromBody] ChangePasswordDTO dto)
         {
-            // ModelState check removed; FluentValidation will handle validation errors
             try
             {
                 var userId = GetCurrentUserId();
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null) return NotFound();
+
+                // Verify current password
                 var saltBytes = Convert.FromBase64String(user.Salt);
                 using (var pbkdf2 = new Rfc2898DeriveBytes(dto.CurrentPassword, saltBytes, 10000, HashAlgorithmName.SHA256))
                 {
                     var hash = Convert.ToBase64String(pbkdf2.GetBytes(32));
                     if (hash != user.HashedPassword)
-                        return BadRequest(ErrorMessages.UserCurrentPasswordIncorrect);
+                    {
+                        var errorResponse = new ChangePasswordResponseDTO
+                        {
+                            Success = false,
+                            Message = "Current password is incorrect"
+                        };
+                        return BadRequest(errorResponse);
+                    }
                 }
+
+                // Update password
                 var newSalt = GenerateSalt();
                 var newHash = HashPassword(dto.NewPassword, newSalt);
                 user.Salt = newSalt;
                 user.HashedPassword = newHash;
+
                 await _userRepository.UpdateAsync(user);
-                return Ok("Password changed successfully.");
+
+                // Send email notification
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _emailService.SendPasswordChangeNotificationAsync(user.Email, user.Username);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send password change notification email");
+                    }
+                });
+
+                var response = new ChangePasswordResponseDTO
+                {
+                    Success = true,
+                    Message = "Password changed successfully"
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error changing password");
+                var errorResponse = new ChangePasswordResponseDTO
+                {
+                    Success = false,
+                    Message = "An error occurred while changing the password"
+                };
                 return Problem("An error occurred while changing the password.");
+            }
+        }
+
+        /// <summary>
+        /// Upload profile image for the current authenticated user.
+        /// </summary>
+        [HttpPost("me/upload-image")]
+        [Authorize]
+        [ProducesResponseType(typeof(UploadImageResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<ActionResult<UploadImageResponseDTO>> UploadProfileImage(IFormFile image)
+        {
+            try
+            {
+                if (image == null || image.Length == 0)
+                {
+                    var errorResponse = new UploadImageResponseDTO
+                    {
+                        Success = false,
+                        Message = "No image file provided"
+                    };
+                    return BadRequest(errorResponse);
+                }
+
+                // Validate file size (max 5MB)
+                if (image.Length > 5 * 1024 * 1024)
+                {
+                    var errorResponse = new UploadImageResponseDTO
+                    {
+                        Success = false,
+                        Message = "File size must be less than 5MB"
+                    };
+                    return BadRequest(errorResponse);
+                }
+
+                // Validate file type
+                var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
+                if (!allowedTypes.Contains(image.ContentType.ToLower()))
+                {
+                    var errorResponse = new UploadImageResponseDTO
+                    {
+                        Success = false,
+                        Message = "Invalid file type. Please upload a JPG, PNG, or GIF image"
+                    };
+                    return BadRequest(errorResponse);
+                }
+
+                var userId = GetCurrentUserId();
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null) return NotFound();
+
+                // Create uploads directory if it doesn't exist
+                var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "profile-images");
+                if (!Directory.Exists(uploadsPath))
+                {
+                    Directory.CreateDirectory(uploadsPath);
+                }
+
+                // Generate unique filename
+                var fileExtension = Path.GetExtension(image.FileName);
+                var fileName = $"{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
+                var filePath = Path.Combine(uploadsPath, fileName);
+
+                // Save file
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(stream);
+                }
+
+                // Update user profile with new image URL
+                var imageUrl = $"/uploads/profile-images/{fileName}";
+                user.ProfileImageUrl = imageUrl;
+                await _userRepository.UpdateAsync(user);
+
+                // Get the full URL for the response
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                var fullImageUrl = $"{baseUrl}{imageUrl}";
+
+                var response = new UploadImageResponseDTO
+                {
+                    Success = true,
+                    Message = "Profile image uploaded successfully",
+                    ImageUrl = fullImageUrl
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading profile image");
+                var errorResponse = new UploadImageResponseDTO
+                {
+                    Success = false,
+                    Message = "An error occurred while uploading the image"
+                };
+                return Problem("An error occurred while uploading the image.");
             }
         }
 

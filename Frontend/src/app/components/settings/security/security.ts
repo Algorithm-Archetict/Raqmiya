@@ -1,6 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
+import { UserService } from '../../../core/services/user.service';
+import { ChangePasswordRequest } from '../../../core/models/user/user-profile.model';
 
 @Component({
   selector: 'app-security',
@@ -8,19 +11,30 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './security.html',
   styleUrl: './security.css'
 })
-export class Security {
-  securityData = {
+export class Security implements OnDestroy {
+  securityData: ChangePasswordRequest = {
     currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    newPassword: ''
   };
 
+  confirmPassword = '';
   showCurrentPassword = false;
   showNewPassword = false;
   showConfirmPassword = false;
+  isUpdating = false;
+  errorMessage = '';
+  successMessage = '';
+  private destroy$ = new Subject<void>();
+
+  constructor(private userService: UserService) {}
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   get passwordsMatch(): boolean {
-    return this.securityData.newPassword === this.securityData.confirmPassword;
+    return this.securityData.newPassword === this.confirmPassword;
   }
 
   get hasMinLength(): boolean {
@@ -97,7 +111,7 @@ export class Security {
   canUpdatePassword(): boolean {
     return this.securityData.currentPassword.length > 0 &&
            this.securityData.newPassword.length > 0 &&
-           this.securityData.confirmPassword.length > 0 &&
+           this.confirmPassword.length > 0 &&
            this.passwordsMatch &&
            this.hasMinLength &&
            this.hasUppercase &&
@@ -108,20 +122,54 @@ export class Security {
 
   updatePassword() {
     if (!this.canUpdatePassword()) {
+      this.errorMessage = 'Please ensure all password requirements are met.';
       return;
     }
 
-    // TODO: Implement API call to update password
-    console.log('Updating password...', {
-      currentPassword: this.securityData.currentPassword,
-      newPassword: this.securityData.newPassword
-    });
+    this.isUpdating = true;
+    this.errorMessage = '';
+    this.successMessage = '';
 
-    // Reset form after successful update
+    this.userService.changePassword(this.securityData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isUpdating = false;
+          if (response.success) {
+            this.successMessage = 'Password changed successfully! You will receive a confirmation email shortly.';
+            this.resetForm();
+            this.clearMessagesAfterDelay();
+          } else {
+            this.errorMessage = response.message || 'Failed to change password';
+          }
+        },
+        error: (error) => {
+          this.isUpdating = false;
+          console.error('Error changing password:', error);
+          if (error.status === 400) {
+            this.errorMessage = 'Current password is incorrect.';
+          } else {
+            this.errorMessage = 'Failed to change password. Please try again.';
+          }
+        }
+      });
+  }
+
+  private resetForm() {
     this.securityData = {
       currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+      newPassword: ''
     };
+    this.confirmPassword = '';
+    this.showCurrentPassword = false;
+    this.showNewPassword = false;
+    this.showConfirmPassword = false;
+  }
+
+  private clearMessagesAfterDelay() {
+    setTimeout(() => {
+      this.errorMessage = '';
+      this.successMessage = '';
+    }, 5000);
   }
 } 

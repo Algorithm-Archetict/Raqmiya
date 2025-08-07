@@ -30,6 +30,7 @@ export const routes: Routes = [
     // Public routes
     {path:"discover",component:Discover},
     {path:"discover/:id",component:ProductDetails},
+    {path:"login", redirectTo:"auth/login", pathMatch:"full"}, // Redirect /login to /auth/login
     {path:"auth/login", component:Login},
     {path:"auth/register", component:Register},
     { path: "products/:id/reviews", component: AllReviews },
