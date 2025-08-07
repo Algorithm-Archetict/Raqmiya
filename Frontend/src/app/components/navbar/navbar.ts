@@ -74,8 +74,8 @@ export class Navbar implements OnInit, OnDestroy {
   }
 
   getUserAvatar(): string | null {
-    // Return user avatar if available, otherwise use initials fallback
-    return this.currentUser?.avatar || null;
+    // Return user profile image if available, otherwise use initials fallback
+    return this.currentUser?.profileImageUrl || null;
   }
 
   getUserInitials(): string {
