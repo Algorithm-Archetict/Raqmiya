@@ -101,7 +101,7 @@ namespace Raqmiya.Infrastructure.Data
                     Description = "A beginner's guide to C#.",
                     Price = 19.99m,
                     Currency = "USD",
-                    ProductType = "digital_download",
+                    //ProductType = "digital_download",
                     CreatorId = creator.Id,
                     IsPublic = true,
                     Permalink = "learn-csharp-24h",

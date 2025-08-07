@@ -46,7 +46,7 @@ namespace Core.Services
                 Description = product.Description,
                 Price = product.Price,
                 Currency = product.Currency,
-                ProductType = product.ProductType,
+                //ProductType = product.ProductType,
                 CoverImageUrl = product.CoverImageUrl,
                 ThumbnailImageUrl = product.ThumbnailImageUrl,
                 PreviewVideoUrl = product.PreviewVideoUrl,
@@ -190,7 +190,7 @@ namespace Core.Services
                 Description = productDto.Description,
                 Price = productDto.Price,
                 Currency = productDto.Currency,
-                ProductType = productDto.ProductType,
+                //ProductType = productDto.ProductType,
                 CoverImageUrl = productDto.CoverImageUrl,
                 ThumbnailImageUrl = productDto.ThumbnailImageUrl,
                 PreviewVideoUrl = productDto.PreviewVideoUrl,
@@ -258,7 +258,7 @@ namespace Core.Services
             product.Description = productDto.Description;
             product.Price = productDto.Price;
             product.Currency = productDto.Currency;
-            product.ProductType = productDto.ProductType;
+            //product.ProductType = productDto.ProductType;
             
             // Only update image URLs if they are provided (not null/undefined)
             if (!string.IsNullOrEmpty(productDto.CoverImageUrl))
