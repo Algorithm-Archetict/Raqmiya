@@ -1,0 +1,45 @@
+.epic-footer {
+    background: rgba(18, 18, 18, 0.8); /* Epic-like dark glass */
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.4);
+    color: #b0b0b0; /* Muted light gray */
+  }
+  
+  .epic-footer a,
+  .epic-footer .nav-link {
+    color: #b0b0b0;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+  }
+  
+  .epic-footer .nav-link:hover {
+    color: #ffffff;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+  }
+  
+  .epic-footer svg {
+    fill: #ffffff;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+  }
+  
+  .epic-footer svg:hover {
+    opacity: 1;
+  }
+  
+  /* Responsive tweaks (optional) */
+  @media (max-width: 768px) {
+    .epic-footer {
+      text-align: center;
+      flex-direction: column;
+      gap: 1rem;
+    }
+  
+    .epic-footer ul {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+  

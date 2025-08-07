@@ -4,6 +4,17 @@
     <p class="section-description">Update your password and security preferences</p>
   </div>
 
+  <!-- Error and Success Messages -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <i class="fas fa-exclamation-circle"></i>
+    {{ errorMessage }}
+  </div>
+
+  <div class="alert alert-success" *ngIf="successMessage">
+    <i class="fas fa-check-circle"></i>
+    {{ successMessage }}
+  </div>
+
   <div class="security-form">
     <!-- Current Password -->
     <div class="form-group">
@@ -15,11 +26,14 @@
           name="currentPassword"
           [(ngModel)]="securityData.currentPassword"
           class="form-input"
-          placeholder="Enter your current password">
+          placeholder="Enter your current password"
+          autocomplete="current-password"
+          [disabled]="isUpdating">
         <button 
           type="button" 
           class="password-toggle"
-          (click)="toggleCurrentPassword()">
+          (click)="toggleCurrentPassword()"
+          [disabled]="isUpdating">
           <i [class]="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
         </button>
       </div>
@@ -35,11 +49,14 @@
           name="newPassword"
           [(ngModel)]="securityData.newPassword"
           class="form-input"
-          placeholder="Enter your new password">
+          placeholder="Enter your new password"
+          autocomplete="new-password"
+          [disabled]="isUpdating">
         <button 
           type="button" 
           class="password-toggle"
-          (click)="toggleNewPassword()">
+          (click)="toggleNewPassword()"
+          [disabled]="isUpdating">
           <i [class]="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
         </button>
       </div>
@@ -59,18 +76,21 @@
           [type]="showConfirmPassword ? 'text' : 'password'"
           id="confirmPassword" 
           name="confirmPassword"
-          [(ngModel)]="securityData.confirmPassword"
+          [(ngModel)]="confirmPassword"
           class="form-input"
-          [class.error]="!passwordsMatch && securityData.confirmPassword"
-          placeholder="Confirm your new password">
+          [class.error]="!passwordsMatch && confirmPassword"
+          placeholder="Confirm your new password"
+          autocomplete="new-password"
+          [disabled]="isUpdating">
         <button 
           type="button" 
           class="password-toggle"
-          (click)="toggleConfirmPassword()">
+          (click)="toggleConfirmPassword()"
+          [disabled]="isUpdating">
           <i [class]="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
         </button>
       </div>
-      <div class="form-error" *ngIf="!passwordsMatch && securityData.confirmPassword">
+      <div class="form-error" *ngIf="!passwordsMatch && confirmPassword">
         Passwords do not match
       </div>
     </div>
@@ -107,10 +127,11 @@
       <button 
         type="button" 
         class="btn btn-primary"
-        [disabled]="!canUpdatePassword()"
+        [disabled]="!canUpdatePassword() || isUpdating"
         (click)="updatePassword()">
-        <i class="fas fa-key"></i>
-        Update Password
+        <i class="fas fa-key" *ngIf="!isUpdating"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="isUpdating"></i>
+        {{ isUpdating ? 'Updating Password...' : 'Update Password' }}
       </button>
     </div>
   </div>

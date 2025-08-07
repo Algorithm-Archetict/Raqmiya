@@ -73,7 +73,13 @@ namespace API.Controllers
         [ProducesResponseType(401)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO request)
         {
-            _logger.LogInformation(LogMessages.LoginAttempt, request.EmailOrUsername);
+            if (request == null)
+            {
+                _logger.LogWarning("Login request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            _logger.LogInformation("Login attempt for: {EmailOrUsername}", request.EmailOrUsername);
 
             try
             {
