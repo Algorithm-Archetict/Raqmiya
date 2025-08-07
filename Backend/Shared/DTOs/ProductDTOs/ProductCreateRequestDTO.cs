@@ -59,7 +59,7 @@ namespace Shared.DTOs.ProductDTOs
         [StringLength(100, ErrorMessage = "Updates cannot exceed 100 characters.")]
         public string? Updates { get; set; }
 
-        public List<int> CategoryIds { get; set; } = new List<int>();
+        public int CategoryId { get; set; }
         public List<int> TagIds { get; set; } = new List<int>();
     }
 }

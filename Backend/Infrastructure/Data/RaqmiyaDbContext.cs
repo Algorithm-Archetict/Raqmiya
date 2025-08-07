@@ -17,7 +17,7 @@ namespace Raqmiya.Infrastructure
         public DbSet<Review> Reviews { get; set; } = default!;
         public DbSet<WishlistItem> WishlistItems { get; set; } = default!;
         public DbSet<ProductView> ProductViews { get; set; } = default!;
-        public DbSet<ProductCategory> ProductCategories { get; set; } = default!;
+        
         public DbSet<ProductTag> ProductTags { get; set; } = default!;
         public DbSet<AddedFile> Files { get; set; } = default!; // Renamed if conflict with System.IO.File
         public DbSet<Variant> Variants { get; set; } = default!;
@@ -38,8 +38,7 @@ namespace Raqmiya.Infrastructure
             base.OnModelCreating(modelBuilder);
 
             // Configure composite primary keys for join tables
-            modelBuilder.Entity<ProductCategory>()
-                .HasKey(pc => new { pc.ProductId, pc.CategoryId });
+            
 
             modelBuilder.Entity<ProductTag>()
                 .HasKey(pt => new { pt.ProductId, pt.TagId });
@@ -52,10 +51,17 @@ namespace Raqmiya.Infrastructure
 
             // Configure relationships
             modelBuilder.Entity<Product>()
-                .HasOne(p => p.Creator)
-                .WithMany(u => u.Products)
-                .HasForeignKey(p => p.CreatorId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevent cascading delete if creator has products
+                .HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Product>()
+    .HasOne(p => p.Creator)
+    .WithMany(u => u.Products)
+    .HasForeignKey(p => p.CreatorId)
+    .OnDelete(DeleteBehavior.Restrict); // Prevent multiple cascade paths
+
 
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.User)
@@ -87,17 +93,7 @@ namespace Raqmiya.Infrastructure
                 .HasForeignKey(pv => pv.ProductId)
                 .OnDelete(DeleteBehavior.Cascade); // Views are deleted with product
 
-            modelBuilder.Entity<ProductCategory>()
-                .HasOne(pc => pc.Product)
-                .WithMany(p => p.ProductCategories)
-                .HasForeignKey(pc => pc.ProductId)
-                .OnDelete(DeleteBehavior.Cascade); // Join entry deleted with product
-
-            modelBuilder.Entity<ProductCategory>()
-                .HasOne(pc => pc.Category)
-                .WithMany(c => c.ProductCategories)
-                .HasForeignKey(pc => pc.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict); // Keep category if products reference it
+            
 
             modelBuilder.Entity<ProductTag>()
                 .HasOne(pt => pt.Product)

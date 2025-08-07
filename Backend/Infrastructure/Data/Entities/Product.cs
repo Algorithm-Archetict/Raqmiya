@@ -40,7 +40,8 @@ namespace Raqmiya.Infrastructure
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
 
-        public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+        public int CategoryId { get; set; }
+        public Category Category { get; set; } = null!;
 
 
         //Tags

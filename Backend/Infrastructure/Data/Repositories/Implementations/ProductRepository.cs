@@ -91,7 +91,7 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.OfferCodes)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .Include(p => p.Subscriptions)
-                .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
+                .Include(p => p.Category)
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                 .Include(p => p.WishlistItems)
                 .Include(p => p.ProductViews)
@@ -105,7 +105,7 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.Variants)
                 .Include(p => p.OfferCodes)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
+                .Include(p => p.Category)
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                 .Include(p => p.WishlistItems)
                 .Include(p => p.OrderItems)
@@ -131,16 +131,16 @@ namespace Raqmiya.Infrastructure
         {
             var query = _context.Products
                 .AsNoTracking()
-                .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
+                .Include(p => p.Category)
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId));
+                .Where(p => p.CategoryId == categoryId);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
         public async Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId))
+                .Where(p => p.CategoryId == categoryId)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -276,23 +276,17 @@ namespace Raqmiya.Infrastructure
 
         public async Task<List<Tag>> GetAvailableTagsForProductCategoriesAsync(int productId)
         {
-            // Get the categories associated with the product
-            var categoryIds = await _context.ProductCategories
-                .Where(pc => pc.ProductId == productId)
-                .Select(pc => pc.CategoryId)
-                .ToListAsync();
-
-            if (!categoryIds.Any())
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null)
             {
                 return new List<Tag>();
             }
 
-            // Get tags associated with those categories
             return await _context.CategoryTags
                 .AsNoTracking()
-                .Where(ct => categoryIds.Contains(ct.CategoryId))
+                .Where(ct => ct.CategoryId == product.CategoryId)
                 .Select(ct => ct.Tag)
-                .Distinct() // Ensure unique tags
+                .Distinct()
                 .ToListAsync();
         }
 

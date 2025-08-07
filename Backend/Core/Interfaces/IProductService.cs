@@ -40,7 +40,7 @@ namespace Core.Interfaces
         Task<PagedResultDTO<ProductListItemDTO>> GetTrendyProductsAsync(int count, int daysBack, int pageNumber, int pageSize); // Added pagination
 
         // Category & Tag helpers for forms (API endpoints will call these)
-        Task<List<ProductCategoryDTO>> GetAllCategoriesAsync();
+        Task<List<CategoryDTO>> GetAllCategoriesAsync();
         Task<List<TagDTO>> GetAllTagsAsync();
         Task<List<TagDTO>> GetTagsForCategoriesAsync(List<int> categoryIds);
 

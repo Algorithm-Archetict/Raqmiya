@@ -15,6 +15,6 @@
         public int SalesCount { get; set; }
         public string Status { get; set; } = string.Empty; // Useful for creator's view
         public bool IsPublic { get; set; }
-        public DateTime? PublishedAt { get; set; }
+        public CategoryDTO Category { get; set; } = null!;
     }
 }

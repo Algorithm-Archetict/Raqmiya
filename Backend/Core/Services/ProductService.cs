@@ -70,7 +70,7 @@ namespace Core.Services
                     UserAvatar = r.User.ProfileImageUrl, // Use profile image URL
                     CreatedAt = r.CreatedAt
                 }).ToList(),
-                Categories = product.ProductCategories.Select(pc => new ProductCategoryDTO { Id = pc.Category.Id, Name = pc.Category.Name, ParentCategoryId = pc.Category.ParentCategoryId }).ToList(),
+                Category = new CategoryDTO { Id = product.Category.Id, Name = product.Category.Name, ParentCategoryId = product.Category.ParentCategoryId },
                 Tags = product.ProductTags.Select(pt => new TagDTO { Id = pt.Tag.Id, Name = pt.Tag.Name }).ToList(),
                 WishlistCount = product.WishlistItems.Count(),
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
@@ -202,18 +202,16 @@ namespace Core.Services
                 Features = JsonSerializer.Serialize(productDto.Features),
                 Compatibility = productDto.Compatibility,
                 License = productDto.License,
-                Updates = productDto.Updates
+                Updates = productDto.Updates,
+                CategoryId = productDto.CategoryId
             };
 
             // Add categories and tags
-            foreach (var catId in productDto.CategoryIds)
+            if (!await _categoryRepository.ExistsAsync(productDto.CategoryId))
             {
-                if (!await _categoryRepository.ExistsAsync(catId))
-                {
-                    throw new ArgumentException($"Category with ID {catId} does not exist.");
-                }
-                newProduct.ProductCategories.Add(new ProductCategory { CategoryId = catId });
+                throw new ArgumentException($"Category with ID {productDto.CategoryId} does not exist.");
             }
+
             foreach (var tagId in productDto.TagIds)
             {
                 if (!await _tagRepository.ExistsAsync(tagId))
@@ -290,23 +288,14 @@ namespace Core.Services
                 }
             }
 
-            // Update Categories
-            var existingCategoryIds = product.ProductCategories.Select(pc => pc.CategoryId).ToList();
-            var categoriesToAdd = productDto.CategoryIds.Except(existingCategoryIds).ToList();
-            var categoriesToRemove = existingCategoryIds.Except(productDto.CategoryIds).ToList();
-
-            foreach (var catId in categoriesToRemove)
+            // Update Category
+            if (product.CategoryId != productDto.CategoryId)
             {
-                var pcToRemove = product.ProductCategories.FirstOrDefault(pc => pc.CategoryId == catId);
-                if (pcToRemove != null) product.ProductCategories.Remove(pcToRemove);
-            }
-            foreach (var catId in categoriesToAdd)
-            {
-                if (!await _categoryRepository.ExistsAsync(catId))
+                if (!await _categoryRepository.ExistsAsync(productDto.CategoryId))
                 {
-                    throw new ArgumentException($"Category with ID {catId} does not exist.");
+                    throw new ArgumentException($"Category with ID {productDto.CategoryId} does not exist.");
                 }
-                product.ProductCategories.Add(new ProductCategory { ProductId = product.Id, CategoryId = catId });
+                product.CategoryId = productDto.CategoryId;
             }
 
             // Update Tags
@@ -466,10 +455,10 @@ namespace Core.Services
             };
         }
 
-        public async Task<List<ProductCategoryDTO>> GetAllCategoriesAsync()
+        public async Task<List<CategoryDTO>> GetAllCategoriesAsync()
         {
             var categories = await _categoryRepository.GetAllCategoriesAsync();
-            return categories.Select(c => new ProductCategoryDTO { Id = c.Id, Name = c.Name, ParentCategoryId = c.ParentCategoryId }).ToList();
+            return categories.Select(c => new CategoryDTO { Id = c.Id, Name = c.Name, ParentCategoryId = c.ParentCategoryId }).ToList();
         }
 
         public async Task<List<TagDTO>> GetAllTagsAsync()
@@ -572,7 +561,7 @@ namespace Core.Services
                 Name = p.Name,
                 Status = p.Status,
                 CreatorUsername = p.Creator.Username,
-                PublishedAt = p.PublishedAt,
+                //PublishedAt = p.PublishedAt,
                 Price = p.Price,
                 Currency = p.Currency
             }).ToList();
