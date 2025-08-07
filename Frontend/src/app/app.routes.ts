@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { Home } from './components/home/home';
 import { NotFound } from './components/not-found/not-found';
 import { Discover } from './components/discover/discover';
-import { Browse } from './components/browse/browse';
 import { ProductDetails } from './components/products/product-details/product-details';
 import { Checkout } from './components/checkout/checkout';
 import { CartCheckout } from './components/cart-checkout/cart-checkout';
@@ -30,7 +29,6 @@ export const routes: Routes = [
 
     // Public routes
     {path:"discover",component:Discover},
-    {path:"browse",component:Browse},
     {path:"discover/:id",component:ProductDetails},
     {path:"auth/login", component:Login},
     {path:"auth/register", component:Register},

@@ -143,6 +143,10 @@ export class AuthService {
     return this.hasRole('Creator');
   }
 
+  isAdmin(): boolean {
+    return this.hasRole('Admin');
+  }
+
   isCustomer(): boolean {
     return this.hasRole('Customer');
   }

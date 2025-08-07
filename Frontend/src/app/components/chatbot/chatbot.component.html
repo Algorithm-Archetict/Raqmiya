@@ -1,0 +1,135 @@
+<!-- Sticky Chat Button -->
+<div class="chatbot-button" (click)="toggleChat()" [class.active]="isOpen">
+  <i class="bi bi-chat-dots"></i>
+  <div class="notification-badge" *ngIf="messages.length > 1">1</div>
+</div>
+
+<!-- Chat Modal -->
+<div class="chatbot-modal" [class.open]="isOpen">
+  <div class="chatbot-header">
+    <div class="chatbot-title">
+      <i class="bi bi-robot"></i>
+      <span>AI Assistant</span>
+    </div>
+    <div class="chatbot-controls">
+      <button class="btn btn-sm btn-outline-light" (click)="toggleAdminPanel()" *ngIf="isAdmin">
+        <i class="bi bi-gear"></i>
+      </button>
+      <button class="btn btn-sm btn-outline-light" (click)="toggleChat()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Admin Panel -->
+  <div class="admin-panel" *ngIf="showAdminPanel && isAdmin">
+    <div class="admin-panel-header">
+      <h6>Knowledge Base Management</h6>
+    </div>
+    <div class="admin-panel-content">
+      <div class="mb-3">
+        <label class="form-label">Upload Document</label>
+        <input type="file" class="form-control" accept=".txt,.md,.doc,.docx" 
+               (change)="onFileUpload($event)" id="kb-file-input">
+      </div>
+      <div class="mb-3 d-flex gap-2">
+        <button class="btn btn-success btn-sm flex-fill" (click)="uploadToKnowledgeBase()" 
+                [disabled]="uploadedFiles.length === 0">
+          <i class="bi bi-upload"></i> Upload KB
+        </button>
+        <button class="btn btn-primary btn-sm flex-fill" (click)="listKnowledgeBaseDocuments()">
+          <i class="bi bi-list"></i> List Docs
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Messages -->
+  <div class="chat-body" #chatBody>
+    <div class="message-container" *ngFor="let message of messages; trackBy: trackByMessage">
+      <div class="message" [class.user]="message.role === 'user'" 
+           [class.assistant]="message.role === 'assistant'"
+           [class.system]="message.role === 'system'">
+        
+        <div class="message-avatar" *ngIf="message.role !== 'user'">
+          <i class="bi bi-robot" *ngIf="message.role === 'assistant'"></i>
+          <i class="bi bi-info-circle" *ngIf="message.role === 'system'"></i>
+        </div>
+        
+        <div class="message-content">
+          <div class="message-text" [innerHTML]="renderMarkdown(message.content)"></div>
+          
+          <!-- Images -->
+          <div class="message-images" *ngIf="message.images && message.images.length > 0">
+            <img *ngFor="let image of message.images" [src]="image" 
+                 class="message-image" alt="Uploaded image">
+          </div>
+          
+          <div class="message-time">
+            {{ message.timestamp | date:'shortTime' }}
+          </div>
+        </div>
+        
+        <div class="message-avatar user-avatar" *ngIf="message.role === 'user'">
+          <i class="bi bi-person"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading indicator -->
+    <div class="message assistant" *ngIf="isLoading">
+      <div class="message-avatar">
+        <i class="bi bi-robot"></i>
+      </div>
+      <div class="message-content">
+        <div class="message-text">
+          <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Uploaded Files Display -->
+  <div class="uploaded-files" *ngIf="uploadedFiles.length > 0">
+    <div class="uploaded-file" *ngFor="let file of uploadedFiles">
+      <img *ngIf="file.type === 'image'" [src]="file.url" class="uploaded-image" alt="Uploaded image">
+      <i *ngIf="file.type === 'text'" class="bi bi-file-text"></i>
+      <span class="file-name">{{ file.name }}</span>
+      <button class="remove-file" (click)="removeFile(file)">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Chat Input -->
+  <div class="chat-input-container">
+    <div class="input-group">
+      <button class="btn btn-outline-secondary" type="button" (click)="fileInput.click()">
+        <i class="bi bi-paperclip"></i>
+      </button>
+      <button class="btn btn-outline-secondary" type="button" (click)="imageInput.click()">
+        <i class="bi bi-image"></i>
+      </button>
+      <input type="file" #fileInput (change)="onFileUpload($event)" 
+             accept=".txt,.md,.doc,.docx" style="display: none;">
+      <input type="file" #imageInput (change)="onFileUpload($event)" 
+             accept="image/*" style="display: none;">
+      
+      <input type="text" class="form-control" 
+             [(ngModel)]="currentMessage"
+             (keyup.enter)="sendMessage()"
+             placeholder="Type your message..."
+             [disabled]="isLoading">
+      
+      <button class="btn btn-primary" type="button" 
+              (click)="sendMessage()" 
+              [disabled]="isLoading || (!currentMessage.trim() && uploadedFiles.length === 0)">
+        <i class="bi bi-send"></i>
+      </button>
+    </div>
+  </div>
+</div>
