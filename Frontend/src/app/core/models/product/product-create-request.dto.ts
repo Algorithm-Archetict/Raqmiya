@@ -3,7 +3,7 @@ export interface ProductCreateRequestDTO {
   description?: string; // Optional, maxLength: 5000
   price: number; // Required, min: 0.01, max: 1,000,000
   currency: string; // Required, exactly 3 characters
-  productType: string; // Required, maxLength: 50
+  // productType: string; // Required, maxLength: 50
   coverImageUrl?: string; // Optional, URI, maxLength: 500
   thumbnailImageUrl?: string; // Optional, URI, maxLength: 500
   previewVideoUrl?: string; // Optional, URI, maxLength: 500
@@ -14,6 +14,6 @@ export interface ProductCreateRequestDTO {
   compatibility?: string; // Optional, maxLength: 500
   license?: string; // Optional, maxLength: 100
   updates?: string; // Optional, maxLength: 100
-  categoryIds?: number[]; // Optional
+  categoryId: number;
   tagIds?: number[]; // Optional
 }

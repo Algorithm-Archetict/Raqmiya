@@ -9,6 +9,8 @@ import { ProductService } from '../../../../core/services/product.service';
 import { ProductDetailDTO } from '../../../../core/models/product/product-detail.dto';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { ProductCreateRequestDTO } from '../../../../core/models/product/product-create-request.dto';
+import { CategoryDTO } from '../../../../core/models/product/category.dto';
+
 
 interface ProductDetail {
   attribute: string;
@@ -88,7 +90,7 @@ export class ProductEdit implements OnInit {
       compatibility: [''],
       license: [''],
       updates: [''],
-      categoryIds: [[]],
+      categoryId: [null, [Validators.required]],
       tagIds: [[]],
       status: ['draft', [Validators.required]]
     });
@@ -150,7 +152,7 @@ export class ProductEdit implements OnInit {
       compatibility: this.product.compatibility,
       license: this.product.license,
       updates: this.product.updates,
-      categoryIds: this.product.categories?.map(c => c.id) || [],
+      categoryId: this.product.category.id,
       tagIds: this.product.tags?.map(t => t.id) || []
     });
 
@@ -231,7 +233,7 @@ export class ProductEdit implements OnInit {
           compatibility: formValue.compatibility,
           license: formValue.license,
           updates: formValue.updates,
-          categoryIds: formValue.categoryIds || [],
+          categoryId: formValue.categoryId, // Changed to single categoryId
           tagIds: formValue.tagIds || []
         };
 

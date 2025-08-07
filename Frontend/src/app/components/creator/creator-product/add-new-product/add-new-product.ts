@@ -56,10 +56,10 @@ export class AddNewProduct implements OnInit {
   isUploading: boolean = false;
   uploadProgress: number = 0;
 
-  productTypes = [
-    { id: 'digital', name: 'Digital', description: 'Downloadable files', icon: 'fas fa-file', selected: false },
-    { id: 'course', name: 'Course', description: 'Online video content', icon: 'fas fa-video', selected: false },
-    { id: 'membership', name: 'Membership', description: 'Recurring access to content', icon: 'fas fa-users', selected: false }
+  productCategories = [
+    { id: 1, name: 'Digital', description: 'Downloadable files', icon: 'fas fa-file', selected: false },
+    { id: 2, name: 'Course', description: 'Online video content', icon: 'fas fa-video', selected: false },
+    { id: 3, name: 'Membership', description: 'Recurring access to content', icon: 'fas fa-users', selected: false }
   ];
 
   constructor(private fb: FormBuilder, private productService: ProductService) {}
@@ -93,9 +93,9 @@ export class AddNewProduct implements OnInit {
     return !!this.productForm.get('description')?.valid && this.productForm.get('isPublic') !== null;
   }
 
-  selectProductType(typeId: string): void {
-    this.productForm.get('productType')?.setValue(typeId);
-    this.productTypes.forEach(type => type.selected = type.id === typeId);
+  selectProductType(typeName: string): void {
+    this.productForm.get('productCategory')?.setValue(typeName);
+    this.productCategories.forEach(type => type.selected = type.name === typeName);
   }
 
   onNameChange(): void {
@@ -143,7 +143,7 @@ export class AddNewProduct implements OnInit {
         description: formValue.description || '',
         price: parseFloat(formValue.price),
         currency: formValue.currency,
-        productType: formValue.productType,
+        // productType: formValue.productType,
         // Don't send image data in initial creation - will upload separately
         coverImageUrl: undefined,
         thumbnailImageUrl: undefined,
@@ -155,7 +155,7 @@ export class AddNewProduct implements OnInit {
         compatibility: formValue.compatibility,
         license: formValue.license,
         updates: formValue.updates,
-        categoryIds: [], // TODO: Add category selection
+        categoryId: formValue.categoryId, // Changed to single categoryId
         tagIds: [] // TODO: Add tag selection
       };
 
@@ -327,7 +327,7 @@ export class AddNewProduct implements OnInit {
         description: formValue.description || '',
         price: parseFloat(formValue.price),
         currency: formValue.currency,
-        productType: formValue.productType,
+        productCategory: formValue.productCategory,
         // Don't include image URLs - they are uploaded separately and should not be overwritten
         previewVideoUrl: formValue.previewVideoUrl,
         isPublic: true, // Set to public when publishing
@@ -337,7 +337,7 @@ export class AddNewProduct implements OnInit {
         compatibility: formValue.compatibility,
         license: formValue.license,
         updates: formValue.updates,
-        categoryIds: [], // TODO: Add category selection
+        categoryId: formValue.categoryId, // Changed to single categoryId
         tagIds: [], // TODO: Add tag selection
         status: 'published' // Set status to published
       };

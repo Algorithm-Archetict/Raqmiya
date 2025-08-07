@@ -142,7 +142,7 @@ export class ProductEditContent implements OnInit {
         compatibility: this.product!.compatibility,
         license: this.product!.license,
         updates: this.product!.updates,
-        categoryIds: this.product!.categories?.map(c => c.id) || [],
+        categoryId: this.product!.category.id,
         tagIds: this.product!.tags?.map(t => t.id) || [],
         features: this.product!.features || []
       };
