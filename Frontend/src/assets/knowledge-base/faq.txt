@@ -1,0 +1,181 @@
+# Raqmiya Platform FAQ
+
+## General Questions
+
+### What is Raqmiya?
+Raqmiya is a digital marketplace platform that connects creators with customers. It allows creators to sell digital products, courses, and services while providing customers with a secure and user-friendly shopping experience.
+
+### How do I create an account?
+To create an account, click the "Register" button on the homepage. You'll need to provide your email address, username, and password. After registration, you'll receive a confirmation email.
+
+### How do I reset my password?
+To reset your password:
+1. Go to the login page
+2. Click "Forgot Password"
+3. Enter your email address
+4. Check your email for a reset link
+5. Follow the instructions in the email
+
+## Creator Questions
+
+### How do I become a creator?
+To become a creator:
+1. Register for an account
+2. Complete your profile with creator information
+3. Submit required documentation
+4. Wait for approval (usually 24-48 hours)
+5. Start uploading your products
+
+### What types of products can I sell?
+You can sell various digital products including:
+- E-books and guides
+- Online courses
+- Software and tools
+- Templates and designs
+- Audio and video content
+- Webinars and workshops
+
+### How do I upload a product?
+To upload a product:
+1. Log in to your creator dashboard
+2. Click "Add New Product"
+3. Fill in product details (title, description, price)
+4. Upload your product files
+5. Set availability and pricing
+6. Submit for review
+
+### How do I get paid?
+Payments are processed monthly. You'll receive payments for all sales made in the previous month, minus platform fees. Payments are made via bank transfer or PayPal.
+
+## Customer Questions
+
+### How do I purchase a product?
+To purchase a product:
+1. Browse the marketplace
+2. Click on a product you're interested in
+3. Read the description and reviews
+4. Click "Purchase" or "Add to Cart"
+5. Complete the checkout process
+6. Download your product immediately
+
+### What payment methods do you accept?
+We accept:
+- Credit and debit cards
+- PayPal
+- Bank transfers
+- Digital wallets
+
+### Can I get a refund?
+Refund policies vary by creator. Most creators offer:
+- 30-day money-back guarantee
+- Partial refunds for technical issues
+- No refunds for digital downloads (after download)
+
+### How do I download my purchased products?
+After purchase:
+1. Go to your "Library" section
+2. Find your purchased product
+3. Click "Download"
+4. Save the file to your device
+
+## Technical Support
+
+### I can't log in to my account
+Try these steps:
+1. Check your email and password
+2. Clear your browser cache
+3. Try a different browser
+4. Contact support if issues persist
+
+### The download isn't working
+If downloads aren't working:
+1. Check your internet connection
+2. Try a different browser
+3. Disable any download blockers
+4. Contact the creator or support
+
+### How do I contact support?
+You can contact support through:
+- Email: support@raqmiya.com
+- Live chat (available during business hours)
+- Help center: help.raqmiya.com
+
+## Platform Features
+
+### What is the rating system?
+Products are rated from 1-5 stars based on customer reviews. Only verified purchasers can leave reviews to ensure authenticity.
+
+### How do I leave a review?
+To leave a review:
+1. Purchase a product
+2. Go to your library
+3. Find the product
+4. Click "Write Review"
+5. Rate and write your review
+
+### Can I message creators?
+Yes, you can message creators through the platform's messaging system. Go to the creator's profile and click "Message Creator."
+
+### Is my data secure?
+Yes, we use industry-standard encryption to protect your personal and payment information. We never share your data with third parties without your consent.
+
+## Pricing and Fees
+
+### What are the platform fees?
+Platform fees are:
+- 10% for creators on basic plan
+- 5% for creators on premium plan
+- No fees for customers (except payment processing fees)
+
+### Are there any hidden costs?
+No hidden costs. All fees are clearly displayed before purchase. The price you see is the price you pay.
+
+### Do you offer bulk discounts?
+Bulk discounts are available for certain products. Check individual product pages for bulk pricing options.
+
+## Account Management
+
+### How do I update my profile?
+To update your profile:
+1. Log in to your account
+2. Go to "Settings"
+3. Click "Edit Profile"
+4. Make your changes
+5. Save
+
+### Can I delete my account?
+Yes, you can delete your account in settings. Note that this action is permanent and cannot be undone.
+
+### How do I change my email address?
+To change your email:
+1. Go to Settings
+2. Click "Change Email"
+3. Enter your new email
+4. Verify the new email address
+
+## Security
+
+### How do I enable two-factor authentication?
+To enable 2FA:
+1. Go to Security settings
+2. Click "Enable Two-Factor Authentication"
+3. Follow the setup instructions
+4. Use an authenticator app to scan the QR code
+
+### What should I do if my account is compromised?
+If your account is compromised:
+1. Change your password immediately
+2. Enable two-factor authentication
+3. Contact support
+4. Review recent activity
+
+## Mobile App
+
+### Is there a mobile app?
+Yes, Raqmiya has mobile apps for iOS and Android. Download them from the App Store or Google Play Store.
+
+### Can I use the same account on mobile and web?
+Yes, your account works seamlessly across all platforms.
+
+### Are all features available on mobile?
+Most features are available on mobile, though some advanced creator tools may be limited to the web version.

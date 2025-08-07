@@ -370,7 +370,7 @@ export class ProductDetails implements OnInit {
     this.cartService.addToCart(this.product.id, 1).subscribe({
       next: (response) => {
         if (response.success) {
-          console.log('Added to cart:', this.product?.title);
+                     console.log('Added to cart:', this.product?.name);
           // Redirect to cart-checkout page
           this.router.navigate(['/cart-checkout']);
         } else {
