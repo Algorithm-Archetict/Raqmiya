@@ -47,8 +47,8 @@
       <div class="row align-items-center">
         <div class="col-lg-8">
           <div class="product-info">
-            <h1 class="product-title">{{ product?.title }}</h1>
-            <p class="product-creator">by {{ product?.creator }}</p>
+                         <h1 class="product-title">{{ product?.name }}</h1>
+                         <p class="product-creator">by {{ product?.creatorUsername }}</p>
             <div class="product-meta">
               <div class="product-rating">
                 <div class="stars">
@@ -332,16 +332,16 @@
           <div class="related-products-grid">
             <div class="related-product-card" *ngFor="let relatedProduct of relatedProducts">
               <div class="product-image">
-                <img [src]="relatedProduct.media[0].url" [alt]="relatedProduct.title">
+                                 <img [src]="relatedProduct.coverImageUrl" [alt]="relatedProduct.name">
               </div>
               <div class="product-info">
-                <h6>{{ relatedProduct.title }}</h6>
-                <p class="creator">by {{ relatedProduct.creator }}</p>
+                                 <h6>{{ relatedProduct.name }}</h6>
+                                 <div class="creator">by {{ relatedProduct.creatorUsername }}</div>
                 <div class="product-meta">
-                  <span class="price">${{ relatedProduct.price }}</span>
+                                     <div class="price">{{ relatedProduct.price | currency:relatedProduct.currency:'symbol' }}</div>
                   <div class="rating">
-                    <i class="fas fa-star text-warning"></i>
-                    <span>{{ relatedProduct.rating }}</span>
+                                         <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]"
+                        [class.text-warning]="star <= (relatedProduct.averageRating || 0)"></i>
                   </div>
                 </div>
               </div>
