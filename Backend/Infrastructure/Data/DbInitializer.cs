@@ -107,7 +107,8 @@ namespace Raqmiya.Infrastructure.Data
                     Permalink = "learn-csharp-24h",
                     Status = "published",
                     PublishedAt = DateTime.UtcNow,
-                    ProductCategories = new List<ProductCategory> { new ProductCategory { CategoryId = cat.Id } },
+                    //ProductCategories = new List<ProductCategory> { new ProductCategory { CategoryId = cat.Id } },
+                    CategoryId = cat.Id,
                     ProductTags = new List<ProductTag> { new ProductTag { TagId = tag.Id } }
                 };
                 context.Products.Add(product1);
