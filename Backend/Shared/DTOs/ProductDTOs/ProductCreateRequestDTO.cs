@@ -24,9 +24,9 @@ namespace Shared.DTOs.ProductDTOs
         [StringLength(3, MinimumLength = 3, ErrorMessage = "Currency must be a 3-letter ISO code (e.g., USD).")]
         public string Currency { get; set; } = "USD"; // Default or provide options
 
-        [Required(ErrorMessage = "Product type is required.")]
-        [StringLength(50, ErrorMessage = "Product type cannot exceed 50 characters.")]
-        public string ProductType { get; set; } = string.Empty; // e.g., "ebook", "software", "music"
+        //[Required(ErrorMessage = "Product type is required.")]
+        //[StringLength(50, ErrorMessage = "Product type cannot exceed 50 characters.")]
+        //public string ProductType { get; set; } = string.Empty; // e.g., "ebook", "software", "music"
 
         [Url(ErrorMessage = "Invalid URL format.")]
         [StringLength(500, ErrorMessage = "Cover image URL cannot exceed 500 characters.")]
@@ -48,7 +48,7 @@ namespace Shared.DTOs.ProductDTOs
         public string Permalink { get; set; } = string.Empty;
 
         // NEW: Enhanced product details
-        public List<string> Features { get; set; } = new List<string>();
+        public List<string>? Features { get; set; } = new List<string>();
 
         [StringLength(500, ErrorMessage = "Compatibility cannot exceed 500 characters.")]
         public string? Compatibility { get; set; }

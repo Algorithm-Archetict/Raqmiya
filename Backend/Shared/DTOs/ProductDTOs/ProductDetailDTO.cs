@@ -19,7 +19,7 @@
         public string Permalink { get; set; } = string.Empty;
 
         // NEW: Enhanced product details
-        public List<string> Features { get; set; } = new List<string>();
+        public List<string>? Features { get; set; } = new List<string>();
         public string? Compatibility { get; set; }
         public string? License { get; set; }
         public string? Updates { get; set; }
