@@ -46,12 +46,30 @@ export class OrderService {
     );
   }
 
-  getOrder(orderId: string): Observable<OrderResponse> {
-    return this.http.get<OrderResponse>(`${this.apiUrl}/order/${orderId}`);
+  /**
+   * Maps API OrderResponse to frontend Order model, converting date strings to Date objects if needed.
+   */
+  private mapOrderResponse(response: OrderResponse): OrderResponse {
+    if (response && response.order) {
+      // Convert date strings to Date objects if you want to use them as Date in components
+      // Otherwise, keep as string for display
+      response.order.createdAt = response.order.createdAt;
+      response.order.updatedAt = response.order.updatedAt;
+      // If you want Date objects, uncomment below:
+      // response.order.createdAt = new Date(response.order.createdAt);
+      // response.order.updatedAt = new Date(response.order.updatedAt);
+    }
+    return response;
+  }
+
+  getOrder(orderId: number): Observable<OrderResponse> {
+    return this.http.get<OrderResponse>(`${this.apiUrl}/order/${orderId}`)
+      .pipe(map(res => this.mapOrderResponse(res)));
   }
 
   getUserOrders(): Observable<OrderResponse> {
-    return this.http.get<OrderResponse>(`${this.apiUrl}/order/my`);
+    return this.http.get<OrderResponse>(`${this.apiUrl}/order/my`)
+      .pipe(map(res => this.mapOrderResponse(res)));
   }
 
   getPurchasedProducts(): Observable<PurchasedProductDTO> {
