@@ -49,6 +49,8 @@ export class UserService {
       tap(user => this.updateLocalUser(user)),
       catchError(error => {
         console.error('Error loading user:', error);
+        // Clear cached user data on error
+        this.clearLocalUser();
         return of(null as any);
       })
     );
@@ -62,6 +64,13 @@ export class UserService {
     if (cachedUser) {
       return of(cachedUser);
     }
+    return this.loadCurrentUser();
+  }
+
+  /**
+   * Force refresh user data from server (bypass cache)
+   */
+  forceRefreshUser(): Observable<UserProfile> {
     return this.loadCurrentUser();
   }
 
@@ -143,6 +152,14 @@ export class UserService {
    */
   clearLocalUser(): void {
     this.currentUserSubject.next(null);
+  }
+
+  /**
+   * Clear all cached user data (for logout or user switch)
+   */
+  clearAllUserData(): void {
+    this.clearLocalUser();
+    // Clear any other cached data that might be user-specific
   }
 
   /**

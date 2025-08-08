@@ -34,7 +34,7 @@ export interface RegisterRequest {
  * Basic user interface, typically received after login/registration or from user profile API.
  */
 export interface User {
-  id: string;
+  id: number;
   username: string;
   email: string;
   role?: string;
