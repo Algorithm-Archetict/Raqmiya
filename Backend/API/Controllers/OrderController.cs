@@ -352,5 +352,37 @@ namespace API.Controllers
             await _orderService.DeleteOrderAsync(id);
             return NoContent();
         }
+
+        [HttpPost("{orderId}/payment")]
+        [Authorize]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> ProcessPayment(int orderId, [FromBody] PaymentRequestDTO paymentRequest)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                // Call the service method (to be implemented)
+                var result = await _orderService.ProcessPaymentAsync(orderId, userId, paymentRequest);
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                else
+                {
+                    return BadRequest(result);
+                }
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { success = false, message = "Order not found." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing payment for order {OrderId}", orderId);
+                return StatusCode(500, new { success = false, message = "Internal server error." });
+            }
+        }
     }
 }

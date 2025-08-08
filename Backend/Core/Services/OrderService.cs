@@ -254,6 +254,45 @@ namespace Core.Services
             if (order == null) throw new KeyNotFoundException("Order not found");
             await _orderRepository.DeleteAsync(order);
         }
+
+        public async Task<PaymentResultDTO> ProcessPaymentAsync(int orderId, int userId, PaymentRequestDTO paymentRequest)
+        {
+            var order = await _orderRepository.GetByIdAsync(orderId);
+            if (order == null || order.BuyerId != userId)
+            {
+                return new PaymentResultDTO
+                {
+                    Success = false,
+                    Message = "Order not found or access denied.",
+                    PaymentStatus = "failed"
+                };
+            }
+
+            // Simulate payment processing (replace with real integration as needed)
+            if (paymentRequest.Amount != order.TotalAmount)
+            {
+                return new PaymentResultDTO
+                {
+                    Success = false,
+                    Message = "Payment amount does not match order total.",
+                    PaymentStatus = "failed"
+                };
+            }
+
+            // Mark order as paid (update status, save transaction ID, etc.)
+            order.Status = "Paid";
+            order.PaymentMethod = paymentRequest.PaymentMethod;
+            order.PaymentStatus = "completed";
+            order.TransactionId = paymentRequest.TransactionId;
+            await _orderRepository.UpdateAsync(order);
+
+            return new PaymentResultDTO
+            {
+                Success = true,
+                Message = "Payment processed successfully.",
+                TransactionId = paymentRequest.TransactionId,
+                PaymentStatus = "completed"
+            };
+        }
     }
 }
-
