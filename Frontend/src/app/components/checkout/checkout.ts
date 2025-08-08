@@ -229,7 +229,7 @@ export class Checkout implements OnInit, OnDestroy {
       if (orderResponse?.success && orderResponse.order) {
         // Use the real payment endpoint
         const paymentResponse = await firstValueFrom(
-          this.orderService.processPayment(orderResponse.order.id, paymentData)
+          this.orderService.processPayment(orderResponse.order.id.toString(), paymentData)
         );
 
         if (paymentResponse?.success) {

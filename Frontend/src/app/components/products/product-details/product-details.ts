@@ -36,6 +36,7 @@ export class ProductDetails implements OnInit {
   isLoading: boolean = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
+  error: string | null = null;
 
   constructor(
     private router: Router,

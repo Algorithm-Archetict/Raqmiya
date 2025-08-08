@@ -1,7 +1,7 @@
 <!-- Product Details Page - Epic Games Style -->
 <app-alert *ngIf="errorMessage || successMessage"
   [type]="errorMessage ? 'error' : 'success'"
-  [message]="errorMessage || successMessage"
+  [message]="errorMessage || successMessage || ''"
   (close)="errorMessage = null; successMessage = null">
 </app-alert>
 
