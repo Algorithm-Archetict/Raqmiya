@@ -1,5 +1,8 @@
 <!-- Discover Page - Epic Games Style -->
 <div class="discover-container">
+  <!-- Use existing navbar component -->
+  <app-navbar></app-navbar>
+
   <!-- Hero Search Section -->
   <header class="search-hero-section">
     <div class="container">
@@ -112,8 +115,8 @@
                 <div class="product-image">
                   <img [src]="product.image" [alt]="product.title">
                   
-                  <!-- Wishlist Toggle Button -->
-                  <div class="wishlist-toggle"
+                  <!-- Wishlist Toggle Button (Only for logged-in users) -->
+                  <div *ngIf="isLoggedIn()" class="wishlist-toggle"
                        (click)="toggleWishlist(product, $event)"
                        (mouseenter)="onWishlistHover(product, true, $event)"
                        (mouseleave)="onWishlistHover(product, false, $event)"
@@ -264,8 +267,8 @@
                   <div class="product-image">
                     <img [src]="product.image" [alt]="product.title">
                     
-                    <!-- Wishlist Toggle Button -->
-                    <div class="wishlist-toggle"
+                    <!-- Wishlist Toggle Button (Only for logged-in users) -->
+                    <div *ngIf="isLoggedIn()" class="wishlist-toggle"
                          (click)="toggleWishlist(product, $event)"
                          (mouseenter)="onWishlistHover(product, true, $event)"
                          (mouseleave)="onWishlistHover(product, false, $event)"
