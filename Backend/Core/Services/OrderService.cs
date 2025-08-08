@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using Backend.Constants;
 
 
 namespace Core.Services
@@ -242,17 +243,19 @@ namespace Core.Services
         public async Task UpdateOrderStatusAsync(int orderId, string status)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order == null) throw new KeyNotFoundException("Order not found");
+            if (order == null) throw new KeyNotFoundException(ErrorMessages.OrderNotFound);
             order.Status = status;
             order.UpdatedAt = DateTime.UtcNow;
             await _orderRepository.UpdateAsync(order);
+            // Optionally: log or return SuccessMessages.OrderStatusUpdated
         }
 
         public async Task DeleteOrderAsync(int orderId)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order == null) throw new KeyNotFoundException("Order not found");
+            if (order == null) throw new KeyNotFoundException(ErrorMessages.OrderNotFound);
             await _orderRepository.DeleteAsync(order);
+            // Optionally: log or return SuccessMessages.OrderDeleted
         }
 
         public async Task<PaymentResultDTO> ProcessPaymentAsync(int orderId, int userId, PaymentRequestDTO paymentRequest)
@@ -263,8 +266,7 @@ namespace Core.Services
                 return new PaymentResultDTO
                 {
                     Success = false,
-                    Message = "Order not found or access denied.",
-                    PaymentStatus = "failed"
+                    Message = ErrorMessages.OrderNotFound
                 };
             }
 
