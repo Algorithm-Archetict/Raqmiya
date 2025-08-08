@@ -87,6 +87,7 @@ namespace API.Controllers
                 if (response.Success)
                 {
                     _logger.LogInformation(LogMessages.LoginSuccess, request.EmailOrUsername);
+                    _logger.LogInformation("Generated token: {Token}", response.Token?.Substring(0, Math.Min(50, response.Token?.Length ?? 0)) + "...");
                     return Ok(response);
                 }
                 _logger.LogWarning(LogMessages.LoginFailed, request.EmailOrUsername, response.Message);
@@ -127,6 +128,69 @@ namespace API.Controllers
             {
                 _logger.LogError(ex, "Error getting current user from JWT");
                 return Problem("An error occurred while fetching the current user.");
+            }
+        }
+
+        /// <summary>
+        /// Validates the current JWT token and returns true if valid.
+        /// </summary>
+        [HttpGet("validate-token")]
+        [Authorize]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(401)]
+        public IActionResult ValidateToken()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("Invalid token");
+                }
+
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating token");
+                return Unauthorized("Invalid token");
+            }
+        }
+
+        /// <summary>
+        /// Gets detailed user information for debugging and security monitoring.
+        /// </summary>
+        [HttpGet("debug-user")]
+        [Authorize]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(401)]
+        public IActionResult GetDebugUserInfo()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var username = User.FindFirstValue(ClaimTypes.Name);
+                var email = User.FindFirstValue(ClaimTypes.Email);
+                var role = User.FindFirstValue(ClaimTypes.Role);
+
+                _logger.LogInformation("Debug user info request - UserId: {UserId}, Username: {Username}, Email: {Email}, Role: {Role}", 
+                    userId, username, email, role);
+
+                return Ok(new
+                {
+                    UserId = userId,
+                    Username = username,
+                    Email = email,
+                    Role = role,
+                    IsAuthenticated = User.Identity?.IsAuthenticated ?? false,
+                    AuthenticationType = User.Identity?.AuthenticationType,
+                    Claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting debug user info");
+                return Problem("An error occurred while fetching debug user info.");
             }
         }
     }

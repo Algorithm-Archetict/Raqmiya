@@ -56,6 +56,9 @@ export class Register implements OnInit {
     this.successMessage = null;
 
     if (this.registerForm.valid) {
+      // Clear any existing cached data before registration to ensure data isolation
+      this.authService.clearAllCachedData();
+      
       const registerPayload: RegisterRequest = {
         Username: this.registerForm.value.Username,
         Email: this.registerForm.value.Email,
