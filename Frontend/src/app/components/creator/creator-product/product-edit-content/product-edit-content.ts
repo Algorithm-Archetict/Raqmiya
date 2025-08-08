@@ -5,6 +5,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { firstValueFrom } from 'rxjs';
 import { DashboardSidebar } from '../../../dashboard-sidebar/dashboard-sidebar';
 import { ProductService } from '../../../../core/services/product.service';
+import { FileService } from '../../../../core/services/file.service';
 import { ProductDetailDTO } from '../../../../core/models/product/product-detail.dto';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { Alert } from '../../../shared/alert/alert';
@@ -38,17 +39,20 @@ export class ProductEditContent implements OnInit {
   newFiles: File[] = [];
   isUploading: boolean = false;
   uploadProgress: number = 0;
+  productFiles: string[] = [];
 
   constructor(
     private fb: FormBuilder,
     private productService: ProductService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private fileService: FileService
   ) {}
 
   ngOnInit(): void {
     this.initializeForm();
     this.loadProduct();
+    this.loadFiles();
   }
 
   private initializeForm(): void {
@@ -95,6 +99,17 @@ export class ProductEditContent implements OnInit {
     this.content = this.product.description || '';
     this.productForm.patchValue({
       content: this.content
+    });
+  }
+
+  loadFiles(): void {
+    this.fileService.listFiles().subscribe({
+      next: (files) => {
+        this.productFiles = files;
+      },
+      error: (err) => {
+        console.error('Failed to list files:', err);
+      }
     });
   }
 
@@ -172,24 +187,33 @@ export class ProductEditContent implements OnInit {
 
   private async uploadNewFiles(): Promise<void> {
     if (this.newFiles.length === 0) return;
-
     this.isUploading = true;
     this.uploadProgress = 0;
-
     for (let i = 0; i < this.newFiles.length; i++) {
       const file = this.newFiles[i];
       try {
-        await firstValueFrom(this.productService.uploadFile(this.productId!, file));
+        await firstValueFrom(this.fileService.uploadFile(file));
         this.uploadProgress = ((i + 1) / this.newFiles.length) * 100;
       } catch (error: any) {
         console.error('Error uploading file:', error);
         this.errorMessage = `Failed to upload ${file.name}: ${error.error?.message || error.message}`;
       }
     }
-
     this.isUploading = false;
     this.newFiles = [];
     this.uploadProgress = 0;
+    this.loadFiles();
+  }
+
+  deleteFile(fileName: string): void {
+    this.fileService.deleteFile(fileName).subscribe({
+      next: () => {
+        this.loadFiles();
+      },
+      error: (err) => {
+        console.error('Failed to delete file:', err);
+      }
+    });
   }
 
   cancel(): void {
