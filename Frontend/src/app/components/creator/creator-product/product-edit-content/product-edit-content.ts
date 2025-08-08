@@ -229,4 +229,17 @@ export class ProductEditContent implements OnInit {
     this.content = this.productForm.get('content')?.value || '';
     this.updateFormValidity();
   }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files) {
+      for (let i = 0; i < input.files.length; i++) {
+        this.newFiles.push(input.files.item(i)!);
+      }
+    }
+  }
+
+  removeNewFile(index: number): void {
+    this.newFiles.splice(index, 1);
+  }
 }

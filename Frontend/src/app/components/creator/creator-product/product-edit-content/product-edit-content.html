@@ -6,9 +6,8 @@
   <div class="main-content">
     <!-- Alert for error or success -->
     <app-alert *ngIf="errorMessage || successMessage"
-      [type]="errorMessage ? 'error' : 'success'"
-      [message]="errorMessage || successMessage"
-      (close)="errorMessage = null; successMessage = null">
+      [type]="errorMessage ? 'danger' : 'success'"
+      [message]="errorMessage || successMessage || ''">
     </app-alert>
 
     <!-- Loading State -->
@@ -142,11 +141,11 @@
                   <div class="file-info">
                     <i class="fas fa-file"></i>
                     <div class="file-details">
-                      <div class="file-name">{{ file.name }}</div>
+                      <div class="file-name">{{ file }}</div>
                       <div class="file-size">File</div>
                     </div>
                   </div>
-                  <button class="remove-file-btn" (click)="deleteFile(file.id)">
+                  <button class="remove-file-btn" (click)="deleteFile(file)">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
