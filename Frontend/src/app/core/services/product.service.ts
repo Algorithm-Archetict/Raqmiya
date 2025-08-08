@@ -8,7 +8,6 @@ import { ProductUpdateRequestDTO } from '../models/product/product-update-reques
 import { ProductDetailDTO } from '../models/product/product-detail.dto';
 import { ProductListItemDTO } from '../models/product/product-list-item.dto';
 import { ProductListItemDTOPagedResultDTO } from '../models/product/product-list-item-paged-result.dto';
-import { ProductModerationRequestDTO } from '../models/product/product-moderation-request.dto';
 import { FileDTO } from '../models/product/file.dto';
 import { ReviewDTO } from '../models/product/review.dto';
 
