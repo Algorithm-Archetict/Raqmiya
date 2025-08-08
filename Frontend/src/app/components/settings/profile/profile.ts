@@ -32,7 +32,16 @@ export class Profile implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.loadProfileData();
+    // Check if user is logged in
+    if (this.authService.isLoggedIn()) {
+      this.loadProfileData();
+    } else {
+      console.error('User not logged in');
+      this.errorMessage = 'Please log in to view your profile.';
+      setTimeout(() => {
+        this.authService.logout();
+      }, 2000);
+    }
   }
 
   ngOnDestroy() {
@@ -41,21 +50,31 @@ export class Profile implements OnInit, OnDestroy {
   }
 
   loadProfileData() {
-    this.userService.getCurrentUser()
+    // Force refresh user data from server to ensure we have the correct user's data
+    this.userService.forceRefreshUser()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (user) => {
-          this.currentUser = user;
-          this.profileData = {
-            username: user.username,
-            profileDescription: user.profileDescription || '',
-            profileImageUrl: user.profileImageUrl
-          };
-          this.profilePicture = user.profileImageUrl || this.userService.getDefaultAvatarUrl();
+          if (user) {
+            this.currentUser = user;
+            this.profileData = {
+              username: user.username,
+              profileDescription: user.profileDescription || '',
+              profileImageUrl: user.profileImageUrl
+            };
+            this.profilePicture = user.profileImageUrl || this.userService.getDefaultAvatarUrl();
+          } else {
+            // If no user data is returned, redirect to login
+            this.authService.logout();
+          }
         },
         error: (error) => {
           console.error('Error loading profile data:', error);
           this.errorMessage = 'Failed to load profile data. Please try again.';
+          // If there's an authentication error, redirect to login
+          if (error.status === 401) {
+            this.authService.logout();
+          }
         }
       });
   }

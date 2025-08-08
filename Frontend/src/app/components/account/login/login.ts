@@ -50,6 +50,9 @@ export class Login implements OnInit {
     this.successMessage = null;
 
     if (this.loginForm.valid) {
+      // Clear any existing cached data before login to ensure data isolation
+      this.authService.clearAllCachedData();
+      
       const loginData: LoginRequest = {
         EmailOrUsername: this.loginForm.get('EmailOrUsername')?.value,
         Password: this.loginForm.get('Password')?.value
