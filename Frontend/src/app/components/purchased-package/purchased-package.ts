@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { OrderService } from '../../core/services/order.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { FileService } from '../../core/services/file.service';
 
 interface PurchasedProduct {
   productId: number;
@@ -52,7 +53,8 @@ export class PurchasedPackage implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private orderService: OrderService,
-    private http: HttpClient
+    private http: HttpClient,
+    private fileService: FileService
   ) {}
 
   ngOnInit() {
@@ -62,7 +64,7 @@ export class PurchasedPackage implements OnInit {
   loadPurchasedProduct() {
     this.isLoading = true;
     this.errorMessage = '';
-    
+
     // Get product ID from route params
     this.route.params.subscribe(params => {
       const productId = params['id'];
@@ -130,82 +132,26 @@ export class PurchasedPackage implements OnInit {
   }
 
   async downloadFile(file: ProductFile) {
-    console.log('Download file called:', file);
-    if (!this.product) {
-      console.error('No product found');
-      return;
-    }
-    
     this.isDownloading = true;
     this.downloadProgress = 0;
-
     try {
-      // Simulate download progress
-      const interval = setInterval(() => {
-        this.downloadProgress += Math.random() * 20;
-        if (this.downloadProgress >= 100) {
-          this.downloadProgress = 100;
-          clearInterval(interval);
-          this.isDownloading = false;
-          
-          // Trigger actual download
-          this.triggerDownload(file);
-        }
-      }, 200);
-    } catch (error) {
-      console.error('Download error:', error);
+      // Use FileService to download the file by name
+      const blob = await firstValueFrom(this.fileService.downloadFile(file.name));
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       this.isDownloading = false;
+      alert('Download completed successfully!');
+    } catch (error: any) {
+      this.isDownloading = false;
+      console.error('Download failed:', error);
       alert('Download failed. Please try again.');
     }
-  }
-
-  private triggerDownload(file: ProductFile) {
-    console.log('Trigger download called for file:', file);
-    if (!this.product) {
-      console.error('No product found in triggerDownload');
-      return;
-    }
-    
-    // Create download URL using the correct API endpoint
-    const downloadUrl = `${environment.apiUrl}/download/file/${this.product.productId}/${file.id}`;
-    console.log('Download URL:', downloadUrl);
-    
-    // Use HTTP client to download file with proper authentication
-    this.http.get(downloadUrl, { 
-      responseType: 'blob',
-      observe: 'response'
-    }).subscribe({
-      next: (response) => {
-        // Create blob URL and trigger download
-        const blob = new Blob([response.body!], { type: response.headers.get('content-type') || 'application/octet-stream' });
-        const url = window.URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = file.name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Clean up blob URL
-        window.URL.revokeObjectURL(url);
-        
-        console.log('Download completed successfully for:', file.name);
-        alert('Download completed successfully!');
-      },
-      error: (error) => {
-        console.error('Download failed:', error);
-        if (error.status === 401) {
-          alert('Download failed: Please log in again to download files.');
-        } else if (error.status === 403) {
-          alert('Download failed: You do not have access to this file.');
-        } else if (error.status === 404) {
-          alert('Download failed: File not found.');
-        } else {
-          alert('Download failed: Please try again later.');
-        }
-      }
-    });
   }
 
   viewCreator() {
