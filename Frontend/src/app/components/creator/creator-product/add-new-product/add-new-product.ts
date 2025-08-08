@@ -9,6 +9,7 @@ import { ProductCreateRequestDTO } from '../../../../core/models/product/product
 import { ProductService } from '../../../../core/services/product.service';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { FileDTO } from '../../../../core/models/product/file.dto';
+import { CATEGORIES, Category } from '../../../../core/data/categories';
 
 interface ProductDetail {
   attribute: string;
@@ -56,21 +57,21 @@ export class AddNewProduct implements OnInit {
   isUploading: boolean = false;
   uploadProgress: number = 0;
 
-  productCategories = [
-    { id: 1, name: 'Digital', description: 'Downloadable files', icon: 'fas fa-file', selected: false },
-    { id: 2, name: 'Course', description: 'Online video content', icon: 'fas fa-video', selected: false },
-    { id: 3, name: 'Membership', description: 'Recurring access to content', icon: 'fas fa-users', selected: false }
-  ];
+  parentCategories: Category[] = [];
+  subcategories: Category[] = [];
+  selectedParentCategory: Category | null = null;
+  hoveredCategory: number | null = null;
 
   constructor(private fb: FormBuilder, private productService: ProductService) {}
 
   ngOnInit(): void {
+    this.parentCategories = CATEGORIES.filter(c => !c.parentId);
     this.productForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
       price: [0, [Validators.required, Validators.min(0.01)]],
       currency: ['USD', [Validators.required]],
-      productType: ['', Validators.required],
+      categoryId: [null, Validators.required],
       permalink: ['', [Validators.required, Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
       isPublic: [true],
       url: [''],
@@ -82,10 +83,45 @@ export class AddNewProduct implements OnInit {
     });
   }
 
+  getCategoryIcon(categoryName: string): string {
+    // Return icon class based on category name
+    switch (categoryName.toLowerCase()) {
+      case 'art':
+        return 'fas fa-paint-brush';
+      case 'music':
+        return 'fas fa-music';
+      case 'photography':
+        return 'fas fa-camera';
+      case 'software':
+        return 'fas fa-code';
+      case 'education':
+        return 'fas fa-book';
+      default:
+        return 'fas fa-box-open';
+    }
+  }
+
+  getCategoryDescription(categoryName: string): string {
+    // Return a short description based on category name
+    switch (categoryName.toLowerCase()) {
+      case 'art':
+        return 'Creative artworks and designs';
+      case 'music':
+        return 'Audio tracks, beats, and compositions';
+      case 'photography':
+        return 'Photos and visual content';
+      case 'software':
+        return 'Apps, plugins, and software tools';
+      case 'education':
+        return 'Courses, tutorials, and learning materials';
+      default:
+        return 'Various digital products';
+    }
+  }
+
   get isCreateStepValid(): boolean {
     return !!this.productForm.get('name')?.valid &&
            !!this.productForm.get('price')?.valid &&
-           !!this.productForm.get('productType')?.valid &&
            !!this.productForm.get('permalink')?.valid;
   }
 
@@ -93,9 +129,15 @@ export class AddNewProduct implements OnInit {
     return !!this.productForm.get('description')?.valid && this.productForm.get('isPublic') !== null;
   }
 
-  selectProductType(typeName: string): void {
-    this.productForm.get('productCategory')?.setValue(typeName);
-    this.productCategories.forEach(type => type.selected = type.name === typeName);
+  selectParentCategory(category: Category): void {
+    this.selectedParentCategory = category;
+    this.productForm.get('categoryId')?.setValue(category.id);
+    this.subcategories = CATEGORIES.filter(c => c.parentId === category.id);
+  }
+
+  selectSubcategory(categoryId: string | number): void {
+    const id = typeof categoryId === 'string' ? parseInt(categoryId, 10) : categoryId;
+    this.productForm.get('categoryId')?.setValue(id);
   }
 
   onNameChange(): void {
