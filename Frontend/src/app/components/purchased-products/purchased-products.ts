@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterLink, RouterModule } from '@angular/router';
 import { OrderService } from '../../core/services/order.service';
 import { Router } from '@angular/router';
+import { DashboardSidebar } from '../dashboard-sidebar/dashboard-sidebar';
 
 interface PurchasedProductDTO {
   productId: number;
@@ -22,11 +23,12 @@ interface PurchasedProductDTO {
 
 @Component({
   selector: 'app-purchased-products',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, DashboardSidebar, RouterLink],
   templateUrl: './purchased-products.html',
   styleUrl: './purchased-products.css'
 })
 export class PurchasedProducts implements OnInit {
+  activeTab: 'purchased' | 'wishlist' | 'reviews' = 'purchased';
   purchasedProducts: PurchasedProductDTO[] = [];
   isLoading: boolean = false;
   errorMessage: string = '';
@@ -39,7 +41,11 @@ export class PurchasedProducts implements OnInit {
   ngOnInit() {
     this.loadPurchasedProducts();
   }
-  
+
+  setActiveTab(tab: 'purchased' | 'wishlist' | 'reviews') {
+    this.activeTab = tab;
+  }
+
   loadPurchasedProducts() {
     this.isLoading = true;
     this.errorMessage = '';
@@ -64,6 +70,11 @@ export class PurchasedProducts implements OnInit {
   downloadProduct(productId: number) {
     // Navigate to package page for downloads
     this.router.navigate(['/package', productId]);
+  }
+
+  showInLibrary() {
+    // Navigate to library component
+    this.router.navigate(['/library']);
   }
   
   getLicenseStatusClass(status: string): string {

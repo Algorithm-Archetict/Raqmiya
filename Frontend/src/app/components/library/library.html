@@ -34,17 +34,52 @@
       </div>
     </div>
 
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <p>Loading your library...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state" *ngIf="errorMessage">
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ errorMessage }}
+        <button class="btn btn-outline-danger btn-sm" (click)="loadPurchasedProducts()">
+          Try Again
+        </button>
+      </div>
+    </div>
+
     <!-- Content Area -->
-    <div class="content-area">
+    <div class="content-area" *ngIf="!isLoading && !errorMessage">
       <!-- Products Grid -->
       <div class="products-grid">
         <div class="product-card" *ngFor="let product of getCurrentProducts()">
           <div class="product-image">
             <img [src]="product.image" [alt]="product.title" />
+            <!-- License badge for purchased products -->
+            <div class="license-badge" 
+                 *ngIf="product.type === 'purchased' && product.licenseStatus"
+                 [class]="getLicenseStatusClass(product.licenseStatus)">
+              {{ getLicenseStatusText(product.licenseStatus) }}
+            </div>
           </div>
           
           <div class="product-info">
             <h3 class="product-title">{{ product.title }}</h3>
+            
+            <!-- Additional info for purchased products -->
+            <div class="product-details" *ngIf="product.type === 'purchased'">
+              <p class="purchase-date" *ngIf="product.purchaseDate">
+                Purchased: {{ product.purchaseDate | date:'mediumDate' }}
+              </p>
+              <p class="purchase-price" *ngIf="product.purchasePrice">
+                {{ product.purchasePrice | currency:'USD' }}
+              </p>
+            </div>
             
             <div class="product-actions">
               <a [href]="product.creatorLink" class="creator-link">
@@ -65,6 +100,20 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="getCurrentProducts().length === 0">
+        <div class="empty-content">
+          <i class="fas fa-book-open"></i>
+          <h3>No {{ activeTab }} items yet</h3>
+          <p *ngIf="activeTab === 'purchased'">Start building your digital library by purchasing some products!</p>
+          <p *ngIf="activeTab === 'wishlist'">Add products to your wishlist to see them here!</p>
+          <p *ngIf="activeTab === 'reviews'">Review products you've purchased to see them here!</p>
+          <a routerLink="/discover" class="btn btn-primary" *ngIf="activeTab === 'purchased'">
+            Browse Products
+          </a>
         </div>
       </div>
     </div>
