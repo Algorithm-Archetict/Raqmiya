@@ -49,8 +49,37 @@ namespace API.Controllers
             try
             {
                 var userId = GetCurrentUserId();
+                _logger.LogInformation("User {UserId} requesting their profile data", userId);
+                
+                // Debug: Log all claims for security monitoring
+                var claims = User.Claims.Select(c => $"{c.Type}: {c.Value}").ToList();
+                _logger.LogInformation("User claims: {Claims}", string.Join(", ", claims));
+                
+                // Additional security validation - ensure user exists and is active
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) return NotFound();
+                if (user == null) 
+                {
+                    _logger.LogWarning("User {UserId} not found in database - potential security issue", userId);
+                    return NotFound("User not found");
+                }
+                
+                // Validate user is active
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Inactive user {UserId} attempting to access profile", userId);
+                    return Unauthorized("Account is inactive");
+                }
+                
+                // Validate that the JWT claims match the database user
+                var jwtUsername = User.FindFirstValue(ClaimTypes.Name);
+                var jwtEmail = User.FindFirstValue(ClaimTypes.Email);
+                
+                if (jwtUsername != user.Username || jwtEmail != user.Email)
+                {
+                    _logger.LogError("JWT claims mismatch for user {UserId}. JWT Username: {JwtUsername}, DB Username: {DbUsername}", 
+                        userId, jwtUsername, user.Username);
+                    return Unauthorized("Token validation failed");
+                }
                 
                 var userProfile = _mapper.Map<UserProfileDTO>(user);
                 
@@ -62,6 +91,7 @@ namespace API.Controllers
                     userProfile.ProfileImageUrl = $"{baseUrl}{userProfile.ProfileImageUrl}";
                 }
                 
+                _logger.LogInformation("Successfully retrieved profile data for user {UserId} ({Username})", userId, user.Username);
                 return Ok(userProfile);
             }
             catch (Exception ex)
@@ -84,15 +114,54 @@ namespace API.Controllers
             try
             {
                 var userId = GetCurrentUserId();
+                _logger.LogInformation("User {UserId} attempting to update their profile", userId);
+                
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) return NotFound();
+                if (user == null) 
+                {
+                    _logger.LogWarning("User {UserId} not found in database during profile update", userId);
+                    return NotFound("User not found");
+                }
+                
+                // Validate user is active
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Inactive user {UserId} attempting to update profile", userId);
+                    return Unauthorized("Account is inactive");
+                }
+                
+                // Validate that the JWT claims match the database user
+                var jwtUsername = User.FindFirstValue(ClaimTypes.Name);
+                var jwtEmail = User.FindFirstValue(ClaimTypes.Email);
+                
+                if (jwtUsername != user.Username || jwtEmail != user.Email)
+                {
+                    _logger.LogError("JWT claims mismatch during profile update for user {UserId}", userId);
+                    return Unauthorized("Token validation failed");
+                }
 
-                // Update user properties
-                if (!string.IsNullOrWhiteSpace(dto.Username)) user.Username = dto.Username;
-                if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) user.ProfileDescription = dto.ProfileDescription;
-                if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) user.ProfileImageUrl = dto.ProfileImageUrl;
+                // Update user properties with validation
+                if (!string.IsNullOrWhiteSpace(dto.Username)) 
+                {
+                    // Check if username is already taken by another user
+                    var existingUser = await _userRepository.GetUserByUsernameAsync(dto.Username);
+                    if (existingUser != null && existingUser.Id != userId)
+                    {
+                        _logger.LogWarning("User {UserId} attempted to use username already taken by user {ExistingUserId}", 
+                            userId, existingUser.Id);
+                        return BadRequest("Username is already taken");
+                    }
+                    user.Username = dto.Username;
+                }
+                
+                if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) 
+                    user.ProfileDescription = dto.ProfileDescription;
+                    
+                if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) 
+                    user.ProfileImageUrl = dto.ProfileImageUrl;
 
                 await _userRepository.UpdateAsync(user);
+                _logger.LogInformation("Profile updated successfully for user {UserId} ({Username})", userId, user.Username);
 
                 var userProfile = _mapper.Map<UserProfileDTO>(user);
                 
@@ -133,8 +202,31 @@ namespace API.Controllers
             try
             {
                 var userId = GetCurrentUserId();
+                _logger.LogInformation("User {UserId} attempting to change password", userId);
+                
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) return NotFound();
+                if (user == null) 
+                {
+                    _logger.LogWarning("User {UserId} not found in database during password change", userId);
+                    return NotFound("User not found");
+                }
+                
+                // Validate user is active
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Inactive user {UserId} attempting to change password", userId);
+                    return Unauthorized("Account is inactive");
+                }
+                
+                // Validate that the JWT claims match the database user
+                var jwtUsername = User.FindFirstValue(ClaimTypes.Name);
+                var jwtEmail = User.FindFirstValue(ClaimTypes.Email);
+                
+                if (jwtUsername != user.Username || jwtEmail != user.Email)
+                {
+                    _logger.LogError("JWT claims mismatch during password change for user {UserId}", userId);
+                    return Unauthorized("Token validation failed");
+                }
 
                 // Verify current password
                 var saltBytes = Convert.FromBase64String(user.Salt);
@@ -143,6 +235,7 @@ namespace API.Controllers
                     var hash = Convert.ToBase64String(pbkdf2.GetBytes(32));
                     if (hash != user.HashedPassword)
                     {
+                        _logger.LogWarning("Incorrect current password provided for user {UserId}", userId);
                         var errorResponse = new ChangePasswordResponseDTO
                         {
                             Success = false,
@@ -159,6 +252,7 @@ namespace API.Controllers
                 user.HashedPassword = newHash;
 
                 await _userRepository.UpdateAsync(user);
+                _logger.LogInformation("Password changed successfully for user {UserId} ({Username})", userId, user.Username);
 
                 // Send email notification
                 _ = Task.Run(async () =>
@@ -205,8 +299,12 @@ namespace API.Controllers
         {
             try
             {
+                var userId = GetCurrentUserId();
+                _logger.LogInformation("User {UserId} attempting to upload profile image", userId);
+                
                 if (image == null || image.Length == 0)
                 {
+                    _logger.LogWarning("No image file provided for user {UserId}", userId);
                     var errorResponse = new UploadImageResponseDTO
                     {
                         Success = false,
@@ -218,6 +316,7 @@ namespace API.Controllers
                 // Validate file size (max 5MB)
                 if (image.Length > 5 * 1024 * 1024)
                 {
+                    _logger.LogWarning("File size too large for user {UserId}: {Size} bytes", userId, image.Length);
                     var errorResponse = new UploadImageResponseDTO
                     {
                         Success = false,
@@ -230,6 +329,7 @@ namespace API.Controllers
                 var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
                 if (!allowedTypes.Contains(image.ContentType.ToLower()))
                 {
+                    _logger.LogWarning("Invalid file type for user {UserId}: {ContentType}", userId, image.ContentType);
                     var errorResponse = new UploadImageResponseDTO
                     {
                         Success = false,
@@ -238,9 +338,29 @@ namespace API.Controllers
                     return BadRequest(errorResponse);
                 }
 
-                var userId = GetCurrentUserId();
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) return NotFound();
+                if (user == null) 
+                {
+                    _logger.LogWarning("User {UserId} not found in database during image upload", userId);
+                    return NotFound("User not found");
+                }
+                
+                // Validate user is active
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Inactive user {UserId} attempting to upload profile image", userId);
+                    return Unauthorized("Account is inactive");
+                }
+                
+                // Validate that the JWT claims match the database user
+                var jwtUsername = User.FindFirstValue(ClaimTypes.Name);
+                var jwtEmail = User.FindFirstValue(ClaimTypes.Email);
+                
+                if (jwtUsername != user.Username || jwtEmail != user.Email)
+                {
+                    _logger.LogError("JWT claims mismatch during image upload for user {UserId}", userId);
+                    return Unauthorized("Token validation failed");
+                }
 
                 // Create uploads directory if it doesn't exist
                 var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "profile-images");
@@ -249,7 +369,7 @@ namespace API.Controllers
                     Directory.CreateDirectory(uploadsPath);
                 }
 
-                // Generate unique filename
+                // Generate unique filename with user ID to prevent conflicts
                 var fileExtension = Path.GetExtension(image.FileName);
                 var fileName = $"{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
                 var filePath = Path.Combine(uploadsPath, fileName);
@@ -264,6 +384,8 @@ namespace API.Controllers
                 var imageUrl = $"/uploads/profile-images/{fileName}";
                 user.ProfileImageUrl = imageUrl;
                 await _userRepository.UpdateAsync(user);
+                
+                _logger.LogInformation("Profile image uploaded successfully for user {UserId} ({Username})", userId, user.Username);
 
                 // Get the full URL for the response
                 var request = HttpContext.Request;

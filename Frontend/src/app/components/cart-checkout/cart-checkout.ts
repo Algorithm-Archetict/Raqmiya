@@ -122,7 +122,7 @@ export class CartCheckout implements OnInit {
       // Step 2: Process mock payment
       const mockOrder: Order = {
         id: `temp_${Date.now()}`,
-        userId: this.authService.getCurrentUser()?.id || '',
+        userId: this.authService.getCurrentUser()?.id?.toString() || '',
         items: this.cartItems.map(item => ({
           productId: item.productId,
           name: item.name,
