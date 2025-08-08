@@ -287,9 +287,9 @@
     </div>
   </section>
 
-  <!-- Error Message -->
-  <div *ngIf="errorMessage" class="alert alert-danger mt-4" role="alert" aria-live="polite">
-    <i class="fas fa-exclamation-triangle me-2"></i>
-    {{ errorMessage }}
-  </div>
+  <!-- Shared Alert Component -->
+  <app-alert *ngIf="errorMessage || successMessage"
+    [type]="errorMessage ? 'error' : 'success'"
+    [message]="(errorMessage || successMessage) ?? ''">
+  </app-alert>
 </div>

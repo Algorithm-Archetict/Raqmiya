@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
+import { Alert } from '../../shared/alert/alert';
 
 interface Product {
   id: number;
@@ -20,7 +21,7 @@ interface Product {
 
 @Component({
   selector: 'app-discover',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Alert],
   templateUrl: './discover.html',
   styleUrl: './discover.css'
 })
@@ -35,7 +36,8 @@ export class Discover implements OnInit {
   selectedTags: string[] = [];
   sortBy: string = 'relevance';
   loading: boolean = false;
-  errorMessage: string = '';
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
 
   // Product Data
   allProducts: Product[] = [];
