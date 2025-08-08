@@ -88,7 +88,7 @@
                 class="form-input"
                 [class.error]="productForm.get('name')?.invalid && productForm.get('name')?.touched"
                 placeholder="Name of your product"
-                [formControlName]="'name'"
+                formControlName="name"
                 (input)="onNameChange()"
               >
               <div class="error-message" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
@@ -97,19 +97,54 @@
               </div>
             </div>
             
-            <div class="product-categories">
-              <div 
-                class="product-category-card" 
-                *ngFor="let type of productCategories"
-                [class.selected]="type.selected"
-                (click)="selectProductType(type.id)"
-              >
-                <div class="type-icon">
-                  <i [class]="type.icon"></i>
+            <div class="category-section">
+              <h3 class="section-title">Choose Your Product Category</h3>
+              <p class="section-subtitle">Select the category that best describes your product</p>
+              
+              <div class="category-grid">
+                <div *ngFor="let category of parentCategories" 
+                     class="category-card"
+                     [class.selected]="selectedParentCategory?.id === category.id"
+                     [class.hovered]="hoveredCategory === category.id"
+                     (click)="selectParentCategory(category)"
+                     (mouseenter)="hoveredCategory = category.id"
+                     (mouseleave)="hoveredCategory = null">
+                  <div class="category-icon">
+                    <i [class]="getCategoryIcon(category.name)"></i>
+                  </div>
+                  <div class="category-content">
+                    <h4 class="category-name">{{ category.name }}</h4>
+                    <p class="category-description">{{ getCategoryDescription(category.name) }}</p>
+                  </div>
+                  <div class="selection-indicator">
+                    <i class="fas fa-check-circle" *ngIf="selectedParentCategory?.id === category.id"></i>
+                  </div>
                 </div>
-                <div class="type-content">
-                  <h3 class="type-name">{{ type.name }}</h3>
-                  <p class="type-description">{{ type.description }}</p>
+              </div>
+            </div>
+
+            <div *ngIf="selectedParentCategory" class="subcategory-section">
+              <h4 class="section-title">Choose Subcategory</h4>
+              <p class="section-subtitle">Refine your product classification</p>
+              
+              <div class="subcategory-selector">
+                <select id="subcategory" 
+                        (change)="selectSubcategory($any($event.target).value)" 
+                        class="elegant-select">
+                  <option [ngValue]="null">Select a subcategory...</option>
+                  <option *ngFor="let sub of subcategories" [value]="sub.id">{{ sub.name }}</option>
+                </select>
+                <div class="select-arrow">
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+              
+              <div class="subcategory-chips" *ngIf="subcategories.length > 0">
+                <div *ngFor="let sub of subcategories" 
+                     class="subcategory-chip"
+                     [class.selected]="productForm.get('categoryId')?.value === sub.id"
+                     (click)="selectSubcategory(sub.id)">
+                  {{ sub.name }}
                 </div>
               </div>
             </div>

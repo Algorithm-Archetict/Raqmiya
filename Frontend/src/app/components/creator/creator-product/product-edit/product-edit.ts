@@ -10,6 +10,7 @@ import { ProductDetailDTO } from '../../../../core/models/product/product-detail
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { ProductCreateRequestDTO } from '../../../../core/models/product/product-create-request.dto';
 import { CategoryDTO } from '../../../../core/models/product/category.dto';
+import { CATEGORIES } from '../../../../core/data/categories';
 
 
 interface ProductDetail {
@@ -221,7 +222,7 @@ export class ProductEdit implements OnInit {
           description: formValue.description || '',
           price: parseFloat(formValue.price),
           currency: formValue.currency,
-          productType: formValue.productType,
+          //productType: formValue.productType,
           coverImageUrl: formValue.coverImageUrl,
           thumbnailImageUrl: formValue.thumbnailImageUrl,
           previewVideoUrl: formValue.previewVideoUrl,
@@ -234,7 +235,8 @@ export class ProductEdit implements OnInit {
           license: formValue.license,
           updates: formValue.updates,
           categoryId: formValue.categoryId, // Changed to single categoryId
-          tagIds: formValue.tagIds || []
+          tagIds: formValue.tagIds || [],
+          productCategory: CATEGORIES[0]
         };
 
         // Log the request payload for debugging
