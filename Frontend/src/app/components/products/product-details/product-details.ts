@@ -8,6 +8,7 @@ import { ProductDetailDTO } from '../../../core/models/product/product-detail.dt
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import Swal from 'sweetalert2';
+import { Alert } from '../../../shared/alert/alert';
 
 
 interface MediaItem {
@@ -18,7 +19,7 @@ interface MediaItem {
 
 @Component({
   selector: 'app-product-details',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, Alert],
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })
@@ -31,9 +32,10 @@ export class ProductDetails implements OnInit {
   relatedProducts: ProductDetailDTO[] = [];
   isDarkTheme: boolean = false;
 
-  // Loading and error states
+  // Loading and alert states
   isLoading: boolean = false;
-  error: string | null = null;
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
 
   constructor(
     private router: Router,
@@ -54,41 +56,41 @@ export class ProductDetails implements OnInit {
       if (productId) {
         this.fetchProduct(productId);
       } else {
-        this.error = 'Product ID not found';
+        this.errorMessage = 'Product ID not found';
       }
     });
   }
 
   fetchProduct(productId: string) {
     this.isLoading = true;
-    this.error = null;
+    this.errorMessage = null;
 
     // Try to parse as number first, then as permalink
     const numericId = parseInt(productId);
     if (!isNaN(numericId)) {
-      this.productService.getById(numericId).subscribe({
-        next: (product) => {
+      this.productService.getProductById(numericId).subscribe({
+        next: (product: ProductDetailDTO) => {
           this.product = product;
           this.reviews = product.reviews;
           this.loadRelatedProducts();
           this.isLoading = false;
         },
-        error: (error) => {
-          this.error = 'Product not found';
+        error: (error: any) => {
+          this.errorMessage = 'Product not found';
           this.isLoading = false;
         }
       });
     } else {
       // Try as permalink
-      this.productService.getByPermalink(productId).subscribe({
-        next: (product) => {
+      this.productService.getProductByPermalink(productId).subscribe({
+        next: (product: ProductDetailDTO) => {
           this.product = product;
           this.reviews = product.reviews;
           this.loadRelatedProducts();
           this.isLoading = false;
         },
-        error: (error) => {
-          this.error = 'Product not found';
+        error: (error: any) => {
+          this.errorMessage = 'Product not found';
           this.isLoading = false;
         }
       });
@@ -267,75 +269,74 @@ export class ProductDetails implements OnInit {
   }
 
   submitReview(): void {
-  if (!this.userRating || !this.userReview.trim()) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Missing Information',
-      text: 'Both rating and review are required to submit your feedback!',
-      customClass: {
-        confirmButton: 'btn btn-primary'
-      }
-    });
-    return;
-  }
-
-  this.submittingReview = true;
-  this.productService.submitReview(this.product!.id, {
-    rating: this.userRating,
-    comment: this.userReview
-  }).subscribe({
-    next: (review: ReviewDTO) => {
-      // Add the new review to the reviews array (no need to refresh the whole product)
-      const newReview = {
-        id: review.id,
-        rating: review.rating,
-        comment: review.comment || '',
-        userName: review.userName,
-        userAvatar: review.userAvatar,
-        createdAt: review.createdAt
-      };
-      this.product!.reviews.unshift(newReview);
-
-      // Update average rating
-      const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
-      this.product!.averageRating = totalRatings / this.product!.reviews.length;
-
-      // Reset form
-      this.userReview = '';
-      this.userRating = 0;
-      this.submittingReview = false;
-
-      // Show success notification
-      Swal.fire({
-        icon: 'success',
-        title: 'Thank You!',
-        text: 'Your review has been submitted successfully.',
-        customClass: {
-          confirmButton: 'btn btn-primary'
-        },
-        timer: 3000
-      });
-    },
-    error: (error) => {
-      console.error('Error submitting review:', error);
-      this.submittingReview = false;
-
-      // Handle error messages
-      const errorMessage = error.error?.includes('already reviewed')
-        ? 'You have already reviewed this product'
-        : error.error || 'Error submitting review. Please try again.';
-
+    if (!this.userRating || !this.userReview.trim()) {
       Swal.fire({
         icon: 'error',
-        title: 'Submission Failed',
-        text: errorMessage,
+        title: 'Missing Information',
+        text: 'Both rating and review are required to submit your feedback!',
         customClass: {
           confirmButton: 'btn btn-primary'
         }
       });
+      return;
     }
-  });
-}
+
+    this.submittingReview = true;
+    this.productService.addReview(this.product!.id, {
+      rating: this.userRating,
+      comment: this.userReview
+    } as any).subscribe({
+      next: (review: ReviewDTO) => {
+        // Add the new review to the reviews array (no need to refresh the whole product)
+        const newReview = {
+          id: review.id,
+          rating: review.rating,
+          comment: review.comment || '',
+          userName: review.userName,
+          userAvatar: review.userAvatar,
+          createdAt: review.createdAt
+        };
+        this.product!.reviews.unshift(newReview);
+
+        // Update average rating
+        const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
+        this.product!.averageRating = totalRatings / this.product!.reviews.length;
+
+        // Reset form
+        this.userReview = '';
+        this.userRating = 0;
+        this.submittingReview = false;
+
+        // Show success notification
+        Swal.fire({
+          icon: 'success',
+          title: 'Thank You!',
+          text: 'Your review has been submitted successfully.',
+          customClass: {
+            confirmButton: 'btn btn-primary'
+          },
+          timer: 3000
+        });
+      },
+      error: (error: any) => {
+        this.submittingReview = false;
+
+        // Handle error messages
+        const errorMessage = error.error?.includes('already reviewed')
+          ? 'You have already reviewed this product'
+          : error.error || 'Error submitting review. Please try again.';
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Submission Failed',
+          text: errorMessage,
+          customClass: {
+            confirmButton: 'btn btn-primary'
+          }
+        });
+      }
+    });
+  }
   loadRelatedProducts() {
     // TODO: Implement API call to get related products
     this.relatedProducts = [];
@@ -366,7 +367,7 @@ export class ProductDetails implements OnInit {
   addToCart() {
 
     if (!this.product) return;
-    
+
     this.cartService.addToCart(this.product.id, 1).subscribe({
       next: (response) => {
         if (response.success) {

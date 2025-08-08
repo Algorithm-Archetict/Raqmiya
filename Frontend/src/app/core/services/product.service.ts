@@ -128,10 +128,8 @@ export class ProductService {
   }
 
   // ======= REVIEWS =======
-  addReview(productId: number, review: ReviewDTO): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${productId}/reviews`, review).pipe(
-      catchError(this.handleError('addReview'))
-    );
+  addReview(productId: number, review: ReviewDTO): Observable<ReviewDTO> {
+    return this.http.post<ReviewDTO>(`${this.apiUrl}/${productId}/reviews`, review);
   }
 
   // ======= ADMIN =======
