@@ -111,6 +111,29 @@
               >
                 <div class="product-image">
                   <img [src]="product.image" [alt]="product.title">
+                  
+                  <!-- Wishlist Toggle Button -->
+                  <div class="wishlist-toggle"
+                       (click)="toggleWishlist(product, $event)"
+                       (mouseenter)="onWishlistHover(product, true, $event)"
+                       (mouseleave)="onWishlistHover(product, false, $event)"
+                       [class.in-wishlist]="product.inWishlist"
+                       [class.loading]="product.loadingWishlist"
+                       [class.hovered]="product.wishlistHovered">
+                    <div class="wishlist-icon">
+                      <!-- Loading Spinner -->
+                      <i class="fas fa-spinner fa-spin" *ngIf="product.loadingWishlist"></i>
+                      <!-- Plus Icon (not in wishlist) -->
+                      <i class="fas fa-plus" *ngIf="!product.inWishlist && !product.loadingWishlist"></i>
+                      <!-- Checkmark Icon (in wishlist) -->
+                      <i class="fas fa-check" *ngIf="product.inWishlist && !product.loadingWishlist"></i>
+                    </div>
+                    <!-- Tooltip -->
+                    <div class="wishlist-tooltip" *ngIf="product.wishlistHovered && !product.loadingWishlist">
+                      {{ product.inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}
+                    </div>
+                  </div>
+                  
                   <div class="product-overlay">
                     <button class="btn btn-primary btn-sm">
                       <i class="fas fa-eye"></i>
@@ -240,6 +263,29 @@
                 <div class="product-card grid-item" (click)="viewProduct(product.id)">
                   <div class="product-image">
                     <img [src]="product.image" [alt]="product.title">
+                    
+                    <!-- Wishlist Toggle Button -->
+                    <div class="wishlist-toggle"
+                         (click)="toggleWishlist(product, $event)"
+                         (mouseenter)="onWishlistHover(product, true, $event)"
+                         (mouseleave)="onWishlistHover(product, false, $event)"
+                         [class.in-wishlist]="product.inWishlist"
+                         [class.loading]="product.loadingWishlist"
+                         [class.hovered]="product.wishlistHovered">
+                      <div class="wishlist-icon">
+                        <!-- Loading Spinner -->
+                        <i class="fas fa-spinner fa-spin" *ngIf="product.loadingWishlist"></i>
+                        <!-- Plus Icon (not in wishlist) -->
+                        <i class="fas fa-plus" *ngIf="!product.inWishlist && !product.loadingWishlist"></i>
+                        <!-- Checkmark Icon (in wishlist) -->
+                        <i class="fas fa-check" *ngIf="product.inWishlist && !product.loadingWishlist"></i>
+                      </div>
+                      <!-- Tooltip -->
+                      <div class="wishlist-tooltip" *ngIf="product.wishlistHovered && !product.loadingWishlist">
+                        {{ product.inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}
+                      </div>
+                    </div>
+                    
                     <div class="product-overlay">
                       <button class="btn btn-primary btn-sm">
                         <i class="fas fa-eye"></i>

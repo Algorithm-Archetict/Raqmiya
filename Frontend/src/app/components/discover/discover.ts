@@ -16,6 +16,10 @@ interface Product {
   category: string;
   tags: string[];
   badge?: string;
+  // Wishlist properties
+  inWishlist: boolean;
+  loadingWishlist: boolean;
+  wishlistHovered: boolean;
 }
 
 @Component({
@@ -30,7 +34,7 @@ export class Discover implements OnInit {
   // Search and Filter Properties
   searchQuery: string = '';
   selectedCategory: string = 'all';
-  priceRange: number = 50;
+  priceRange: number = 1000; // Increased from 50 to 1000 to show all products
   selectedRating: number = 0;
   selectedTags: string[] = [];
   sortBy: string = 'relevance';
@@ -72,9 +76,13 @@ export class Discover implements OnInit {
   // Initialize product data from API
   initializeProducts() {
     this.loading = true;
+    console.log('Starting to load products...');
     
-    this.productService.getProductList(1, 100).subscribe({
+    this.productService.getProductList(1, 1000).subscribe({
       next: (products: ProductListItemDTO[]) => {
+        console.log('Loaded products from API:', products);
+        console.log('Loaded products count:', products.length);
+        
         this.allProducts = products.map(product => ({
           id: product.id,
           title: product.name || 'Untitled Product',
@@ -85,15 +93,31 @@ export class Discover implements OnInit {
           image: this.ensureFullUrl(product.coverImageUrl),
           category: 'design', // Default category, you might want to add this to the DTO
           tags: ['Design'], // Default tags, you might want to add this to the DTO
-          badge: product.isPublic ? 'Public' : 'Private'
+          badge: product.isPublic ? 'Public' : 'Private',
+          // Initialize wishlist properties
+          inWishlist: false,
+          loadingWishlist: false,
+          wishlistHovered: false
         }));
         
         this.recommendedProducts = this.allProducts.slice(0, 6);
         this.filteredProducts = [...this.allProducts];
         this.loading = false;
+        
+        console.log('Mapped products count:', this.allProducts.length);
+        console.log('Filtered products count:', this.filteredProducts.length);
+        
+        // Load wishlist status for all products
+        this.loadWishlistStatus();
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          message: error.message
+        });
         // Fallback to empty array if API fails
         this.allProducts = [];
         this.recommendedProducts = [];
@@ -101,6 +125,132 @@ export class Discover implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  // Load wishlist status for all products
+  loadWishlistStatus() {
+    this.productService.getWishlist().subscribe({
+      next: (wishlistProducts: ProductListItemDTO[]) => {
+        const wishlistIds = wishlistProducts.map(p => p.id);
+        
+        // Update wishlist status for all products
+        this.allProducts.forEach(product => {
+          product.inWishlist = wishlistIds.includes(product.id);
+        });
+        
+        // Update filtered products
+        this.applyFilters();
+      },
+      error: (error) => {
+        console.error('Error loading wishlist status:', error);
+        // Continue without wishlist status if API fails
+        // Set all products as not in wishlist
+        this.allProducts.forEach(product => {
+          product.inWishlist = false;
+        });
+        this.applyFilters();
+      }
+    });
+  }
+
+  // Toggle wishlist for a product
+  toggleWishlist(product: Product, event: Event) {
+    // Prevent event bubbling to avoid triggering product view
+    event.stopPropagation();
+    
+    if (product.loadingWishlist) {
+      return; // Prevent multiple clicks while loading
+    }
+
+    console.log('Toggling wishlist for product:', product.id, 'Current state:', product.inWishlist);
+    product.loadingWishlist = true;
+
+    const apiCall = product.inWishlist 
+      ? this.productService.removeFromWishlist(product.id)
+      : this.productService.addToWishlist(product.id);
+
+    apiCall.subscribe({
+      next: (response) => {
+        console.log('Wishlist toggle success response:', response);
+        // Toggle wishlist status
+        product.inWishlist = !product.inWishlist;
+        product.loadingWishlist = false;
+        
+        // Show success message
+        this.showWishlistMessage(product.title, product.inWishlist);
+      },
+      error: (error) => {
+        console.error('Error toggling wishlist:', error);
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          message: error.message,
+          ok: error.ok
+        });
+        product.loadingWishlist = false;
+        
+        // Handle specific error cases
+        if (error.status === 400) {
+          // 400 error usually means the product is already in/out of wishlist
+          // Refresh the wishlist status to sync with server
+          console.log('400 error - refreshing wishlist status to sync with server');
+          this.loadWishlistStatus();
+          
+          // Show a more specific message
+          const action = product.inWishlist ? 'remove from' : 'add to';
+          this.showWishlistMessage(`Product is already ${action} wishlist`, product.inWishlist, true);
+        } else if (error.status === 401) {
+          this.showWishlistMessage('Please log in to manage your wishlist', product.inWishlist, true);
+        } else if (error.status === 404) {
+          this.showWishlistMessage('Product not found', product.inWishlist, true);
+        } else {
+          // Show generic error message
+          this.showWishlistMessage(product.title, product.inWishlist, true);
+        }
+      }
+    });
+  }
+
+  // Show wishlist action message
+  showWishlistMessage(productTitle: string, added: boolean, isError: boolean = false) {
+    const message = isError 
+      ? `Failed to ${added ? 'add' : 'remove'} "${productTitle}" from wishlist`
+      : `"${productTitle}" ${added ? 'added to' : 'removed from'} wishlist`;
+    
+    // Create and show a toast notification
+    this.showToast(message, isError ? 'error' : 'success');
+  }
+
+  // Show toast notification
+  showToast(message: string, type: 'success' | 'error' = 'success') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <div class="toast-content">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(toast);
+    
+    // Show toast
+    setTimeout(() => toast.classList.add('show'), 100);
+    
+    // Remove toast after 3 seconds
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+  }
+
+  // Handle wishlist button hover
+  onWishlistHover(product: Product, isHovered: boolean, event: Event) {
+    event.stopPropagation();
+    product.wishlistHovered = isHovered;
   }
 
   // Search functionality
@@ -143,6 +293,16 @@ export class Discover implements OnInit {
 
   // Apply all filters
   applyFilters() {
+    console.log('Applying filters...');
+    console.log('All products before filtering:', this.allProducts.length);
+    console.log('Product prices:', this.allProducts.map(p => ({ id: p.id, title: p.title, price: p.price })));
+    console.log('Search query:', this.searchQuery);
+    console.log('Selected category:', this.selectedCategory);
+    console.log('Price range:', this.priceRange);
+    console.log('Selected rating:', this.selectedRating);
+    console.log('Selected tags:', this.selectedTags);
+    console.log('Sort by:', this.sortBy);
+    
     let filtered = [...this.allProducts];
 
     // Search filter
@@ -153,19 +313,24 @@ export class Discover implements OnInit {
         product.creator.toLowerCase().includes(query) ||
         product.tags.some(tag => tag.toLowerCase().includes(query))
       );
+      console.log('After search filter:', filtered.length);
     }
 
     // Category filter
     if (this.selectedCategory !== 'all') {
       filtered = filtered.filter(product => product.category === this.selectedCategory);
+      console.log('After category filter:', filtered.length);
     }
 
     // Price filter
     filtered = filtered.filter(product => product.price <= this.priceRange);
+    console.log('After price filter:', filtered.length);
+    console.log('Products after price filter:', filtered.map(p => ({ id: p.id, title: p.title, price: p.price })));
 
     // Rating filter
     if (this.selectedRating > 0) {
       filtered = filtered.filter(product => product.rating >= this.selectedRating);
+      console.log('After rating filter:', filtered.length);
     }
 
     // Tags filter
@@ -173,6 +338,7 @@ export class Discover implements OnInit {
       filtered = filtered.filter(product => 
         this.selectedTags.some(tag => product.tags.includes(tag))
       );
+      console.log('After tags filter:', filtered.length);
     }
 
     // Sort
@@ -198,6 +364,7 @@ export class Discover implements OnInit {
     }
 
     this.filteredProducts = filtered;
+    console.log('Final filtered products:', this.filteredProducts.length);
   }
 
   // Carousel functionality
@@ -229,7 +396,10 @@ export class Discover implements OnInit {
           ratingCount: 145,
           image: 'https://via.placeholder.com/300x200/0074e4/ffffff?text=3D+Modeling',
           category: '3d',
-          tags: ['3D', 'Modeling', 'Advanced']
+          tags: ['3D', 'Modeling', 'Advanced'],
+          inWishlist: false,
+          loadingWishlist: false,
+          wishlistHovered: false
         },
         {
           id: 10,
@@ -240,7 +410,10 @@ export class Discover implements OnInit {
           ratingCount: 89,
           image: 'https://via.placeholder.com/300x200/6c2bd9/ffffff?text=Font+Collection',
           category: 'design',
-          tags: ['Fonts', 'Typography', 'Design']
+          tags: ['Fonts', 'Typography', 'Design'],
+          inWishlist: false,
+          loadingWishlist: false,
+          wishlistHovered: false
         }
       ];
 

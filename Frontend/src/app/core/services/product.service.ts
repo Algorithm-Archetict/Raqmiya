@@ -29,8 +29,24 @@ export class ProductService {
     );
   }
 
-  getProductList(page = 1, size = 10): Observable<ProductListItemDTO[]> {
-    return this.getAll(page, size).pipe(map(res => res.items || []));
+  // ======= PRODUCTS =======
+  getProductList(pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTO[]> {
+    return this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
+      map(response => {
+        console.log('Product list API response:', response);
+        // Handle both paged and direct array responses
+        if (response && response.items && Array.isArray(response.items)) {
+          console.log('Using paged response items:', response.items.length);
+          return response.items;
+        } else if (Array.isArray(response)) {
+          console.log('Using direct array response:', response.length);
+          return response;
+        } else {
+          console.warn('Unexpected product list response format:', response);
+          return [];
+        }
+      })
+    );
   }
 
   // Get products by current creator (authenticated user)
@@ -60,16 +76,41 @@ export class ProductService {
   }
 
   // ======= WISHLIST =======
-  addToWishlist(id: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/wishlist`, {});
+  addToWishlist(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/wishlist`, {}, { responseType: 'text' }).pipe(
+      map(response => {
+        console.log('Add to wishlist response:', response);
+        return { success: true, message: response };
+      })
+    );
   }
 
-  removeFromWishlist(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}/wishlist`);
+  removeFromWishlist(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}/wishlist`, { responseType: 'text' }).pipe(
+      map(response => {
+        console.log('Remove from wishlist response:', response);
+        return { success: true, message: response };
+      })
+    );
   }
 
   getWishlist(): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/my-wishlist`);
+    return this.http.get<any>(`${this.apiUrl}/my-wishlist`).pipe(
+      map(response => {
+        console.log('Wishlist API response:', response);
+        // Handle both paged and direct array responses
+        if (response && response.items && Array.isArray(response.items)) {
+          console.log('Using paged wishlist response items:', response.items.length);
+          return response.items;
+        } else if (Array.isArray(response)) {
+          console.log('Using direct wishlist array response:', response.length);
+          return response;
+        } else {
+          console.warn('Unexpected wishlist response format:', response);
+          return [];
+        }
+      })
+    );
   }
 
   // ======= ANALYTICS =======

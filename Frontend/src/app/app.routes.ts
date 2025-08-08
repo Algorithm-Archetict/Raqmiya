@@ -22,6 +22,7 @@ import { ProductEditContent } from './components/creator/creator-product/product
 import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
 import { AllReviews } from './components/products/all-reviews/all-reviews';
+import { WishList } from './components/wish-list/wish-list';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -61,5 +62,6 @@ export const routes: Routes = [
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
 
+    {path:"wishlist",component:WishList, canActivate: [AuthGuard]},
     {path:"**",component:NotFound},
 ];
