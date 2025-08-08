@@ -12,26 +12,13 @@
       </div>
     </div>
 
-    <!-- Error State -->
-    <div class="error-state" *ngIf="errorMessage && !loading">
-      <div class="error-card">
-        <i class="fas fa-exclamation-triangle"></i>
-        <h3>Error Loading Product</h3>
-        <p>{{ errorMessage }}</p>
-        <button class="retry-btn" (click)="loadProduct()">
-          <i class="fas fa-redo"></i>
-          Try Again
-        </button>
-      </div>
-    </div>
-
-    <!-- Success Message -->
-    <div class="success-message" *ngIf="successMessage">
-      <div class="alert alert-success">
-        <i class="fas fa-check-circle"></i>
-        {{ successMessage }}
-      </div>
-    </div>
+    <!-- Error and Success Messages -->
+    <ng-container *ngIf="errorMessage">
+      <app-alert [type]="'danger'" [message]="errorMessage" (close)="errorMessage = null"></app-alert>
+    </ng-container>
+    <ng-container *ngIf="successMessage">
+      <app-alert [type]="'success'" [message]="successMessage" (close)="successMessage = null"></app-alert>
+    </ng-container>
 
     <!-- Main Content (only show when not loading and no error) -->
     <div *ngIf="!loading && !errorMessage">
@@ -39,7 +26,7 @@
       <div class="product-header">
         <div class="header-left">
           <h1 class="header-title">{{ productForm.get('name')?.value || 'Product Name' }}</h1>
-          
+
           <!-- Navigation Tabs -->
           <div class="nav-tabs">
             <a class="nav-tab active" routerLink="/products/{{ productId }}/edit">
@@ -52,13 +39,13 @@
             </a>
           </div>
         </div>
-        
+
         <div class="header-right">
           <button class="btn btn-secondary" (click)="cancel()">
             Cancel
           </button>
-          <button 
-            class="btn btn-primary" 
+          <button
+            class="btn btn-primary"
             [disabled]="!isFormValid || isSubmitting"
             (click)="saveAndContinue()"
           >
@@ -77,8 +64,8 @@
             <div class="form-section" [formGroup]="productForm">
               <div class="form-group">
                 <label for="productNameEdit" class="form-label">Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="productNameEdit"
                   class="form-input"
                   placeholder="Name of your product"
@@ -91,10 +78,10 @@
                   <span *ngIf="productForm.get('name')?.errors?.['maxlength']">Name cannot exceed 200 characters</span>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label for="productDescription" class="form-label">Description</label>
-                <textarea 
+                <textarea
                   id="productDescription"
                   class="form-input"
                   placeholder="Describe your product..."
@@ -105,12 +92,12 @@
                   <span *ngIf="productForm.get('description')?.errors?.['maxlength']">Description cannot exceed 5000 characters</span>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label for="productPrice" class="form-label">Price</label>
                 <div class="price-input-group">
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     id="productPrice"
                     class="form-input"
                     placeholder="0.00"
@@ -130,7 +117,7 @@
                   <span *ngIf="productForm.get('price')?.errors?.['max']">Price cannot exceed 1,000,000</span>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label for="productType" class="form-label">Product Type</label>
                 <select id="productType" class="form-select" formControlName="productType">
@@ -143,11 +130,11 @@
                   <span *ngIf="productForm.get('productType')?.errors?.['required']">Product type is required</span>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label for="productPermalink" class="form-label">Permalink</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="productPermalink"
                   class="form-input"
                   placeholder="my-awesome-product"
@@ -158,7 +145,7 @@
                   <span *ngIf="productForm.get('permalink')?.errors?.['pattern']">Permalink must be lowercase alphanumeric with hyphens</span>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label for="productStatus" class="form-label">Status</label>
                 <select id="productStatus" class="form-select" formControlName="status">
@@ -170,7 +157,7 @@
                   <span *ngIf="productForm.get('status')?.errors?.['required']">Status is required</span>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label class="form-label">Visibility</label>
                 <div class="checkbox-group">
@@ -181,14 +168,14 @@
                   </label>
                 </div>
               </div>
-              
+
               <!-- Enhanced Product Details -->
               <div class="section-divider"></div>
               <div class="form-group">
                 <label class="form-label">Features</label>
                 <div class="features-input-group">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     class="form-input"
                     placeholder="Add a feature..."
                     [(ngModel)]="newFeature"
@@ -208,57 +195,57 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label for="productCompatibility" class="form-label">Compatibility</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="productCompatibility"
                   class="form-input"
                   placeholder="e.g., Unity, Unreal Engine, Blender"
                   formControlName="compatibility"
                 >
               </div>
-              
+
               <div class="form-group">
                 <label for="productLicense" class="form-label">License</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="productLicense"
                   class="form-input"
                   placeholder="e.g., Standard License, Commercial License"
                   formControlName="license"
                 >
               </div>
-              
+
               <div class="form-group">
                 <label for="productUpdates" class="form-label">Updates</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="productUpdates"
                   class="form-input"
                   placeholder="e.g., Lifetime Updates, 1 Year Updates"
                   formControlName="updates"
                 >
               </div>
-              
+
               <!-- Cover Images Section -->
               <div class="section-divider"></div>
               <div class="form-group">
                 <label class="form-label">Cover Images</label>
-                <button 
+                <button
                   class="upload-btn"
                   (click)="showCoverOptions = !showCoverOptions"
                 >
                   <i class="fas fa-upload"></i>
                   Upload a cover image
                 </button>
-                
+
                 <div class="upload-options" *ngIf="showCoverOptions">
                   <div class="upload-option">
-                    <input 
-                      type="file" 
-                      id="coverFile" 
+                    <input
+                      type="file"
+                      id="coverFile"
                       accept="image/*"
                       (change)="uploadCoverImage($event)"
                       style="display: none;"
@@ -270,14 +257,14 @@
                   </div>
                   <div class="upload-option">
                     <div class="link-input-group">
-                      <input 
-                        type="url" 
+                      <input
+                        type="url"
                         class="form-input"
                         placeholder="Enter image URL"
                         [(ngModel)]="coverImageLink"
                         [ngModelOptions]="{standalone: true}"
                       >
-                      <button 
+                      <button
                         class="btn btn-secondary"
                         (click)="uploadCoverFromLink()"
                       >
@@ -286,11 +273,11 @@
                     </div>
                   </div>
                 </div>
-                
+
                 <p class="upload-hint">
                   Images should be horizontal, at least 1280x720px, and 72 DPI (dots per inch).
                 </p>
-                
+
                 <!-- Cover Images Preview -->
                 <div class="cover-images-preview" *ngIf="coverImages.length > 0">
                   <div class="cover-image-item" *ngFor="let image of coverImages; let i = index">
@@ -301,14 +288,14 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- Thumbnail Section -->
               <div class="section-divider"></div>
               <div class="form-group">
                 <label class="form-label">Thumbnail</label>
-                <input 
-                  type="file" 
-                  id="thumbnailFile" 
+                <input
+                  type="file"
+                  id="thumbnailFile"
                   accept="image/*"
                   (change)="uploadThumbnail($event)"
                   style="display: none;"
@@ -317,18 +304,18 @@
                   <i class="fas fa-upload"></i>
                   Upload thumbnail
                 </label>
-                
+
                 <p class="upload-hint">
                   This image appears in the Raqmiya Library, Discover and Profile pages. Your image should be square, at least 600x600px, and JPG, PNG or GIF format.
                 </p>
-                
+
                 <!-- Thumbnail Preview -->
                 <div class="thumbnail-preview" *ngIf="thumbnailImage">
                   <img [src]="thumbnailImage" alt="Thumbnail">
                 </div>
               </div>
             </div>
-            
+
             <!-- Right Section - Real Preview -->
             <div class="preview-section">
               <div class="real-preview">
@@ -336,7 +323,7 @@
                   <h3>Product Preview</h3>
                   <p>This is how your product will appear to customers</p>
                 </div>
-                
+
                 <div class="preview-content">
                   <!-- Product Image -->
                   <div class="preview-image-container" *ngIf="coverImages.length > 0">
@@ -346,12 +333,12 @@
                     <i class="fas fa-image"></i>
                     <p>Upload a cover image to see preview</p>
                   </div>
-                  
+
                   <!-- Product Info -->
                   <div class="preview-info">
                     <h2 class="preview-title">{{ productForm.get('name')?.value || 'Product Name' }}</h2>
                     <p class="preview-description">{{ productForm.get('description')?.value || 'Product description will appear here...' }}</p>
-                    
+
                     <!-- Product Features -->
                     <div class="preview-features" *ngIf="productFeatures.length > 0">
                       <h4>Features:</h4>
@@ -359,7 +346,7 @@
                         <li *ngFor="let feature of productFeatures">{{ feature }}</li>
                       </ul>
                     </div>
-                    
+
                     <!-- Price -->
                     <div class="preview-price-section">
                       <div class="price-display">
@@ -377,5 +364,3 @@
     </div>
   </div>
 </div>
-
-

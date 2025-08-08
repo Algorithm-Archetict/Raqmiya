@@ -7,11 +7,11 @@ import { DashboardSidebar } from '../../../dashboard-sidebar/dashboard-sidebar';
 import { ProductService } from '../../../../core/services/product.service';
 import { ProductDetailDTO } from '../../../../core/models/product/product-detail.dto';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
-import { FileDTO } from '../../../../core/models/product/file.dto';
+import { Alert } from '../../../shared/alert/alert';
 
 @Component({
   selector: 'app-product-edit-content',
-  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, DashboardSidebar],
+  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, DashboardSidebar, Alert],
   templateUrl: './product-edit-content.html',
   styleUrl: './product-edit-content.css'
 })
@@ -35,7 +35,6 @@ export class ProductEditContent implements OnInit {
   content: string = '';
 
   // File management
-  productFiles: FileDTO[] = [];
   newFiles: File[] = [];
   isUploading: boolean = false;
   uploadProgress: number = 0;
@@ -63,25 +62,24 @@ export class ProductEditContent implements OnInit {
     return Promise.resolve().then(() => {
       this.loading = true;
       this.errorMessage = null;
-      
+
       const productId = this.route.snapshot.params['id'];
       if (!productId) {
         this.errorMessage = 'Product ID not found';
         this.loading = false;
         return;
       }
-      
+
       this.productId = parseInt(productId);
-      
-      this.productService.getById(this.productId).subscribe({
-        next: (product) => {
+
+      this.productService.getProductById(this.productId).subscribe({
+        next: (product: ProductDetailDTO) => {
           this.product = product;
           this.productName = product.name;
           this.populateForm();
-          this.loadProductFiles();
           this.loading = false;
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error loading product:', error);
           this.errorMessage = 'Failed to load product details';
           this.loading = false;
@@ -92,23 +90,12 @@ export class ProductEditContent implements OnInit {
 
   private populateForm(): void {
     if (!this.product) return;
-    
+
     // Populate content field
     this.content = this.product.description || '';
     this.productForm.patchValue({
       content: this.content
     });
-  }
-
-  private async loadProductFiles(): Promise<void> {
-    if (!this.productId) return;
-    
-    try {
-      this.productFiles = await firstValueFrom(this.productService.getFiles(this.productId));
-    } catch (error: any) {
-      console.error('Error loading product files:', error);
-      this.errorMessage = 'Failed to load product files';
-    }
   }
 
   onSaveAndPublish(): void {
@@ -155,14 +142,14 @@ export class ProductEditContent implements OnInit {
           this.isSubmitting = false;
           this.successMessage = publish ? 'Product published successfully!' : 'Content saved successfully!';
           this.product = updatedProduct;
-          
+
           // Upload any new files
           this.uploadNewFiles();
         },
         error: (error) => {
           console.error('Content update error:', error);
           console.error('Error response:', error.error);
-          
+
           let errorMessage = 'Failed to save content';
           if (error.error?.message) {
             errorMessage += ': ' + error.error.message;
@@ -171,7 +158,7 @@ export class ProductEditContent implements OnInit {
           } else if (error.message) {
             errorMessage += ': ' + error.message;
           }
-          
+
           this.errorMessage = errorMessage;
           this.isSubmitting = false;
         }
@@ -203,9 +190,6 @@ export class ProductEditContent implements OnInit {
     this.isUploading = false;
     this.newFiles = [];
     this.uploadProgress = 0;
-
-    // Reload files after upload
-    await this.loadProductFiles();
   }
 
   cancel(): void {
@@ -214,60 +198,6 @@ export class ProductEditContent implements OnInit {
 
   private updateFormValidity(): void {
     this.isFormValid = this.productForm.valid;
-  }
-
-  // File management methods
-  onFileSelected(event: any): void {
-    const files = event.target.files;
-    if (files) {
-      for (let i = 0; i < files.length; i++) {
-        this.newFiles.push(files[i]);
-      }
-    }
-  }
-
-  removeNewFile(index: number): void {
-    this.newFiles.splice(index, 1);
-  }
-
-  async deleteFile(fileId: number): Promise<void> {
-    if (!this.productId) return;
-
-    try {
-      const result = await firstValueFrom(this.productService.deleteFile(this.productId, fileId));
-      
-      // Check if the operation was successful (backend returns string "File deleted." on success)
-      if (result && typeof result === 'string' && result.includes('deleted')) {
-        // Success - remove file from UI
-        this.productFiles = this.productFiles.filter(f => f.id !== fileId);
-        console.log('File deleted successfully');
-      } else {
-        // Unexpected response format
-        console.warn('Unexpected delete response:', result);
-        this.productFiles = this.productFiles.filter(f => f.id !== fileId);
-      }
-    } catch (error: any) {
-      console.error('Error deleting file:', error);
-      console.error('Error response:', error.error);
-      
-      // Only show error if it's a real error (not a successful operation)
-      if (error.status !== 200) {
-        let errorMessage = 'Failed to delete file';
-        if (error.error?.message) {
-          errorMessage += ': ' + error.error.message;
-        } else if (error.error?.title) {
-          errorMessage += ': ' + error.error.title;
-        } else if (error.message) {
-          errorMessage += ': ' + error.message;
-        }
-        
-        this.errorMessage = errorMessage;
-      } else {
-        // HTTP 200 but with error - this shouldn't happen, but handle gracefully
-        console.warn('Received 200 status but with error:', error);
-        this.productFiles = this.productFiles.filter(f => f.id !== fileId);
-      }
-    }
   }
 
   // Content editing methods
