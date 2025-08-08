@@ -21,31 +21,31 @@ export class Checkout implements OnInit, OnDestroy {
   subtotal: number = 0;
   discount: number = 0;
   total: number = 0;
-  
+
   // User information
   userEmail: string = '';
   isLoggedIn: boolean = false;
-  
+
   // Payment information
   paymentMethods: PaymentMethod[] = [
     { id: 'card', name: 'Credit/Debit Card', icon: 'fas fa-credit-card', selected: true },
     { id: 'paypal', name: 'PayPal', icon: 'fab fa-paypal', selected: false }
   ];
-  
+
   cardInfo = {
     name: '',
     number: '',
     expiry: '',
     cvc: ''
   };
-  
+
   contactInfo: CustomerInfo = {
     email: '',
     phone: '',
     country: '',
     zipCode: ''
   };
-  
+
   countries = [
     { code: 'US', name: 'United States' },
     { code: 'CA', name: 'Canada' },
@@ -58,7 +58,7 @@ export class Checkout implements OnInit, OnDestroy {
     { code: 'BR', name: 'Brazil' },
     { code: 'MX', name: 'Mexico' }
   ];
-  
+
   selectedPaymentMethod: string = 'card';
   isLoading: boolean = false;
   errorMessage: string = '';
@@ -206,12 +206,13 @@ export class Checkout implements OnInit, OnDestroy {
     this.successMessage = '';
 
     try {
-      // Prepare payment data
+      // Prepare payment data in the format expected by backend
       const paymentData = {
-        method: this.selectedPaymentMethod,
-        ...this.contactInfo,
-        email: this.userEmail, // Ensure email is explicitly set after spreading contactInfo
-        ...(this.selectedPaymentMethod === 'card' ? this.cardInfo : {})
+        paymentMethod: this.selectedPaymentMethod,
+        amount: this.total,
+        transactionId: '', //  generate or get this from a real payment gateway
+        currency: 'USD',
+        notes: ''
       };
 
       // Create order
@@ -223,23 +224,17 @@ export class Checkout implements OnInit, OnDestroy {
         paymentMethod: this.selectedPaymentMethod,
         customerInfo: this.contactInfo
       };
-      
       const orderResponse = await firstValueFrom(this.orderService.createOrder(orderData));
 
       if (orderResponse?.success && orderResponse.order) {
-        // Process payment
-        const paymentResponse = await firstValueFrom(this.orderService.processMockPayment(
-          orderResponse.order,
-          paymentData
-        ));
+        // Use the real payment endpoint
+        const paymentResponse = await firstValueFrom(
+          this.orderService.processPayment(orderResponse.order.id, paymentData)
+        );
 
         if (paymentResponse?.success) {
           this.successMessage = 'Payment processed successfully!';
-          
-          // Clear cart after successful payment
           this.cartService.clearCart().subscribe();
-          
-          // Redirect to success page or library
           setTimeout(() => {
             this.router.navigate(['/library']);
           }, 2000);
@@ -249,9 +244,9 @@ export class Checkout implements OnInit, OnDestroy {
       } else {
         this.errorMessage = orderResponse?.message || 'Failed to create order.';
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment error:', error);
-      this.errorMessage = 'An error occurred during payment processing. Please try again.';
+      this.errorMessage = error?.error?.message || error?.message || 'An error occurred during payment processing. Please try again.';
     } finally {
       this.isLoading = false;
     }

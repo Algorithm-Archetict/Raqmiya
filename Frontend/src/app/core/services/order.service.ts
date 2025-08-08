@@ -54,8 +54,8 @@ export class OrderService {
     return this.http.get<OrderResponse>(`${this.apiUrl}/order/my`);
   }
 
-  getPurchasedProducts(): Observable<PurchasedProductDTO[]> {
-    return this.http.get<PurchasedProductDTO[]>(`${this.apiUrl}/order/my-purchases`);
+  getPurchasedProducts(): Observable<PurchasedProductDTO> {
+    return this.http.get<PurchasedProductDTO>(`${this.apiUrl}/order/my-purchases`);
   }
 
   getPurchasedProduct(productId: number): Observable<PurchasedProductDTO> {
@@ -92,7 +92,8 @@ export class OrderService {
   }
 
   processPayment(orderId: string, paymentData: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/orders/${orderId}/payment`, paymentData);
+    // Ensure the endpoint matches the backend: /order/{orderId}/payment
+    return this.http.post(`${this.apiUrl}/order/${orderId}/payment`, paymentData);
   }
 
   // Mock payment processing for demo purposes
@@ -108,7 +109,7 @@ export class OrderService {
           status: 'completed',
           message: 'Payment processed successfully'
         };
-        
+
         observer.next(mockResponse);
         observer.complete();
       }, 2000);
@@ -123,15 +124,15 @@ export class OrderService {
       if (!paymentData.cardNumber || paymentData.cardNumber.replace(/\s/g, '').length < 13) {
         errors.push('Please enter a valid card number');
       }
-      
+
       if (!paymentData.expiry || !/^\d{2}\/\d{2}$/.test(paymentData.expiry)) {
         errors.push('Please enter a valid expiry date (MM/YY)');
       }
-      
+
       if (!paymentData.cvc || paymentData.cvc.length < 3) {
         errors.push('Please enter a valid CVC');
       }
-      
+
       if (!paymentData.name) {
         errors.push('Please enter the cardholder name');
       }
@@ -156,22 +157,22 @@ export class OrderService {
   formatCardNumber(cardNumber: string): string {
     // Remove all non-digits
     const cleaned = cardNumber.replace(/\D/g, '');
-    
+
     // Add spaces every 4 digits
     const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ');
-    
+
     return formatted;
   }
 
   formatExpiry(expiry: string): string {
     // Remove all non-digits
     const cleaned = expiry.replace(/\D/g, '');
-    
+
     // Add slash after 2 digits
     if (cleaned.length >= 2) {
       return cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4);
     }
-    
+
     return cleaned;
   }
 
@@ -179,4 +180,4 @@ export class OrderService {
     // Remove all non-digits and limit to 3-4 characters
     return cvc.replace(/\D/g, '').slice(0, 4);
   }
-} 
+}
