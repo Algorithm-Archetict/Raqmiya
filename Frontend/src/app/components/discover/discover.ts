@@ -1,9 +1,11 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
+import { Navbar } from '../navbar/navbar';
+import { AuthService } from '../../core/services/auth.service';
 
 interface Product {
   id: number;
@@ -24,7 +26,7 @@ interface Product {
 
 @Component({
   selector: 'app-discover',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule, Navbar],
   templateUrl: './discover.html',
   styleUrl: './discover.css'
 })
@@ -48,7 +50,8 @@ export class Discover implements OnInit {
 
   constructor(
     private router: Router,
-    private productService: ProductService
+    private productService: ProductService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -76,13 +79,9 @@ export class Discover implements OnInit {
   // Initialize product data from API
   initializeProducts() {
     this.loading = true;
-    console.log('Starting to load products...');
     
     this.productService.getProductList(1, 1000).subscribe({
       next: (products: ProductListItemDTO[]) => {
-        console.log('Loaded products from API:', products);
-        console.log('Loaded products count:', products.length);
-        
         this.allProducts = products.map(product => ({
           id: product.id,
           title: product.name || 'Untitled Product',
@@ -103,9 +102,6 @@ export class Discover implements OnInit {
         this.recommendedProducts = this.allProducts.slice(0, 6);
         this.filteredProducts = [...this.allProducts];
         this.loading = false;
-        
-        console.log('Mapped products count:', this.allProducts.length);
-        console.log('Filtered products count:', this.filteredProducts.length);
         
         // Load wishlist status for all products
         this.loadWishlistStatus();
@@ -162,7 +158,6 @@ export class Discover implements OnInit {
       return; // Prevent multiple clicks while loading
     }
 
-    console.log('Toggling wishlist for product:', product.id, 'Current state:', product.inWishlist);
     product.loadingWishlist = true;
 
     const apiCall = product.inWishlist 
@@ -171,7 +166,6 @@ export class Discover implements OnInit {
 
     apiCall.subscribe({
       next: (response) => {
-        console.log('Wishlist toggle success response:', response);
         // Toggle wishlist status
         product.inWishlist = !product.inWishlist;
         product.loadingWishlist = false;
@@ -180,21 +174,12 @@ export class Discover implements OnInit {
         this.showWishlistMessage(product.title, product.inWishlist);
       },
       error: (error) => {
-        console.error('Error toggling wishlist:', error);
-        console.error('Error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          url: error.url,
-          message: error.message,
-          ok: error.ok
-        });
         product.loadingWishlist = false;
         
         // Handle specific error cases
         if (error.status === 400) {
           // 400 error usually means the product is already in/out of wishlist
           // Refresh the wishlist status to sync with server
-          console.log('400 error - refreshing wishlist status to sync with server');
           this.loadWishlistStatus();
           
           // Show a more specific message
@@ -214,12 +199,143 @@ export class Discover implements OnInit {
 
   // Show wishlist action message
   showWishlistMessage(productTitle: string, added: boolean, isError: boolean = false) {
-    const message = isError 
-      ? `Failed to ${added ? 'add' : 'remove'} "${productTitle}" from wishlist`
-      : `"${productTitle}" ${added ? 'added to' : 'removed from'} wishlist`;
+    if (isError) {
+      const action = added ? 'add to' : 'remove from';
+      this.showToast(`Failed to ${action} wishlist`, 'error');
+    } else {
+      // Show specific message for wishlist actions
+      if (added) {
+        this.showWishlistSuccessPopup(productTitle);
+      } else {
+        this.showToast(`"${productTitle}" removed from wishlist`, 'success');
+      }
+    }
+  }
+
+  // Show wishlist success popup with item count
+  showWishlistSuccessPopup(productTitle: string) {
+    const toast = document.createElement('div');
+    toast.className = 'wishlist-popup';
     
-    // Create and show a toast notification
-    this.showToast(message, isError ? 'error' : 'success');
+    // Calculate proper positioning
+    const navbar = document.querySelector('.navbar');
+    const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 70;
+    const topPosition = navbarHeight + 20; // Add 20px spacing for better visual separation
+    
+    // Get container width to match navbar
+    const container = document.querySelector('.container');
+    const containerRect = container ? container.getBoundingClientRect() : null;
+    
+    // Initial positioning (for animation)
+    toast.style.position = 'fixed';
+    toast.style.top = `${topPosition}px`;
+    toast.style.zIndex = '1003';
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-20px) scale(0.95)';
+    toast.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+    
+    // Set width and position to match navbar container
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+      // Mobile layout: full width with padding
+      toast.style.left = '20px';
+      toast.style.right = '20px';
+      toast.style.width = 'auto';
+      toast.style.transform = 'translateY(-20px) scale(0.95)';
+    } else if (containerRect) {
+      // Desktop layout: match container width
+      toast.style.left = `${containerRect.left}px`;
+      toast.style.width = `${containerRect.width}px`;
+    } else {
+      // Fallback for when container is not found
+      toast.style.left = '50%';
+      toast.style.transform = 'translateX(-50%) translateY(-20px) scale(0.95)';
+      toast.style.maxWidth = '1200px';
+      toast.style.width = 'calc(100% - 40px)';
+    }
+    
+    toast.innerHTML = `
+      <div class="container">
+        <div class="toast-content wishlist-content">
+          <div class="wishlist-icon-large">
+            <i class="fas fa-heart"></i>
+          </div>
+          <div class="wishlist-info">
+            <div class="wishlist-title">Added to Wishlist</div>
+            <div class="wishlist-subtitle">"${productTitle}"</div>
+            <div class="wishlist-count">1 item saved to your wishlist</div>
+          </div>
+          <div class="wishlist-actions">
+            <button class="btn-view-wishlist">
+              <i class="fas fa-eye"></i>
+              View Wishlist
+            </button>
+            <button class="btn-close-popup">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Animate in with smooth transition
+    setTimeout(() => {
+      toast.style.opacity = '1';
+      if (isMobile) {
+        toast.style.transform = 'translateY(0) scale(1)';
+      } else if (containerRect) {
+        toast.style.transform = 'translateY(0) scale(1)';
+      } else {
+        toast.style.transform = 'translateX(-50%) translateY(0) scale(1)';
+      }
+    }, 50);
+
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.style.opacity = '0';
+        if (isMobile) {
+          toast.style.transform = 'translateY(-20px) scale(0.95)';
+        } else if (containerRect) {
+          toast.style.transform = 'translateY(-20px) scale(0.95)';
+        } else {
+          toast.style.transform = 'translateX(-50%) translateY(-20px) scale(0.95)';
+        }
+        setTimeout(() => {
+          toast.remove();
+        }, 400);
+      }
+    }, 4000);
+
+    // Add click handlers
+    const viewWishlistBtn = toast.querySelector('.btn-view-wishlist');
+    const closeBtn = toast.querySelector('.btn-close-popup');
+    
+    if (viewWishlistBtn) {
+      viewWishlistBtn.addEventListener('click', () => {
+        this.router.navigate(['/library']);
+        toast.remove();
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        toast.style.opacity = '0';
+        if (isMobile) {
+          toast.style.transform = 'translateY(-20px) scale(0.95)';
+        } else if (containerRect) {
+          toast.style.transform = 'translateY(-20px) scale(0.95)';
+        } else {
+          toast.style.transform = 'translateX(-50%) translateY(-20px) scale(0.95)';
+        }
+        setTimeout(() => {
+          toast.remove();
+        }, 400);
+      });
+    }
   }
 
   // Show toast notification
@@ -227,6 +343,17 @@ export class Discover implements OnInit {
     // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
+    
+    // Calculate proper top position based on navbar height
+    const navbar = document.querySelector('.navbar');
+    const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 70;
+    const topPosition = navbarHeight + 10; // Add 10px spacing
+    
+    toast.style.position = 'fixed';
+    toast.style.top = `${topPosition}px`;
+    toast.style.right = '20px';
+    toast.style.zIndex = '1002';
+    
     toast.innerHTML = `
       <div class="toast-content">
         <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
@@ -243,7 +370,11 @@ export class Discover implements OnInit {
     // Remove toast after 3 seconds
     setTimeout(() => {
       toast.classList.remove('show');
-      setTimeout(() => document.body.removeChild(toast), 300);
+      setTimeout(() => {
+        if (toast.parentNode) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
     }, 3000);
   }
 
@@ -251,6 +382,11 @@ export class Discover implements OnInit {
   onWishlistHover(product: Product, isHovered: boolean, event: Event) {
     event.stopPropagation();
     product.wishlistHovered = isHovered;
+  }
+
+  // Check if user is logged in
+  isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
   }
 
   // Search functionality
@@ -293,16 +429,6 @@ export class Discover implements OnInit {
 
   // Apply all filters
   applyFilters() {
-    console.log('Applying filters...');
-    console.log('All products before filtering:', this.allProducts.length);
-    console.log('Product prices:', this.allProducts.map(p => ({ id: p.id, title: p.title, price: p.price })));
-    console.log('Search query:', this.searchQuery);
-    console.log('Selected category:', this.selectedCategory);
-    console.log('Price range:', this.priceRange);
-    console.log('Selected rating:', this.selectedRating);
-    console.log('Selected tags:', this.selectedTags);
-    console.log('Sort by:', this.sortBy);
-    
     let filtered = [...this.allProducts];
 
     // Search filter
@@ -313,24 +439,19 @@ export class Discover implements OnInit {
         product.creator.toLowerCase().includes(query) ||
         product.tags.some(tag => tag.toLowerCase().includes(query))
       );
-      console.log('After search filter:', filtered.length);
     }
 
     // Category filter
     if (this.selectedCategory !== 'all') {
       filtered = filtered.filter(product => product.category === this.selectedCategory);
-      console.log('After category filter:', filtered.length);
     }
 
     // Price filter
     filtered = filtered.filter(product => product.price <= this.priceRange);
-    console.log('After price filter:', filtered.length);
-    console.log('Products after price filter:', filtered.map(p => ({ id: p.id, title: p.title, price: p.price })));
 
     // Rating filter
     if (this.selectedRating > 0) {
       filtered = filtered.filter(product => product.rating >= this.selectedRating);
-      console.log('After rating filter:', filtered.length);
     }
 
     // Tags filter
@@ -338,7 +459,6 @@ export class Discover implements OnInit {
       filtered = filtered.filter(product => 
         this.selectedTags.some(tag => product.tags.includes(tag))
       );
-      console.log('After tags filter:', filtered.length);
     }
 
     // Sort
@@ -364,7 +484,6 @@ export class Discover implements OnInit {
     }
 
     this.filteredProducts = filtered;
-    console.log('Final filtered products:', this.filteredProducts.length);
   }
 
   // Carousel functionality

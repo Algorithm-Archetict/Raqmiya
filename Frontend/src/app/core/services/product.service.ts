@@ -33,13 +33,10 @@ export class ProductService {
   getProductList(pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTO[]> {
     return this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
       map(response => {
-        console.log('Product list API response:', response);
         // Handle both paged and direct array responses
         if (response && response.items && Array.isArray(response.items)) {
-          console.log('Using paged response items:', response.items.length);
           return response.items;
         } else if (Array.isArray(response)) {
-          console.log('Using direct array response:', response.length);
           return response;
         } else {
           console.warn('Unexpected product list response format:', response);
@@ -79,7 +76,6 @@ export class ProductService {
   addToWishlist(id: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/${id}/wishlist`, {}, { responseType: 'text' }).pipe(
       map(response => {
-        console.log('Add to wishlist response:', response);
         return { success: true, message: response };
       })
     );
@@ -88,7 +84,6 @@ export class ProductService {
   removeFromWishlist(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}/wishlist`, { responseType: 'text' }).pipe(
       map(response => {
-        console.log('Remove from wishlist response:', response);
         return { success: true, message: response };
       })
     );
@@ -97,13 +92,10 @@ export class ProductService {
   getWishlist(): Observable<ProductListItemDTO[]> {
     return this.http.get<any>(`${this.apiUrl}/my-wishlist`).pipe(
       map(response => {
-        console.log('Wishlist API response:', response);
         // Handle both paged and direct array responses
         if (response && response.items && Array.isArray(response.items)) {
-          console.log('Using paged wishlist response items:', response.items.length);
           return response.items;
         } else if (Array.isArray(response)) {
-          console.log('Using direct wishlist array response:', response.length);
           return response;
         } else {
           console.warn('Unexpected wishlist response format:', response);
