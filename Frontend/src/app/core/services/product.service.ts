@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 import { ProductCreateRequestDTO } from '../models/product/product-create-request.dto';
 import { ProductUpdateRequestDTO } from '../models/product/product-update-request.dto';
@@ -19,117 +20,154 @@ export class ProductService {
 
   // ======= CREATE =======
   createProduct(product: ProductCreateRequestDTO): Observable<ProductDetailDTO> {
-    return this.http.post<ProductDetailDTO>(this.apiUrl, product);
+    return this.http.post<ProductDetailDTO>(this.apiUrl, product).pipe(
+      catchError(this.handleError('createProduct'))
+    );
   }
 
   // ======= READ =======
-  getAll(page = 1, size = 10): Observable<ProductListItemDTOPagedResultDTO> {
+  getProducts(page = 1, size = 10): Observable<ProductListItemDTOPagedResultDTO> {
     return this.http.get<ProductListItemDTOPagedResultDTO>(
       `${this.apiUrl}?pageNumber=${page}&pageSize=${size}`
+    ).pipe(
+      catchError(this.handleError('getProducts'))
     );
   }
 
   getProductList(page = 1, size = 10): Observable<ProductListItemDTO[]> {
-    return this.getAll(page, size).pipe(map(res => res.items || []));
+    return this.getProducts(page, size).pipe(
+      map(res => res.items || []),
+      catchError(this.handleError('getProductList'))
+    );
   }
 
-  // Get products by current creator (authenticated user)
-  // TODO: Replace with proper backend endpoint when available
-  getMyProducts(page = 1, size = 10): Observable<ProductListItemDTO[]> {
-    // For now, we'll use the main products endpoint and filter on frontend
-    // This is a temporary solution until the backend provides /my-products endpoint
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}`);
+  getProductById(id: number): Observable<ProductDetailDTO> {
+    return this.http.get<ProductDetailDTO>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError('getProductById'))
+    );
   }
 
-  getById(id: number): Observable<ProductDetailDTO> {
-    return this.http.get<ProductDetailDTO>(`${this.apiUrl}/${id}`);
-  }
-
-  getByPermalink(permalink: string): Observable<ProductDetailDTO> {
-    return this.http.get<ProductDetailDTO>(`${this.apiUrl}/permalink/${permalink}`);
+  getProductByPermalink(permalink: string): Observable<ProductDetailDTO> {
+    return this.http.get<ProductDetailDTO>(`${this.apiUrl}/permalink/${permalink}`).pipe(
+      catchError(this.handleError('getProductByPermalink'))
+    );
   }
 
   // ======= UPDATE =======
   updateProduct(id: number, product: ProductUpdateRequestDTO): Observable<ProductDetailDTO> {
-    return this.http.put<ProductDetailDTO>(`${this.apiUrl}/${id}`, product);
+    return this.http.put<ProductDetailDTO>(`${this.apiUrl}/${id}`, product).pipe(
+      catchError(this.handleError('updateProduct'))
+    );
   }
 
   // ======= DELETE =======
   deleteProduct(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError('deleteProduct'))
+    );
   }
 
   // ======= WISHLIST =======
   addToWishlist(id: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/wishlist`, {});
+    return this.http.post<void>(`${this.apiUrl}/${id}/wishlist`, {}).pipe(
+      catchError(this.handleError('addToWishlist'))
+    );
   }
 
   removeFromWishlist(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}/wishlist`);
+    return this.http.delete<void>(`${this.apiUrl}/${id}/wishlist`).pipe(
+      catchError(this.handleError('removeFromWishlist'))
+    );
   }
 
   getWishlist(): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/my-wishlist`);
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/my-wishlist`).pipe(
+      catchError(this.handleError('getWishlist'))
+    );
   }
 
   // ======= ANALYTICS =======
   getMostWished(): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/most-wished`);
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/most-wished`).pipe(
+      catchError(this.handleError('getMostWished'))
+    );
   }
 
   getTopRated(): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/top-rated`);
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/top-rated`).pipe(
+      catchError(this.handleError('getTopRated'))
+    );
   }
 
   getBestSelling(): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/best-selling`);
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/best-selling`).pipe(
+      catchError(this.handleError('getBestSelling'))
+    );
   }
 
   getTrendy(): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/trendy`);
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/analytics/trendy`).pipe(
+      catchError(this.handleError('getTrendy'))
+    );
   }
 
   // ======= FILES =======
   uploadFile(productId: number, file: File): Observable<FileDTO[]> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<FileDTO[]>(`${this.apiUrl}/${productId}/files`, formData);
+    return this.http.post<FileDTO[]>(`${this.apiUrl}/${productId}/files`, formData).pipe(
+      catchError(this.handleError('uploadFile'))
+    );
   }
 
   uploadImage(productId: number, image: File, type: 'cover' | 'thumbnail'): Observable<any> {
     const formData = new FormData();
     formData.append('image', image);
-    return this.http.post(`${this.apiUrl}/${productId}/images?type=${type}`, formData);
-  }
-
-  getFiles(productId: number): Observable<FileDTO[]> {
-    return this.http.get<FileDTO[]>(`${this.apiUrl}/${productId}/files`);
-  }
-
-  deleteFile(productId: number, fileId: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/${productId}/files/${fileId}`);
-  }
-
-  // ======= ADMIN / MODERATION =======
-  getByStatus(status: string): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/admin/by-status?status=${status}`);
-  }
-
-  approve(id: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/admin/${id}/approve`, {});
-  }
-
-  reject(id: number, reason: string): Observable<void> {
-    const payload: ProductModerationRequestDTO = { action: 'reject', reason };
-    return this.http.post<void>(`${this.apiUrl}/admin/${id}/reject`, payload);
+    return this.http.post(`${this.apiUrl}/${productId}/images?type=${type}`, formData).pipe(
+      catchError(this.handleError('uploadImage'))
+    );
   }
 
   // ======= REVIEWS =======
-  getReviews(productId: number): Observable<ReviewDTO[]> {
-    return this.http.get<ReviewDTO[]>(`${this.apiUrl}/${productId}/reviews`);
+  addReview(productId: number, review: ReviewDTO): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${productId}/reviews`, review).pipe(
+      catchError(this.handleError('addReview'))
+    );
   }
 
-  submitReview(productId: number, review: { rating: number; comment: string }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${productId}/reviews`, review);
+  // ======= ADMIN =======
+  getProductsByStatus(status: string, page = 1, size = 10): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/admin/by-status?status=${status}&pageNumber=${page}&pageSize=${size}`).pipe(
+      catchError(this.handleError('getProductsByStatus'))
+    );
+  }
+
+  approveProduct(id: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/admin/${id}/approve`, {}).pipe(
+      catchError(this.handleError('approveProduct'))
+    );
+  }
+
+  rejectProduct(id: number, reason: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/admin/${id}/reject`, { action: 'reject', reason }).pipe(
+      catchError(this.handleError('rejectProduct'))
+    );
+  }
+
+  // ======= ERROR HANDLER =======
+  private handleError(operation = 'operation') {
+    return (error: any) => {
+      let message = `Error in ${operation}: `;
+      if (error.error && error.error.message) {
+        message += error.error.message;
+      } else if (error.message) {
+        message += error.message;
+      } else {
+        message += 'Unknown error occurred.';
+      }
+      // Optionally log to external service
+      console.error(message, error);
+      return throwError(() => new Error(message));
+    };
   }
 }
