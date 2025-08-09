@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
 using Core.Interfaces;
-using Shared.DTOs.ProductDTOs;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Raqmiya.Infrastructure;
 using API.Constants;
 using Shared.Constants;
-using AutoMapper;
+using Shared.DTOs.ProductDTOs;
 
 namespace API.Controllers
 {

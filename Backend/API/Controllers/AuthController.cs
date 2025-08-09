@@ -1,4 +1,5 @@
-﻿using API.Constants;
+﻿using Shared.Constants;
+using API.Constants;
 using AutoMapper;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
