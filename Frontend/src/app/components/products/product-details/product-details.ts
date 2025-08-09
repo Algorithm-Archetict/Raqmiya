@@ -98,26 +98,20 @@ export class ProductDetails implements OnInit {
   // Helper method to ensure image URLs are full URLs
   private ensureFullUrl(url: string | null | undefined): string | undefined {
     if (!url) {
-      console.log('ensureFullUrl: URL is null/undefined');
       return undefined;
     }
 
-    console.log('ensureFullUrl: Processing URL:', url);
-
     // If it's already a full URL, return as is
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      console.log('ensureFullUrl: Already full URL, returning as is:', url);
       return url;
     }
 
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
-      const fullUrl = `http://localhost:5255${url}`;
-      console.log('ensureFullUrl: Converted relative URL to full URL:', fullUrl);
-      return fullUrl;
+      return `http://localhost:5255${url}`;
     }
 
-    console.log('ensureFullUrl: Unknown URL format, returning as is:', url);
+    // Unknown URL format, return as is
     return url;
   }
 
