@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -28,7 +28,8 @@ interface Product {
   selector: 'app-discover',
   imports: [CommonModule, FormsModule, RouterModule, Navbar],
   templateUrl: './discover.html',
-  styleUrl: './discover.css'
+  styleUrl: './discover.css',
+  encapsulation: ViewEncapsulation.None
 })
 export class Discover implements OnInit {
   @ViewChild('carouselContainer') carouselContainer!: ElementRef;
@@ -47,6 +48,11 @@ export class Discover implements OnInit {
   filteredProducts: Product[] = [];
   recommendedProducts: Product[] = [];
   popularTags: string[] = ['3D', 'Design', 'Audio', 'Templates', 'Icons', 'Fonts', 'Graphics', 'Code'];
+  
+  // Wishlist Counter for Multiple Additions
+  wishlistCounter: number = 0;
+  private wishlistCounterTimeout: any;
+  showWishlistCounterPopup: boolean = false;
 
   constructor(
     private router: Router,
@@ -170,31 +176,52 @@ export class Discover implements OnInit {
         product.inWishlist = !product.inWishlist;
         product.loadingWishlist = false;
         
-        // Show success message
-        this.showWishlistMessage(product.title, product.inWishlist);
+        // Handle success message logic
+        if (product.inWishlist) {
+          // Adding to wishlist - use counter system
+          this.handleWishlistAddition();
+        }
+        // No popup for removal as requested
       },
       error: (error) => {
         product.loadingWishlist = false;
         
         // Handle specific error cases
-        if (error.status === 400) {
-          // 400 error usually means the product is already in/out of wishlist
-          // Refresh the wishlist status to sync with server
-          this.loadWishlistStatus();
-          
-          // Show a more specific message
-          const action = product.inWishlist ? 'remove from' : 'add to';
-          this.showWishlistMessage(`Product is already ${action} wishlist`, product.inWishlist, true);
-        } else if (error.status === 401) {
-          this.showWishlistMessage('Please log in to manage your wishlist', product.inWishlist, true);
-        } else if (error.status === 404) {
-          this.showWishlistMessage('Product not found', product.inWishlist, true);
-        } else {
-          // Show generic error message
-          this.showWishlistMessage(product.title, product.inWishlist, true);
+        // Only show error popups for addition attempts, not removal
+        if (!product.inWishlist) {
+          if (error.status === 400) {
+            this.showToast('Product is already in your wishlist', 'error');
+          } else if (error.status === 401) {
+            this.showToast('Please log in to manage your wishlist', 'error');
+          } else if (error.status === 404) {
+            this.showToast('Product not found', 'error');
+          } else {
+            this.showToast('Failed to add to wishlist', 'error');
+          }
         }
+        // Silent for removal errors as requested
       }
     });
+  }
+
+  // Handle wishlist addition with counter system
+  private handleWishlistAddition() {
+    this.wishlistCounter++;
+    
+    // Clear existing timeout if user is adding multiple items quickly
+    if (this.wishlistCounterTimeout) {
+      clearTimeout(this.wishlistCounterTimeout);
+    }
+    
+    // Set a timeout to show the popup after user stops adding items
+    this.wishlistCounterTimeout = setTimeout(() => {
+      const message = this.wishlistCounter === 1 
+        ? '1 Item saved' 
+        : `${this.wishlistCounter} Items saved`;
+      
+      this.displayWishlistCounterPopup(message);
+      this.wishlistCounter = 0; // Reset counter
+    }, 1000); // Wait 1 second after last addition
   }
 
   // Show wishlist action message
@@ -214,13 +241,124 @@ export class Discover implements OnInit {
 
   // Show wishlist success popup with item count
   showWishlistSuccessPopup(productTitle: string) {
+    // Find or create toast container
+    let toastContainer = document.querySelector('.toast-container') as HTMLElement;
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container';
+      toastContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1003;
+        pointer-events: none;
+      `;
+      document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element with proper CSS classes
     const toast = document.createElement('div');
-    toast.className = 'wishlist-popup';
+    toast.className = 'toast toast-success';
+    
+    // Add inline styles to ensure visibility while CSS loads
+    toast.style.cssText = `
+      position: relative;
+      background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      margin: 20px auto;
+      max-width: 600px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      padding: 16px 20px;
+      color: white;
+      transform: translateY(-20px) scale(0.95);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 90px;
+      pointer-events: auto;
+    `;
+    
+    // Use proper HTML structure that matches CSS
+    toast.innerHTML = `
+      <div class="toast-content wishlist-content" style="background: transparent; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <div class="wishlist-icon-large" style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-heart" style="color: white; font-size: 1.5rem;"></i>
+        </div>
+        <div class="wishlist-info" style="flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span class="wishlist-title" style="font-size: 1rem; font-weight: 600; color: white; margin: 0;">Added to Wishlist</span>
+          <span class="wishlist-subtitle" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.9); margin: 0;">"${productTitle}"</span>
+          <span class="wishlist-count" style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); margin: 0;">1 item saved to your wishlist</span>
+          <button class="btn-view-wishlist" style="padding: 8px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <i class="fas fa-eye"></i>
+            View Wishlist
+          </button>
+        </div>
+        <div class="wishlist-actions" style="display: flex; align-items: center;">
+          <button class="btn-close-popup" style="background: transparent; border: none; color: white; cursor: pointer; padding: 4px; font-size: 1rem;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add to container
+    toastContainer.appendChild(toast);
+
+    // Show with inline style animation (since CSS might be scoped)
+    setTimeout(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0) scale(1)';
+    }, 50);
+
+    // Add click handlers
+    const viewWishlistBtn = toast.querySelector('.btn-view-wishlist');
+    const closeBtn = toast.querySelector('.btn-close-popup');
+    
+    if (viewWishlistBtn) {
+      viewWishlistBtn.addEventListener('click', () => {
+        this.router.navigate(['/library']);
+        this.dismissToast(toast);
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        this.dismissToast(toast);
+      });
+    }
+
+    // Auto dismiss after 4 seconds
+    setTimeout(() => {
+      this.dismissToast(toast);
+    }, 4000);
+  }
+
+  // Helper method to dismiss toast
+  private dismissToast(toast: HTMLElement) {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-20px) scale(0.95)';
+      setTimeout(() => {
+        toast.remove();
+      }, 400);
+    }
+  }
+
+  // Navigate to wishlist page
+  viewWishlist() {
+    this.router.navigate(['/library']);
+  }
+
+  // Show wishlist counter popup with proper styling
+  displayWishlistCounterPopup(message: string) {
+    const toast = document.createElement('div');
+    toast.className = 'wishlist-popup wishlist-counter-popup';
     
     // Calculate proper positioning
     const navbar = document.querySelector('.navbar');
     const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 70;
-    const topPosition = navbarHeight + 20; // Add 20px spacing for better visual separation
+    const topPosition = navbarHeight + 20;
     
     // Get container width to match navbar
     const container = document.querySelector('.container');
@@ -238,17 +376,13 @@ export class Discover implements OnInit {
     const isMobile = window.innerWidth <= 768;
     
     if (isMobile) {
-      // Mobile layout: full width with padding
       toast.style.left = '20px';
       toast.style.right = '20px';
       toast.style.width = 'auto';
-      toast.style.transform = 'translateY(-20px) scale(0.95)';
     } else if (containerRect) {
-      // Desktop layout: match container width
       toast.style.left = `${containerRect.left}px`;
       toast.style.width = `${containerRect.width}px`;
     } else {
-      // Fallback for when container is not found
       toast.style.left = '50%';
       toast.style.transform = 'translateX(-50%) translateY(-20px) scale(0.95)';
       toast.style.maxWidth = '1200px';
@@ -257,20 +391,19 @@ export class Discover implements OnInit {
     
     toast.innerHTML = `
       <div class="container">
-        <div class="toast-content wishlist-content">
-          <div class="wishlist-icon-large">
+        <div class="toast-content wishlist-counter-content">
+          <div class="wishlist-icon-large wishlist-counter-icon">
             <i class="fas fa-heart"></i>
           </div>
-          <div class="wishlist-info">
-            <div class="wishlist-title">Added to Wishlist</div>
-            <div class="wishlist-subtitle">"${productTitle}"</div>
-            <div class="wishlist-count">1 item saved to your wishlist</div>
-          </div>
-          <div class="wishlist-actions">
-            <button class="btn-view-wishlist">
+          <div class="wishlist-counter-info">
+            <span class="wishlist-counter-title">Added to Wishlist</span>
+            <span class="wishlist-counter-message">${message} to your wishlist</span>
+            <button class="btn-view-wishlist-inline">
               <i class="fas fa-eye"></i>
               View Wishlist
             </button>
+          </div>
+          <div class="wishlist-actions">
             <button class="btn-close-popup">
               <i class="fas fa-times"></i>
             </button>
@@ -281,7 +414,7 @@ export class Discover implements OnInit {
 
     document.body.appendChild(toast);
 
-    // Animate in with smooth transition
+    // Animate in
     setTimeout(() => {
       toast.style.opacity = '1';
       if (isMobile) {
@@ -316,7 +449,7 @@ export class Discover implements OnInit {
     
     if (viewWishlistBtn) {
       viewWishlistBtn.addEventListener('click', () => {
-        this.router.navigate(['/library']);
+        this.router.navigate(['/library'], { fragment: 'wishlist' });
         toast.remove();
       });
     }
@@ -357,7 +490,7 @@ export class Discover implements OnInit {
     toast.innerHTML = `
       <div class="toast-content">
         <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        <span>${message}</span>
+        <span class="toast-message">${message}</span>
       </div>
     `;
     

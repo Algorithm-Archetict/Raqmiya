@@ -335,4 +335,25 @@
       </div>
     </div>
   </section>
+
+  <!-- Toast Notifications Container -->
+  <div class="toast-container">
+    <!-- Toasts will be dynamically inserted here -->
+  </div>
+  
+  <!-- Wishlist Counter Popup -->
+  <div class="wishlist-counter-popup" [class.show]="showWishlistCounterPopup" #wishlistCounterPopup>
+    <div class="popup-content">
+      <div class="popup-icon">
+        <i class="fas fa-heart"></i>
+      </div>
+      <div class="popup-text">
+        <span class="popup-count">{{wishlistCounter}} Item{{wishlistCounter > 1 ? 's' : ''}} saved</span>
+        <button class="btn-view-wishlist" (click)="viewWishlist()">
+          <i class="fas fa-eye"></i>
+          View Wishlist
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

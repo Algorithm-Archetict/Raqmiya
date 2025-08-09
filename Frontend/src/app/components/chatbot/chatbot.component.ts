@@ -52,10 +52,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   private checkAdminStatus() {
     const currentUser = this.authService.getCurrentUser();
-    console.log('Current user:', currentUser);
-    console.log('User roles:', currentUser?.roles);
     this.isAdmin = currentUser?.roles?.includes('Admin') || false;
-    console.log('Is admin:', this.isAdmin);
   }
 
   private loadChatHistory() {

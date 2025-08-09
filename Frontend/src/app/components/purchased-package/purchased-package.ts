@@ -79,12 +79,9 @@ export class PurchasedPackage implements OnInit {
     // Get the specific purchased product directly
     this.orderService.getPurchasedProduct(productId).subscribe({
       next: (product) => {
-        console.log('Found product:', product);
         this.product = product;
         if (!this.product) {
           this.errorMessage = 'Product not found or you do not have access to it.';
-        } else {
-          console.log('Product files:', this.product.files);
         }
         this.isLoading = false;
       },
@@ -107,7 +104,7 @@ export class PurchasedPackage implements OnInit {
   submitRating() {
     if (this.userRating > 0) {
       // In real app, this would send to API
-      console.log('Rating submitted:', this.userRating, 'Review:', this.userReview);
+      // Submit rating and review
       this.isRatingSubmitted = true;
     }
   }
@@ -118,19 +115,19 @@ export class PurchasedPackage implements OnInit {
 
   viewReceipt() {
     if (this.product) {
-      console.log('Viewing receipt for order:', this.product.orderId);
+      // Navigate to receipt view
       alert(`Receipt for Order: ${this.product.orderId}\nDate: ${this.product.purchaseDate.toLocaleDateString()}\nAmount: $${this.product.purchasePrice}`);
     }
   }
 
   resendReceipt() {
     // In real app, this would trigger email resend
-    console.log('Resending receipt for order:', this.product?.orderId);
+    // Resend receipt to user's email
     alert('Receipt has been resent to your email address.');
   }
 
   async downloadFile(file: ProductFile) {
-    console.log('Download file called:', file);
+    // Download file functionality
     if (!this.product) {
       console.error('No product found');
       return;
@@ -160,7 +157,7 @@ export class PurchasedPackage implements OnInit {
   }
 
   private triggerDownload(file: ProductFile) {
-    console.log('Trigger download called for file:', file);
+    // Trigger download for file
     if (!this.product) {
       console.error('No product found in triggerDownload');
       return;
@@ -168,7 +165,7 @@ export class PurchasedPackage implements OnInit {
     
     // Create download URL using the correct API endpoint
     const downloadUrl = `${environment.apiUrl}/download/file/${this.product.productId}/${file.id}`;
-    console.log('Download URL:', downloadUrl);
+    // Create download link
     
     // Use HTTP client to download file with proper authentication
     this.http.get(downloadUrl, { 
@@ -190,7 +187,7 @@ export class PurchasedPackage implements OnInit {
         // Clean up blob URL
         window.URL.revokeObjectURL(url);
         
-        console.log('Download completed successfully for:', file.name);
+        // Download completed successfully
         alert('Download completed successfully!');
       },
       error: (error) => {
@@ -210,7 +207,7 @@ export class PurchasedPackage implements OnInit {
 
   viewCreator() {
     // In real app, this would navigate to creator profile
-    console.log('Viewing creator:', this.product?.creatorUsername);
+    // Navigate to creator profile
   }
 
   browseMoreProducts() {
