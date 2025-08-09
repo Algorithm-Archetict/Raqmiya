@@ -34,47 +34,47 @@ import { AllReviews } from './components/products/all-reviews/all-reviews';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
-    {path:"home",component:Home},
+    {path:"home", loadComponent: () => import('./components/home/home').then(m => m.Home)},
 
     // Public routes
-    {path:"discover",component:Discover},
-    {path:"discover/:id",component:ProductDetails},
+    {path:"discover", loadComponent: () => import('./components/discover/discover').then(m => m.Discover)},
+    {path:"discover/:id", loadComponent: () => import('./components/products/product-details/product-details').then(m => m.ProductDetails)},
     {path:"login", redirectTo:"auth/login", pathMatch:"full"}, // Redirect /login to /auth/login
-    {path:"auth/login", component:Login, canActivate: [AnonymousOnlyGuard]},
-    {path:"auth/register", component:Register, canActivate: [AnonymousOnlyGuard]},
-    { path: "products/:id/reviews", component: AllReviews },
+    {path:"auth/login", loadComponent: () => import('./components/account/login/login').then(m => m.Login), canActivate: [AnonymousOnlyGuard]},
+    {path:"auth/register", loadComponent: () => import('./components/account/register/register').then(m => m.Register), canActivate: [AnonymousOnlyGuard]},
+    { path: "products/:id/reviews", loadComponent: () => import('./components/products/all-reviews/all-reviews').then(m => m.AllReviews) },
 
     // Protected routes - require authentication
-    {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
-    {path:"cart-checkout",component:CartCheckout, canActivate: [AuthGuard]},
-    {path:"package/:id",component:PurchasedPackage, canActivate: [AuthGuard]},
-    {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]},
-    {path:"library",component:Library, canActivate: [AuthGuard]},
+    {path:"checkout", loadComponent: () => import('./components/checkout/checkout').then(m => m.Checkout), canActivate: [AuthGuard]},
+    {path:"cart-checkout", loadComponent: () => import('./components/cart-checkout/cart-checkout').then(m => m.CartCheckout), canActivate: [AuthGuard]},
+    {path:"package/:id", loadComponent: () => import('./components/purchased-package/purchased-package').then(m => m.PurchasedPackage), canActivate: [AuthGuard]},
+    {path:"purchased-products", loadComponent: () => import('./components/purchased-products/purchased-products').then(m => m.PurchasedProducts), canActivate: [AuthGuard]},
+    {path:"library", loadComponent: () => import('./components/library/library').then(m => m.Library), canActivate: [AuthGuard]},
     {
         path:"settings",
-        component:Settings,
+    loadComponent: () => import('./components/settings/settings').then(m => m.Settings),
         canActivate: [AuthGuard],
         children: [
             {path:"", redirectTo:"profile", pathMatch:"full"},
-            {path:"profile", component:Profile},
-            {path:"security", component:Security},
-            {path:"payment", component:Payment}
+            {path:"profile", loadComponent: () => import('./components/settings/profile/profile').then(m => m.Profile)},
+            {path:"security", loadComponent: () => import('./components/settings/security/security').then(m => m.Security)},
+            {path:"payment", loadComponent: () => import('./components/settings/payment/payment').then(m => m.Payment)}
         ]
     },
     {path:"dashboard",component:DashboardRedirect, canActivate: [AuthGuard]}, // Redirect to role-appropriate dashboard
 
     // Creator-only routes - require authentication and creator role
-    {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
-    {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
-    {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
-    {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
-    {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
+    {path:"products", loadComponent: () => import('./components/creator/creator-product/all-products/all-products').then(m => m.AllProducts), canActivate: [CreatorGuard]},
+    {path:"products/new", loadComponent: () => import('./components/creator/creator-product/add-new-product/add-new-product').then(m => m.AddNewProduct), canActivate: [CreatorGuard]},
+    {path:"products/:id/edit", loadComponent: () => import('./components/creator/creator-product/product-edit/product-edit').then(m => m.ProductEdit), canActivate: [CreatorGuard]},
+    {path:"products/:id/edit/content", loadComponent: () => import('./components/creator/creator-product/product-edit-content/product-edit-content').then(m => m.ProductEditContent), canActivate: [CreatorGuard]},
+    {path:"sales", loadComponent: () => import('./components/creator/dashboard/dashboard').then(m => m.Dashboard), canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
 
     // Admin-only routes
-    { path: 'admin', component: AdminDashboard, canActivate: [AdminGuard] },
-    { path: 'admin/users', component: AdminUsers, canActivate: [AdminGuard] },
-    { path: 'admin/content', component: AdminContent, canActivate: [AdminGuard] },
-    { path: 'admin/settings', component: AdminSettings, canActivate: [AdminGuard] },
+    { path: 'admin', loadComponent: () => import('./components/admin/dashboard/dashboard').then(m => m.AdminDashboard), canActivate: [AdminGuard] },
+    { path: 'admin/users', loadComponent: () => import('./components/admin/users/users').then(m => m.AdminUsers), canActivate: [AdminGuard] },
+    { path: 'admin/content', loadComponent: () => import('./components/admin/content/content').then(m => m.AdminContent), canActivate: [AdminGuard] },
+    { path: 'admin/settings', loadComponent: () => import('./components/admin/settings/settings').then(m => m.AdminSettings), canActivate: [AdminGuard] },
 
-    {path:"**",component:NotFound},
+    {path:"**", loadComponent: () => import('./components/not-found/not-found').then(m => m.NotFound)},
 ];
