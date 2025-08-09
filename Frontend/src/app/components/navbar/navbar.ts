@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeService, ThemeMode } from '../../core/services/theme.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -14,12 +15,13 @@ export class Navbar implements OnInit, OnDestroy {
   isLoggedIn: boolean = false;
   currentUser: any = null;
   isUserDropdownOpen: boolean = false;
-  theme: 'light' | 'dark' = 'light';
+  theme: ThemeMode = 'light';
   private authSubscription: Subscription = new Subscription();
 
   constructor(
-    private authService: AuthService,
-    private router: Router
+  private authService: AuthService,
+  private router: Router,
+  private themeService: ThemeService
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -36,15 +38,9 @@ export class Navbar implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-  // Initialize theme with prefers-color-scheme fallback
-  const saved = localStorage.getItem('theme');
-  if (saved === 'dark' || saved === 'light') {
-    this.theme = saved as 'dark' | 'light';
-  } else {
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    this.theme = prefersDark ? 'dark' : 'light';
-  }
-  document.documentElement.setAttribute('data-theme', this.theme);
+  // Initialize theme via ThemeService
+  this.theme = this.themeService.getPreferred();
+  this.themeService.apply(this.theme);
     
     // Subscribe to authentication status changes
     this.authSubscription.add(
@@ -117,8 +113,6 @@ export class Navbar implements OnInit, OnDestroy {
   }
 
   toggleTheme(): void {
-    this.theme = this.theme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', this.theme);
-    localStorage.setItem('theme', this.theme);
+  this.theme = this.themeService.toggle();
   }
 }

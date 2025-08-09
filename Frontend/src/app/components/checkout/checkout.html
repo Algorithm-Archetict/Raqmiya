@@ -40,16 +40,7 @@
         <span class="loading-text">Processing payment, please wait...</span>
       </div>
 
-      <!-- Error/Success Messages -->
-      <div class="alert alert-danger" *ngIf="errorMessage" role="alert" aria-live="polite">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        {{ errorMessage }}
-      </div>
-
-      <div class="alert alert-success" *ngIf="successMessage" role="alert" aria-live="polite">
-        <i class="fas fa-check-circle me-2"></i>
-        {{ successMessage }}
-      </div>
+  <!-- Inline alerts removed; ToastService handles notifications. -->
 
       <!-- Checkout Content (Only show when items exist) -->
       <div class="checkout-content" *ngIf="cartItems.length > 0">

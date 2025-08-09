@@ -7,9 +7,9 @@
   justify-content: space-between;
   font-size: 1rem;
 }
-.alert-success { background: #e6ffed; color: #207544; border: 1px solid #b7ebc6; }
-.alert-error { background: #ffeaea; color: #a94442; border: 1px solid #f5c6cb; }
-.alert-info { background: #e7f3fe; color: #31708f; border: 1px solid #bce8f1; }
+.alert-success { background: color-mix(in srgb, var(--color-success) 15%, transparent); color: var(--color-success); border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent); }
+.alert-error { background: color-mix(in srgb, var(--color-error) 15%, transparent); color: var(--color-error); border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent); }
+.alert-info { background: color-mix(in srgb, var(--color-secondary) 15%, transparent); color: var(--color-secondary); border: 1px solid color-mix(in srgb, var(--color-secondary) 35%, transparent); }
 .close-btn {
   background: none;
   border: none;
