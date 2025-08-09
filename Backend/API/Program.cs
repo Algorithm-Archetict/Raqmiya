@@ -71,7 +71,17 @@ namespace API
             builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
             // --- 6. Add Controllers and API-specific features ---
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    // Ensure DateTime is serialized as ISO 8601 string
+                    options.JsonSerializerOptions.PropertyNamingPolicy = null;
+                    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                    options.JsonSerializerOptions.WriteIndented = false;
+                    options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+                    // ISO 8601 is default, but this is explicit
+                    // options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonConverterFactoryForDateTimeIso8601());
+                });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             

@@ -4,7 +4,7 @@
       <h1>My Purchased Products</h1>
       <p>Access all your digital products and downloads</p>
     </div>
-    
+
     <!-- Loading State -->
     <div class="loading-state" *ngIf="isLoading">
       <div class="spinner-border text-primary" role="status">
@@ -12,7 +12,7 @@
       </div>
       <p>Loading your purchased products...</p>
     </div>
-    
+
     <!-- Error State -->
     <div class="error-state" *ngIf="errorMessage">
       <div class="alert alert-danger">
@@ -23,7 +23,7 @@
         </button>
       </div>
     </div>
-    
+
     <!-- Products Grid -->
     <div class="products-grid" *ngIf="!isLoading && !errorMessage">
       <div class="product-card" *ngFor="let product of purchasedProducts">
@@ -33,7 +33,7 @@
             {{ getLicenseStatusText(product.licenseStatus) }}
           </div>
         </div>
-        
+
         <div class="product-info">
           <h3>{{ product.productName }}</h3>
           <p class="creator">by {{ product.creatorUsername }}</p>
@@ -43,7 +43,7 @@
           <p class="purchase-price">
             {{ product.purchasePrice | currency:'USD' }}
           </p>
-          
+
           <div class="product-actions">
             <button class="btn btn-primary" (click)="viewProduct(product.productId)">
               <i class="fas fa-eye"></i>
@@ -57,7 +57,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Empty State -->
     <div class="empty-state" *ngIf="!isLoading && !errorMessage && purchasedProducts.length === 0">
       <div class="empty-content">
@@ -69,5 +69,11 @@
         </a>
       </div>
     </div>
+
+    <app-alert *ngIf="errorMessage || successMessage"
+      [type]="errorMessage ? 'error' : 'success'"
+      [message]="(errorMessage || successMessage) ?? ''"
+      (close)="errorMessage = null; successMessage = null">
+    </app-alert>
   </div>
-</div> 
+</div>

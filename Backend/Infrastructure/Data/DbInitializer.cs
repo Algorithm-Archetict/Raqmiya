@@ -148,6 +148,19 @@ namespace Raqmiya.Infrastructure.Data
                 context.SaveChanges();
             }
 
+            // --- Site Settings ---
+            if (!context.SiteSettings.Any())
+            {
+                context.SiteSettings.Add(new SiteSetting
+                {
+                    SiteName = "Raqmiya",
+                    SupportEmail = "support@example.com",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+                context.SaveChanges();
+            }
+
             // --- Force update for current admin ---
             var adminUser = context.Users.FirstOrDefault(u => u.Username == "admin" || u.Email == "admin@example.com");
             if (adminUser != null)

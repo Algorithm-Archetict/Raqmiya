@@ -9,6 +9,7 @@ import { ProductCreateRequestDTO } from '../../../../core/models/product/product
 import { ProductService } from '../../../../core/services/product.service';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { FileDTO } from '../../../../core/models/product/file.dto';
+import { Alert } from '../../../shared/alert/alert';
 
 interface ProductDetail {
   attribute: string;
@@ -19,11 +20,12 @@ interface ProductDetail {
   selector: 'app-add-new-product',
   imports: [
     CommonModule,
-            RouterModule,
-            FormsModule,
-            ReactiveFormsModule,
-            DashboardSidebar, 
-          ],
+    RouterModule,
+    FormsModule,
+    ReactiveFormsModule,
+    DashboardSidebar,
+    Alert, // Add the shared alert component
+  ],
   templateUrl: './add-new-product.html',
   styleUrl: './add-new-product.css'
 })
@@ -34,7 +36,7 @@ export class AddNewProduct implements OnInit {
   isSubmitting = false;
   successMessage: string | null = null;
   errorMessage: string | null = null;
-  
+
   // Additional properties for the template
   currency: string = 'USD';
   name: string = '';
@@ -45,7 +47,7 @@ export class AddNewProduct implements OnInit {
   showDetailsForm: boolean = false;
   productDetails: ProductDetail[] = [];
   newDetail: ProductDetail = { attribute: '', value: '' };
-  
+
   // New properties for enhanced product details
   newFeature: string = '';
   productFeatures: string[] = [];
@@ -134,9 +136,9 @@ export class AddNewProduct implements OnInit {
     if (this.productForm.valid) {
       this.isSubmitting = true;
       this.errorMessage = null;
-      
+
       const formValue = this.productForm.value;
-      
+
       // Create the product DTO with all required fields (without image data)
       const productDto: ProductCreateRequestDTO = {
         name: formValue.name,
@@ -165,7 +167,7 @@ export class AddNewProduct implements OnInit {
           this.currentStep = 'customize';
           this.isSubmitting = false;
           this.successMessage = 'Product created successfully!';
-          
+
           // Upload images after product creation
           this.uploadImagesAfterCreation();
         },
@@ -195,7 +197,7 @@ export class AddNewProduct implements OnInit {
         // Convert base64 to file and upload
         const coverImageFile = this.base64ToFile(this.coverImages[0], 'cover-image.jpg');
         console.log('Cover image file created:', coverImageFile.name, 'Size:', coverImageFile.size);
-        
+
         const result = await firstValueFrom(this.productService.uploadImage(this.productId, coverImageFile, 'cover'));
         console.log('Cover image upload result:', result);
       }
@@ -205,7 +207,7 @@ export class AddNewProduct implements OnInit {
         console.log('Uploading thumbnail image...');
         const thumbnailFile = this.base64ToFile(this.thumbnailImage, 'thumbnail-image.jpg');
         console.log('Thumbnail file created:', thumbnailFile.name, 'Size:', thumbnailFile.size);
-        
+
         const result = await firstValueFrom(this.productService.uploadImage(this.productId, thumbnailFile, 'thumbnail'));
         console.log('Thumbnail upload result:', result);
       }
@@ -270,17 +272,17 @@ export class AddNewProduct implements OnInit {
     this.uploadProgress = 0;
     this.uploadedFiles = [];
     let uploaded: FileDTO[] = [];
-    
+
     console.log('Starting file upload for product ID:', productId);
     console.log('Files to upload:', this.productFiles.length);
-    
+
     for (let i = 0; i < this.productFiles.length; i++) {
       const file = this.productFiles[i];
       try {
         console.log('Uploading file:', file.name, 'Size:', file.size);
         const result = await firstValueFrom(this.productService.uploadFile(productId, file));
         console.log('File upload result:', result);
-        
+
         if (Array.isArray(result)) {
           uploaded = uploaded.concat(result);
         } else if (result) {
@@ -305,10 +307,11 @@ export class AddNewProduct implements OnInit {
     if (!this.productId || this.productForm.invalid) return;
     this.isSubmitting = true;
     this.errorMessage = null;
-    
+    this.successMessage = null;
+
     console.log('Starting saveAndPublish for product ID:', this.productId);
     console.log('Files to upload during publish:', this.productFiles.length);
-    
+
     try {
       // First upload files if any
       if (this.productFiles.length > 0) {
@@ -318,7 +321,7 @@ export class AddNewProduct implements OnInit {
       } else {
         console.log('No files to upload during publish');
       }
-      
+
       // Then update the product with all fields (without image data)
       const formValue = this.productForm.value;
       const updateDto: ProductUpdateRequestDTO = {
@@ -341,9 +344,9 @@ export class AddNewProduct implements OnInit {
         tagIds: [], // TODO: Add tag selection
         status: 'published' // Set status to published
       };
-      
+
       console.log('Updating product with data:', updateDto);
-      
+
       this.productService.updateProduct(this.productId, updateDto).subscribe({
         next: () => {
           console.log('Product published successfully!');
@@ -430,4 +433,3 @@ export class AddNewProduct implements OnInit {
     this.productFeatures.splice(index, 1);
   }
 }
-

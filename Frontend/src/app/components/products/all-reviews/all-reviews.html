@@ -1,3 +1,8 @@
+<app-alert *ngIf="errorMessage || successMessage"
+  [type]="errorMessage ? 'danger' : 'success'"
+  [message]="(errorMessage || successMessage) ?? ''">
+</app-alert>
+
 <div class="all-reviews-container">
   <div *ngIf="error" class="alert alert-danger">
     {{ error }}

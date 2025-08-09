@@ -1,14 +1,13 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { DashboardSidebar } from '../../../dashboard-sidebar/dashboard-sidebar';
-import { QuillService } from '../../../../core/services/quill.service';
 import { ProductService } from '../../../../core/services/product.service';
 import { ProductDetailDTO } from '../../../../core/models/product/product-detail.dto';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
-import { ProductCreateRequestDTO } from '../../../../core/models/product/product-create-request.dto';
+import { Alert } from '../../../shared/alert/alert';
 
 interface ProductDetail {
   attribute: string;
@@ -17,7 +16,7 @@ interface ProductDetail {
 
 @Component({
   selector: 'app-product-edit',
-  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, DashboardSidebar],
+  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, DashboardSidebar, Alert],
   templateUrl: './product-edit.html',
   styleUrl: './product-edit.css'
 })
@@ -48,12 +47,6 @@ export class ProductEdit implements OnInit {
   newFeature: string = '';
   productFeatures: string[] = [];
 
-  // File upload properties
-  productFiles: File[] = [];
-  uploadedFiles: any[] = [];
-  isUploading: boolean = false;
-  uploadProgress: number = 0;
-
   productTypes = [
     { id: 'digital', name: 'Digital', description: 'Downloadable files', icon: 'fas fa-file', selected: false },
     { id: 'course', name: 'Course', description: 'Online video content', icon: 'fas fa-video', selected: false },
@@ -61,7 +54,7 @@ export class ProductEdit implements OnInit {
   ];
 
   constructor(
-    private fb: FormBuilder, 
+    private fb: FormBuilder,
     private productService: ProductService,
     private route: ActivatedRoute,
     private router: Router
@@ -118,7 +111,7 @@ export class ProductEdit implements OnInit {
     this.loading = true;
     this.errorMessage = null;
 
-    return firstValueFrom(this.productService.getById(this.productId))
+    return firstValueFrom(this.productService.getProductById(this.productId))
       .then(product => {
         this.product = product;
         this.populateForm();
@@ -181,15 +174,15 @@ export class ProductEdit implements OnInit {
 
   onNameChange(): void {
     this.updateFormValidity();
-    
+
     // Auto-generate permalink if it's empty or matches the old name
     const nameControl = this.productForm.get('name');
     const permalinkControl = this.productForm.get('permalink');
-    
+
     if (nameControl && permalinkControl) {
       const name = nameControl.value;
       const currentPermalink = permalinkControl.value;
-      
+
       // If permalink is empty or matches the old name pattern, generate new one
       if (!currentPermalink || currentPermalink === this.generatePermalink(this.product?.name || '')) {
         const newPermalink = this.generatePermalink(name);
@@ -203,94 +196,58 @@ export class ProductEdit implements OnInit {
   }
 
   saveAndContinue(): void {
-    if (this.productForm.valid) {
-      this.isSubmitting = true;
-      this.errorMessage = null;
-      this.successMessage = null;
-      
-      // First upload images to get proper URLs
-      this.uploadImages().then(() => {
-        const formValue = this.productForm.value;
-        
-        // Create the product update DTO
-        const productDto: ProductUpdateRequestDTO = {
-          id: this.productId!,
-          name: formValue.name,
-          description: formValue.description || '',
-          price: parseFloat(formValue.price),
-          currency: formValue.currency,
-          productType: formValue.productType,
-          coverImageUrl: formValue.coverImageUrl,
-          thumbnailImageUrl: formValue.thumbnailImageUrl,
-          previewVideoUrl: formValue.previewVideoUrl,
-          isPublic: formValue.isPublic,
-          permalink: formValue.permalink,
-          status: formValue.status,
-          // Enhanced product details
-          features: this.productFeatures,
-          compatibility: formValue.compatibility,
-          license: formValue.license,
-          updates: formValue.updates,
-          categoryIds: formValue.categoryIds || [],
-          tagIds: formValue.tagIds || []
-        };
+    this.isSubmitting = true;
+    this.errorMessage = null;
+    this.successMessage = null;
 
-        // Log the request payload for debugging
-        console.log('Sending product update request:', productDto);
+    // First upload images to get proper URLs
+    this.uploadImages().then(() => {
+      const formValue = this.productForm.value;
 
-        this.productService.updateProduct(this.productId!, productDto).subscribe({
-          next: (updatedProduct) => {
-            this.isSubmitting = false;
-            this.successMessage = 'Product updated successfully!';
-            this.product = updatedProduct;
-            
-            // Navigate to content editing
-            this.router.navigate(['/products', this.productId, 'edit', 'content']);
-          },
-          error: (error) => {
-            console.error('Product update error:', error);
-            console.error('Error response:', error.error);
-            
-            let errorMessage = 'Failed to update product';
-            
-            // Check for validation errors
-            if (error.error?.errors) {
-              const validationErrors = error.error.errors;
-              const errorDetails = Object.keys(validationErrors)
-                .map(key => `${key}: ${validationErrors[key].join(', ')}`)
-                .join('; ');
-              errorMessage += ': ' + errorDetails;
-            } else if (error.error?.message) {
-              errorMessage += ': ' + error.error.message;
-            } else if (error.error?.title) {
-              errorMessage += ': ' + error.error.title;
-            } else if (error.message) {
-              errorMessage += ': ' + error.message;
-            }
-            
-            this.errorMessage = errorMessage;
-            this.isSubmitting = false;
-          }
-        });
-      }).catch(error => {
-        console.error('Error uploading images:', error);
-        this.errorMessage = 'Failed to upload images: ' + (error.error?.message || error.message);
-        this.isSubmitting = false;
-      });
-    } else {
-      console.log('Form validation errors:', this.productForm.errors);
-      console.log('Form value:', this.productForm.value);
-      
-      // Log individual field errors
-      Object.keys(this.productForm.controls).forEach(key => {
-        const control = this.productForm.get(key);
-        if (control && control.errors) {
-          console.log(`Field ${key} errors:`, control.errors);
+      // Create the product update DTO
+      const productDto: ProductUpdateRequestDTO = {
+        id: this.productId!,
+        name: formValue.name,
+        description: formValue.description || '',
+        price: parseFloat(formValue.price),
+        currency: formValue.currency,
+        productType: formValue.productType,
+        coverImageUrl: formValue.coverImageUrl,
+        thumbnailImageUrl: formValue.thumbnailImageUrl,
+        previewVideoUrl: formValue.previewVideoUrl,
+        isPublic: formValue.isPublic,
+        permalink: formValue.permalink,
+        status: formValue.status,
+        // Enhanced product details
+        features: this.productFeatures,
+        compatibility: formValue.compatibility,
+        license: formValue.license,
+        updates: formValue.updates,
+        categoryIds: formValue.categoryIds || [],
+        tagIds: formValue.tagIds || []
+      };
+
+      // Log the request payload for debugging
+      console.log('Sending product update request:', productDto);
+
+      this.productService.updateProduct(this.productId!, productDto).subscribe({
+        next: (updatedProduct) => {
+          this.successMessage = 'Product updated successfully!';
+          this.product = updatedProduct;
+
+          // Navigate to content editing
+          this.router.navigate(['/products', this.productId, 'edit', 'content']);
+        },
+        error: (error) => {
+          this.errorMessage = error?.error?.message || error?.message || 'An error occurred while updating the product.';
+          this.isSubmitting = false;
         }
       });
-      
-      this.errorMessage = 'Please fix the form errors before saving.';
-    }
+    }).catch(error => {
+      console.error('Error uploading images:', error);
+      this.errorMessage = 'Failed to upload images: ' + (error.error?.message || error.message);
+      this.isSubmitting = false;
+    });
   }
 
   private updateFormValidity(): void {
@@ -371,10 +328,10 @@ export class ProductEdit implements OnInit {
           console.log('Uploading cover image...');
           const coverImageFile = this.base64ToFile(coverImage, 'cover-image.jpg');
           console.log('Cover image file created:', coverImageFile.name, 'Size:', coverImageFile.size);
-          
+
           const result = await firstValueFrom(this.productService.uploadImage(this.productId!, coverImageFile, 'cover'));
           console.log('Cover image upload result:', result);
-          
+
           // Update the form with the new URL
           if (result && result.url) {
             this.productForm.patchValue({ coverImageUrl: result.url });
@@ -387,10 +344,10 @@ export class ProductEdit implements OnInit {
         console.log('Uploading thumbnail image...');
         const thumbnailFile = this.base64ToFile(this.thumbnailImage, 'thumbnail-image.jpg');
         console.log('Thumbnail file created:', thumbnailFile.name, 'Size:', thumbnailFile.size);
-        
+
         const result = await firstValueFrom(this.productService.uploadImage(this.productId!, thumbnailFile, 'thumbnail'));
         console.log('Thumbnail upload result:', result);
-        
+
         // Update the form with the new URL
         if (result && result.url) {
           this.productForm.patchValue({ thumbnailImageUrl: result.url });
@@ -419,8 +376,8 @@ export class ProductEdit implements OnInit {
 
   // Feature management
   addFeature(): void {
-    if (this.newFeature.trim()) {
-      this.productFeatures.push(this.newFeature.trim());
+    if (this.newFeature) {
+      this.productFeatures.push(this.newFeature);
       this.newFeature = '';
     }
   }

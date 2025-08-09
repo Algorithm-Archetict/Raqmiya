@@ -3,10 +3,8 @@ using Raqmiya.Infrastructure;
 using Shared.DTOs.OrderDTOs;
 using Shared.DTOs.ProductDTOs;
 using AutoMapper;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
 using Microsoft.Extensions.Logging;
+using Shared.Constants;
 
 
 namespace Core.Services
@@ -68,21 +66,20 @@ namespace Core.Services
             };
             
             // Add order items with product details
-            foreach (var item in dto.items)
+            foreach (var item in dto.Items)
             {
-                var product = await _productRepository.GetByIdAsync(item.productId);
+                var product = await _productRepository.GetByIdAsync(item.ProductId);
                 if (product == null)
                 {
-                    throw new KeyNotFoundException($"Product with ID {item.productId} not found.");
+                    throw new KeyNotFoundException($"Product with ID {item.ProductId} not found.");
                 }
-                
                 order.OrderItems.Add(new OrderItem
                 {
-                    ProductId = item.productId,
+                    ProductId = item.ProductId,
                     UnitPrice = product.Price,
                     ProductNameSnapshot = product.Name,
                     CurrencySnapshot = product.Currency,
-                    Quantity = 1 // Always 1 for digital products
+                    Quantity = item.Quantity
                 });
             }
             
@@ -242,18 +239,69 @@ namespace Core.Services
         public async Task UpdateOrderStatusAsync(int orderId, string status)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order == null) throw new KeyNotFoundException("Order not found");
+            if (order == null) throw new KeyNotFoundException(ErrorMessages.OrderNotFound);
             order.Status = status;
             order.UpdatedAt = DateTime.UtcNow;
             await _orderRepository.UpdateAsync(order);
+            // Optionally: log or return SuccessMessages.OrderStatusUpdated
         }
 
         public async Task DeleteOrderAsync(int orderId)
         {
             var order = await _orderRepository.GetByIdAsync(orderId);
-            if (order == null) throw new KeyNotFoundException("Order not found");
+            if (order == null) throw new KeyNotFoundException(ErrorMessages.OrderNotFound);
             await _orderRepository.DeleteAsync(order);
+            // Optionally: log or return SuccessMessages.OrderDeleted
+        }
+
+        public async Task<PaymentResultDTO> ProcessPaymentAsync(int orderId, int userId, PaymentRequestDTO paymentRequest)
+        {
+            var order = await _orderRepository.GetByIdAsync(orderId);
+            if (order == null || order.BuyerId != userId)
+            {
+                return new PaymentResultDTO
+                {
+                    Success = false,
+                    Message = ErrorMessages.OrderNotFound
+                };
+            }
+
+            // Simulate payment processing (replace with real payment gateway integration as needed)
+            try
+            {
+                // In a real implementation, you would process the payment with a gateway
+                // using the paymentRequest.PaymentToken and other details
+                
+                string transactionId = Guid.NewGuid().ToString("N").Substring(0, 16);
+                
+                // Mark order as paid (update status, etc.)
+                order.Status = "Paid";
+                order.PaymentMethod = paymentRequest.PaymentMethod;
+                order.PaymentStatus = "completed";
+                order.TransactionId = transactionId;
+                order.UpdatedAt = DateTime.UtcNow;
+                await _orderRepository.UpdateAsync(order);
+                
+                _logger.LogInformation("Payment processed successfully for order {OrderId}", orderId);
+
+                return new PaymentResultDTO
+                {
+                    Success = true,
+                    Message = "Payment processed successfully.",
+                    TransactionId = transactionId,
+                    PaymentStatus = "completed"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process payment for order {OrderId}", orderId);
+                return new PaymentResultDTO
+                {
+                    Success = false,
+                    Message = "Payment processing failed: " + ex.Message,
+                    PaymentStatus = "failed"
+                };
+            }
         }
     }
 }
-

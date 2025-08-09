@@ -4,32 +4,17 @@
 
   <!-- Main Content Area -->
   <div class="main-content">
+    <!-- Alert for error or success -->
+    <app-alert *ngIf="errorMessage || successMessage"
+      [type]="errorMessage ? 'danger' : 'success'"
+      [message]="errorMessage || successMessage || ''">
+    </app-alert>
+
     <!-- Loading State -->
     <div class="loading-state" *ngIf="loading">
       <div class="loading-spinner">
         <i class="fas fa-spinner fa-spin"></i>
         <p>Loading product content...</p>
-      </div>
-    </div>
-
-    <!-- Error State -->
-    <div class="error-state" *ngIf="errorMessage && !loading">
-      <div class="error-card">
-        <i class="fas fa-exclamation-triangle"></i>
-        <h3>Error Loading Product</h3>
-        <p>{{ errorMessage }}</p>
-        <button class="retry-btn" (click)="loadProduct()">
-          <i class="fas fa-redo"></i>
-          Try Again
-        </button>
-      </div>
-    </div>
-
-    <!-- Success Message -->
-    <div class="success-message" *ngIf="successMessage">
-      <div class="alert alert-success">
-        <i class="fas fa-check-circle"></i>
-        {{ successMessage }}
       </div>
     </div>
 
@@ -52,13 +37,13 @@
             </a>
           </div>
         </div>
-        
+
         <div class="header-right">
           <button class="btn btn-secondary" (click)="cancel()">
             Cancel
           </button>
-          <button 
-            class="btn btn-primary" 
+          <button
+            class="btn btn-primary"
             [disabled]="!isFormValid || isSubmitting"
             (click)="saveAndPublish()"
           >
@@ -88,7 +73,7 @@
               </button>
             </div>
             <div class="editor-content">
-              <textarea 
+              <textarea
                 class="content-textarea"
                 placeholder="Enter the content you want to sell. Describe your product, add instructions, or any additional information."
                 [formControlName]="'content'"
@@ -108,12 +93,12 @@
                 <h4>Product Files</h4>
                 <p>Upload files that will be included with your product</p>
               </div>
-              
+
               <div class="file-upload-area">
-                <input 
-                  type="file" 
-                  id="file-upload" 
-                  multiple 
+                <input
+                  type="file"
+                  id="file-upload"
+                  multiple
                   (change)="onFileSelected($event)"
                   style="display: none;"
                 >
@@ -156,11 +141,11 @@
                   <div class="file-info">
                     <i class="fas fa-file"></i>
                     <div class="file-details">
-                      <div class="file-name">{{ file.name }}</div>
+                      <div class="file-name">{{ file }}</div>
                       <div class="file-size">File</div>
                     </div>
                   </div>
-                  <button class="remove-file-btn" (click)="deleteFile(file.id)">
+                  <button class="remove-file-btn" (click)="deleteFile(file)">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>

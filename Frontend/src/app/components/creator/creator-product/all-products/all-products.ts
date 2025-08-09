@@ -49,7 +49,7 @@ export class AllProducts implements OnInit {
     const target = event.target as HTMLElement;
     const isMenuButton = target.closest('.menu-btn');
     const isMenuDropdown = target.closest('.menu-dropdown');
-    
+
     // If click was outside both menu button and dropdown, close all menus
     if (!isMenuButton && !isMenuDropdown) {
       this.closeAllMenus();
@@ -59,17 +59,17 @@ export class AllProducts implements OnInit {
   loadProducts() {
     this.loading = true;
     this.error = '';
-    
+
     // Get current user to filter products
     const currentUser = this.authService.getCurrentUser();
     const currentUsername = this.authService.getCurrentUsername();
-    
-    // Use getMyProducts (which currently calls the main products endpoint)
-    this.productService.getMyProducts(1, 50).subscribe({
+
+    // Use getProducts instead of getMyProducts
+    this.productService.getProducts(1, 50).subscribe({
       next: (response: any) => {
         // Handle different response structures
         let products: ProductListItemDTO[] = [];
-        
+
         if (Array.isArray(response)) {
           products = response;
         } else if (response && response.items && Array.isArray(response.items)) {
@@ -80,12 +80,12 @@ export class AllProducts implements OnInit {
           console.warn('Unexpected response structure:', response);
           products = [];
         }
-        
+
         // Filter products to only show those created by the current user
-        const myProducts = products.filter(product => 
+        const myProducts = products.filter(product =>
           product && product.creatorUsername === currentUsername
         );
-        
+
         this.products = myProducts.map(product => ({
           id: product.id,
           title: product.name || 'Untitled Product',
@@ -125,16 +125,16 @@ export class AllProducts implements OnInit {
     // Find the clicked product
     const clickedProduct = this.products.find(p => p.id === productId);
     if (!clickedProduct) return;
-    
+
     // If this menu is already open, close it
     if (clickedProduct.showMenu) {
       clickedProduct.showMenu = false;
       return;
     }
-    
+
     // Close all other menus first
     this.closeAllMenus();
-    
+
     // Open the clicked product's menu
     clickedProduct.showMenu = true;
   }

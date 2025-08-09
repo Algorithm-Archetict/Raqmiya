@@ -1,18 +1,15 @@
-using API.Constants;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Shared.DTOs.AuthDTOs;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using Raqmiya.Infrastructure;
 using AutoMapper;
 using Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Raqmiya.Infrastructure;
+using Shared.DTOs.AuthDTOs;
+using System.Security.Claims;
+using Shared.Constants;
+using System.Security.Cryptography;
 
 namespace API.Controllers
 {
-    /// <summary>
-    /// Controller for user profile management.
-    /// </summary>
     [ApiController]
     [Route("api/users")]
     public class UsersController : ControllerBase

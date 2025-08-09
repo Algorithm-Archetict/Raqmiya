@@ -33,6 +33,7 @@ namespace Raqmiya.Infrastructure
         // public DbSet<ProductCategory> ProductCategories { get; set; } = null!;
         public DbSet<CategoryTag> CategoryTags { get; set; } = null!;
         public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
+    public DbSet<SiteSetting> SiteSettings { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -211,6 +212,10 @@ namespace Raqmiya.Infrastructure
                 .WithMany()
                 .HasForeignKey(m => m.AdminId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure CustomerInfo as owned entity
+            modelBuilder.Entity<Order>()
+                .OwnsOne(o => o.CustomerInfo);
 
             // Ensure other entity configurations (e.g., string lengths) are present.
         }

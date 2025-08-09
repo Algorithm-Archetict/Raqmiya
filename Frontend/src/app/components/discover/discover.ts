@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
+import { Alert } from '../../shared/alert/alert';
 
 interface Product {
   id: number;
@@ -20,7 +21,7 @@ interface Product {
 
 @Component({
   selector: 'app-discover',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Alert],
   templateUrl: './discover.html',
   styleUrl: './discover.css'
 })
@@ -35,6 +36,8 @@ export class Discover implements OnInit {
   selectedTags: string[] = [];
   sortBy: string = 'relevance';
   loading: boolean = false;
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
 
   // Product Data
   allProducts: Product[] = [];
@@ -55,24 +58,24 @@ export class Discover implements OnInit {
   // Helper method to ensure image URLs are full URLs
   private ensureFullUrl(url: string | null | undefined): string {
     if (!url) return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&h=200&fit=crop';
-    
+
     // If it's already a full URL, return as is
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    
+
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
       return `http://localhost:5255${url}`;
     }
-    
+
     return url;
   }
 
   // Initialize product data from API
   initializeProducts() {
     this.loading = true;
-    
+    this.errorMessage = '';
     this.productService.getProductList(1, 100).subscribe({
       next: (products: ProductListItemDTO[]) => {
         this.allProducts = products.map(product => ({
@@ -87,14 +90,13 @@ export class Discover implements OnInit {
           tags: ['Design'], // Default tags, you might want to add this to the DTO
           badge: product.isPublic ? 'Public' : 'Private'
         }));
-        
         this.recommendedProducts = this.allProducts.slice(0, 6);
         this.filteredProducts = [...this.allProducts];
         this.loading = false;
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
-        // Fallback to empty array if API fails
+        this.errorMessage = 'Failed to load products. Please try again later.';
         this.allProducts = [];
         this.recommendedProducts = [];
         this.filteredProducts = [];
@@ -148,7 +150,7 @@ export class Discover implements OnInit {
     // Search filter
     if (this.searchQuery.trim()) {
       const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.title.toLowerCase().includes(query) ||
         product.creator.toLowerCase().includes(query) ||
         product.tags.some(tag => tag.toLowerCase().includes(query))
@@ -170,7 +172,7 @@ export class Discover implements OnInit {
 
     // Tags filter
     if (this.selectedTags.length > 0) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         this.selectedTags.some(tag => product.tags.includes(tag))
       );
     }
@@ -204,7 +206,7 @@ export class Discover implements OnInit {
   scrollCarousel(direction: 'left' | 'right') {
     const container = this.carouselContainer.nativeElement;
     const scrollAmount = 300;
-    
+
     if (direction === 'left') {
       container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
     } else {
@@ -215,7 +217,7 @@ export class Discover implements OnInit {
   // Load more products
   loadMoreProducts() {
     this.loading = true;
-    
+
     // Simulate API call
     setTimeout(() => {
       // Add more mock products

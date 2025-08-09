@@ -26,11 +26,11 @@ export const AuthInterceptor: HttpInterceptorFn = (request, next) => {
         // Clear localStorage directly to avoid circular dependency
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
-        router.navigate(['/login']);
+  router.navigate(['/auth/login']);
       } else if (error.status === 403) {
         // Forbidden - user doesn't have permission
         console.warn('Access forbidden for user');
-        // Don't logout for 403, just show error
+        router.navigate(['/forbidden']);
       }
       return throwError(() => error);
     })

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { OrderService } from '../../core/services/order.service';
 import { Router } from '@angular/router';
+import { Alert } from '../../shared/alert/alert';
 
 interface PurchasedProductDTO {
   productId: number;
@@ -22,50 +23,52 @@ interface PurchasedProductDTO {
 
 @Component({
   selector: 'app-purchased-products',
-  imports: [CommonModule, RouterModule],
+  standalone: true,
+  imports: [CommonModule, RouterModule, Alert],
   templateUrl: './purchased-products.html',
   styleUrl: './purchased-products.css'
 })
 export class PurchasedProducts implements OnInit {
   purchasedProducts: PurchasedProductDTO[] = [];
   isLoading: boolean = false;
-  errorMessage: string = '';
-  
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
+
   constructor(
     private orderService: OrderService,
     private router: Router
   ) {}
-  
+
   ngOnInit() {
     this.loadPurchasedProducts();
   }
-  
+
   loadPurchasedProducts() {
     this.isLoading = true;
-    this.errorMessage = '';
-    
+    this.errorMessage = null;
     this.orderService.getPurchasedProducts().subscribe({
       next: (products) => {
-        this.purchasedProducts = products;
+        // Ensure products is always an array
+        this.purchasedProducts = Array.isArray(products) ? products : [products];
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (_error) => {
         this.errorMessage = 'Failed to load purchased products.';
         this.isLoading = false;
       }
     });
   }
-  
+
   viewProduct(productId: number) {
     // Navigate to product details page
     this.router.navigate(['/discover', productId]);
   }
-  
+
   downloadProduct(productId: number) {
     // Navigate to package page for downloads
     this.router.navigate(['/package', productId]);
   }
-  
+
   getLicenseStatusClass(status: string): string {
     switch (status) {
       case 'active': return 'status-active';
@@ -74,7 +77,7 @@ export class PurchasedProducts implements OnInit {
       default: return 'status-unknown';
     }
   }
-  
+
   getLicenseStatusText(status: string): string {
     switch (status) {
       case 'active': return 'Active';
@@ -83,4 +86,4 @@ export class PurchasedProducts implements OnInit {
       default: return 'Unknown';
     }
   }
-} 
+}

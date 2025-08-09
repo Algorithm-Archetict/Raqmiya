@@ -10,7 +10,7 @@
         <h1 class="header-title" *ngIf="currentStep === 'create'">What will you be creating?</h1>
         <h1 class="header-title" *ngIf="currentStep === 'customize'">{{ productForm.get('name')?.value || 'Product Name' }}</h1>
         <h1 class="header-title" *ngIf="currentStep === 'content'">{{ productForm.get('name')?.value || 'Product Name' }}</h1>
-        
+
         <!-- Navigation Tabs for Customize and Content steps -->
         <div class="nav-tabs" *ngIf="currentStep === 'customize' || currentStep === 'content'">
           <button class="nav-tab" [class.active]="currentStep === 'customize'" (click)="goToCustomize()">
@@ -23,29 +23,29 @@
           </button>
         </div>
       </div>
-      
+
       <div class="header-right">
         <button class="btn btn-secondary" (click)="cancel()">
           Cancel
         </button>
-        <button 
-          class="btn btn-primary" 
+        <button
+          class="btn btn-primary"
           *ngIf="currentStep === 'create'"
           [disabled]="!isCreateStepValid"
           (click)="nextToCustomize()"
         >
           Next: Customize
         </button>
-        <button 
-          class="btn btn-primary" 
+        <button
+          class="btn btn-primary"
           *ngIf="currentStep === 'customize'"
           [disabled]="!isCustomizeStepValid"
           (click)="saveAndContinue()"
         >
           Save and continue
         </button>
-        <button 
-          class="btn btn-primary" 
+        <button
+          class="btn btn-primary"
           *ngIf="currentStep === 'content'"
           [disabled]="!productForm.valid || isSubmitting"
           (click)="saveAndPublish()"
@@ -57,16 +57,12 @@
     </div>
 
     <!-- Error and Success Messages -->
-    <div class="messages-container" *ngIf="errorMessage || successMessage">
-      <div class="alert alert-danger" *ngIf="errorMessage">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        {{ errorMessage }}
-      </div>
-      <div class="alert alert-success" *ngIf="successMessage">
-        <i class="fas fa-check-circle me-2"></i>
-        {{ successMessage }}
-      </div>
-    </div>
+    <ng-container *ngIf="errorMessage">
+      <app-alert [type]="'danger'" [message]="errorMessage" (close)="errorMessage = null"></app-alert>
+    </ng-container>
+    <ng-container *ngIf="successMessage">
+      <app-alert [type]="'success'" [message]="successMessage" (close)="successMessage = null"></app-alert>
+    </ng-container>
 
     <!-- Content Area -->
     <div class="content-area">
@@ -78,12 +74,12 @@
               Turn your idea into a live product in minutes. No fuss, just a few quick selections and you're ready to start selling. Whether it's digital downloads, online courses, or memberships — see what sticks.
             </p>
           </div>
-          
+
           <div class="form-section" [formGroup]="productForm">
             <div class="form-group">
               <label for="productName"  class="form-label">Name *</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 id="productName"
                 class="form-input"
                 [class.error]="productForm.get('name')?.invalid && productForm.get('name')?.touched"
@@ -96,10 +92,10 @@
                 <span *ngIf="productForm.get('name')?.errors?.['minlength']">Product name must be at least 3 characters</span>
               </div>
             </div>
-            
+
             <div class="product-types">
-              <div 
-                class="product-type-card" 
+              <div
+                class="product-type-card"
                 *ngFor="let type of productTypes"
                 [class.selected]="type.selected"
                 (click)="selectProductType(type.id)"
@@ -113,12 +109,12 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label for="productPrice" class="form-label">Price *</label>
               <div class="price-input-group">
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   id="productPrice"
                   class="form-input"
                   [class.error]="productForm.get('price')?.invalid && productForm.get('price')?.touched"
@@ -146,8 +142,8 @@
           <div class="form-section" [formGroup]="productForm">
             <div class="form-group">
               <label for="productNameEdit"  class="form-label">Name</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 id="productNameEdit"
                 class="form-input"
                 [value] = "name"
@@ -156,10 +152,10 @@
                 (input)="onNameChange()"
               >
             </div>
-            
+
             <div class="form-group">
               <label for="productDescription" class="form-label">Description</label>
-              <textarea 
+              <textarea
                 id="productDescription"
                 class="form-textarea"
                 placeholder="Describe your product..."
@@ -167,35 +163,35 @@
                 rows="6"
               ></textarea>
             </div>
-            
+
             <div class="form-group">
               <label for="productUrl" class="form-label">URL</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 id="productUrl"
                 class="form-input"
                 [formControlName]="'url'"
                 readonly
               >
             </div>
-            
+
             <!-- Cover Images Section -->
             <div class="section-divider"></div>
             <div class="form-group">
               <label class="form-label">Cover Images</label>
-              <button 
+              <button
                 class="upload-btn"
                 (click)="showCoverOptions = !showCoverOptions"
               >
                 <i class="fas fa-upload"></i>
                 Upload a cover image
               </button>
-              
+
               <div class="upload-options" *ngIf="showCoverOptions">
                 <div class="upload-option">
-                  <input 
-                    type="file" 
-                    id="coverFile" 
+                  <input
+                    type="file"
+                    id="coverFile"
                     accept="image/*"
                     (change)="uploadCoverImage($event)"
                     style="display: none;"
@@ -207,14 +203,14 @@
                 </div>
                 <div class="upload-option">
                   <div class="link-input-group">
-                    <input 
-                      type="url" 
+                    <input
+                      type="url"
                       class="form-input"
                       placeholder="Enter image URL"
                       [(ngModel)]="coverImageLink"
                       [ngModelOptions]="{standalone: true}"
                     >
-                    <button 
+                    <button
                       class="btn btn-secondary"
                       (click)="uploadCoverFromLink()"
                     >
@@ -223,11 +219,11 @@
                   </div>
                 </div>
               </div>
-              
+
               <p class="upload-hint">
                 Images should be horizontal, at least 1280x720px, and 72 DPI (dots per inch).
               </p>
-              
+
               <!-- Cover Images Preview -->
               <div class="cover-images-preview" *ngIf="coverImages.length > 0">
                 <div class="cover-image-item" *ngFor="let image of coverImages; let i = index">
@@ -238,14 +234,14 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Thumbnail Section -->
             <div class="section-divider"></div>
             <div class="form-group">
               <label class="form-label">Thumbnail</label>
-              <input 
-                type="file" 
-                id="thumbnailFile" 
+              <input
+                type="file"
+                id="thumbnailFile"
                 accept="image/*"
                 (change)="uploadThumbnail($event)"
                 style="display: none;"
@@ -254,69 +250,69 @@
                 <i class="fas fa-upload"></i>
                 Upload thumbnail
               </label>
-              
+
               <p class="upload-hint">
                 This image appears in the Raqmiya Library, Discover and Profile pages. Your image should be square, at least 600x600px, and JPG, PNG or GIF format.
               </p>
-              
+
               <!-- Thumbnail Preview -->
               <div class="thumbnail-preview" *ngIf="thumbnailImage">
                 <img [src]="thumbnailImage" alt="Thumbnail">
               </div>
             </div>
-            
+
             <!-- Product Info Section -->
             <div class="section-divider"></div>
             <div class="form-group">
               <label for="productSummary" class="form-label">Summary</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 id="productSummary"
                 class="form-input"
                 placeholder="You will get..."
                 [formControlName]="'summary'"
               >
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">Additional details</label>
               <div class="details-card">
                 <p class="details-hint">
                   Call out important features of your product that help your customers decide to buy
                 </p>
-                <button 
+                <button
                   class="btn btn-secondary"
                   (click)="showDetailsForm = true"
                   *ngIf="!showDetailsForm"
                 >
                   Add details
                 </button>
-                
+
                 <div class="details-form" *ngIf="showDetailsForm">
                   <div class="detail-inputs">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       class="form-input"
                       placeholder="Attribute (e.g., File size)"
                       [(ngModel)]="newDetail.attribute"
                       [ngModelOptions]="{standalone: true}"
                     >
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       class="form-input"
                       placeholder="Value (e.g., 100MB)"
                       [(ngModel)]="newDetail.value"
                       [ngModelOptions]="{standalone: true}"
                     >
                   </div>
-                  <button 
+                  <button
                     class="btn btn-primary"
                     (click)="addProductDetail()"
                   >
                     Add details
                   </button>
                 </div>
-                
+
                 <!-- Existing Details -->
                 <div class="existing-details" *ngIf="productDetails.length > 0">
                   <div class="detail-item" *ngFor="let detail of productDetails; let i = index">
@@ -329,7 +325,7 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Product Features Section -->
             <div class="section-divider"></div>
             <div class="form-group">
@@ -339,14 +335,14 @@
                   List the key features and benefits of your product
                 </p>
                 <div class="features-input-group">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     class="form-input"
                     placeholder="Add a feature (e.g., 10 fully rigged 3D characters)"
                     [(ngModel)]="newFeature"
                     [ngModelOptions]="{standalone: true}"
                   >
-                  <button 
+                  <button
                     class="btn btn-primary"
                     (click)="addFeature()"
                     [disabled]="!newFeature.trim()"
@@ -354,7 +350,7 @@
                     Add Feature
                   </button>
                 </div>
-                
+
                 <!-- Existing Features -->
                 <div class="existing-features" *ngIf="productFeatures.length > 0">
                   <div class="feature-item" *ngFor="let feature of productFeatures; let i = index">
@@ -367,7 +363,7 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Product Specifications Section -->
             <div class="section-divider"></div>
             <div class="form-group">
@@ -375,15 +371,15 @@
               <div class="specs-grid">
                 <div class="spec-item">
                   <label for="compatibility" class="spec-label">Compatibility</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     id="compatibility"
                     class="form-input"
                     placeholder="e.g., Unity, Unreal Engine, Blender"
                     [formControlName]="'compatibility'"
                   >
                 </div>
-                
+
                 <div class="spec-item">
                   <label for="license" class="spec-label">License Type</label>
                   <select id="license" class="form-input" [formControlName]="'license'">
@@ -394,7 +390,7 @@
                     <option value="Custom">Custom License</option>
                   </select>
                 </div>
-                
+
                 <div class="spec-item">
                   <label for="updates" class="spec-label">Update Policy</label>
                   <select id="updates" class="form-input" [formControlName]="'updates'">
@@ -408,7 +404,7 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Right Section - Preview -->
           <!-- <div class="preview-section">
             <div class="preview-card">
@@ -449,7 +445,7 @@
               </button>
             </div>
             <div class="editor-content">
-              <textarea 
+              <textarea
                 class="content-textarea"
                 placeholder="Enter the content you want to sell. Describe your product, add instructions, or any additional information."
                 [formControlName]="'content'"
@@ -468,9 +464,9 @@
               <p class="upload-subtitle">Upload the actual files customers will download</p>
             </div>
             <div class="file-upload-area">
-              <input 
-                type="file" 
-                id="productFiles" 
+              <input
+                type="file"
+                id="productFiles"
                 multiple
                 accept=".pdf,.zip,.jpg,.jpeg,.png,.mp4"
                 (change)="onFileSelected($event)"

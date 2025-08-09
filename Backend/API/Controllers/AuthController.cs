@@ -1,8 +1,8 @@
-﻿using API.Constants;
-using AutoMapper;
+﻿using AutoMapper;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Constants;
 using Shared.DTOs.AuthDTOs;
 using System.Security.Claims;
 
