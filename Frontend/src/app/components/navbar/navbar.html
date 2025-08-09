@@ -33,7 +33,11 @@
       </ul>
       
       <!-- Authentication Buttons -->
-      <div class="d-flex" role="search">
+      <div class="d-flex align-items-center gap-2" role="search">
+        <!-- Theme Toggle -->
+        <button class="btn btn-outline" type="button" (click)="toggleTheme()" aria-label="Toggle theme">
+          <i class="fas" [ngClass]="theme === 'dark' ? 'fa-sun' : 'fa-moon'"></i>
+        </button>
         <!-- Anonymous Users -->
         <div *ngIf="!isLoggedIn" class="auth-buttons">
           <a routerLink="/auth/login" class="btn btn-outline me-2">

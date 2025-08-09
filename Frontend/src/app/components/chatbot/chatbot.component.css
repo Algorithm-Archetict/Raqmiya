@@ -110,7 +110,7 @@
 }
 
 .admin-panel-header h6 {
-  color: #fff;
+  color: var(--text-inverse);
   margin: 0 0 10px 0;
   font-size: 14px;
 }
@@ -120,7 +120,7 @@
 }
 
 .admin-panel-content .form-label {
-  color: #fff;
+  color: var(--text-inverse);
   font-size: 12px;
   margin-bottom: 5px;
 }
@@ -128,14 +128,14 @@
 .admin-panel-content .form-control {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid #555;
-  color: #fff;
+  color: var(--text-inverse);
   font-size: 12px;
 }
 
 .admin-panel-content .form-control:focus {
   background: rgba(255, 255, 255, 0.15);
   border-color: #6a11cb;
-  color: #fff;
+  color: var(--text-inverse);
   box-shadow: 0 0 0 0.2rem rgba(106, 17, 203, 0.25);
 }
 
@@ -209,7 +209,7 @@
 .message-text {
   padding: 12px 16px;
   border-radius: 18px;
-  color: #fff;
+  color: var(--text-inverse);
   font-size: 14px;
   line-height: 1.4;
   word-wrap: break-word;
@@ -222,7 +222,7 @@
 
 .message.assistant .message-text {
   background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--text-inverse);
   border: 1px solid #444;
 }
 
@@ -356,7 +356,7 @@
 .chat-input-container .form-control {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text-inverse);
   padding: 12px 15px;
   font-size: 14px;
 }
@@ -364,7 +364,7 @@
 .chat-input-container .form-control:focus {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text-inverse);
   box-shadow: none;
 }
 
@@ -387,7 +387,7 @@
 
 .chat-input-container .btn-outline-secondary:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 .chat-input-container .btn-primary {

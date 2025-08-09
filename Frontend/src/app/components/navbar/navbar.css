@@ -100,8 +100,8 @@
 
 .navbar .btn-outline:hover {
   background: var(--bg-secondary);
-  border-color: var(--epic-blue);
-  color: var(--epic-blue);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }

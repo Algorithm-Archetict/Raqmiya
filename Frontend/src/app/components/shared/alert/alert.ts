@@ -22,27 +22,27 @@ import { CommonModule } from '@angular/common';
     }
     
     .alert-success {
-      background-color: #d4edda;
-      color: #155724;
-      border-left: 4px solid #28a745;
+      background-color: color-mix(in srgb, var(--color-success) 15%, transparent);
+      color: var(--color-success);
+      border-left: 4px solid var(--color-success);
     }
     
     .alert-danger {
-      background-color: #f8d7da;
-      color: #721c24;
-      border-left: 4px solid #dc3545;
+      background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
+      color: var(--color-error);
+      border-left: 4px solid var(--color-error);
     }
     
     .alert-warning {
-      background-color: #fff3cd;
-      color: #856404;
-      border-left: 4px solid #ffc107;
+      background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
+      color: var(--color-accent);
+      border-left: 4px solid var(--color-accent);
     }
     
     .alert-info {
-      background-color: #d1ecf1;
-      color: #0c5460;
-      border-left: 4px solid #17a2b8;
+      background-color: color-mix(in srgb, var(--color-secondary) 15%, transparent);
+      color: var(--color-secondary);
+      border-left: 4px solid var(--color-secondary);
     }
     
     .btn-close {

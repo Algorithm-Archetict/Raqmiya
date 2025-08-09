@@ -8,6 +8,7 @@ import { ProductDetailDTO } from '../../../core/models/product/product-detail.dt
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import { ToastService } from '../../../core/services/toast.service';
+import { environment } from '../../../../environments/environment';
 import { Alert } from '../../../shared/alert/alert';
 
 
@@ -118,7 +119,8 @@ export class ProductDetails implements OnInit {
 
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
-      const fullUrl = `http://localhost:5255${url}`;
+      const base = environment.apiUrl.replace(/\/api\/?$/, '');
+      const fullUrl = `${base}${url}`;
       console.log('ensureFullUrl: Converted relative URL to full URL:', fullUrl);
       return fullUrl;
     }
@@ -153,8 +155,14 @@ export class ProductDetails implements OnInit {
   // Helper method to generate placeholder avatar
   getPlaceholderAvatar(username: string | undefined): string {
     const initial = (username || 'A').charAt(0);
-    const colors = ['#0074e4', '#e4007f', '#00d4ff', '#6c2bd9', '#ff6b35'];
-    const color = colors[initial.charCodeAt(0) % colors.length];
+    // Use CSS variables for color palette; fallback list preserved
+    const palette = [
+      getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() || '#1E3A8A',
+      getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim() || '#14B8A6',
+      getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || '#FBBF24',
+      '#6c2bd9', '#ff6b35'
+    ];
+    const color = palette[initial.charCodeAt(0) % palette.length];
     return `data:image/svg+xml;base64,${btoa(`
       <svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
         <rect width="50" height="50" fill="${color}"/>
@@ -211,10 +219,11 @@ export class ProductDetails implements OnInit {
 
     // Add file previews if no media available
     if (media.length === 0 && backendProduct.files && backendProduct.files.length > 0) {
+      const gray = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#6B7280';
       media.push({
         type: 'image',
-        url: this.getPlaceholderImage('Product Files', '#2a2a2a'),
-        thumbnail: this.getPlaceholderImage('Files', '#2a2a2a')
+        url: this.getPlaceholderImage('Product Files', gray),
+        thumbnail: this.getPlaceholderImage('Files', gray)
       });
     }
 

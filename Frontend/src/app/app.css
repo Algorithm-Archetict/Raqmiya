@@ -5,8 +5,8 @@
 /* Global styles */
 body {
   font-family: 'Inter', sans-serif; /* Or any other font you prefer */
-  background-color: #f8f9fa; /* Light background for the whole app */
-  color: #333;
+  background-color: var(--bg-primary); /* Themed background for the whole app */
+  color: var(--text-primary);
 }
 
 main {

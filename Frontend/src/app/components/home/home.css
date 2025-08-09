@@ -137,7 +137,7 @@
 }
 
 .epic-modal .btn-primary {
-  background: #0d6efd;
+  background: var(--primary-color);
   border: none;
   transition: background 0.3s ease;
 }

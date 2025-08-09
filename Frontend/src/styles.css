@@ -4,58 +4,65 @@
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
-/* CSS Custom Properties for Epic Games Theme */
+/* CSS Custom Properties for Modern E-commerce Palette (Light default) */
 :root {
-  /* Epic Games Color Palette */
-  --epic-blue: #0074e4;
-  --epic-blue-dark: #005bb5;
-  --epic-blue-light: #4a9eff;
-  --epic-purple: #6c2bd9;
-  --epic-purple-dark: #4f1f9e;
-  --epic-purple-light: #8f5fff;
-  --epic-cyan: #00d4ff;
-  --epic-cyan-dark: #00a8cc;
-  --epic-cyan-light: #4de8ff;
-  
-  /* Primary Colors */
-  --primary-color: var(--epic-blue);
+  /* Brand Colors */
+  --color-primary: #1E3A8A;     /* Deep Blue */
+  --color-secondary: #14B8A6;   /* Vibrant Teal */
+  --color-accent: #FBBF24;      /* Warm Yellow */
+  --color-success: #10B981;     /* Emerald */
+  --color-error: #EF4444;       /* Soft Red */
+
+  /* Back-compat aliases used across components */
+  --epic-blue: var(--color-primary);
+  --epic-blue-dark: #162C66;
+  --epic-blue-light: #3657B3;
+  --epic-purple: var(--color-secondary);
+  --epic-purple-dark: #0F877A;
+  --epic-purple-light: #3FD6C7;
+  --epic-cyan: var(--color-accent);
+  --epic-cyan-dark: #CF9C11;
+  --epic-cyan-light: #FFD566;
+
+  /* Semantic tokens */
+  --primary-color: var(--color-primary);
   --primary-dark: var(--epic-blue-dark);
-  --primary-hover: var(--epic-blue-dark);
-  --primary-color-rgb: 0, 116, 228;
-  --secondary-color: var(--epic-purple);
-  --accent-color: var(--epic-cyan);
-  --success-color: #00e676;
-  --warning-color: #ffab00;
-  --danger-color: #ff1744;
-  --error-color: #ff1744;
-  
-  /* Dark Theme Background Colors (Epic Games Style) */
-  --bg-primary: #0f1419;
-  --bg-secondary: #1a1d23;
-  --bg-tertiary: #252a31;
-  --bg-card: #1a1d23;
-  --bg-overlay: rgba(15, 20, 25, 0.95);
-  --bg-glass: rgba(26, 29, 35, 0.8);
-  
-  /* Text Colors */
-  --text-primary: #ffffff;
-  --text-secondary: #b8b9bc;
-  --text-muted: #7a7d85;
-  --text-inverse: #0f1419;
-  --text-accent: var(--epic-cyan);
-  
-  /* Border Colors */
-  --border-color: #2a2f38;
-  --border-hover: #3a3f48;
-  --border-accent: var(--epic-blue);
-  
-  /* Shadow Colors */
+  --primary-hover: var(--epic-blue-light);
+  --primary-color-rgb: 30, 58, 138; /* #1E3A8A */
+  --secondary-color: var(--color-secondary);
+  --accent-color: var(--color-accent);
+  --success-color: var(--color-success);
+  --warning-color: var(--color-accent);
+  --danger-color: var(--color-error);
+  --error-color: var(--color-error);
+
+  /* Light Mode Surfaces */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F3F4F6; /* Soft Gray */
+  --bg-tertiary: #E5E7EB;
+  --bg-card: #FFFFFF;
+  --bg-overlay: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.8);
+
+  /* Light Mode Text */
+  --text-primary: #1F2937;      /* Charcoal Gray */
+  --text-secondary: #6B7280;    /* Slate Gray */
+  --text-muted: #9CA3AF;
+  --text-inverse: #FFFFFF;
+  --text-accent: var(--color-primary);
+
+  /* Borders */
+  --border-color: #E5E7EB;
+  --border-hover: #CBD5E1;
+  --border-accent: var(--color-primary);
+
+  /* Shadows */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.6);
   --shadow-2xl: 0 24px 48px rgba(0, 0, 0, 0.7);
-  --shadow-glow: 0 0 20px rgba(0, 116, 228, 0.3);
+  --shadow-glow: 0 0 20px rgba(var(--primary-color-rgb), 0.25);
   
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -79,28 +86,30 @@
   --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, var(--epic-blue) 0%, var(--epic-purple) 100%);
-  --gradient-secondary: linear-gradient(135deg, var(--epic-purple) 0%, var(--epic-cyan) 100%);
-  --gradient-accent: linear-gradient(135deg, var(--epic-cyan) 0%, var(--epic-blue) 100%);
+  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary) 100%);
   --gradient-dark: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  --gradient-glow: linear-gradient(135deg, rgba(0, 116, 228, 0.1) 0%, rgba(108, 43, 217, 0.1) 100%);
+  --gradient-glow: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%);
 }
 
-/* Light Theme (Optional) */
-[data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #e9ecef;
-  --bg-card: #ffffff;
-  --bg-overlay: rgba(255, 255, 255, 0.95);
-  --bg-glass: rgba(255, 255, 255, 0.8);
-  
-  --text-primary: #0f1419;
-  --text-secondary: #495057;
-  --text-muted: #6c757d;
-  
-  --border-color: #dee2e6;
-  --border-hover: #adb5bd;
+/* Dark Theme Overrides */
+[data-theme="dark"] {
+  --bg-primary: #111827; /* Dark Slate */
+  --bg-secondary: #0F172A;
+  --bg-tertiary: #1F2937;
+  --bg-card: #111827;
+  --bg-overlay: rgba(17, 24, 39, 0.95);
+  --bg-glass: rgba(17, 24, 39, 0.8);
+
+  --text-primary: #F9FAFB; /* Off-White */
+  --text-secondary: #9CA3AF; /* Light Gray */
+  --text-muted: #6B7280;
+  --text-inverse: #111827;
+  --text-accent: var(--color-accent);
+
+  --border-color: #1F2937;
+  --border-hover: #374151;
 }
 
 /* Global Styles */
@@ -253,8 +262,8 @@ p {
 
 .btn-outline:hover {
   background: var(--bg-secondary);
-  border-color: var(--epic-blue);
-  color: var(--epic-blue);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -395,9 +404,9 @@ p {
 }
 
 .alert-info {
-  background: rgba(0, 212, 255, 0.1);
-  color: var(--epic-cyan);
-  border-left: 4px solid var(--epic-cyan);
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--accent-color);
+  border-left: 4px solid var(--accent-color);
 }
 
 /* Epic Games Style Navigation */
@@ -734,21 +743,21 @@ p {
 
 /* Epic Games Style Focus States */
 *:focus {
-  outline: 2px solid var(--epic-blue);
+  outline: 2px solid var(--primary-color);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
 /* Epic Games Style Selection */
 ::selection {
-  background: var(--epic-blue);
+  background: var(--primary-color);
   color: var(--text-inverse);
 }
 
 /* Epic Games Style Loading Spinner */
 .spinner-border {
   border: 3px solid var(--bg-secondary);
-  border-top: 3px solid var(--epic-blue);
+  border-top: 3px solid var(--primary-color);
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -821,8 +830,8 @@ p {
 
 .page-link:hover {
   background: var(--bg-tertiary);
-  border-color: var(--epic-blue);
-  color: var(--epic-blue);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
   transform: translateY(-1px);
 }
 

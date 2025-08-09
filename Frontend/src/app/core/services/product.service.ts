@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 import { ProductCreateRequestDTO } from '../models/product/product-create-request.dto';
 import { ProductUpdateRequestDTO } from '../models/product/product-update-request.dto';
@@ -13,7 +14,7 @@ import { ReviewDTO } from '../models/product/review.dto';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private apiUrl = 'http://localhost:5255/api/Products';
+  private apiUrl = `${environment.apiUrl}/Products`;
 
   constructor(private http: HttpClient) {}
 

@@ -1108,7 +1108,7 @@
 .dark-theme .header-actions .btn-outline {
   background: rgba(26, 26, 26, 0.8);
   border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  color: var(--text-inverse);
 }
 
 .dark-theme .header-actions .btn-outline:hover {
@@ -1130,7 +1130,7 @@
 .dark-theme .theme-toggle {
   background: rgba(26, 26, 26, 0.8);
   border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  color: var(--text-inverse);
 }
 
 .dark-theme .theme-toggle:hover {

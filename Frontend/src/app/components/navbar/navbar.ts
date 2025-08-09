@@ -14,6 +14,7 @@ export class Navbar implements OnInit, OnDestroy {
   isLoggedIn: boolean = false;
   currentUser: any = null;
   isUserDropdownOpen: boolean = false;
+  theme: 'light' | 'dark' = 'light';
   private authSubscription: Subscription = new Subscription();
 
   constructor(
@@ -35,6 +36,16 @@ export class Navbar implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+  // Initialize theme with prefers-color-scheme fallback
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark' || saved === 'light') {
+    this.theme = saved as 'dark' | 'light';
+  } else {
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    this.theme = prefersDark ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', this.theme);
+    
     // Subscribe to authentication status changes
     this.authSubscription.add(
       this.authService.isLoggedIn$.subscribe(isLoggedIn => {
@@ -98,12 +109,16 @@ export class Navbar implements OnInit, OnDestroy {
   }
 
   isCreator(): boolean {
-    const isCreator = this.authService.isCreator();
-    console.log('Navbar - isCreator:', isCreator, 'Current User:', this.authService.getCurrentUser());
-    return isCreator;
+  return this.authService.isCreator();
   }
 
   isAdmin(): boolean {
     return this.authService.isAdmin();
+  }
+
+  toggleTheme(): void {
+    this.theme = this.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', this.theme);
+    localStorage.setItem('theme', this.theme);
   }
 }

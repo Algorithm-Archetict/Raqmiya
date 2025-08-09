@@ -55,7 +55,7 @@
 }
 
 .reviewer-avatar {
-  border: 2px solid #fff;
+  border: 2px solid var(--text-inverse);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
