@@ -152,6 +152,27 @@ export class ProductService {
     );
   }
 
+  // ======= CREATOR =======
+  /**
+   * Get products for the current creator (server infers from token)
+   * Backend exposes creator listing via products with filter; if a dedicated route exists, adapt here.
+   */
+  getMyCreatorProducts(page = 1, size = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    // If backend exposes /products?creator=true, use that; otherwise, use a dedicated path if implemented.
+    return this.http.get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}&creator=true`).pipe(
+      catchError(this.handleError('getMyCreatorProducts'))
+    );
+  }
+
+  /**
+   * Get products for a specific creator by ID (admin or public if permitted)
+   */
+  getCreatorProducts(creatorId: number, page = 1, size = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    return this.http.get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}&creatorId=${creatorId}`).pipe(
+      catchError(this.handleError('getCreatorProducts'))
+    );
+  }
+
   // ======= ERROR HANDLER =======
   private handleError(operation = 'operation') {
     return (error: any) => {
@@ -167,5 +188,20 @@ export class ProductService {
       console.error(message, error);
       return throwError(() => new Error(message));
     };
+  }
+
+  // ======= URL HELPERS =======
+  /**
+   * Convert a possibly relative path (e.g., /uploads/products/1/img.jpg) into a full URL
+   * based on environment.apiUrl. If already absolute (http/https), returns as-is.
+   */
+  buildFullUrl(path?: string | null): string | undefined {
+    if (!path) return undefined;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('/')) {
+      const base = environment.apiUrl.replace(/\/api\/?$/, '');
+      return `${base}${path}`;
+    }
+    return path;
   }
 }

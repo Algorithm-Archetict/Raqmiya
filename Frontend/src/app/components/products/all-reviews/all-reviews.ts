@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
+import { environment } from '../../../../environments/environment';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import { CommonModule } from '@angular/common';
 import { Alert } from '../../shared/alert/alert';
@@ -14,7 +15,7 @@ import { ProductDetailDTO } from '../../../core/models/product/product-detail.dt
   standalone: true
 })
 export class AllReviews implements OnInit {
-  private readonly backendUrl = 'http://localhost:5255';
+  private readonly backendUrl = environment.apiUrl.replace(/\/api\/?$/, '');
 
   productId!: number;
   reviews: ReviewDTO[] = [];

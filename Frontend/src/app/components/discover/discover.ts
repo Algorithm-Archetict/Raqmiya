@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
+import { environment } from '../../../environments/environment';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
 import { Alert } from '../../shared/alert/alert';
 
@@ -66,7 +67,8 @@ export class Discover implements OnInit {
 
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
-      return `http://localhost:5255${url}`;
+      const base = environment.apiUrl.replace(/\/api\/?$/, '');
+      return `${base}${url}`;
     }
 
     return url;
