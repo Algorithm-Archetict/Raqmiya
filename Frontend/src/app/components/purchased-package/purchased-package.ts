@@ -4,8 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { OrderService } from '../../core/services/order.service';
+import { ProductService } from '../../core/services/product.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { ReviewDTO } from '../../core/models/product/review.dto';
+import Swal from 'sweetalert2';
 
 interface PurchasedProduct {
   productId: number;
@@ -47,16 +50,48 @@ export class PurchasedPackage implements OnInit {
   downloadProgress: number = 0;
   isLoading: boolean = false;
   errorMessage: string = '';
+  
+  // Review-related properties
+  existingReview: ReviewDTO | null = null;
+  isEditingReview: boolean = false;
+  submittingReview: boolean = false;
+  loadingReview: boolean = false;
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private orderService: OrderService,
+    private productService: ProductService,
     private http: HttpClient
   ) {}
 
   ngOnInit() {
     this.loadPurchasedProduct();
+  }
+
+  loadExistingReview() {
+    if (!this.product) return;
+
+    this.loadingReview = true;
+    this.productService.getMyReview(this.product.productId).subscribe({
+      next: (response) => {
+        console.log('Loaded review response:', response);
+        if (response.hasReview && response.review) {
+          this.existingReview = response.review;
+          this.userRating = response.review.rating;
+          this.userReview = response.review.comment || '';
+          this.isRatingSubmitted = true;
+          console.log('Set userRating to:', this.userRating, 'from response.review.rating:', response.review.rating);
+        } else {
+          console.log('No existing review found');
+        }
+        this.loadingReview = false;
+      },
+      error: (error) => {
+        console.error('Error loading existing review:', error);
+        this.loadingReview = false;
+      }
+    });
   }
 
   loadPurchasedProduct() {
@@ -82,6 +117,9 @@ export class PurchasedPackage implements OnInit {
         this.product = product;
         if (!this.product) {
           this.errorMessage = 'Product not found or you do not have access to it.';
+        } else {
+          // Load existing review after product is loaded
+          this.loadExistingReview();
         }
         this.isLoading = false;
       },
@@ -94,23 +132,147 @@ export class PurchasedPackage implements OnInit {
   }
 
   backToLibrary() {
-    this.router.navigate(['/purchased-products']);
+    this.router.navigate(['/library/purchased-products']);
   }
 
   setRating(rating: number) {
+    console.log('setRating called with:', rating, 'current userRating:', this.userRating);
     this.userRating = rating;
   }
 
   submitRating() {
-    if (this.userRating > 0) {
-      // In real app, this would send to API
-      // Submit rating and review
-      this.isRatingSubmitted = true;
+    if (!this.userRating || !this.product) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Rating Required',
+        text: 'Please select a rating before submitting.',
+        confirmButtonText: 'OK'
+      });
+      return;
     }
+
+    this.submittingReview = true;
+    
+    const reviewData = {
+      rating: this.userRating,
+      comment: this.userReview.trim() || 'No comment provided'
+    };
+
+    // Check if this is an update or new review
+    const serviceCall = this.existingReview 
+      ? this.productService.updateReview(this.product.productId, reviewData)
+      : this.productService.submitReview(this.product.productId, reviewData);
+
+    serviceCall.subscribe({
+      next: (review: ReviewDTO) => {
+        if (this.existingReview) {
+          // Update existing review
+          this.existingReview = {
+            id: review.id || this.existingReview.id,
+            rating: review.rating,
+            comment: review.comment || '',
+            userName: review.userName,
+            userAvatar: review.userAvatar,
+            createdAt: review.createdAt
+          };
+        } else {
+          // Create new review
+          this.existingReview = {
+            id: review.id,
+            rating: review.rating,
+            comment: review.comment || '',
+            userName: review.userName,
+            userAvatar: review.userAvatar,
+            createdAt: review.createdAt
+          };
+        }
+
+        this.isRatingSubmitted = true;
+        this.isEditingReview = false;
+        this.submittingReview = false;
+
+        Swal.fire({
+          icon: 'success',
+          title: this.existingReview ? 'Review Updated!' : 'Review Submitted!',
+          text: 'Thank you for your feedback!',
+          confirmButtonText: 'OK',
+          timer: 3000
+        });
+      },
+      error: (error) => {
+        console.error('Error submitting review:', error);
+        this.submittingReview = false;
+        
+        const errorMessage = error.error?.includes('already reviewed')
+          ? 'You have already reviewed this product'
+          : error.error || 'Error submitting review. Please try again.';
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          confirmButtonText: 'OK'
+        });
+      }
+    });
   }
 
   editReview() {
     this.isRatingSubmitted = false;
+    this.isEditingReview = true;
+  }
+
+  cancelEdit() {
+    this.isEditingReview = false;
+    if (this.existingReview) {
+      this.userRating = this.existingReview.rating;
+      this.userReview = this.existingReview.comment || '';
+      this.isRatingSubmitted = true;
+    }
+  }
+
+  deleteReview() {
+    if (!this.existingReview || !this.product) return;
+
+    Swal.fire({
+      title: 'Delete Review?',
+      text: 'Are you sure you want to delete your review? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.productService.deleteReview(this.product!.productId).subscribe({
+          next: () => {
+            // Reset review state
+            this.existingReview = null;
+            this.userReview = '';
+            this.userRating = 0;
+            this.isRatingSubmitted = false;
+            this.isEditingReview = false;
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Review Deleted!',
+              text: 'Your review has been deleted successfully.',
+              confirmButtonText: 'OK'
+            });
+          },
+          error: (error) => {
+            console.error('Error deleting review:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Error deleting review. Please try again.',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+      }
+    });
   }
 
   viewReceipt() {

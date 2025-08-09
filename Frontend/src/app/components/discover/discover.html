@@ -151,7 +151,7 @@
                     <span class="product-price">${{ product.price }}</span>
                     <div class="product-rating">
                       <i class="fas fa-star text-warning"></i>
-                      <span>{{ product.rating }}</span>
+                      <span>{{ product.rating | number:'1.1-1' }}</span>
                     </div>
                   </div>
                 </div>
@@ -267,8 +267,8 @@
                   <div class="product-image">
                     <img [src]="product.image" [alt]="product.title">
                     
-                    <!-- Wishlist Toggle Button (Only for logged-in users) -->
-                    <div *ngIf="isLoggedIn()" class="wishlist-toggle"
+                    <!-- Wishlist Toggle Button (Only for logged-in users who haven't purchased) -->
+                    <div *ngIf="isLoggedIn() && !product.isPurchased" class="wishlist-toggle"
                          (click)="toggleWishlist(product, $event)"
                          (mouseenter)="onWishlistHover(product, true, $event)"
                          (mouseleave)="onWishlistHover(product, false, $event)"
@@ -290,9 +290,13 @@
                     </div>
                     
                     <div class="product-overlay">
-                      <button class="btn btn-primary btn-sm">
+                      <button class="btn btn-primary btn-sm" *ngIf="!product.isPurchased">
                         <i class="fas fa-eye"></i>
                         View Details
+                      </button>
+                      <button class="btn btn-success btn-sm" *ngIf="product.isPurchased" (click)="goToLibrary(product, $event)">
+                        <i class="fas fa-book"></i>
+                        In Library
                       </button>
                     </div>
                     <div class="product-badge" *ngIf="product.badge">
@@ -306,8 +310,9 @@
                       <span class="product-price">${{ product.price }}</span>
                       <div class="product-rating">
                         <i class="fas fa-star text-warning"></i>
-                        <span>{{ product.rating }}</span>
-                        <span class="rating-count">({{ product.ratingCount }})</span>
+                        <span>{{ product.rating | number:'1.1-1' }}</span>
+                        <span class="rating-count" *ngIf="product.ratingCount > 0">({{ product.ratingCount }} reviews)</span>
+                        <span class="rating-count" *ngIf="product.ratingCount === 0 && product.rating > 0">(reviews)</span>
                       </div>
                     </div>
                     <div class="product-tags">
@@ -342,7 +347,7 @@
   </div>
   
   <!-- Wishlist Counter Popup -->
-  <div class="wishlist-counter-popup" [class.show]="showWishlistCounterPopup" #wishlistCounterPopup>
+  <!-- <div class="wishlist-counter-popup" [class.show]="showWishlistCounterPopup" #wishlistCounterPopup>
     <div class="popup-content">
       <div class="popup-icon">
         <i class="fas fa-heart"></i>
@@ -355,5 +360,5 @@
         </button>
       </div>
     </div>
-  </div>
+  </div> -->
 </div>
