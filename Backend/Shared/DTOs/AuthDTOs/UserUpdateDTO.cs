@@ -10,7 +10,7 @@ namespace Shared.DTOs.AuthDTOs
         [StringLength(500)]
         public string? ProfileDescription { get; set; }
 
-        [Url]
+        // Allow empty string to remove image, or valid URL up to 500 chars
         public string? ProfileImageUrl { get; set; }
     }
 }
