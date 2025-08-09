@@ -23,9 +23,9 @@ export class AdminUsers implements OnInit {
   loadUsers() {
     this.loading = true;
     this.error = null;
-    this.admin.getUsers(1, 20).subscribe({
+    this.admin.getUsers().subscribe({
       next: res => {
-        this.users = res?.items ?? [];
+        this.users = res ?? [];
         this.loading = false;
       },
       error: _ => {

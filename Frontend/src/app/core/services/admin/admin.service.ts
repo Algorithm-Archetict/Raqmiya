@@ -7,7 +7,8 @@ export interface AdminUserSummary {
   id: number;
   username: string;
   email: string;
-  roles: string[];
+  // Backend returns a single Role string in UserProfileDTO
+  role: string;
   isActive: boolean;
   createdAt?: string;
 }
@@ -23,8 +24,9 @@ export class AdminService {
   constructor(private http: HttpClient) {}
 
   // Users
-  getUsers(page = 1, pageSize = 20): Observable<PagedResult<AdminUserSummary>> {
-    return this.http.get<PagedResult<AdminUserSummary>>(`${this.apiUrl}/admin/users`, { params: { page, pageSize } as any });
+  // Backend returns a plain array of users (no paging)
+  getUsers(): Observable<AdminUserSummary[]> {
+    return this.http.get<AdminUserSummary[]>(`${this.apiUrl}/admin/users`);
   }
   deactivateUser(userId: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/admin/users/${userId}/deactivate`, {});
@@ -32,26 +34,23 @@ export class AdminService {
   activateUser(userId: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/admin/users/${userId}/activate`, {});
   }
-  updateUserRoles(userId: number, roles: string[]): Observable<any> {
-    return this.http.put(`${this.apiUrl}/admin/users/${userId}/roles`, { roles });
-  }
+  // Note: updateUserRoles endpoint isn't implemented in backend currently
 
   // Content moderation (assumed endpoints)
+  // Use ProductsController admin endpoints: by-status=Pending
   getFlaggedContent(page = 1, pageSize = 20): Observable<PagedResult<any>> {
-    return this.http.get<PagedResult<any>>(`${this.apiUrl}/admin/content/flagged`, { params: { page, pageSize } as any });
+    return this.http.get<PagedResult<any>>(
+      `${this.apiUrl}/products/admin/by-status`,
+      { params: { status: 'Pending', pageNumber: page, pageSize } as any }
+    );
   }
   approveContent(contentId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/admin/content/${contentId}/approve`, {});
+    return this.http.post(`${this.apiUrl}/products/admin/${contentId}/approve`, {});
   }
   rejectContent(contentId: number, reason?: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/admin/content/${contentId}/reject`, { reason });
+    return this.http.post(`${this.apiUrl}/products/admin/${contentId}/reject`, { action: 'reject', reason });
   }
 
   // Settings
-  getSettings(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/admin/settings`);
-  }
-  updateSettings(payload: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/admin/settings`, payload);
-  }
+  // Note: no admin settings endpoints exist in backend as of now
 }

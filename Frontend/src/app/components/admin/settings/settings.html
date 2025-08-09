@@ -1,5 +1,6 @@
 <div class="container py-4">
   <h2 class="mb-3">System Settings</h2>
+  <p class="text-muted">Note: Settings are placeholder only. Backend endpoints not implemented yet.</p>
   <div *ngIf="loading">Loading…</div>
   <div *ngIf="error" class="text-danger">{{ error }}</div>
   <form *ngIf="!loading" (ngSubmit)="save()">

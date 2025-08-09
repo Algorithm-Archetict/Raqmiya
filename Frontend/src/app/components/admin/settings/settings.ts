@@ -22,18 +22,14 @@ export class AdminSettings implements OnInit {
   ngOnInit(): void { this.load(); }
 
   load() {
-    this.loading = true;
-    this.admin.getSettings().subscribe({
-      next: s => { this.settings = s || {}; this.loading = false; },
-      error: _ => { this.error = 'Failed to load settings'; this.loading = false; }
-    });
+  // No backend admin settings endpoints yet; show info message
+  this.loading = false;
+  this.error = null;
   }
 
   save() {
-    this.saving = true; this.saved = false; this.error = null;
-    this.admin.updateSettings(this.settings).subscribe({
-      next: _ => { this.saved = true; this.saving = false; },
-      error: _ => { this.error = 'Failed to save settings'; this.saving = false; }
-    });
+  // Placeholder save; no-op until backend provides endpoints
+  this.saved = true;
+  this.saving = false;
   }
 }

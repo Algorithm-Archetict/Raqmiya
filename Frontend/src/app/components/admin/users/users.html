@@ -8,7 +8,7 @@
         <tr>
           <th>Username</th>
           <th>Email</th>
-          <th>Roles</th>
+          <th>Role</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
@@ -17,7 +17,7 @@
         <tr *ngFor="let u of users">
           <td>{{ u.username }}</td>
           <td>{{ u.email }}</td>
-          <td>{{ u.roles?.join(', ') }}</td>
+          <td>{{ u.role }}</td>
           <td>
             <span class="badge" [class.bg-success]="u.isActive" [class.bg-secondary]="!u.isActive">
               {{ u.isActive ? 'Active' : 'Inactive' }}
