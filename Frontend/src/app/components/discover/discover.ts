@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -31,7 +31,7 @@ interface Product {
   styleUrl: './discover.css',
   encapsulation: ViewEncapsulation.None
 })
-export class Discover implements OnInit {
+export class Discover implements OnInit, AfterViewInit {
   @ViewChild('carouselContainer') carouselContainer!: ElementRef;
 
   // Search and Filter Properties
@@ -63,6 +63,23 @@ export class Discover implements OnInit {
   ngOnInit() {
     this.initializeProducts();
     this.applyFilters();
+  }
+
+  ngAfterViewInit() {
+    // Refresh wishlist status when returning to discover page
+    // This handles cases where user navigated from product details
+    setTimeout(() => {
+      if (this.authService.isLoggedIn()) {
+        this.loadWishlistStatus();
+      }
+    }, 200);
+
+    // Listen for focus events to refresh wishlist when user returns to tab
+    window.addEventListener('focus', () => {
+      if (this.authService.isLoggedIn()) {
+        this.loadWishlistStatus();
+      }
+    });
   }
 
   // Helper method to ensure image URLs are full URLs
