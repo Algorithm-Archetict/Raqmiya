@@ -1,11 +1,12 @@
 <div class="forbidden-wrapper">
   <div class="forbidden-card">
     <div class="icon">🚫</div>
-    <h1>403 - Forbidden</h1>
-    <p *ngIf="reason === 'admin'">This area is restricted to administrators.</p>
-    <p *ngIf="reason === 'creator'">You need a Creator role to access this page.</p>
-    <p *ngIf="reason === 'customer'">This action is only available for customers.</p>
-    <p *ngIf="!reason || reason === 'role'">You don’t have permission to access this page.</p>
+  <h1>403 - Forbidden</h1>
+  <p class="subtitle">You don’t have permission to view this page.</p>
+  <p *ngIf="reason === 'admin'">This area is restricted to administrators. If you think this is a mistake, request access below.</p>
+  <p *ngIf="reason === 'creator'">You need a Creator role to access this page. You can request creator access from Settings.</p>
+  <p *ngIf="reason === 'customer'">This feature is only available to customers after purchase.</p>
+  <p *ngIf="!reason || reason === 'role'">Your account doesn’t include the required role for this resource.</p>
     <div class="actions">
       <button class="btn btn-primary" (click)="requestAccess()">Request access</button>
       <button class="btn btn-outline" (click)="goBack()">Go back</button>

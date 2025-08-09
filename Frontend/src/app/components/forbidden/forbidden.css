@@ -1,6 +1,7 @@
 .forbidden-wrapper{display:flex;align-items:center;justify-content:center;min-height:60vh;padding:24px}
 .forbidden-card{border:1px solid #e5e7eb;border-radius:16px;padding:32px 28px;max-width:520px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.06)}
 .icon{font-size:48px;margin-bottom:12px}
+.subtitle{color:#6b7280;margin:6px 0 8px}
 .actions{display:flex;gap:12px;justify-content:center;margin-top:16px}
 .btn{padding:10px 16px;border-radius:10px;text-decoration:none;border:1px solid #e5e7eb}
 .btn-primary{background:#0d6efd;color:#fff;border-color:#0d6efd}
