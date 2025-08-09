@@ -52,5 +52,10 @@ export class AdminService {
   }
 
   // Settings
-  // Note: no admin settings endpoints exist in backend as of now
+  getSettings(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/admin/settings`);
+  }
+  updateSettings(payload: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/admin/settings`, payload);
+  }
 }
