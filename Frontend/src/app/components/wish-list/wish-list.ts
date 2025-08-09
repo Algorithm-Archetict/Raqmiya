@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
-import { DashboardSidebar } from '../dashboard-sidebar/dashboard-sidebar';
+
 
 interface WishlistProduct {
   id: number;
@@ -21,7 +21,7 @@ interface WishlistProduct {
 
 @Component({
   selector: 'app-wish-list',
-  imports: [CommonModule, RouterModule, DashboardSidebar],
+  imports: [CommonModule, RouterModule],
   templateUrl: './wish-list.html',
   styleUrl: './wish-list.css'
 })

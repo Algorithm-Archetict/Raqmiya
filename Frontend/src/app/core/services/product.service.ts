@@ -162,7 +162,28 @@ export class ProductService {
     return this.http.get<ReviewDTO[]>(`${this.apiUrl}/${productId}/reviews`);
   }
 
+  // Check if user has purchased the product
+  checkPurchaseStatus(productId: number): Observable<{ hasPurchased: boolean }> {
+    return this.http.get<{ hasPurchased: boolean }>(`${this.apiUrl}/${productId}/purchase-status`);
+  }
+
+  // Get current user's review for the product
+  getMyReview(productId: number): Observable<{ hasReview: boolean; review?: ReviewDTO }> {
+    return this.http.get<{ hasReview: boolean; review?: ReviewDTO }>(`${this.apiUrl}/${productId}/my-review`);
+  }
+
+  // Submit a new review (only for purchased products)
   submitReview(productId: number, review: { rating: number; comment: string }): Observable<any> {
     return this.http.post(`${this.apiUrl}/${productId}/reviews`, review);
+  }
+
+  // Update existing review
+  updateReview(productId: number, review: { rating: number; comment: string }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${productId}/reviews/my-review`, review);
+  }
+
+  // Delete user's review
+  deleteReview(productId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/${productId}/reviews/my-review`);
   }
 }

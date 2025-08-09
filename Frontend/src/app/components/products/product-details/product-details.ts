@@ -34,6 +34,10 @@ export class ProductDetails implements OnInit, AfterViewInit {
   relatedProducts: ProductDetailDTO[] = [];
   isDarkTheme: boolean = false;
 
+  // Cart state
+  isInCart: boolean = false;
+  checkingCartStatus: boolean = false;
+
   // Loading and error states
   isLoading: boolean = false;
   error: string | null = null;
@@ -46,16 +50,96 @@ export class ProductDetails implements OnInit, AfterViewInit {
     private authService: AuthService
   ) {}
 
+  // Check if a review belongs to the current user
+  isMyReview(review: ReviewDTO): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    return !!(currentUser && review.userName === currentUser.username);
+  }
+
+  // Edit a specific review
+  editSpecificReview(review: ReviewDTO): void {
+    this.existingReview = review;
+    this.userRating = review.rating;
+    this.userReview = review.comment || '';
+    this.isEditingReview = true;
+    // Scroll to the review form area
+    setTimeout(() => {
+      const reviewFormElement = document.querySelector('.add-review-form');
+      if (reviewFormElement) {
+        reviewFormElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  }
+
+  // Delete a specific review
+  deleteSpecificReview(review: ReviewDTO): void {
+    Swal.fire({
+      title: 'Delete Review?',
+      text: 'Are you sure you want to delete your review? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      customClass: {
+        confirmButton: 'btn btn-danger',
+        cancelButton: 'btn btn-secondary'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.productService.deleteReview(this.product!.id).subscribe({
+          next: () => {
+            // Remove the review from the reviews array
+            this.reviews = this.reviews.filter(r => r.id !== review.id);
+            this.existingReview = null;
+            this.userRating = 0;
+            this.userReview = '';
+            this.isEditingReview = false;
+
+            // Update the average rating
+            if (this.reviews.length > 0) {
+              const totalRatings = this.reviews.reduce((sum, r) => sum + r.rating, 0);
+              this.product!.averageRating = totalRatings / this.reviews.length;
+            } else {
+              this.product!.averageRating = 0;
+            }
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Review Deleted!',
+              text: 'Your review has been deleted successfully.',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+          },
+          error: (error) => {
+            console.error('Error deleting review:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error!',
+              text: 'Failed to delete review. Please try again.',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
   ngOnInit() {
     this.loadProduct();
     this.loadTheme();
   }
 
   ngAfterViewInit() {
-    // Refresh wishlist status after component is fully loaded
+    // Refresh wishlist and cart status after component is fully loaded
     // This handles cases where user navigated from discover page
     setTimeout(() => {
       this.refreshWishlistStatus();
+      this.checkCartStatus(); // Also check cart status
     }, 100);
   }
 
@@ -110,6 +194,10 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.product = product;
           this.reviews = product.reviews;
           this.isInWishlist = product.isInWishlist || false;
+          
+          
+          this.checkPurchaseAndReviewStatus(); // Check if user can review
+          this.checkCartStatus(); // Check if product is in cart
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -125,6 +213,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.product = product;
           this.reviews = product.reviews;
           this.isInWishlist = product.isInWishlist || false;
+          
+          this.checkPurchaseAndReviewStatus(); // Check if user can review
+          this.checkCartStatus(); // Check if product is in cart
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -291,86 +382,239 @@ export class ProductDetails implements OnInit, AfterViewInit {
     this.reviews = backendProduct.reviews;
   }
 
+  // Check if user has purchased the product and load their existing review
+  checkPurchaseAndReviewStatus(): void {
+    if (!this.isLoggedIn() || !this.product) return;
+
+    this.loadingPurchaseStatus = true;
+
+    // Check purchase status
+    this.productService.checkPurchaseStatus(this.product.id).subscribe({
+      next: (response) => {
+        this.hasPurchased = response.hasPurchased;
+        
+        if (this.hasPurchased) {
+          // If user has purchased, check if they have an existing review
+                      this.productService.getMyReview(this.product!.id).subscribe({
+              next: (reviewResponse) => {
+                console.log('My review response:', reviewResponse);
+                if (reviewResponse.hasReview && reviewResponse.review) {
+                  this.existingReview = reviewResponse.review;
+                  this.userRating = reviewResponse.review.rating;
+                  this.userReview = reviewResponse.review.comment || '';
+                  console.log('Loaded existing review:', this.existingReview);
+                }
+                this.loadingPurchaseStatus = false;
+              },
+            error: (error) => {
+              console.error('Error loading user review:', error);
+              this.loadingPurchaseStatus = false;
+            }
+          });
+        } else {
+          this.loadingPurchaseStatus = false;
+        }
+      },
+      error: (error) => {
+        console.error('Error checking purchase status:', error);
+        this.loadingPurchaseStatus = false;
+      }
+    });
+  }
+
   // Add review form logic
   userReview: string = '';
   userRating: number = 0;
   submittingReview: boolean = false;
   visibleReviews: number = 3;
+  
+  // Purchase and review status
+  hasPurchased: boolean = false;
+  loadingPurchaseStatus: boolean = false;
+  existingReview: ReviewDTO | null = null;
+  isEditingReview: boolean = false;
 
   setUserRating(star: number): void {
     this.userRating = star;
   }
 
   submitReview(): void {
-  if (!this.userRating || !this.userReview.trim()) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Missing Information',
-      text: 'Both rating and review are required to submit your feedback!',
-      customClass: {
-        confirmButton: 'btn btn-primary'
-      }
-    });
-    return;
-  }
-
-  this.submittingReview = true;
-  this.productService.submitReview(this.product!.id, {
-    rating: this.userRating,
-    comment: this.userReview
-  }).subscribe({
-    next: (review: ReviewDTO) => {
-      // Add the new review to the reviews array (no need to refresh the whole product)
-      const newReview = {
-        id: review.id,
-        rating: review.rating,
-        comment: review.comment || '',
-        userName: review.userName,
-        userAvatar: review.userAvatar,
-        createdAt: review.createdAt
-      };
-      this.product!.reviews.unshift(newReview);
-
-      // Update average rating
-      const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
-      this.product!.averageRating = totalRatings / this.product!.reviews.length;
-
-      // Reset form
-      this.userReview = '';
-      this.userRating = 0;
-      this.submittingReview = false;
-
-      // Show success notification
-      Swal.fire({
-        icon: 'success',
-        title: 'Thank You!',
-        text: 'Your review has been submitted successfully.',
-        customClass: {
-          confirmButton: 'btn btn-primary'
-        },
-        timer: 3000
-      });
-    },
-    error: (error) => {
-      console.error('Error submitting review:', error);
-      this.submittingReview = false;
-
-      // Handle error messages
-      const errorMessage = error.error?.includes('already reviewed')
-        ? 'You have already reviewed this product'
-        : error.error || 'Error submitting review. Please try again.';
-
+    if (!this.userRating || !this.userReview.trim()) {
       Swal.fire({
         icon: 'error',
-        title: 'Submission Failed',
-        text: errorMessage,
+        title: 'Missing Information',
+        text: 'Both rating and review are required to submit your feedback!',
         customClass: {
           confirmButton: 'btn btn-primary'
         }
       });
+      return;
     }
-  });
-}
+
+    this.submittingReview = true;
+    
+    const reviewData = {
+      rating: this.userRating,
+      comment: this.userReview
+    };
+
+    // Check if this is an update or new review
+    const serviceCall = this.existingReview 
+      ? this.productService.updateReview(this.product!.id, reviewData)
+      : this.productService.submitReview(this.product!.id, reviewData);
+
+    serviceCall.subscribe({
+      next: (review: ReviewDTO) => {
+        console.log('Review submission response:', review);
+        if (this.existingReview) {
+          // Update existing review in the list
+          const reviewIndex = this.product!.reviews.findIndex(r => r.id === this.existingReview!.id);
+          if (reviewIndex !== -1) {
+            this.product!.reviews[reviewIndex] = {
+              id: review.id || this.existingReview.id,
+              rating: review.rating,
+              comment: review.comment || '',
+              userName: review.userName,
+              userAvatar: review.userAvatar,
+              createdAt: review.createdAt
+            };
+          }
+          this.existingReview = {
+            id: review.id || this.existingReview.id,
+            rating: review.rating,
+            comment: review.comment || '',
+            userName: review.userName,
+            userAvatar: review.userAvatar,
+            createdAt: review.createdAt
+          };
+        } else {
+          // Add the new review to the reviews array
+          const newReview = {
+            id: review.id,
+            rating: review.rating,
+            comment: review.comment || '',
+            userName: review.userName,
+            userAvatar: review.userAvatar,
+            createdAt: review.createdAt
+          };
+          this.product!.reviews.unshift(newReview);
+          this.existingReview = newReview;
+        }
+
+        // Update the average rating
+        const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
+        this.product!.averageRating = totalRatings / this.product!.reviews.length;
+
+        this.submittingReview = false;
+        this.isEditingReview = false;
+
+        // Show success notification
+        Swal.fire({
+          icon: 'success',
+          title: this.existingReview ? 'Review Updated!' : 'Thank You!',
+          text: this.existingReview ? 'Your review has been updated successfully.' : 'Your review has been submitted successfully.',
+          customClass: {
+            confirmButton: 'btn btn-primary'
+          },
+          timer: 3000
+        });
+      },
+      error: (error) => {
+        console.error('Error submitting review:', error);
+        this.submittingReview = false;
+        
+        // Handle specific error messages
+        const errorMessage = error.error?.includes('already reviewed')
+          ? 'You have already reviewed this product'
+          : error.error?.includes('only review products you have purchased')
+          ? 'You can only review products you have purchased'
+          : error.error || 'Error submitting review. Please try again.';
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Submission Failed',
+          text: errorMessage,
+          customClass: {
+            confirmButton: 'btn btn-primary'
+          }
+        });
+      }
+    });
+  }
+
+  editReview(): void {
+    if (this.existingReview) {
+      this.userRating = this.existingReview.rating;
+      this.userReview = this.existingReview.comment || '';
+    }
+    this.isEditingReview = true;
+  }
+
+  cancelEdit(): void {
+    this.isEditingReview = false;
+    if (this.existingReview) {
+      this.userRating = this.existingReview.rating;
+      this.userReview = this.existingReview.comment || '';
+    }
+  }
+
+  deleteReview(): void {
+    if (!this.existingReview) return;
+
+    Swal.fire({
+      title: 'Delete Review?',
+      text: 'Are you sure you want to delete your review? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.productService.deleteReview(this.product!.id).subscribe({
+          next: () => {
+            // Remove review from the list
+            this.product!.reviews = this.product!.reviews.filter(r => r.id !== this.existingReview!.id);
+            
+            // Update average rating
+            if (this.product!.reviews.length > 0) {
+              const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
+              this.product!.averageRating = totalRatings / this.product!.reviews.length;
+            } else {
+              this.product!.averageRating = 0;
+            }
+
+            // Reset form
+            this.existingReview = null;
+            this.userReview = '';
+            this.userRating = 0;
+            this.isEditingReview = false;
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Review Deleted!',
+              text: 'Your review has been deleted successfully.',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+          },
+          error: (error) => {
+            console.error('Error deleting review:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Error deleting review. Please try again.',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+          }
+        });
+      }
+    });
+  }
   loadRelatedProducts() {
     // TODO: Implement API call to get related products
     this.relatedProducts = [];
@@ -397,15 +641,46 @@ export class ProductDetails implements OnInit, AfterViewInit {
     }
   }
 
+  // Check if product is in cart
+  checkCartStatus(): void {
+    if (!this.authService.isLoggedIn() || !this.product) {
+      this.isInCart = false;
+      return;
+    }
+
+    this.checkingCartStatus = true;
+    this.cartService.getCart().subscribe({
+      next: (response) => {
+        if (response.success && response.cart && response.cart.items) {
+          this.isInCart = response.cart.items.some(item => item.productId === this.product!.id);
+        } else {
+          this.isInCart = false;
+        }
+        this.checkingCartStatus = false;
+      },
+      error: (error) => {
+        console.error('Error checking cart status:', error);
+        this.isInCart = false;
+        this.checkingCartStatus = false;
+      }
+    });
+  }
+
   // Purchase methods
   addToCart() {
-
     if (!this.product) return;
+    
+    // If already in cart, just go to cart page
+    if (this.isInCart) {
+      this.router.navigate(['/cart-checkout']);
+      return;
+    }
     
     this.cartService.addToCart(this.product.id, 1).subscribe({
       next: (response) => {
         if (response.success) {
-                     console.log('Added to cart:', this.product?.name);
+          console.log('Added to cart:', this.product?.name);
+          this.isInCart = true; // Update local state
           // Redirect to cart-checkout page
           this.router.navigate(['/cart-checkout']);
         } else {
@@ -413,21 +688,42 @@ export class ProductDetails implements OnInit, AfterViewInit {
         }
       },
       error: (error) => {
-        console.error('Error adding to cart:', error);
+        // Check if it's a duplicate item error (400 Bad Request)
+        if (error.status === 400) {
+          // Product is likely already in cart, update state and redirect
+          console.log('Product already in cart, redirecting to cart page');
+          this.isInCart = true;
+          this.router.navigate(['/cart-checkout']);
+        } else {
+          // Only log unexpected errors
+          console.error('Unexpected error adding to cart:', error);
+        }
       }
     });
-// =======
-//     // Add to cart logic
-//     console.log('Added to cart:', this.product?.name);
-//     // Redirect to checkout page
-//     this.router.navigate(['/checkout']);
+  }
 
+  // Get button text based on cart status
+  getCartButtonText(): string {
+    if (this.checkingCartStatus) {
+      return 'Checking...';
+    }
+    return this.isInCart ? 'View In Cart' : 'Add To Cart';
+  }
+
+  // Check if cart button should be disabled
+  isCartButtonDisabled(): boolean {
+    return this.checkingCartStatus;
   }
 
   buyNow() {
     // Buy now logic
     console.log('Buying now:', this.product?.name);
     this.router.navigate(['/checkout']);
+  }
+
+  // Navigate to library when product is already purchased
+  goToLibrary() {
+    this.router.navigate(['/library']);
   }
 
   // Wishlist methods
@@ -609,7 +905,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
     
     if (viewWishlistBtn) {
       viewWishlistBtn.addEventListener('click', () => {
-        this.router.navigate(['/library']);
+        this.router.navigate(['/library/wishlist']);
         this.dismissToast(toast);
       });
     }

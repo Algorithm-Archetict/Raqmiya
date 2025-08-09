@@ -6,6 +6,7 @@ import { ProductService } from '../../core/services/product.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
 import { Navbar } from '../navbar/navbar';
 import { AuthService } from '../../core/services/auth.service';
+import { OrderService } from '../../core/services/order.service';
 
 interface Product {
   id: number;
@@ -22,6 +23,9 @@ interface Product {
   inWishlist: boolean;
   loadingWishlist: boolean;
   wishlistHovered: boolean;
+  // Purchase properties
+  isPurchased: boolean;
+  loadingPurchase: boolean;
 }
 
 @Component({
@@ -57,7 +61,8 @@ export class Discover implements OnInit, AfterViewInit {
   constructor(
     private router: Router,
     private productService: ProductService,
-    private authService: AuthService
+    private authService: AuthService,
+    private orderService: OrderService
   ) {}
 
   ngOnInit() {
@@ -111,7 +116,7 @@ export class Discover implements OnInit, AfterViewInit {
           creator: product.creatorUsername || 'Unknown Creator',
           price: product.price,
           rating: product.averageRating,
-          ratingCount: product.salesCount, // Using sales count as rating count for demo
+          ratingCount: 0, // Will be populated with actual review count
           image: this.ensureFullUrl(product.coverImageUrl),
           category: 'design', // Default category, you might want to add this to the DTO
           tags: ['Design'], // Default tags, you might want to add this to the DTO
@@ -119,7 +124,10 @@ export class Discover implements OnInit, AfterViewInit {
           // Initialize wishlist properties
           inWishlist: false,
           loadingWishlist: false,
-          wishlistHovered: false
+          wishlistHovered: false,
+          // Initialize purchase properties
+          isPurchased: false,
+          loadingPurchase: false
         }));
         
         this.recommendedProducts = this.allProducts.slice(0, 6);
@@ -128,6 +136,12 @@ export class Discover implements OnInit, AfterViewInit {
         
         // Load wishlist status for all products
         this.loadWishlistStatus();
+        
+        // Load actual review counts for all products
+        this.loadReviewCounts();
+        
+        // Load purchase status for all products
+        this.loadPurchaseStatus();
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
@@ -168,6 +182,66 @@ export class Discover implements OnInit, AfterViewInit {
           product.inWishlist = false;
         });
         this.applyFilters();
+      }
+    });
+  }
+
+  // Load actual review counts for all products
+  loadReviewCounts() {
+    // For performance, we'll only load review counts for products that have ratings > 0
+    const productsWithRatings = this.allProducts.filter(product => product.rating > 0);
+    
+    if (productsWithRatings.length === 0) return;
+    
+    console.log(`Loading review counts for ${productsWithRatings.length} products with ratings...`);
+    
+    // Fetch product details for products with ratings to get actual review count
+    productsWithRatings.forEach(product => {
+      this.productService.getById(product.id).subscribe({
+        next: (productDetail) => {
+          if (productDetail && productDetail.reviews) {
+            product.ratingCount = productDetail.reviews.length;
+            console.log(`Updated product ${product.id} with ${productDetail.reviews.length} reviews`);
+          }
+        },
+        error: (error) => {
+          console.warn(`Failed to load review count for product ${product.id}:`, error);
+          // Keep ratingCount as 0 if we can't fetch the details
+        }
+      });
+    });
+  }
+
+  // Load purchase status for all products
+  loadPurchaseStatus() {
+    // Only check purchase status if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      return;
+    }
+
+    console.log('Loading purchase status for products...');
+    
+    // Get purchased products from order service
+    this.orderService.getPurchasedProducts().subscribe({
+      next: (purchasedProducts) => {
+        const purchasedProductIds = purchasedProducts.map(p => p.productId);
+        console.log(`User has purchased ${purchasedProductIds.length} products:`, purchasedProductIds);
+        
+        // Update purchase status for all products
+        this.allProducts.forEach(product => {
+          product.isPurchased = purchasedProductIds.includes(product.id);
+        });
+        
+        // Trigger UI update by updating filtered products
+        this.applyFilters();
+      },
+      error: (error) => {
+        console.error('Error loading purchase status:', error);
+        // Continue without purchase status if API fails
+        // Set all products as not purchased
+        this.allProducts.forEach(product => {
+          product.isPurchased = false;
+        });
       }
     });
   }
@@ -306,7 +380,7 @@ export class Discover implements OnInit, AfterViewInit {
           <span class="wishlist-title" style="font-size: 1rem; font-weight: 600; color: white; margin: 0;">Added to Wishlist</span>
           <span class="wishlist-subtitle" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.9); margin: 0;">"${productTitle}"</span>
           <span class="wishlist-count" style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); margin: 0;">1 item saved to your wishlist</span>
-          <button class="btn-view-wishlist" style="padding: 8px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+          <button class="btn-view-wishlist" style="padding: 8px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; gap: 4px; ">
             <i class="fas fa-eye"></i>
             View Wishlist
           </button>
@@ -334,7 +408,7 @@ export class Discover implements OnInit, AfterViewInit {
     
     if (viewWishlistBtn) {
       viewWishlistBtn.addEventListener('click', () => {
-        this.router.navigate(['/library']);
+        this.router.navigate(['/library/wishlist']);
         this.dismissToast(toast);
       });
     }
@@ -364,7 +438,7 @@ export class Discover implements OnInit, AfterViewInit {
 
   // Navigate to wishlist page
   viewWishlist() {
-    this.router.navigate(['/library']);
+    this.router.navigate(['/library/wishlist']);
   }
 
   // Show wishlist counter popup with proper styling
@@ -415,7 +489,7 @@ export class Discover implements OnInit, AfterViewInit {
           <div class="wishlist-counter-info">
             <span class="wishlist-counter-title">Added to Wishlist</span>
             <span class="wishlist-counter-message">${message} to your wishlist</span>
-            <button class="btn-view-wishlist-inline">
+            <button class="btn-view-wishlist-inline btn-view-wishlist">
               <i class="fas fa-eye"></i>
               View Wishlist
             </button>
@@ -466,7 +540,7 @@ export class Discover implements OnInit, AfterViewInit {
     
     if (viewWishlistBtn) {
       viewWishlistBtn.addEventListener('click', () => {
-        this.router.navigate(['/library'], { fragment: 'wishlist' });
+        this.router.navigate(['/library/wishlist']);
         toast.remove();
       });
     }
@@ -668,7 +742,9 @@ export class Discover implements OnInit, AfterViewInit {
           tags: ['3D', 'Modeling', 'Advanced'],
           inWishlist: false,
           loadingWishlist: false,
-          wishlistHovered: false
+          wishlistHovered: false,
+          isPurchased: false,
+          loadingPurchase: false
         },
         {
           id: 10,
@@ -682,7 +758,9 @@ export class Discover implements OnInit, AfterViewInit {
           tags: ['Fonts', 'Typography', 'Design'],
           inWishlist: false,
           loadingWishlist: false,
-          wishlistHovered: false
+          wishlistHovered: false,
+          isPurchased: false,
+          loadingPurchase: false
         }
       ];
 
@@ -695,5 +773,12 @@ export class Discover implements OnInit, AfterViewInit {
   // Navigate to product details
   viewProduct(productId: number) {
     this.router.navigate(['/discover', productId]);
+  }
+
+  // Navigate to library for purchased products
+  goToLibrary(product: Product, event: Event) {
+    // Prevent event bubbling to avoid triggering product view
+    event.stopPropagation();
+    this.router.navigate(['/library/purchased-products']);
   }
 }
