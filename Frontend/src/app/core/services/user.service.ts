@@ -134,32 +134,10 @@ export class UserService {
   }
 
   /**
-   * Check if user has a profile image
+   * Get default avatar URL
    */
-  hasProfileImage(user: UserProfile | null): boolean {
-    return !!(user?.profileImageUrl && user.profileImageUrl.trim());
-  }
-
-  /**
-   * Get user initials for avatar fallback
-   */
-  getUserInitials(user: UserProfile | null): string {
-    if (!user?.username) {
-      return 'U';
-    }
-    
-    const username = user.username;
-    // Get first letter of username
-    const firstChar = username.charAt(0).toUpperCase();
-    
-    // If username has multiple words, get first letter of second word too
-    const words = username.split(' ');
-    if (words.length > 1 && words[1].length > 0) {
-      const secondChar = words[1].charAt(0).toUpperCase();
-      return firstChar + secondChar;
-    }
-    
-    return firstChar;
+  getDefaultAvatarUrl(): string {
+    return '/assets/images/LonelyMan.jpg';
   }
 
   /**

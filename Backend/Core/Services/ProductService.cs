@@ -614,57 +614,6 @@ namespace Core.Services
             await _productRepository.UpdateAsync(product);
         }
 
-        public async Task<bool> HasUserPurchasedProductAsync(int productId, int userId)
-        {
-            var license = await _context.Licenses
-                .FirstOrDefaultAsync(l => l.BuyerId == userId && l.ProductId == productId && l.Status == "active");
-            return license != null && license.IsActive;
-        }
-
-        public async Task<Review?> GetUserReviewAsync(int productId, int userId)
-        {
-            return await _context.Reviews
-                .Include(r => r.User)
-                .FirstOrDefaultAsync(r => r.UserId == userId && r.ProductId == productId);
-        }
-
-        public async Task UpdateUserReviewAsync(int productId, int userId, ReviewDTO reviewDto)
-        {
-            var existingReview = await _context.Reviews
-                .Include(r => r.User)
-                .FirstOrDefaultAsync(r => r.UserId == userId && r.ProductId == productId);
-            
-            if (existingReview == null)
-                throw new InvalidOperationException("You haven't reviewed this product yet");
-
-            existingReview.Rating = reviewDto.Rating;
-            existingReview.Comment = reviewDto.Comment;
-            existingReview.CreatedAt = DateTime.UtcNow; // Update timestamp when edited
-
-            _logger.LogInformation($"Updating review for product {productId} by user {existingReview.User.Username}");
-            
-            await _context.SaveChangesAsync();
-
-            // Update the DTO with the actual username for immediate display
-            reviewDto.userName = existingReview.User.Username;
-            reviewDto.UserAvatar = existingReview.User.ProfileImageUrl;
-        }
-
-        public async Task DeleteUserReviewAsync(int productId, int userId)
-        {
-            var existingReview = await _context.Reviews
-                .Include(r => r.User)
-                .FirstOrDefaultAsync(r => r.UserId == userId && r.ProductId == productId);
-            
-            if (existingReview == null)
-                throw new InvalidOperationException("You haven't reviewed this product yet");
-
-            _logger.LogInformation($"Deleting review for product {productId} by user {existingReview.User.Username}");
-            
-            _context.Reviews.Remove(existingReview);
-            await _context.SaveChangesAsync();
-        }
-
         public async Task AddReviewAsync(int productId, int userId, ReviewDTO reviewDto)
         {
             // Validate input (should already be validated in controller)

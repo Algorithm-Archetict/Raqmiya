@@ -151,39 +151,16 @@ namespace API.Controllers
                     user.Username = dto.Username;
                 }
                 
-                // Handle ProfileDescription: update if not null, but allow empty string to clear it
-                if (dto.ProfileDescription != null) 
-                    user.ProfileDescription = string.IsNullOrWhiteSpace(dto.ProfileDescription) ? null : dto.ProfileDescription;
+                if (!string.IsNullOrWhiteSpace(dto.ProfileDescription)) 
+                    user.ProfileDescription = dto.ProfileDescription;
                     
-                // Handle ProfileImageUrl: update if not null, allow empty string to remove image
-                if (dto.ProfileImageUrl != null) 
-                {
-                    // If empty string, set to null to remove image
-                    if (string.IsNullOrWhiteSpace(dto.ProfileImageUrl))
-                    {
-                        user.ProfileImageUrl = null;
-                        _logger.LogInformation("Profile image removed for user {UserId}", userId);
-                    }
-                    else
-                    {
-                        // Validate URL format if not empty
-                        if (!Uri.TryCreate(dto.ProfileImageUrl, UriKind.Absolute, out _) && 
-                            !dto.ProfileImageUrl.StartsWith("/"))
-                        {
-                            _logger.LogWarning("Invalid ProfileImageUrl format for user {UserId}: {Url}", userId, dto.ProfileImageUrl);
-                            return BadRequest("Invalid ProfileImageUrl format");
-                        }
-                        user.ProfileImageUrl = dto.ProfileImageUrl;
-                        _logger.LogInformation("Profile image URL updated for user {UserId}: {ImageUrl}", userId, dto.ProfileImageUrl);
-                    }
-                }
+                if (!string.IsNullOrWhiteSpace(dto.ProfileImageUrl)) 
+                    user.ProfileImageUrl = dto.ProfileImageUrl;
 
                 await _userRepository.UpdateAsync(user);
                 _logger.LogInformation("Profile updated successfully for user {UserId} ({Username})", userId, user.Username);
-                _logger.LogInformation("User ProfileImageUrl after update: {ProfileImageUrl}", user.ProfileImageUrl ?? "null");
 
                 var userProfile = _mapper.Map<UserProfileDTO>(user);
-                _logger.LogInformation("Mapped UserProfileDTO ProfileImageUrl: {ProfileImageUrl}", userProfile.ProfileImageUrl ?? "null");
                 
                 // Convert relative image URL to full URL if it exists
                 if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) && !userProfile.ProfileImageUrl.StartsWith("http"))

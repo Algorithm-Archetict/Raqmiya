@@ -98,7 +98,9 @@ export class Navbar implements OnInit, OnDestroy {
   }
 
   isCreator(): boolean {
-    return this.authService.isCreator();
+    const isCreator = this.authService.isCreator();
+    console.log('Navbar - isCreator:', isCreator, 'Current User:', this.authService.getCurrentUser());
+    return isCreator;
   }
 
   isAdmin(): boolean {

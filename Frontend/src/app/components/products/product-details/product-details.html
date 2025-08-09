@@ -37,12 +37,9 @@
               <i class="bi bi-share"></i>
               Share
             </button>
-            <button 
-              *ngIf="!hasPurchased"
-              class="btn btn-outline btn-sm" 
-              (click)="toggleWishlist()">
-              <i class="fas fa-heart" [class.text-danger]="isInWishlist"></i>
-              {{ isInWishlist ? 'In Wishlist' : 'Add to Wishlist' }}
+            <button class="btn btn-outline btn-sm" (click)="toggleWishlist()">
+
+              Add To Cart
             </button>
           </div>
         </div>
@@ -64,7 +61,7 @@
                   <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]"
                      [class.text-warning]="star <= (product?.rating || 0)"></i>
                 </div>
-                <span class="rating-text">{{ product?.rating | number:'1.1-1' }} ({{ product?.ratingCount }} reviews)</span>
+                <span class="rating-text">{{ product?.rating }} ({{ product?.ratingCount }} reviews)</span>
               </div>
               <div class="product-category">
                 <span class="category-badge">{{ product?.category }}</span>
@@ -79,12 +76,9 @@
               <span class="original-price" *ngIf="product?.originalPrice">${{ product?.originalPrice }}</span>
             </div>
             <div class="purchase-actions">
-              <button class="btn btn-primary btn-lg w-100 mb-3" 
-                      (click)="addToCart()" 
-                      [disabled]="isCartButtonDisabled()">
-                <i class="fas fa-shopping-cart" *ngIf="!checkingCartStatus"></i>
-                <i class="fas fa-spinner fa-spin" *ngIf="checkingCartStatus"></i>
-                {{ getCartButtonText() }}
+              <button class="btn btn-primary btn-lg w-100 mb-3" (click)="addToCart()">
+                <i class="fas fa-shopping-cart"></i>
+                Add to Cart
               </button>
               <button class="btn btn-outline btn-lg w-100" (click)="buyNow()">
                 <i class="fas fa-bolt"></i>
@@ -174,53 +168,13 @@
                 <span class="product-price">{{ product?.price | currency:product?.currency:'symbol' }}</span>
               </div>
               <div class="purchase-actions">
-                <button 
-                  class="btn btn-lg w-100 mb-3" 
-                  [class.btn-primary]="!hasPurchased && !isInCart"
-                  [class.btn-info]="!hasPurchased && isInCart"
-                  [class.btn-success]="hasPurchased"
-                  (click)="hasPurchased ? goToLibrary() : addToCart()"
-                  [disabled]="loadingPurchaseStatus || checkingCartStatus">
-                  <i class="fas" 
-                     [class.fa-shopping-cart]="!hasPurchased && !isInCart" 
-                     [class.fa-eye]="!hasPurchased && isInCart"
-                     [class.fa-book]="hasPurchased"></i>
-                  {{ hasPurchased ? 'In Library' : getCartButtonText() }}
+                <button class="btn btn-primary btn-lg w-100 mb-3" (click)="addToCart()">
+                  <i class="fas fa-shopping-cart"></i>
+                  Add To Cart
                 </button>
-                <!-- Wishlist Toggle Button (Only for logged-in users who haven't purchased) -->
-                <button 
-                  *ngIf="isLoggedIn() && !hasPurchased" 
-                  class="btn btn-lg w-100 wishlist-btn"
-                  [class.btn-outline]="!isInWishlist"
-                  [class.btn-success]="isInWishlist"
-                  [class.loading]="loadingWishlist"
-                  [class.hovered]="wishlistHovered"
-                  [disabled]="loadingWishlist"
-                  (click)="toggleWishlist($event)"
-                  (mouseenter)="onWishlistHover(true, $event)"
-                  (mouseleave)="onWishlistHover(false, $event)"
-                >
-                  <!-- Loading Spinner -->
-                  <i class="fas fa-spinner fa-spin" *ngIf="loadingWishlist"></i>
-                  <!-- Plus Icon (not in wishlist) -->
-                  <i class="fas fa-plus" *ngIf="!isInWishlist && !loadingWishlist"></i>
-                  <!-- Checkmark Icon (in wishlist) -->
-                  <i class="fas fa-check" *ngIf="isInWishlist && !loadingWishlist"></i>
-                  <!-- Dynamic Text -->
-                  <span *ngIf="!loadingWishlist">
-                    {{ isInWishlist ? 'In Wishlist' : 'Add To Wishlist' }}
-                  </span>
-                  <span *ngIf="loadingWishlist">Processing...</span>
-                </button>
-
-                <!-- Login Required Message for Anonymous Users -->
-                <button 
-                  *ngIf="!isLoggedIn()" 
-                  class="btn btn-outline btn-lg w-100"
-                  (click)="navigateToLogin()"
-                >
-                  <i class="fas fa-sign-in-alt"></i>
-                  Login to Add to Wishlist
+                <button class="btn btn-outline btn-lg w-100" (click)="buyNow()">
+                  <i class="fas fa-bolt"></i>
+                  Add To Wishlist
                 </button>
               </div>
             </div>
@@ -273,7 +227,7 @@
                   <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]"
                      [class.text-warning]="star <= (product?.averageRating || 0)"></i>
                 </div>
-                <span class="rating-number">{{ product?.averageRating | number:'1.1-1' }}/5</span>
+                <span class="rating-number">{{ product?.averageRating }}/5</span>
                 <span class="rating-count">({{ product?.reviews?.length || 0 }} reviews)</span>
               </div>
 
@@ -309,102 +263,33 @@
         <div class="col-12">
           <h3>Customer Reviews</h3>
 
-          <!-- Review Section for Logged In Users -->
-          <div class="review-section mb-4" *ngIf="isLoggedIn()">
-            
-            <!-- Loading Purchase Status -->
-            <div *ngIf="loadingPurchaseStatus" class="text-center py-3">
-              <i class="fas fa-spinner fa-spin"></i>
-              <span class="ms-2">Checking purchase status...</span>
-            </div>
-
-            <!-- User hasn't purchased - Show purchase requirement -->
-            <div *ngIf="!loadingPurchaseStatus && !hasPurchased" class="alert alert-info">
-              <i class="fas fa-info-circle me-2"></i>
-              <strong>Purchase Required:</strong> You need to purchase this product before you can write a review.
-            </div>
-
-            <!-- User has purchased - Show review form or existing review -->
-            <div *ngIf="!loadingPurchaseStatus && hasPurchased">
-              
-              <!-- Existing Review Display (when not editing) -->
-              <!-- <div *ngIf="existingReview && !isEditingReview" class="existing-review-display mb-4">
-                <h4>Your Review</h4>
-                <div class="review-card card">
-                  <div class="card-body">
-                    <div class="rating-display mb-2">
-                      <span>Your Rating: </span>
-                      <div class="stars d-inline-block">
-                        <i class="bi bi-star-fill text-warning" *ngFor="let star of [1,2,3,4,5]"
-                           [class.text-muted]="star > existingReview.Rating"></i>
-                      </div>
-                      <span class="ms-2">({{ existingReview.Rating }}/5)</span>
-                    </div>
-                    <p class="review-comment" *ngIf="existingReview.Comment">{{ existingReview.Comment }}</p>
-                    <p class="review-comment text-muted" *ngIf="!existingReview.Comment">No comment provided</p>
-                    <small class="text-muted">Reviewed on {{ existingReview.CreatedAt | date:'mediumDate' }}</small>
-                    <div class="review-actions mt-3">
-                      <button class="btn btn-outline-primary btn-sm me-2" (click)="editReview()" title="Edit Review">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn btn-outline-danger btn-sm" (click)="deleteReview()" title="Delete Review">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div> -->
-
-              <!-- Review Form (for new reviews or editing) -->
-               <div *ngIf="!existingReview || isEditingReview" class="add-review-form">
-                <h4>{{ existingReview ? 'Edit Your Review' : 'Write a Review' }}</h4>
-                <div class="rating-input mb-3">
-                  <span>Your Rating: </span>
-                  <div class="stars">
-                    <i class="bi bi-star-fill" *ngFor="let star of [1,2,3,4,5]"
-                       [class.text-warning]="star <= userRating"
-                       [class.text-muted]="star > userRating"
-                       (click)="setUserRating(star)"
-                       style="cursor: pointer;"></i>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="reviewComment">Your Review:</label>
-                  <textarea class="form-control" id="reviewComment" rows="4"
-                            [(ngModel)]="userReview"
-                            [disabled]="submittingReview"
-                            placeholder="Share your experience with this product..."></textarea>
-                </div>
-                <div class="form-actions mt-3">
-                  <button class="btn btn-primary me-2"
-                          (click)="submitReview()"
-                          [disabled]="submittingReview || !userRating || !userReview.trim()">
-                    <i class="fas fa-spinner fa-spin me-1" *ngIf="submittingReview"></i>
-                    {{ submittingReview 
-                       ? 'Saving...' 
-                       : existingReview 
-                         ? 'Update Review' 
-                         : 'Submit Review' }}
-                  </button>
-                  <button *ngIf="isEditingReview" 
-                          class="btn btn-outline-secondary"
-                          (click)="cancelEdit()"
-                          [disabled]="submittingReview">
-                    Cancel
-                  </button>
-                </div>
+          <!-- Add Review Form -->
+          <div class="add-review-form mb-4">
+            <h4>Write a Review</h4>
+            <div class="rating-input mb-3">
+              <span>Your Rating: </span>
+              <div class="stars">
+                <i class="bi bi-star-fill" *ngFor="let star of [1,2,3,4,5]"
+                   [class.text-warning]="star <= userRating"
+                   [class.text-muted]="star > userRating"
+                   (click)="setUserRating(star)"
+                   style="cursor: pointer;"></i>
               </div>
             </div>
-          </div>
-
-          <!-- Message for Non-Logged In Users -->
-          <div *ngIf="!isLoggedIn()" class="alert alert-warning">
-            <i class="fas fa-sign-in-alt me-2"></i>
-            <strong>Login Required:</strong> Please <a [routerLink]="['/login']" class="alert-link">login</a> to write a review.
+            <div class="form-group">
+              <label for="reviewComment">Your Review:</label>
+              <textarea class="form-control" id="reviewComment" rows="4"
+                        [(ngModel)]="userReview"
+                        [disabled]="submittingReview"></textarea>
+            </div>
+            <button class="btn btn-primary mt-3"
+                    (click)="submitReview()"
+                    [disabled]="submittingReview || !userRating || !userReview.trim()">
+              {{ submittingReview ? 'Submitting...' : 'Submit Review' }}
+            </button>
           </div>
 
           <div class="reviews-container">
-            <!-- Show reviews if they exist -->
             <div class="review-item card mb-3" *ngFor="let review of reviews.slice(0, 3)">
               <div class="card-body">
                 <div class="review-header d-flex justify-content-between align-items-start mb-3">
@@ -414,10 +299,7 @@
                          class="reviewer-avatar rounded-circle me-3"
                          style="width: 48px; height: 48px; object-fit: cover;">
                     <div>
-                      <h6 class="mb-1">
-                        {{ review.userName}}
-                        <span *ngIf="isMyReview(review)" class="badge bg-primary ms-2">You</span>
-                      </h6>
+                      <h6 class="mb-1">{{ review.userName}}</h6>
                       <div class="review-rating">
                         <i class="bi bi-star-fill"
                            *ngFor="let star of [1,2,3,4,5]"
@@ -426,35 +308,12 @@
                       </div>
                     </div>
                   </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <small class="text-white">{{ review.createdAt | date:'mediumDate' }}</small>
-                    <!-- Edit/Delete buttons for user's own reviews -->
-                    <div *ngIf="isMyReview(review)" class="review-actions">
-                      <button class="btn btn-outline-primary btn-sm me-1" 
-                              (click)="editSpecificReview(review)" 
-                              title="Edit Review">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn btn-outline-danger btn-sm" 
-                              (click)="deleteSpecificReview(review)" 
-                              title="Delete Review">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
+                  <small class="text-muted">{{ review.createdAt | date:'mediumDate' }}</small>
                 </div>
                 <div class="review-content">
-                  <p class="mb-0" *ngIf="review.comment">{{ review.comment }}</p>
-                  <p class="mb-0 text-white fst-italic" *ngIf="!review.comment">No comment provided.</p>
+                  <p class="mb-0">{{ review.comment }}</p>
                 </div>
               </div>
-            </div>
-            
-            <!-- Show "no reviews" message if no reviews exist -->
-            <div *ngIf="!reviews || reviews.length === 0" class="no-reviews text-center py-4">
-              <i class="fas fa-star-o fa-3x text-muted mb-3"></i>
-              <h5 class="text-white">No Reviews Yet</h5>
-              <p class="text-white">Be the first to review this product!</p>
             </div>
           </div>
 
@@ -531,5 +390,3 @@
     </div>
   </div>
 </div>
-
-

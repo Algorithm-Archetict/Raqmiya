@@ -19,9 +19,9 @@ export class Profile implements OnInit, OnDestroy {
   };
 
   currentUser: UserProfile | null = null;
+  profilePicture: string | null = null;
   isUploading = false;
   isSaving = false;
-  isRemoving = false;
   errorMessage = '';
   successMessage = '';
   private destroy$ = new Subject<void>();
@@ -62,6 +62,7 @@ export class Profile implements OnInit, OnDestroy {
               profileDescription: user.profileDescription || '',
               profileImageUrl: user.profileImageUrl
             };
+            this.profilePicture = user.profileImageUrl || this.userService.getDefaultAvatarUrl();
           } else {
             // If no user data is returned, redirect to login
             this.authService.logout();
@@ -107,8 +108,7 @@ export class Profile implements OnInit, OnDestroy {
     // Create preview
     this.userService.createImagePreview(file)
       .then(previewUrl => {
-        // Update the profile data immediately for preview
-        this.profileData.profileImageUrl = previewUrl;
+        this.profilePicture = previewUrl;
       })
       .catch(error => {
         console.error('Error creating preview:', error);
@@ -116,102 +116,34 @@ export class Profile implements OnInit, OnDestroy {
         this.isUploading = false;
       });
 
-    // Upload to server with delay for better UX
-    setTimeout(() => {
-      this.userService.uploadProfileImage(file)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (response) => {
-            console.log('Upload response:', response);
-            // Add delay before completing upload
-            setTimeout(() => {
-              this.isUploading = false;
-              if (response.success && response.imageUrl) {
-                this.profileData.profileImageUrl = response.imageUrl;
-                this.successMessage = 'Profile picture updated successfully!';
-                this.clearMessagesAfterDelay();
-                // Refresh AuthService to update navbar
-                this.authService.fetchUserProfile().subscribe();
-              } else {
-                this.errorMessage = response.message || 'Failed to upload image';
-              }
-            }, 500);
-          },
-          error: (error) => {
-            console.error('Error uploading image:', error);
-            setTimeout(() => {
-              this.isUploading = false;
-              this.errorMessage = 'Failed to upload image. Please try again.';
-            }, 500);
+    // Upload to server
+    this.userService.uploadProfileImage(file)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isUploading = false;
+          if (response.success && response.imageUrl) {
+            this.profileData.profileImageUrl = response.imageUrl;
+            this.profilePicture = response.imageUrl;
+            this.successMessage = 'Profile picture updated successfully!';
+            this.clearMessagesAfterDelay();
+            // Refresh AuthService to update navbar
+            this.authService.fetchUserProfile().subscribe();
+          } else {
+            this.errorMessage = response.message || 'Failed to upload image';
           }
-        });
-    }, 1000); // Initial delay to show upload progress
+        },
+        error: (error) => {
+          this.isUploading = false;
+          console.error('Error uploading image:', error);
+          this.errorMessage = 'Failed to upload image. Please try again.';
+        }
+      });
   }
 
   removePicture() {
-    if (this.isRemoving || this.isSaving) {
-      return; // Prevent multiple clicks
-    }
-
-    this.isRemoving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
-    // Add a small delay for better UX (simulate processing time)
-    setTimeout(() => {
-      // Set to null to remove the image and show initials instead
-      this.profileData.profileImageUrl = null;
-
-      // Save the changes to the backend with explicit empty string to remove image
-      const updateData: UserProfileUpdateRequest = {
-        username: this.profileData.username?.trim() || '',
-        profileDescription: this.profileData.profileDescription?.trim() || undefined,
-        profileImageUrl: '' // Set to empty string to remove the image
-      };
-
-      console.log('Sending remove request with data:', updateData);
-
-      this.userService.updateProfile(updateData)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (response) => {
-            console.log('Remove response:', response);
-            console.log('Response user object:', response.user);
-            console.log('Response user profileImageUrl:', response.user?.profileImageUrl);
-            console.log('Current profileData.profileImageUrl:', this.profileData.profileImageUrl);
-            console.log('Current currentUser:', this.currentUser);
-            
-            // Add another small delay before completing
-            setTimeout(() => {
-              this.isRemoving = false;
-              if (response.success && response.user) {
-                // Force update the current user and profile data
-                this.currentUser = response.user;
-                this.profileData.profileImageUrl = response.user.profileImageUrl;
-                
-                console.log('After update - currentUser:', this.currentUser);
-                console.log('After update - profileData.profileImageUrl:', this.profileData.profileImageUrl);
-                
-                this.successMessage = 'Profile picture removed successfully!';
-                this.clearMessagesAfterDelay();
-                // Refresh AuthService to update navbar
-                this.authService.fetchUserProfile().subscribe();
-              } else {
-                this.errorMessage = response.message || 'Failed to remove profile picture';
-              }
-            }, 300);
-          },
-          error: (error) => {
-            console.error('Error removing profile picture:', error);
-            setTimeout(() => {
-              this.isRemoving = false;
-              this.errorMessage = 'Failed to remove profile picture. Please try again.';
-              // Restore the previous image URL on error
-              this.profileData.profileImageUrl = this.currentUser?.profileImageUrl || null;
-            }, 300);
-          }
-        });
-    }, 800); // Initial delay to show loading state
+    this.profilePicture = this.userService.getDefaultAvatarUrl();
+    this.profileData.profileImageUrl = '';
   }
 
   saveProfile() {
@@ -226,8 +158,8 @@ export class Profile implements OnInit, OnDestroy {
 
     const updateData: UserProfileUpdateRequest = {
       username: this.profileData.username.trim(),
-      profileDescription: this.profileData.profileDescription?.trim() || undefined,
-      profileImageUrl: this.profileData.profileImageUrl || undefined
+      profileDescription: this.profileData.profileDescription?.trim() || '',
+      profileImageUrl: this.profileData.profileImageUrl
     };
 
     this.userService.updateProfile(updateData)
@@ -253,21 +185,11 @@ export class Profile implements OnInit, OnDestroy {
       });
   }
 
-  // Helper methods for avatar display
-  hasProfileImage(): boolean {
-    return this.userService.hasProfileImage(this.currentUser);
-  }
-
-  getUserInitials(): string {
-    return this.userService.getUserInitials(this.currentUser);
-  }
-
-  getProfileImageUrl(): string | null {
-    return this.profileData.profileImageUrl || this.currentUser?.profileImageUrl || null;
-  }
-
-  showRemoveButton(): boolean {
-    return !!(this.profileData.profileImageUrl || this.currentUser?.profileImageUrl);
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (!img.src.includes('LonelyMan.jpg')) {
+      img.src = '../../../assets/images/LonelyMan.jpg';
+    }
   }
   
 
