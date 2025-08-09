@@ -9,6 +9,7 @@ import { ProductDetailDTO } from '../../../core/models/product/product-detail.dt
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import Swal from 'sweetalert2';
+import { Alert } from '../../../shared/alert/alert';
 
 
 interface MediaItem {
@@ -19,7 +20,7 @@ interface MediaItem {
 
 @Component({
   selector: 'app-product-details',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, Alert],
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })
@@ -34,12 +35,16 @@ export class ProductDetails implements OnInit, AfterViewInit {
   relatedProducts: ProductDetailDTO[] = [];
   isDarkTheme: boolean = false;
 
+
   // Cart state
   isInCart: boolean = false;
   checkingCartStatus: boolean = false;
 
   // Loading and error states
+
   isLoading: boolean = false;
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
   error: string | null = null;
 
   constructor(
@@ -177,20 +182,20 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.refreshWishlistStatus();
         }, 500); // Small delay to ensure product is loaded first
       } else {
-        this.error = 'Product ID not found';
+        this.errorMessage = 'Product ID not found';
       }
     });
   }
 
   fetchProduct(productId: string) {
     this.isLoading = true;
-    this.error = null;
+    this.errorMessage = null;
 
     // Try to parse as number first, then as permalink
     const numericId = parseInt(productId);
     if (!isNaN(numericId)) {
-      this.productService.getById(numericId).subscribe({
-        next: (product) => {
+      this.productService.getProductById(numericId).subscribe({
+        next: (product: ProductDetailDTO) => {
           this.product = product;
           this.reviews = product.reviews;
           this.isInWishlist = product.isInWishlist || false;
@@ -201,15 +206,15 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.loadRelatedProducts();
           this.isLoading = false;
         },
-        error: (error) => {
-          this.error = 'Product not found';
+        error: (error: any) => {
+          this.errorMessage = 'Product not found';
           this.isLoading = false;
         }
       });
     } else {
       // Try as permalink
-      this.productService.getByPermalink(productId).subscribe({
-        next: (product) => {
+      this.productService.getProductByPermalink(productId).subscribe({
+        next: (product: ProductDetailDTO) => {
           this.product = product;
           this.reviews = product.reviews;
           this.isInWishlist = product.isInWishlist || false;
@@ -219,8 +224,8 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.loadRelatedProducts();
           this.isLoading = false;
         },
-        error: (error) => {
-          this.error = 'Product not found';
+        error: (error: any) => {
+          this.errorMessage = 'Product not found';
           this.isLoading = false;
         }
       });
@@ -446,6 +451,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
         text: 'Both rating and review are required to submit your feedback!',
         customClass: {
           confirmButton: 'btn btn-primary'
+
         }
       });
       return;
@@ -610,6 +616,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
                 confirmButton: 'btn btn-primary'
               }
             });
+
           }
         });
       }
@@ -669,6 +676,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
   // Purchase methods
   addToCart() {
     if (!this.product) return;
+
     
     // If already in cart, just go to cart page
     if (this.isInCart) {
@@ -676,6 +684,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
       return;
     }
     
+
     this.cartService.addToCart(this.product.id, 1).subscribe({
       next: (response) => {
         if (response.success) {

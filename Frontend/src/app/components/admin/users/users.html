@@ -1,0 +1,35 @@
+<div class="container py-4">
+  <h2 class="mb-3">Users</h2>
+  <div *ngIf="loading">Loading…</div>
+  <div *ngIf="error" class="text-danger">{{ error }}</div>
+  <div class="table-responsive" *ngIf="!loading && !error">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of users">
+          <td>{{ u.username }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.role }}</td>
+          <td>
+            <span class="badge" [class.bg-success]="u.isActive" [class.bg-secondary]="!u.isActive">
+              {{ u.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-sm" [class.btn-outline-danger]="u.isActive" [class.btn-outline-success]="!u.isActive" (click)="toggleActive(u)">
+              {{ u.isActive ? 'Deactivate' : 'Activate' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

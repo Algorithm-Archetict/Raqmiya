@@ -1,11 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using Shared.DTOs.CategoryDTOs;
-using Raqmiya.Infrastructure;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using API.Constants;
-using Shared.Constants;
 using AutoMapper;
+using Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Raqmiya.Infrastructure;
+using Shared.Constants;
+using Shared.DTOs.CategoryDTOs;
 
 namespace API.Controllers
 {

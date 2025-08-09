@@ -4,41 +4,48 @@ namespace Shared.DTOs.OrderDTOs
     {
         public int Id { get; set; }
         public int UserId { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public string Status { get; set; } = string.Empty;
-        public decimal TotalAmount { get; set; }
         public List<OrderItemDTO> Items { get; set; } = new();
+        public decimal Subtotal { get; set; }
+        public decimal Discount { get; set; }
+        public decimal Total { get; set; }
+        public string Currency { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string PaymentStatus { get; set; } = string.Empty;
+        public CustomerInfoDTO CustomerInfo { get; set; } = new();
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
     }
 
     public class OrderItemDTO
     {
         public int ProductId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public string Currency { get; set; } = string.Empty;
         public int Quantity { get; set; }
-        public decimal UnitPrice { get; set; }
     }
 
     public class OrderCreateDTO
     {
-        public List<OrderItemCreateDTO> items { get; set; } = new();
-        public string paymentMethod { get; set; } = string.Empty;
-        public CustomerInfoDTO customerInfo { get; set; } = new();
+        public List<OrderItemCreateDTO> Items { get; set; } = new();
+        public string PaymentMethod { get; set; } = string.Empty;
+        public CustomerInfoDTO CustomerInfo { get; set; } = new();
     }
 
     public class CustomerInfoDTO
     {
-        public string email { get; set; } = string.Empty;
-        public string firstName { get; set; } = string.Empty;
-        public string lastName { get; set; } = string.Empty;
-        public string cardNumber { get; set; } = string.Empty;
-        public string expiryDate { get; set; } = string.Empty;
-        public string cvv { get; set; } = string.Empty;
-        public string billingAddress { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Country { get; set; }
+        public string? ZipCode { get; set; }
+        // Removed sensitive fields: cardNumber, expiryDate, cvv, billingAddress
     }
 
     public class OrderItemCreateDTO
     {
-        public int productId { get; set; }
-        public int quantity { get; set; }
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
     }
 
     public class OrderUpdateDTO
@@ -47,4 +54,3 @@ namespace Shared.DTOs.OrderDTOs
         public string Status { get; set; } = string.Empty;
     }
 }
-

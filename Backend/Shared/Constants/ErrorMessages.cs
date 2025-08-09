@@ -1,7 +1,14 @@
-namespace API.Constants
+namespace Shared.Constants
 {
     public static class ErrorMessages
     {
+        // Order errors (from Backend.Constants)
+        public const string OrderNotFound = "Order not found";
+        public const string UnauthorizedOrderAccess = "You are not authorized to access this order.";
+        public const string ProductNotFound = "Product not found";
+        public const string LicenseNotFound = "License not found";
+        
+        // User and Admin errors (from API.Constants)
         public const string AdminUserCreate = "An error occurred while creating the admin user.";
         public const string UserList = "An error occurred while listing users.";
         public const string UserGetById = "An error occurred while fetching the user.";

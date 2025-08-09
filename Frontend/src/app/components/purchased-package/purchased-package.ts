@@ -7,8 +7,10 @@ import { OrderService } from '../../core/services/order.service';
 import { ProductService } from '../../core/services/product.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+
 import { ReviewDTO } from '../../core/models/product/review.dto';
 import Swal from 'sweetalert2';
+
 
 interface PurchasedProduct {
   productId: number;
@@ -61,8 +63,10 @@ export class PurchasedPackage implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private orderService: OrderService,
+
     private productService: ProductService,
     private http: HttpClient
+
   ) {}
 
   ngOnInit() {
@@ -97,7 +101,7 @@ export class PurchasedPackage implements OnInit {
   loadPurchasedProduct() {
     this.isLoading = true;
     this.errorMessage = '';
-    
+
     // Get product ID from route params
     this.route.params.subscribe(params => {
       const productId = params['id'];
@@ -289,34 +293,36 @@ export class PurchasedPackage implements OnInit {
   }
 
   async downloadFile(file: ProductFile) {
+
     // Download file functionality
     if (!this.product) {
       console.error('No product found');
       return;
     }
     
+
     this.isDownloading = true;
     this.downloadProgress = 0;
-
     try {
-      // Simulate download progress
-      const interval = setInterval(() => {
-        this.downloadProgress += Math.random() * 20;
-        if (this.downloadProgress >= 100) {
-          this.downloadProgress = 100;
-          clearInterval(interval);
-          this.isDownloading = false;
-          
-          // Trigger actual download
-          this.triggerDownload(file);
-        }
-      }, 200);
-    } catch (error) {
-      console.error('Download error:', error);
+      // Use FileService to download the file by name
+      const blob = await firstValueFrom(this.fileService.downloadFile(file.name));
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       this.isDownloading = false;
+      alert('Download completed successfully!');
+    } catch (error: any) {
+      this.isDownloading = false;
+      console.error('Download failed:', error);
       alert('Download failed. Please try again.');
     }
   }
+
 
   private triggerDownload(file: ProductFile) {
     // Trigger download for file
@@ -366,6 +372,7 @@ export class PurchasedPackage implements OnInit {
       }
     });
   }
+
 
   viewCreator() {
     // In real app, this would navigate to creator profile

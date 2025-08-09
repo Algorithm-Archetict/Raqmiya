@@ -1,4 +1,4 @@
-namespace API.Constants
+namespace Shared.Constants
 {
     public static class UserRoutes
     {

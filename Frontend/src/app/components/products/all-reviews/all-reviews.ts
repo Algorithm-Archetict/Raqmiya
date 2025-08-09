@@ -1,14 +1,16 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import { CommonModule } from '@angular/common';
+import { Alert } from '../../shared/alert/alert';
+import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 
 @Component({
   selector: 'app-all-reviews',
   templateUrl: './all-reviews.html',
   styleUrl: './all-reviews.css',
-  imports: [CommonModule],
+  imports: [CommonModule, Alert],
   standalone: true
 })
 export class AllReviews implements OnInit {
@@ -18,6 +20,8 @@ export class AllReviews implements OnInit {
   reviews: ReviewDTO[] = [];
   isLoading = true;
   error: string | null = null;
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
   pageSize = 10;
   currentPage = 1;
   totalReviews = 0;
@@ -58,7 +62,6 @@ export class AllReviews implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private productService: ProductService,
-    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -75,13 +78,13 @@ export class AllReviews implements OnInit {
     this.isLoading = true;
     this.error = null;
 
-    this.productService.getById(this.productId).subscribe({
-      next: (backendProduct) => {
+    this.productService.getProductById(this.productId).subscribe({
+      next: (backendProduct: ProductDetailDTO) => {
         console.log('Raw backend product data:', JSON.stringify(backendProduct, null, 2));
         console.log('Raw reviews data:', JSON.stringify(backendProduct.reviews, null, 2));
 
         // Detailed logging of each review's exact structure
-        backendProduct.reviews.forEach((review, index) => {
+        backendProduct.reviews.forEach((review: ReviewDTO, index: number) => {
           console.log(`Review ${index + 1} raw data:`, {
             allProperties: Object.keys(review),
             rawData: review,
@@ -92,7 +95,7 @@ export class AllReviews implements OnInit {
         });
 
         // Create fresh review objects without spreading to avoid property conflicts
-        let displayReviews = backendProduct.reviews.map(review => ({
+        let displayReviews = backendProduct.reviews.map((review: ReviewDTO) => ({
           id: review.id,
           userName: review.userName,
           rating: review.rating,
@@ -102,18 +105,18 @@ export class AllReviews implements OnInit {
         }));
 
         // Calculate rating counts
-        this.ratingCounts = displayReviews.reduce((counts, review) => {
+        this.ratingCounts = displayReviews.reduce((counts: { [key: number]: number }, review: ReviewDTO) => {
           counts[review.rating] = (counts[review.rating] || 0) + 1;
           return counts;
         }, {} as { [key: number]: number });
 
         // Apply rating filter if set
         if (this.filterRating !== null) {
-          displayReviews = displayReviews.filter(r => r.rating === this.filterRating);
+          displayReviews = displayReviews.filter((r: ReviewDTO) => r.rating === this.filterRating);
         }
 
         // Handle profile images
-        displayReviews = displayReviews.map(review => ({
+        displayReviews = displayReviews.map((review: ReviewDTO) => ({
           id: review.id,
           userName: review.userName,
           rating: review.rating,
@@ -123,7 +126,7 @@ export class AllReviews implements OnInit {
         }));
 
         // Sort reviews
-        displayReviews.sort((a, b) => {
+        displayReviews.sort((a: ReviewDTO, b: ReviewDTO) => {
           const multiplier = this.sortOrder === 'desc' ? -1 : 1;
           if (this.sortBy === 'date') {
             return multiplier * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -137,7 +140,7 @@ export class AllReviews implements OnInit {
         this.reviews = displayReviews.slice(startIndex, startIndex + this.pageSize);
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (_error: any) => {
         this.error = 'Failed to load reviews.';
         this.isLoading = false;
       }

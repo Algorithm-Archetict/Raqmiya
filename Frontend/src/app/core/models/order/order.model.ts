@@ -7,8 +7,8 @@ export interface OrderItem {
 }
 
 export interface Order {
-  id: string;
-  userId: string;
+  id: number; // changed from string to number for backend alignment
+  userId: number; // changed from string to number for backend alignment
   items: OrderItem[];
   subtotal: number;
   discount: number;
@@ -16,10 +16,10 @@ export interface Order {
   currency: string;
   status: OrderStatus;
   paymentMethod: string;
-  paymentStatus: PaymentStatus;
+  paymentStatus: string; // changed to string for backend alignment
   customerInfo: CustomerInfo;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // changed to string (ISO date) for backend alignment
+  updatedAt: string; // changed to string (ISO date) for backend alignment
 }
 
 export interface CustomerInfo {
@@ -62,4 +62,4 @@ export interface PaymentMethod {
   name: string;
   icon: string;
   selected: boolean;
-} 
+}

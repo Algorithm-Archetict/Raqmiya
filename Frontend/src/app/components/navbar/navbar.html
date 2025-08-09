@@ -83,6 +83,12 @@
                   Create Product
                 </a>
               </li>
+              <li *ngIf="isAdmin()">
+                <a class="dropdown-item" routerLink="/admin" (click)="closeUserDropdown()">
+                  <i class="fas fa-user-shield me-2"></i>
+                  Admin
+                </a>
+              </li>
               <li>
                 <a class="dropdown-item" routerLink="/settings" (click)="closeUserDropdown()">
                   <i class="fas fa-cog me-2"></i>

@@ -3,8 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterModule } from '@angular/router';
 import { OrderService } from '../../core/services/order.service';
 import { Router } from '@angular/router';
+
 import { ProductService } from '../../core/services/product.service';
 import { forkJoin } from 'rxjs';
+
+
+import { Alert } from '../../shared/alert/alert';
 
 
 interface PurchasedProductDTO {
@@ -25,7 +29,7 @@ interface PurchasedProductDTO {
 
 @Component({
   selector: 'app-purchased-products',
-  imports: [CommonModule, RouterModule, RouterLink],
+  imports: [CommonModule, RouterModule, Alert, RouterLink],
   templateUrl: './purchased-products.html',
   styleUrl: './purchased-products.css'
 })
@@ -33,17 +37,19 @@ export class PurchasedProducts implements OnInit {
   activeTab: 'purchased' | 'wishlist' | 'reviews' = 'purchased';
   purchasedProducts: PurchasedProductDTO[] = [];
   isLoading: boolean = false;
-  errorMessage: string = '';
-  
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
+
   constructor(
     private orderService: OrderService,
     private router: Router,
     private productService: ProductService
   ) {}
-  
+
   ngOnInit() {
     this.loadPurchasedProducts();
   }
+
 
   setActiveTab(tab: 'purchased' | 'wishlist' | 'reviews') {
     this.activeTab = tab;
@@ -51,10 +57,10 @@ export class PurchasedProducts implements OnInit {
 
   loadPurchasedProducts() {
     this.isLoading = true;
-    this.errorMessage = '';
-    
+    this.errorMessage = null;
     this.orderService.getPurchasedProducts().subscribe({
       next: (products) => {
+
         // Debug: Log products to see what we're getting
         console.log('Purchased products received:', products);
         
@@ -125,26 +131,28 @@ export class PurchasedProducts implements OnInit {
         console.error('Error fetching product details for creator info:', error);
         // Fall back to original products even if we couldn't fetch creator info
         this.purchasedProducts = products;
+
         this.isLoading = false;
       }
     });
   }
-  
+
   viewProduct(productId: number) {
     // Navigate to product details page
     this.router.navigate(['/discover', productId]);
   }
-  
+
   downloadProduct(productId: number) {
     // Navigate to package page for downloads
     this.router.navigate(['/package', productId]);
   }
 
+
   showInLibrary() {
     // Navigate to library component
     this.router.navigate(['/library']);
   }
-  
+
   getLicenseStatusClass(status: string): string {
     switch (status) {
       case 'active': return 'status-active';
@@ -153,7 +161,7 @@ export class PurchasedProducts implements OnInit {
       default: return 'status-unknown';
     }
   }
-  
+
   getLicenseStatusText(status: string): string {
     switch (status) {
       case 'active': return 'Active';
@@ -162,6 +170,7 @@ export class PurchasedProducts implements OnInit {
       default: return 'Unknown';
     }
   }
+
 
   // Helper method to get creator username with fallback
   getCreatorName(product: PurchasedProductDTO): string {
@@ -173,3 +182,4 @@ export class PurchasedProducts implements OnInit {
     return 'Unknown Creator';
   }
 } 
+

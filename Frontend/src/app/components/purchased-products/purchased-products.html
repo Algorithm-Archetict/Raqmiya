@@ -1,41 +1,7 @@
 <div class="purchased-products-container">
+
   <div class="main-content">
-    <!-- Header Section -->
-    <!-- <div class="library-header">
-      <div class="header-content">
-        <h1 class="library-title">Purchased Products</h1>
-        <button class="btn btn-primary" (click)="showInLibrary()">
-          <i class="fas fa-book-open"></i>
-          Show in Library
-        </button>
-      </div>
-      
-      <!-- Tabs -->
-      <!-- <div class="tabs">
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab === 'purchased'"
-          (click)="setActiveTab('purchased')"
-        >
-          Purchased
-        </button>
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab === 'wishlist'"
-          (click)="setActiveTab('wishlist')"
-        >
-          Wishlist
-        </button>
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab === 'reviews'"
-          (click)="setActiveTab('reviews')"
-        >
-          Reviews
-        </button>
-      </div>
-    </div> and we can remove this--> 
-    
+   
     <!-- Loading State -->
     <div class="loading-state" *ngIf="isLoading">
       <div class="spinner-border text-primary" role="status">
@@ -43,7 +9,7 @@
       </div>
       <p>Loading your purchased products...</p>
     </div>
-    
+
     <!-- Error State -->
     <div class="error-state" *ngIf="errorMessage">
       <div class="alert alert-danger">
@@ -54,7 +20,7 @@
         </button>
       </div>
     </div>
-    
+
     <!-- Products Grid -->
     <div class="products-grid" *ngIf="!isLoading && !errorMessage">
       <div class="product-card" *ngFor="let product of purchasedProducts">
@@ -64,8 +30,9 @@
             {{ getLicenseStatusText(product.licenseStatus) }}
           </div>
         </div>
-        
+
         <div class="product-info">
+
           <h3 class="product-title">{{ product.productName }}</h3>
           
           <div class="product-details">
@@ -96,7 +63,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Empty State -->
     <div class="empty-state" *ngIf="!isLoading && !errorMessage && purchasedProducts.length === 0">
       <div class="empty-content">
@@ -108,5 +75,11 @@
         </a>
       </div>
     </div>
+
+    <app-alert *ngIf="errorMessage || successMessage"
+      [type]="errorMessage ? 'error' : 'success'"
+      [message]="(errorMessage || successMessage) ?? ''"
+      (close)="errorMessage = null; successMessage = null">
+    </app-alert>
   </div>
-</div> 
+</div>

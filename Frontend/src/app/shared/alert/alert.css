@@ -1,0 +1,19 @@
+.alert {
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1rem;
+}
+.alert-success { background: #e6ffed; color: #207544; border: 1px solid #b7ebc6; }
+.alert-error { background: #ffeaea; color: #a94442; border: 1px solid #f5c6cb; }
+.alert-info { background: #e7f3fe; color: #31708f; border: 1px solid #bce8f1; }
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: inherit;
+}

@@ -4,16 +4,10 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Shared.Constants;
 
 namespace Shared.DTOs.AuthDTOs
 {
-    public static class RoleConstants
-    {
-        public const string Admin = "Admin";
-        public const string Creator = "Creator";
-        public const string Customer = "Customer";
-    }
-
     public class RegisterRequestDTO
     {
         [Required]

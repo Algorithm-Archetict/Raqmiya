@@ -1,4 +1,3 @@
-using API.Constants;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +5,7 @@ using Shared.DTOs.AuthDTOs;
 using System.Security.Claims;
 using Raqmiya.Infrastructure;
 using AutoMapper;
+using Shared.Constants;
 
 namespace API.Controllers
 {

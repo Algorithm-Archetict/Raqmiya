@@ -5,6 +5,12 @@
     
     <nav class="sidebar-nav">
       <ul class="nav-list">
+        <li class="nav-item" *ngIf="isAdmin">
+          <a routerLink="/admin" class="nav-link" [class.active]="isActive('/admin')">
+            <i class="fas fa-user-shield"></i>
+            <span>Admin</span>
+          </a>
+        </li>
         <li class="nav-item">
           <a routerLink="/dashboard" class="nav-link" [class.active]="isActive('/dashboard')">
             <i class="fas fa-home"></i>

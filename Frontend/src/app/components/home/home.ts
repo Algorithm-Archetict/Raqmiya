@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { Navbar } from '../navbar/navbar';
 import { Footer } from '../footer/footer';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -8,7 +7,7 @@ declare var bootstrap: any;
 
 @Component({
   selector: 'app-home',
-  imports: [Navbar, Footer, RouterLink],
+  imports: [Footer, RouterLink],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })

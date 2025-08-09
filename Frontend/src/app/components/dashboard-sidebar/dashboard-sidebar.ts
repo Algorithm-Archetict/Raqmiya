@@ -14,6 +14,7 @@ export class DashboardSidebar implements OnInit {
   currentRoute: string = '';
   isCreator: boolean = false;
   isCustomer: boolean = false;
+  isAdmin: boolean = false;
   isLoggedIn: boolean = false;
 
   constructor(
@@ -50,6 +51,18 @@ export class DashboardSidebar implements OnInit {
     this.isLoggedIn = this.authService.isLoggedIn();
     this.isCreator = this.authService.isCreator();
     this.isCustomer = this.authService.isCustomer();
+
+  this.isAdmin = this.authService.isAdmin();
+    
+    // Debug logging
+    console.log('Dashboard Sidebar - Auth Status:', {
+      isLoggedIn: this.isLoggedIn,
+      isCreator: this.isCreator,
+      isCustomer: this.isCustomer,
+  isAdmin: this.isAdmin,
+      currentUser: this.authService.getCurrentUser()
+    });
+
   }
 
   logout() {
