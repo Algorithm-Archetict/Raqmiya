@@ -80,7 +80,7 @@ namespace API
                     options.JsonSerializerOptions.WriteIndented = false;
                     options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
                     // ISO 8601 is default, but this is explicit
-                    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonConverterFactoryForDateTimeIso8601());
+                    // options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonConverterFactoryForDateTimeIso8601());
                 });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();

@@ -88,7 +88,7 @@ namespace API.Controllers
                         paymentStatus = "completed",
                         customerInfo = new
                         {
-                            email = dto.customerInfo.email,
+                            email = dto.CustomerInfo.Email,
                             phone = "",
                             country = "",
                             zipCode = ""

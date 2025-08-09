@@ -19,9 +19,9 @@ namespace Core.Mapping_Profiles
                 .ForMember(dest => dest.CustomerInfo, opt => opt.MapFrom(src => src.CustomerInfo));
 
             CreateMap<OrderItem, OrderItemDTO>()
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ProductName))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Product.Name))
                 .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.UnitPrice))
-                .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Currency))
+                .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Product.Currency))
                 .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity));
 
             CreateMap<OrderCreateDTO, Order>()

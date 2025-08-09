@@ -6,9 +6,9 @@ namespace Shared.DTOs.OrderDTOs
     {
         public OrderCreateDTOValidator()
         {
-            RuleFor(x => x.items)
+            RuleFor(x => x.Items)
                 .NotEmpty().WithMessage("Order must have at least one item.");
-            RuleForEach(x => x.items).SetValidator(new OrderItemCreateDTOValidator());
+            RuleForEach(x => x.Items).SetValidator(new OrderItemCreateDTOValidator());
         }
     }
 
@@ -16,8 +16,8 @@ namespace Shared.DTOs.OrderDTOs
     {
         public OrderItemCreateDTOValidator()
         {
-            RuleFor(x => x.productId).GreaterThan(0);
-            RuleFor(x => x.quantity).GreaterThan(0);
+            RuleFor(x => x.ProductId).GreaterThan(0);
+            RuleFor(x => x.Quantity).GreaterThan(0);
         }
     }
 
@@ -30,4 +30,3 @@ namespace Shared.DTOs.OrderDTOs
         }
     }
 }
-

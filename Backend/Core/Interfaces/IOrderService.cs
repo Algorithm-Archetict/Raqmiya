@@ -14,6 +14,6 @@ namespace Core.Interfaces
         Task DeleteOrderAsync(int orderId);
         Task<List<PurchasedProductDTO>> GetUserPurchasedProductsAsync(int userId);
         Task<PurchasedProductDTO?> GetUserPurchasedProductAsync(int userId, int productId);
+        Task<PaymentResultDTO> ProcessPaymentAsync(int orderId, int userId, PaymentRequestDTO paymentRequest);
     }
 }
-
