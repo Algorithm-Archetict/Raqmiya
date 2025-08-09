@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminService } from '../../../core/services/admin/admin.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-admin-content',
@@ -14,7 +15,7 @@ export class AdminContent implements OnInit {
   loading = false;
   error: string | null = null;
 
-  constructor(private admin: AdminService) {}
+  constructor(private admin: AdminService, private toast: ToastService) {}
 
   ngOnInit(): void {
     this.load();
@@ -31,11 +32,22 @@ export class AdminContent implements OnInit {
       },
       error: _ => {
         this.error = 'Failed to load content';
+        this.toast.error(this.error);
         this.loading = false;
       }
     });
   }
 
-  approve(id: number) { this.admin.approveContent(id).subscribe({ next: _ => this.load() }); }
-  reject(id: number) { this.admin.rejectContent(id, 'Not compliant').subscribe({ next: _ => this.load() }); }
+  approve(id: number) {
+    this.admin.approveContent(id).subscribe({
+      next: _ => { this.toast.success('Product approved'); this.load(); },
+      error: _ => this.toast.error('Failed to approve')
+    });
+  }
+  reject(id: number) {
+    this.admin.rejectContent(id, 'Not compliant').subscribe({
+      next: _ => { this.toast.success('Product rejected'); this.load(); },
+      error: _ => this.toast.error('Failed to reject')
+    });
+  }
 }

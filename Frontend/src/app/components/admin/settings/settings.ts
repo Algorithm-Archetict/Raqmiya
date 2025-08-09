@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin/admin.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-admin-settings',
@@ -17,7 +18,7 @@ export class AdminSettings implements OnInit {
   error: string | null = null;
   saved = false;
 
-  constructor(private admin: AdminService) {}
+  constructor(private admin: AdminService, private toast: ToastService) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -25,15 +26,15 @@ export class AdminSettings implements OnInit {
     this.loading = true;
     this.admin.getSettings().subscribe({
       next: s => { this.settings = s || {}; this.loading = false; },
-      error: _ => { this.error = 'Failed to load settings'; this.loading = false; }
+      error: _ => { this.error = 'Failed to load settings'; this.toast.error(this.error); this.loading = false; }
     });
   }
 
   save() {
     this.saving = true; this.saved = false; this.error = null;
     this.admin.updateSettings(this.settings).subscribe({
-      next: _ => { this.saved = true; this.saving = false; },
-      error: _ => { this.error = 'Failed to save settings'; this.saving = false; }
+      next: _ => { this.saved = true; this.saving = false; this.toast.success('Settings saved'); },
+      error: _ => { this.error = 'Failed to save settings'; this.toast.error(this.error); this.saving = false; }
     });
   }
 }

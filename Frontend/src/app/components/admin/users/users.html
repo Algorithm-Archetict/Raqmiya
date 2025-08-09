@@ -1,7 +1,8 @@
 <div class="container py-4">
   <h2 class="mb-3">Users</h2>
   <div *ngIf="loading">Loading…</div>
-  <div *ngIf="error" class="text-danger">{{ error }}</div>
+  <div *ngIf="error" class="alert alert-danger py-2">{{ error }}</div>
+  <div *ngIf="success" class="alert alert-success py-2">{{ success }}</div>
   <div class="table-responsive" *ngIf="!loading && !error">
     <table class="table align-middle">
       <thead>
