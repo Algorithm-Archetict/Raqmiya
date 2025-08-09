@@ -8,7 +8,6 @@ import { ProductDetailDTO } from '../../../core/models/product/product-detail.dt
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import { ToastService } from '../../../core/services/toast.service';
-import { environment } from '../../../../environments/environment';
 import { Alert } from '../../../shared/alert/alert';
 
 
@@ -102,32 +101,7 @@ export class ProductDetails implements OnInit {
     }
   }
 
-  // Helper method to ensure image URLs are full URLs
-  private ensureFullUrl(url: string | null | undefined): string | undefined {
-    if (!url) {
-      console.log('ensureFullUrl: URL is null/undefined');
-      return undefined;
-    }
-
-    console.log('ensureFullUrl: Processing URL:', url);
-
-    // If it's already a full URL, return as is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      console.log('ensureFullUrl: Already full URL, returning as is:', url);
-      return url;
-    }
-
-    // If it's a relative URL, convert to full backend URL
-    if (url.startsWith('/')) {
-      const base = environment.apiUrl.replace(/\/api\/?$/, '');
-      const fullUrl = `${base}${url}`;
-      console.log('ensureFullUrl: Converted relative URL to full URL:', fullUrl);
-      return fullUrl;
-    }
-
-    console.log('ensureFullUrl: Unknown URL format, returning as is:', url);
-    return url;
-  }
+  // Use centralized URL builder from ProductService
 
   mapBackendToUI(backendProduct: ProductDetailDTO): ProductDetailDTO {
     return {
@@ -143,8 +117,8 @@ export class ProductDetails implements OnInit {
       compatibility: backendProduct.compatibility || 'Universal',
       license: backendProduct.license || 'Standard License',
       updates: backendProduct.updates || 'Lifetime Updates',
-      coverImageUrl: this.ensureFullUrl(backendProduct.coverImageUrl),
-      previewVideoUrl: this.ensureFullUrl(backendProduct.previewVideoUrl),
+  coverImageUrl: this.productService.buildFullUrl(backendProduct.coverImageUrl),
+  previewVideoUrl: this.productService.buildFullUrl(backendProduct.previewVideoUrl),
       isInWishlist: backendProduct.isInWishlist || false,
       wishlistCount: backendProduct.wishlistCount || 0,
       salesCount: backendProduct.salesCount || 0,
@@ -173,18 +147,18 @@ export class ProductDetails implements OnInit {
 
   getMediaItems(): MediaItem[] {
     const items: MediaItem[] = [];
-    if (this.product?.coverImageUrl) {
+  if (this.product?.coverImageUrl) {
       items.push({
         type: 'image',
-        url: this.ensureFullUrl(this.product.coverImageUrl) || '',
-        thumbnail: this.ensureFullUrl(this.product.coverImageUrl)
+    url: this.productService.buildFullUrl(this.product.coverImageUrl) || '',
+    thumbnail: this.productService.buildFullUrl(this.product.coverImageUrl)
       });
     }
     if (this.product?.previewVideoUrl) {
       items.push({
         type: 'video',
-        url: this.ensureFullUrl(this.product.previewVideoUrl) || '',
-        thumbnail: this.ensureFullUrl(this.product.coverImageUrl)
+    url: this.productService.buildFullUrl(this.product.previewVideoUrl) || '',
+    thumbnail: this.productService.buildFullUrl(this.product.coverImageUrl)
       });
     }
     return items;
@@ -195,7 +169,7 @@ export class ProductDetails implements OnInit {
 
     // Add cover image if available
     if (backendProduct.coverImageUrl) {
-      const fullCoverUrl = this.ensureFullUrl(backendProduct.coverImageUrl);
+      const fullCoverUrl = this.productService.buildFullUrl(backendProduct.coverImageUrl);
       if (fullCoverUrl) {
         media.push({
           type: 'image',
@@ -207,12 +181,12 @@ export class ProductDetails implements OnInit {
 
     // Add preview video if available
     if (backendProduct.previewVideoUrl) {
-      const fullVideoUrl = this.ensureFullUrl(backendProduct.previewVideoUrl);
+      const fullVideoUrl = this.productService.buildFullUrl(backendProduct.previewVideoUrl);
       if (fullVideoUrl) {
         media.push({
           type: 'video',
           url: fullVideoUrl,
-          thumbnail: this.ensureFullUrl(backendProduct.coverImageUrl) || fullVideoUrl
+          thumbnail: this.productService.buildFullUrl(backendProduct.coverImageUrl) || fullVideoUrl
         });
       }
     }

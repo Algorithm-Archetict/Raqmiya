@@ -274,11 +274,11 @@
               <button
                 class="btn btn-outline btn-lg load-more-btn"
                 (click)="loadMoreProducts()"
-                [disabled]="loading"
+                [disabled]="loading || !hasNextPage"
               >
                 <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
                 <i class="fas fa-plus" *ngIf="!loading"></i>
-                {{ loading ? 'Loading...' : 'Load More Products' }}
+                {{ loading ? 'Loading...' : (hasNextPage ? 'Load More Products' : 'No More Products') }}
               </button>
             </div>
           </div>

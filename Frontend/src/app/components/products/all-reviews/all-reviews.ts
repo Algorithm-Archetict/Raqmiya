@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
-import { environment } from '../../../../environments/environment';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import { CommonModule } from '@angular/common';
 import { Alert } from '../../shared/alert/alert';
@@ -15,8 +14,6 @@ import { ProductDetailDTO } from '../../../core/models/product/product-detail.dt
   standalone: true
 })
 export class AllReviews implements OnInit {
-  private readonly backendUrl = environment.apiUrl.replace(/\/api\/?$/, '');
-
   productId!: number;
   reviews: ReviewDTO[] = [];
   isLoading = true;
@@ -31,30 +28,7 @@ export class AllReviews implements OnInit {
   filterRating: number | null = null;
   ratingCounts: { [key: number]: number } = {};
 
-  private ensureFullUrl(url: string | null | undefined): string {
-    if (!url) {
-      console.log('ensureFullUrl: URL is null/undefined');
-      return '/assets/images/default-avatar.png';
-    }
-
-    console.log('ensureFullUrl: Processing URL:', url);
-
-    // If it's already a full URL, return as is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      console.log('ensureFullUrl: Already full URL, returning as is:', url);
-      return url;
-    }
-
-    // If it's a relative URL, add the backend URL
-    if (url.startsWith('/')) {
-      const fullUrl = `${this.backendUrl}${url}`;
-      console.log('ensureFullUrl: Converted relative URL to full URL:', fullUrl);
-      return fullUrl;
-    }
-
-    console.log('ensureFullUrl: Unknown URL format, returning as is:', url);
-    return url;
-  }
+  // Use centralized URL builder from ProductService
 
   private getPlaceholderAvatar(initial: string): string {
     return `https://ui-avatars.com/api/?name=${initial}&background=random&size=128`;
@@ -123,7 +97,7 @@ export class AllReviews implements OnInit {
           rating: review.rating,
           comment: review.comment || '',
           createdAt: review.createdAt,
-          userAvatar: review.userAvatar ? this.ensureFullUrl(review.userAvatar) : this.getPlaceholderAvatar(review.userName?.charAt(0) || 'A')
+          userAvatar: review.userAvatar ? (this.productService.buildFullUrl(review.userAvatar) || this.getPlaceholderAvatar(review.userName?.charAt(0) || 'A')) : this.getPlaceholderAvatar(review.userName?.charAt(0) || 'A')
         }));
 
         // Sort reviews
