@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { OrderService } from '../../core/services/order.service';
+import { ToastService } from '../../core/services/toast.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FileService } from '../../core/services/file.service';
@@ -54,7 +55,8 @@ export class PurchasedPackage implements OnInit {
     private route: ActivatedRoute,
     private orderService: OrderService,
     private http: HttpClient,
-    private fileService: FileService
+  private fileService: FileService,
+  private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -120,15 +122,15 @@ export class PurchasedPackage implements OnInit {
 
   viewReceipt() {
     if (this.product) {
-      console.log('Viewing receipt for order:', this.product.orderId);
-      alert(`Receipt for Order: ${this.product.orderId}\nDate: ${this.product.purchaseDate.toLocaleDateString()}\nAmount: $${this.product.purchasePrice}`);
+  console.log('Viewing receipt for order:', this.product.orderId);
+  this.toast.info(`Receipt for Order: ${this.product.orderId} on ${this.product.purchaseDate.toLocaleDateString()} for $${this.product.purchasePrice}`,'Receipt');
     }
   }
 
   resendReceipt() {
     // In real app, this would trigger email resend
-    console.log('Resending receipt for order:', this.product?.orderId);
-    alert('Receipt has been resent to your email address.');
+  console.log('Resending receipt for order:', this.product?.orderId);
+  this.toast.success('Receipt has been resent to your email address.');
   }
 
   async downloadFile(file: ProductFile) {
@@ -145,12 +147,12 @@ export class PurchasedPackage implements OnInit {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      this.isDownloading = false;
-      alert('Download completed successfully!');
+  this.isDownloading = false;
+  this.toast.success('Download completed successfully!');
     } catch (error: any) {
       this.isDownloading = false;
       console.error('Download failed:', error);
-      alert('Download failed. Please try again.');
+  this.toast.error('Download failed. Please try again.');
     }
   }
 

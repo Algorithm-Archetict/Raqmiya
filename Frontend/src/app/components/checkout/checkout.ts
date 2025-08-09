@@ -8,6 +8,7 @@ import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Cart, CartItem } from '../../core/models/cart/cart.model';
 import { PaymentMethod, CustomerInfo } from '../../core/models/order/order.model';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-checkout',
@@ -70,7 +71,8 @@ export class Checkout implements OnInit, OnDestroy {
     private router: Router,
     private cartService: CartService,
     private orderService: OrderService,
-    private authService: AuthService
+  private authService: AuthService,
+  private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -141,11 +143,13 @@ export class Checkout implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           console.log('Item removed from cart');
+          this.toast.success('Item removed from cart');
         }
       },
       error: (error) => {
         console.error('Error removing item:', error);
         this.errorMessage = 'Failed to remove item from cart.';
+        this.toast.error(this.errorMessage);
       }
     });
   }
@@ -158,11 +162,13 @@ export class Checkout implements OnInit, OnDestroy {
         next: (response) => {
           if (response.success) {
             console.log('Cart updated');
+            this.toast.success('Cart updated');
           }
         },
         error: (error) => {
           console.error('Error updating cart:', error);
           this.errorMessage = 'Failed to update cart.';
+          this.toast.error(this.errorMessage);
         }
       });
     }
@@ -193,6 +199,7 @@ export class Checkout implements OnInit, OnDestroy {
   async processPayment(): Promise<void> {
     if (!this.cart || this.cartItems.length === 0) {
       this.errorMessage = 'Your cart is empty.';
+      this.toast.error(this.errorMessage);
       return;
     }
 
@@ -234,19 +241,23 @@ export class Checkout implements OnInit, OnDestroy {
 
         if (paymentResponse?.success) {
           this.successMessage = 'Payment processed successfully!';
+          this.toast.success(this.successMessage);
           this.cartService.clearCart().subscribe();
           setTimeout(() => {
             this.router.navigate(['/library']);
           }, 2000);
         } else {
           this.errorMessage = paymentResponse?.message || 'Payment failed. Please try again.';
+          this.toast.error(this.errorMessage);
         }
       } else {
         this.errorMessage = orderResponse?.message || 'Failed to create order.';
+        this.toast.error(this.errorMessage);
       }
     } catch (error: any) {
       console.error('Payment error:', error);
       this.errorMessage = error?.error?.message || error?.message || 'An error occurred during payment processing. Please try again.';
+      this.toast.error(this.errorMessage);
     } finally {
       this.isLoading = false;
     }
@@ -262,6 +273,7 @@ export class Checkout implements OnInit, OnDestroy {
 
     if (!validation.isValid) {
       this.errorMessage = validation.errors.join(', ');
+      this.toast.error(this.errorMessage);
       return false;
     }
 

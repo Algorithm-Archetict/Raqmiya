@@ -7,7 +7,7 @@ import { CartService } from '../../../core/services/cart.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
-import Swal from 'sweetalert2/dist/sweetalert2.esm.js';
+import { ToastService } from '../../../core/services/toast.service';
 import { Alert } from '../../../shared/alert/alert';
 
 
@@ -42,7 +42,8 @@ export class ProductDetails implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private productService: ProductService,
-    private cartService: CartService
+    private cartService: CartService,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -273,14 +274,7 @@ export class ProductDetails implements OnInit {
 
   submitReview(): void {
     if (!this.userRating || !this.userReview.trim()) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Missing Information',
-        text: 'Both rating and review are required to submit your feedback!',
-        customClass: {
-          confirmButton: 'btn btn-primary'
-        }
-      });
+      this.toast.error('Both rating and review are required to submit your feedback!', 'Missing Information');
       return;
     }
 
@@ -310,16 +304,8 @@ export class ProductDetails implements OnInit {
         this.userRating = 0;
         this.submittingReview = false;
 
-        // Show success notification
-        Swal.fire({
-          icon: 'success',
-          title: 'Thank You!',
-          text: 'Your review has been submitted successfully.',
-          customClass: {
-            confirmButton: 'btn btn-primary'
-          },
-          timer: 3000
-        });
+  // Show success notification
+  this.toast.success('Your review has been submitted successfully.', 'Thank You!');
       },
       error: (error: any) => {
         this.submittingReview = false;
@@ -328,15 +314,7 @@ export class ProductDetails implements OnInit {
         const errorMessage = error.error?.includes('already reviewed')
           ? 'You have already reviewed this product'
           : error.error || 'Error submitting review. Please try again.';
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Submission Failed',
-          text: errorMessage,
-          customClass: {
-            confirmButton: 'btn btn-primary'
-          }
-        });
+  this.toast.error(errorMessage, 'Submission Failed');
       }
     });
   }
@@ -385,9 +363,11 @@ export class ProductDetails implements OnInit {
           this.product.isInWishlist = this.isInWishlist;
           this.product.wishlistCount = Math.max(0, (this.product.wishlistCount || 0) + (this.isInWishlist ? 1 : -1));
         }
+  this.toast.success(this.isInWishlist ? 'Added to wishlist' : 'Removed from wishlist');
       },
       error: (err) => {
         console.error('Wishlist toggle failed', err);
+  this.toast.error('Failed to update wishlist');
       }
     });
   }
@@ -400,9 +380,11 @@ export class ProductDetails implements OnInit {
         await navigator.share({ title: this.product?.name || 'Product', url });
       } else {
         await navigator.clipboard.writeText(url);
+        this.toast.success('Link copied to clipboard');
       }
     } catch (e) {
       console.warn('Share failed', e);
+      this.toast.error('Failed to share the product link');
     }
   }
 
@@ -424,15 +406,18 @@ export class ProductDetails implements OnInit {
     this.cartService.addToCart(this.product.id, 1).subscribe({
       next: (response) => {
         if (response.success) {
-                     console.log('Added to cart:', this.product?.name);
+          console.log('Added to cart:', this.product?.name);
+          this.toast.success('Added to cart');
           // Redirect to cart-checkout page
           this.router.navigate(['/cart-checkout']);
         } else {
           console.error('Failed to add to cart:', response.message);
+          this.toast.error(response.message || 'Failed to add to cart');
         }
       },
       error: (error) => {
         console.error('Error adding to cart:', error);
+        this.toast.error('Error adding to cart');
       }
     });
 // =======
