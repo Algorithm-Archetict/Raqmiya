@@ -191,14 +191,12 @@
 .form-control {
   width: 100%;
   padding: 1rem 1rem 1rem 3rem;
-  border: 2px solid #b106d7;
+  border: 2px solid #e9ecef;
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
-  color: #000;
-
 }
 
 .form-control:focus {
@@ -222,7 +220,7 @@
 }
 
 .form-control:focus + .input-icon {
-  color: #764ba2;
+  color: #6511b9;
 }
 
 .invalid-feedback {

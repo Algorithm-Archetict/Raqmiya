@@ -21,20 +21,11 @@
       <label class="form-label">Profile Picture</label>
       <div class="profile-picture-container">
         <div class="profile-picture">
-          <!-- Show image if available -->
           <img 
-               *ngIf="getProfileImageUrl()" 
-               [src]="getProfileImageUrl()" 
+               [src]="profilePicture" 
                alt="Profile Picture" 
-               class="profile-image">
-          
-          <!-- Show initials fallback when no image -->
-          <div 
-               *ngIf="!getProfileImageUrl()" 
-               class="profile-avatar-fallback">
-            {{ getUserInitials() }}
-          </div>
-          
+               class="profile-image"
+               (error)="onImageError($event)">
           <div class="profile-picture-overlay" (click)="uploadPicture()" *ngIf="!isUploading">
             <i class="fas fa-upload"></i>
           </div>
@@ -49,15 +40,13 @@
           </p>
         </div>
         <div class="profile-picture-actions">
-          <button type="button" class="btn btn-secondary" (click)="uploadPicture()" [disabled]="isUploading || isRemoving">
-            <i class="fas fa-upload" *ngIf="!isUploading"></i>
-            <i class="fas fa-spinner fa-spin" *ngIf="isUploading"></i>
+          <button type="button" class="btn btn-secondary" (click)="uploadPicture()" [disabled]="isUploading">
+            <i class="fas fa-upload"></i>
             {{ isUploading ? 'Uploading...' : 'Upload Picture' }}
           </button>
-          <button type="button" class="btn btn-outline" (click)="removePicture()" *ngIf="showRemoveButton()" [disabled]="isRemoving || isUploading">
-            <i class="fas fa-trash" *ngIf="!isRemoving"></i>
-            <i class="fas fa-spinner fa-spin" *ngIf="isRemoving"></i>
-            {{ isRemoving ? 'Removing...' : 'Remove' }}
+          <button type="button" class="btn btn-outline" (click)="removePicture()" *ngIf="profilePicture && profilePicture !== userService.getDefaultAvatarUrl()">
+            <i class="fas fa-trash"></i>
+            Remove
           </button>
         </div>
       </div>
@@ -102,13 +91,13 @@
         class="form-textarea"
         rows="4"
         placeholder="Tell us about yourself..."
-        [disabled]="isSaving || isRemoving"></textarea>
+        [disabled]="isSaving"></textarea>
       <div class="form-help">Share a brief description about yourself or your work</div>
     </div>
 
     <!-- Save Button -->
     <div class="form-actions">
-      <button type="button" class="btn btn-primary" (click)="saveProfile()" [disabled]="isSaving || isRemoving || !profileData.username?.trim()">
+      <button type="button" class="btn btn-primary" (click)="saveProfile()" [disabled]="isSaving || !profileData.username?.trim()">
         <i class="fas fa-save" *ngIf="!isSaving"></i>
         <i class="fas fa-spinner fa-spin" *ngIf="isSaving"></i>
         {{ isSaving ? 'Saving...' : 'Save Changes' }}

@@ -53,8 +53,7 @@ namespace API.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var userId = GetCurrentUserIdOrNull(); // Get user ID if logged in, null if anonymous
-            var product = await _productService.GetProductDetailsByIdAsync(id, userId);
+            var product = await _productService.GetProductDetailsByIdAsync(id);
             if (product == null) return NotFound();
 
             // Log the product details being returned
@@ -438,64 +437,6 @@ namespace API.Controllers
         }
 
         /// <summary>
-        /// Check if the current user has purchased this product (has valid license).
-        /// </summary>
-        [HttpGet("{id}/purchase-status")]
-        [Authorize]
-        public async Task<IActionResult> CheckPurchaseStatus(int id)
-        {
-            try
-            {
-                var userId = GetCurrentUserId();
-                var hasPurchased = await _productService.HasUserPurchasedProductAsync(id, userId);
-                
-                return Ok(new { hasPurchased });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error checking purchase status for product {id}");
-                return Problem("An error occurred while checking purchase status.");
-            }
-        }
-
-        /// <summary>
-        /// Get current user's review for this product.
-        /// </summary>
-        [HttpGet("{id}/my-review")]
-        [Authorize]
-        public async Task<IActionResult> GetMyReview(int id)
-        {
-            try
-            {
-                var userId = GetCurrentUserId();
-                var review = await _productService.GetUserReviewAsync(id, userId);
-                
-                if (review == null)
-                {
-                    return Ok(new { hasReview = false });
-                }
-                
-                return Ok(new { 
-                    hasReview = true,
-                    review = new ReviewDTO
-                    {
-                        Id = review.Id,
-                        Rating = review.Rating,
-                        Comment = review.Comment,
-                        userName = review.User.Username,
-                        UserAvatar = review.User.ProfileImageUrl,
-                        CreatedAt = review.CreatedAt
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error getting user review for product {id}");
-                return Problem("An error occurred while getting user review.");
-            }
-        }
-
-        /// <summary>
         /// Add a review to a product.
         /// </summary>
         [HttpPost("{id}/reviews")]
@@ -509,14 +450,6 @@ namespace API.Controllers
             try
             {
                 var userId = GetCurrentUserId();
-                
-                // Check if user has purchased the product
-                var hasPurchased = await _productService.HasUserPurchasedProductAsync(id, userId);
-                if (!hasPurchased)
-                {
-                    return BadRequest("You can only review products you have purchased.");
-                }
-                
                 await _productService.AddReviewAsync(id, userId, reviewDto);
 
                 // Return the updated ReviewDTO with the user's name and avatar
@@ -536,70 +469,6 @@ namespace API.Controllers
             {
                 _logger.LogError(ex, $"Error adding review for product {id}");
                 return Problem("An error occurred while adding the review.");
-            }
-        }
-
-        /// <summary>
-        /// Update current user's review for a product.
-        /// </summary>
-        [HttpPut("{id}/reviews/my-review")]
-        [Authorize]
-        public async Task<IActionResult> UpdateMyReview(int id, [FromBody] ReviewDTO reviewDto)
-        {
-            if (reviewDto == null || reviewDto.Rating < 1 || reviewDto.Rating > 5 || string.IsNullOrWhiteSpace(reviewDto.Comment))
-            {
-                return BadRequest("Invalid review: rating must be 1-5 and comment must not be empty.");
-            }
-            try
-            {
-                var userId = GetCurrentUserId();
-                
-                // Check if user has purchased the product
-                var hasPurchased = await _productService.HasUserPurchasedProductAsync(id, userId);
-                if (!hasPurchased)
-                {
-                    return BadRequest("You can only review products you have purchased.");
-                }
-                
-                await _productService.UpdateUserReviewAsync(id, userId, reviewDto);
-                return Ok(reviewDto);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error updating review for product {id}");
-                return Problem("An error occurred while updating the review.");
-            }
-        }
-
-        /// <summary>
-        /// Delete current user's review for a product.
-        /// </summary>
-        [HttpDelete("{id}/reviews/my-review")]
-        [Authorize]
-        public async Task<IActionResult> DeleteMyReview(int id)
-        {
-            try
-            {
-                var userId = GetCurrentUserId();
-                await _productService.DeleteUserReviewAsync(id, userId);
-                return Ok(new { message = "Review deleted successfully." });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error deleting review for product {id}");
-                return Problem("An error occurred while deleting the review.");
             }
         }
 
@@ -655,14 +524,6 @@ namespace API.Controllers
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
                 throw new UnauthorizedAccessException("User ID claim missing or invalid.");
-            return userId;
-        }
-
-        protected int? GetCurrentUserIdOrNull()
-        {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
-                return null; // Return null for anonymous users
             return userId;
         }
     }

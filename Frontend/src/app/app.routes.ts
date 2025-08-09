@@ -31,7 +31,6 @@ import { AdminUsers } from './components/admin/users/users';
 import { AdminContent } from './components/admin/content/content';
 import { AdminSettings } from './components/admin/settings/settings';
 import { AllReviews } from './components/products/all-reviews/all-reviews';
-import { WishList } from './components/wish-list/wish-list';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -46,14 +45,11 @@ export const routes: Routes = [
     { path: "products/:id/reviews", loadComponent: () => import('./components/products/all-reviews/all-reviews').then(m => m.AllReviews) },
 
     // Protected routes - require authentication
-
-    {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
-    {path:"cart-checkout",component:CartCheckout, canActivate: [AuthGuard]},
-    {path:"package/:id",component:PurchasedPackage, canActivate: [AuthGuard]},
-    // {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]}, // Commented out - now under library
-    {path:"library", redirectTo:"library/purchased-products", pathMatch:"full"},
-    {path:"library/:tab",component:Library, canActivate: [AuthGuard]},
-
+    {path:"checkout", loadComponent: () => import('./components/checkout/checkout').then(m => m.Checkout), canActivate: [AuthGuard]},
+    {path:"cart-checkout", loadComponent: () => import('./components/cart-checkout/cart-checkout').then(m => m.CartCheckout), canActivate: [AuthGuard]},
+    {path:"package/:id", loadComponent: () => import('./components/purchased-package/purchased-package').then(m => m.PurchasedPackage), canActivate: [AuthGuard]},
+    {path:"purchased-products", loadComponent: () => import('./components/purchased-products/purchased-products').then(m => m.PurchasedProducts), canActivate: [AuthGuard]},
+    {path:"library", loadComponent: () => import('./components/library/library').then(m => m.Library), canActivate: [AuthGuard]},
     {
         path:"settings",
     loadComponent: () => import('./components/settings/settings').then(m => m.Settings),
@@ -83,8 +79,5 @@ export const routes: Routes = [
     { path: 'admin/content', loadComponent: () => import('./components/admin/content/content').then(m => m.AdminContent), canActivate: [AdminGuard] },
     { path: 'admin/settings', loadComponent: () => import('./components/admin/settings/settings').then(m => m.AdminSettings), canActivate: [AdminGuard] },
 
-
-    // {path:"wishlist",component:WishList, canActivate: [AuthGuard]}, // Commented out - now under library
-    {path:"**",component:NotFound},
-
+    {path:"**", loadComponent: () => import('./components/not-found/not-found').then(m => m.NotFound)},
 ];

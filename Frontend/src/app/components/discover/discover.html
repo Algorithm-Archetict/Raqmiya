@@ -1,8 +1,5 @@
 <!-- Discover Page - Epic Games Style -->
 <div class="discover-container">
-  <!-- Use existing navbar component -->
-  <app-navbar></app-navbar>
-
   <!-- Hero Search Section -->
   <header class="search-hero-section">
     <div class="container">
@@ -114,29 +111,6 @@
               >
                 <div class="product-image">
                   <img [src]="product.image" [alt]="product.title">
-                  
-                  <!-- Wishlist Toggle Button (Only for logged-in users) -->
-                  <div *ngIf="isLoggedIn()" class="wishlist-toggle"
-                       (click)="toggleWishlist(product, $event)"
-                       (mouseenter)="onWishlistHover(product, true, $event)"
-                       (mouseleave)="onWishlistHover(product, false, $event)"
-                       [class.in-wishlist]="product.inWishlist"
-                       [class.loading]="product.loadingWishlist"
-                       [class.hovered]="product.wishlistHovered">
-                    <div class="wishlist-icon">
-                      <!-- Loading Spinner -->
-                      <i class="fas fa-spinner fa-spin" *ngIf="product.loadingWishlist"></i>
-                      <!-- Plus Icon (not in wishlist) -->
-                      <i class="fas fa-plus" *ngIf="!product.inWishlist && !product.loadingWishlist"></i>
-                      <!-- Checkmark Icon (in wishlist) -->
-                      <i class="fas fa-check" *ngIf="product.inWishlist && !product.loadingWishlist"></i>
-                    </div>
-                    <!-- Tooltip -->
-                    <div class="wishlist-tooltip" *ngIf="product.wishlistHovered && !product.loadingWishlist">
-                      {{ product.inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}
-                    </div>
-                  </div>
-                  
                   <div class="product-overlay">
                     <button class="btn btn-primary btn-sm">
                       <i class="fas fa-eye"></i>
@@ -151,7 +125,7 @@
                     <span class="product-price">${{ product.price }}</span>
                     <div class="product-rating">
                       <i class="fas fa-star text-warning"></i>
-                      <span>{{ product.rating | number:'1.1-1' }}</span>
+                      <span>{{ product.rating }}</span>
                     </div>
                   </div>
                 </div>
@@ -266,37 +240,10 @@
                 <div class="product-card grid-item" (click)="viewProduct(product.id)">
                   <div class="product-image">
                     <img [src]="product.image" [alt]="product.title">
-                    
-                    <!-- Wishlist Toggle Button (Only for logged-in users who haven't purchased) -->
-                    <div *ngIf="isLoggedIn() && !product.isPurchased" class="wishlist-toggle"
-                         (click)="toggleWishlist(product, $event)"
-                         (mouseenter)="onWishlistHover(product, true, $event)"
-                         (mouseleave)="onWishlistHover(product, false, $event)"
-                         [class.in-wishlist]="product.inWishlist"
-                         [class.loading]="product.loadingWishlist"
-                         [class.hovered]="product.wishlistHovered">
-                      <div class="wishlist-icon">
-                        <!-- Loading Spinner -->
-                        <i class="fas fa-spinner fa-spin" *ngIf="product.loadingWishlist"></i>
-                        <!-- Plus Icon (not in wishlist) -->
-                        <i class="fas fa-plus" *ngIf="!product.inWishlist && !product.loadingWishlist"></i>
-                        <!-- Checkmark Icon (in wishlist) -->
-                        <i class="fas fa-check" *ngIf="product.inWishlist && !product.loadingWishlist"></i>
-                      </div>
-                      <!-- Tooltip -->
-                      <div class="wishlist-tooltip" *ngIf="product.wishlistHovered && !product.loadingWishlist">
-                        {{ product.inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}
-                      </div>
-                    </div>
-                    
                     <div class="product-overlay">
-                      <button class="btn btn-primary btn-sm" *ngIf="!product.isPurchased">
+                      <button class="btn btn-primary btn-sm">
                         <i class="fas fa-eye"></i>
                         View Details
-                      </button>
-                      <button class="btn btn-success btn-sm" *ngIf="product.isPurchased" (click)="goToLibrary(product, $event)">
-                        <i class="fas fa-book"></i>
-                        In Library
                       </button>
                     </div>
                     <div class="product-badge" *ngIf="product.badge">
@@ -310,9 +257,8 @@
                       <span class="product-price">${{ product.price }}</span>
                       <div class="product-rating">
                         <i class="fas fa-star text-warning"></i>
-                        <span>{{ product.rating | number:'1.1-1' }}</span>
-                        <span class="rating-count" *ngIf="product.ratingCount > 0">({{ product.ratingCount }} reviews)</span>
-                        <span class="rating-count" *ngIf="product.ratingCount === 0 && product.rating > 0">(reviews)</span>
+                        <span>{{ product.rating }}</span>
+                        <span class="rating-count">({{ product.ratingCount }})</span>
                       </div>
                     </div>
                     <div class="product-tags">
@@ -341,32 +287,9 @@
     </div>
   </section>
 
-
-  <!-- Toast Notifications Container -->
-  <div class="toast-container">
-    <!-- Toasts will be dynamically inserted here -->
-  </div>
-  
-  <!-- Wishlist Counter Popup -->
-  <!-- <div class="wishlist-counter-popup" [class.show]="showWishlistCounterPopup" #wishlistCounterPopup>
-    <div class="popup-content">
-      <div class="popup-icon">
-        <i class="fas fa-heart"></i>
-      </div>
-      <div class="popup-text">
-        <span class="popup-count">{{wishlistCounter}} Item{{wishlistCounter > 1 ? 's' : ''}} saved</span>
-        <button class="btn-view-wishlist" (click)="viewWishlist()">
-          <i class="fas fa-eye"></i>
-          View Wishlist
-        </button>
-      </div>
-    </div>
-  </div> -->
-
   <!-- Shared Alert Component -->
   <app-alert *ngIf="errorMessage || successMessage"
     [type]="errorMessage ? 'error' : 'success'"
     [message]="(errorMessage || successMessage) ?? ''">
   </app-alert>
 </div>
-

@@ -39,7 +39,7 @@ export interface User {
   email: string;
   role?: string;
   roles?: string[];
-  profileImageUrl?: string | null; // Profile image URL from backend
+  profileImageUrl?: string; // Profile image URL from backend
   profileDescription?: string;
   createdAt?: Date;
   isActive?: boolean;
