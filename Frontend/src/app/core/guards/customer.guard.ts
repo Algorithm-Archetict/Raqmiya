@@ -10,6 +10,6 @@ export class CustomerGuard implements CanActivate {
     if (!this.auth.isLoggedIn()) {
       return this.router.createUrlTree(['/auth/login']);
     }
-  return this.auth.isCustomer() ? true : this.router.createUrlTree(['/forbidden']);
+  return this.auth.isCustomer() ? true : this.router.createUrlTree(['/forbidden'], { queryParams: { reason: 'customer' } });
   }
 }

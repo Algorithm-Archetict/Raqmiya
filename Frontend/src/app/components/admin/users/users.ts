@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AdminService, AdminUserSummary } from '../../../core/services/admin/admin.service';
 
 @Component({
   selector: 'app-admin-users',
@@ -8,4 +9,37 @@ import { CommonModule } from '@angular/common';
   templateUrl: './users.html',
   styleUrl: './users.css'
 })
-export class AdminUsers {}
+export class AdminUsers implements OnInit {
+  users: AdminUserSummary[] = [];
+  loading = false;
+  error: string | null = null;
+
+  constructor(private admin: AdminService) {}
+
+  ngOnInit(): void {
+    this.loadUsers();
+  }
+
+  loadUsers() {
+    this.loading = true;
+    this.error = null;
+    this.admin.getUsers(1, 20).subscribe({
+      next: res => {
+        this.users = res?.items ?? [];
+        this.loading = false;
+      },
+      error: _ => {
+        this.error = 'Failed to load users';
+        this.loading = false;
+      }
+    });
+  }
+
+  toggleActive(user: AdminUserSummary) {
+    const call = user.isActive ? this.admin.deactivateUser(user.id) : this.admin.activateUser(user.id);
+    call.subscribe({
+      next: _ => this.loadUsers(),
+      error: _ => (this.error = 'Failed to update user')
+    });
+  }
+}

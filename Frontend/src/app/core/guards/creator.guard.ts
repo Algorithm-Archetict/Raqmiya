@@ -15,8 +15,8 @@ export class CreatorGuard implements CanActivate {
     if (this.authService.isLoggedIn() && this.authService.isCreator()) {
       return true;
     } else if (this.authService.isLoggedIn()) {
-      // User is logged in but not a creator
-      this.router.navigate(['/forbidden']);
+  // User is logged in but not a creator
+  this.router.navigate(['/forbidden'], { queryParams: { reason: 'creator' } });
       return false;
     } else {
       // User is not logged in

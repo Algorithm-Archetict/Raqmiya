@@ -10,6 +10,6 @@ export class AdminGuard implements CanActivate {
     if (!this.auth.isLoggedIn()) {
       return this.router.createUrlTree(['/auth/login']);
     }
-  return this.auth.isAdmin() ? true : this.router.createUrlTree(['/forbidden']);
+  return this.auth.isAdmin() ? true : this.router.createUrlTree(['/forbidden'], { queryParams: { reason: 'admin' } });
   }
 }
