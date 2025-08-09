@@ -51,6 +51,7 @@ export class DashboardSidebar implements OnInit {
     this.isLoggedIn = this.authService.isLoggedIn();
     this.isCreator = this.authService.isCreator();
     this.isCustomer = this.authService.isCustomer();
+
   this.isAdmin = this.authService.isAdmin();
     
     // Debug logging
@@ -61,6 +62,7 @@ export class DashboardSidebar implements OnInit {
   isAdmin: this.isAdmin,
       currentUser: this.authService.getCurrentUser()
     });
+
   }
 
   logout() {

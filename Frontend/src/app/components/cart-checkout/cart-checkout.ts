@@ -189,8 +189,10 @@ export class CartCheckout implements OnInit {
         this.cartService.clearCart().subscribe();
 
         // Redirect to purchased products page
-        this.router.navigate(['/purchased-products'], {
-          state: { orderId: orderResponse.order.id }
+
+        this.router.navigate(['/library/purchased-products'], { 
+          state: { orderId: orderResponse.order.id } 
+
         });
       } else {
         this.errorMessage = orderResponse?.message || 'Order creation failed.';

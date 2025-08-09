@@ -1,9 +1,10 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
 import { CartService } from '../../../core/services/cart.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
@@ -23,16 +24,24 @@ interface MediaItem {
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })
-export class ProductDetails implements OnInit {
+export class ProductDetails implements OnInit, AfterViewInit {
   product: ProductDetailDTO | null = null;
   selectedMediaIndex: number = 0;
   selectedMedia: MediaItem = { type: 'image', url: '' };
   isInWishlist: boolean = false;
+  loadingWishlist: boolean = false;
+  wishlistHovered: boolean = false;
   reviews: ReviewDTO[] = [];
   relatedProducts: ProductDetailDTO[] = [];
   isDarkTheme: boolean = false;
 
-  // Loading and alert states
+
+  // Cart state
+  isInCart: boolean = false;
+  checkingCartStatus: boolean = false;
+
+  // Loading and error states
+
   isLoading: boolean = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
@@ -42,12 +51,124 @@ export class ProductDetails implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private productService: ProductService,
-    private cartService: CartService
+    private cartService: CartService,
+    private authService: AuthService
   ) {}
+
+  // Check if a review belongs to the current user
+  isMyReview(review: ReviewDTO): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    return !!(currentUser && review.userName === currentUser.username);
+  }
+
+  // Edit a specific review
+  editSpecificReview(review: ReviewDTO): void {
+    this.existingReview = review;
+    this.userRating = review.rating;
+    this.userReview = review.comment || '';
+    this.isEditingReview = true;
+    // Scroll to the review form area
+    setTimeout(() => {
+      const reviewFormElement = document.querySelector('.add-review-form');
+      if (reviewFormElement) {
+        reviewFormElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  }
+
+  // Delete a specific review
+  deleteSpecificReview(review: ReviewDTO): void {
+    Swal.fire({
+      title: 'Delete Review?',
+      text: 'Are you sure you want to delete your review? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      customClass: {
+        confirmButton: 'btn btn-danger',
+        cancelButton: 'btn btn-secondary'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.productService.deleteReview(this.product!.id).subscribe({
+          next: () => {
+            // Remove the review from the reviews array
+            this.reviews = this.reviews.filter(r => r.id !== review.id);
+            this.existingReview = null;
+            this.userRating = 0;
+            this.userReview = '';
+            this.isEditingReview = false;
+
+            // Update the average rating
+            if (this.reviews.length > 0) {
+              const totalRatings = this.reviews.reduce((sum, r) => sum + r.rating, 0);
+              this.product!.averageRating = totalRatings / this.reviews.length;
+            } else {
+              this.product!.averageRating = 0;
+            }
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Review Deleted!',
+              text: 'Your review has been deleted successfully.',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+          },
+          error: (error) => {
+            console.error('Error deleting review:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error!',
+              text: 'Failed to delete review. Please try again.',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+          }
+        });
+      }
+    });
+  }
 
   ngOnInit() {
     this.loadProduct();
     this.loadTheme();
+  }
+
+  ngAfterViewInit() {
+    // Refresh wishlist and cart status after component is fully loaded
+    // This handles cases where user navigated from discover page
+    setTimeout(() => {
+      this.refreshWishlistStatus();
+      this.checkCartStatus(); // Also check cart status
+    }, 100);
+  }
+
+  // Refresh wishlist status by checking current user's wishlist
+  refreshWishlistStatus() {
+    if (!this.authService.isLoggedIn() || !this.product) {
+      return;
+    }
+
+    this.productService.getWishlist().subscribe({
+      next: (wishlistProducts: any[]) => {
+        const wishlistIds = wishlistProducts.map(p => p.id);
+        const wasInWishlist = this.isInWishlist;
+        this.isInWishlist = wishlistIds.includes(this.product!.id);
+        
+        // Log the change for debugging
+        if (wasInWishlist !== this.isInWishlist) {
+          console.log(`Wishlist status updated for product ${this.product!.id}: ${wasInWishlist} -> ${this.isInWishlist}`);
+        }
+      },
+      error: (error) => {
+        console.error('Error refreshing wishlist status:', error);
+      }
+    });
   }
 
   // Load product data from backend
@@ -56,6 +177,10 @@ export class ProductDetails implements OnInit {
       const productId = params['id'];
       if (productId) {
         this.fetchProduct(productId);
+        // Also refresh wishlist status when route changes
+        setTimeout(() => {
+          this.refreshWishlistStatus();
+        }, 500); // Small delay to ensure product is loaded first
       } else {
         this.errorMessage = 'Product ID not found';
       }
@@ -73,6 +198,11 @@ export class ProductDetails implements OnInit {
         next: (product: ProductDetailDTO) => {
           this.product = product;
           this.reviews = product.reviews;
+          this.isInWishlist = product.isInWishlist || false;
+          
+          
+          this.checkPurchaseAndReviewStatus(); // Check if user can review
+          this.checkCartStatus(); // Check if product is in cart
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -87,6 +217,10 @@ export class ProductDetails implements OnInit {
         next: (product: ProductDetailDTO) => {
           this.product = product;
           this.reviews = product.reviews;
+          this.isInWishlist = product.isInWishlist || false;
+          
+          this.checkPurchaseAndReviewStatus(); // Check if user can review
+          this.checkCartStatus(); // Check if product is in cart
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -101,26 +235,20 @@ export class ProductDetails implements OnInit {
   // Helper method to ensure image URLs are full URLs
   private ensureFullUrl(url: string | null | undefined): string | undefined {
     if (!url) {
-      console.log('ensureFullUrl: URL is null/undefined');
       return undefined;
     }
 
-    console.log('ensureFullUrl: Processing URL:', url);
-
     // If it's already a full URL, return as is
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      console.log('ensureFullUrl: Already full URL, returning as is:', url);
       return url;
     }
 
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
-      const fullUrl = `http://localhost:5255${url}`;
-      console.log('ensureFullUrl: Converted relative URL to full URL:', fullUrl);
-      return fullUrl;
+      return `http://localhost:5255${url}`;
     }
 
-    console.log('ensureFullUrl: Unknown URL format, returning as is:', url);
+    // Unknown URL format, return as is
     return url;
   }
 
@@ -259,11 +387,57 @@ export class ProductDetails implements OnInit {
     this.reviews = backendProduct.reviews;
   }
 
+  // Check if user has purchased the product and load their existing review
+  checkPurchaseAndReviewStatus(): void {
+    if (!this.isLoggedIn() || !this.product) return;
+
+    this.loadingPurchaseStatus = true;
+
+    // Check purchase status
+    this.productService.checkPurchaseStatus(this.product.id).subscribe({
+      next: (response) => {
+        this.hasPurchased = response.hasPurchased;
+        
+        if (this.hasPurchased) {
+          // If user has purchased, check if they have an existing review
+                      this.productService.getMyReview(this.product!.id).subscribe({
+              next: (reviewResponse) => {
+                console.log('My review response:', reviewResponse);
+                if (reviewResponse.hasReview && reviewResponse.review) {
+                  this.existingReview = reviewResponse.review;
+                  this.userRating = reviewResponse.review.rating;
+                  this.userReview = reviewResponse.review.comment || '';
+                  console.log('Loaded existing review:', this.existingReview);
+                }
+                this.loadingPurchaseStatus = false;
+              },
+            error: (error) => {
+              console.error('Error loading user review:', error);
+              this.loadingPurchaseStatus = false;
+            }
+          });
+        } else {
+          this.loadingPurchaseStatus = false;
+        }
+      },
+      error: (error) => {
+        console.error('Error checking purchase status:', error);
+        this.loadingPurchaseStatus = false;
+      }
+    });
+  }
+
   // Add review form logic
   userReview: string = '';
   userRating: number = 0;
   submittingReview: boolean = false;
   visibleReviews: number = 3;
+  
+  // Purchase and review status
+  hasPurchased: boolean = false;
+  loadingPurchaseStatus: boolean = false;
+  existingReview: ReviewDTO | null = null;
+  isEditingReview: boolean = false;
 
   setUserRating(star: number): void {
     this.userRating = star;
@@ -277,62 +451,172 @@ export class ProductDetails implements OnInit {
         text: 'Both rating and review are required to submit your feedback!',
         customClass: {
           confirmButton: 'btn btn-primary'
+
         }
       });
       return;
     }
 
     this.submittingReview = true;
-    this.productService.addReview(this.product!.id, {
+    
+    const reviewData = {
       rating: this.userRating,
       comment: this.userReview
-    } as any).subscribe({
-      next: (review: ReviewDTO) => {
-        // Add the new review to the reviews array (no need to refresh the whole product)
-        const newReview = {
-          id: review.id,
-          rating: review.rating,
-          comment: review.comment || '',
-          userName: review.userName,
-          userAvatar: review.userAvatar,
-          createdAt: review.createdAt
-        };
-        this.product!.reviews.unshift(newReview);
+    };
 
-        // Update average rating
+    // Check if this is an update or new review
+    const serviceCall = this.existingReview 
+      ? this.productService.updateReview(this.product!.id, reviewData)
+      : this.productService.submitReview(this.product!.id, reviewData);
+
+    serviceCall.subscribe({
+      next: (review: ReviewDTO) => {
+        console.log('Review submission response:', review);
+        if (this.existingReview) {
+          // Update existing review in the list
+          const reviewIndex = this.product!.reviews.findIndex(r => r.id === this.existingReview!.id);
+          if (reviewIndex !== -1) {
+            this.product!.reviews[reviewIndex] = {
+              id: review.id || this.existingReview.id,
+              rating: review.rating,
+              comment: review.comment || '',
+              userName: review.userName,
+              userAvatar: review.userAvatar,
+              createdAt: review.createdAt
+            };
+          }
+          this.existingReview = {
+            id: review.id || this.existingReview.id,
+            rating: review.rating,
+            comment: review.comment || '',
+            userName: review.userName,
+            userAvatar: review.userAvatar,
+            createdAt: review.createdAt
+          };
+        } else {
+          // Add the new review to the reviews array
+          const newReview = {
+            id: review.id,
+            rating: review.rating,
+            comment: review.comment || '',
+            userName: review.userName,
+            userAvatar: review.userAvatar,
+            createdAt: review.createdAt
+          };
+          this.product!.reviews.unshift(newReview);
+          this.existingReview = newReview;
+        }
+
+        // Update the average rating
         const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
         this.product!.averageRating = totalRatings / this.product!.reviews.length;
 
-        // Reset form
-        this.userReview = '';
-        this.userRating = 0;
         this.submittingReview = false;
+        this.isEditingReview = false;
 
         // Show success notification
         Swal.fire({
           icon: 'success',
-          title: 'Thank You!',
-          text: 'Your review has been submitted successfully.',
+          title: this.existingReview ? 'Review Updated!' : 'Thank You!',
+          text: this.existingReview ? 'Your review has been updated successfully.' : 'Your review has been submitted successfully.',
           customClass: {
             confirmButton: 'btn btn-primary'
           },
           timer: 3000
         });
       },
-      error: (error: any) => {
+      error: (error) => {
+        console.error('Error submitting review:', error);
         this.submittingReview = false;
-
-        // Handle error messages
+        
+        // Handle specific error messages
         const errorMessage = error.error?.includes('already reviewed')
           ? 'You have already reviewed this product'
+          : error.error?.includes('only review products you have purchased')
+          ? 'You can only review products you have purchased'
           : error.error || 'Error submitting review. Please try again.';
-
+        
         Swal.fire({
           icon: 'error',
           title: 'Submission Failed',
           text: errorMessage,
           customClass: {
             confirmButton: 'btn btn-primary'
+          }
+        });
+      }
+    });
+  }
+
+  editReview(): void {
+    if (this.existingReview) {
+      this.userRating = this.existingReview.rating;
+      this.userReview = this.existingReview.comment || '';
+    }
+    this.isEditingReview = true;
+  }
+
+  cancelEdit(): void {
+    this.isEditingReview = false;
+    if (this.existingReview) {
+      this.userRating = this.existingReview.rating;
+      this.userReview = this.existingReview.comment || '';
+    }
+  }
+
+  deleteReview(): void {
+    if (!this.existingReview) return;
+
+    Swal.fire({
+      title: 'Delete Review?',
+      text: 'Are you sure you want to delete your review? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.productService.deleteReview(this.product!.id).subscribe({
+          next: () => {
+            // Remove review from the list
+            this.product!.reviews = this.product!.reviews.filter(r => r.id !== this.existingReview!.id);
+            
+            // Update average rating
+            if (this.product!.reviews.length > 0) {
+              const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
+              this.product!.averageRating = totalRatings / this.product!.reviews.length;
+            } else {
+              this.product!.averageRating = 0;
+            }
+
+            // Reset form
+            this.existingReview = null;
+            this.userReview = '';
+            this.userRating = 0;
+            this.isEditingReview = false;
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Review Deleted!',
+              text: 'Your review has been deleted successfully.',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+          },
+          error: (error) => {
+            console.error('Error deleting review:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Error deleting review. Please try again.',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+
           }
         });
       }
@@ -364,15 +648,48 @@ export class ProductDetails implements OnInit {
     }
   }
 
+  // Check if product is in cart
+  checkCartStatus(): void {
+    if (!this.authService.isLoggedIn() || !this.product) {
+      this.isInCart = false;
+      return;
+    }
+
+    this.checkingCartStatus = true;
+    this.cartService.getCart().subscribe({
+      next: (response) => {
+        if (response.success && response.cart && response.cart.items) {
+          this.isInCart = response.cart.items.some(item => item.productId === this.product!.id);
+        } else {
+          this.isInCart = false;
+        }
+        this.checkingCartStatus = false;
+      },
+      error: (error) => {
+        console.error('Error checking cart status:', error);
+        this.isInCart = false;
+        this.checkingCartStatus = false;
+      }
+    });
+  }
+
   // Purchase methods
   addToCart() {
-
     if (!this.product) return;
+
+    
+    // If already in cart, just go to cart page
+    if (this.isInCart) {
+      this.router.navigate(['/cart-checkout']);
+      return;
+    }
+    
 
     this.cartService.addToCart(this.product.id, 1).subscribe({
       next: (response) => {
         if (response.success) {
-                     console.log('Added to cart:', this.product?.name);
+          console.log('Added to cart:', this.product?.name);
+          this.isInCart = true; // Update local state
           // Redirect to cart-checkout page
           this.router.navigate(['/cart-checkout']);
         } else {
@@ -380,15 +697,31 @@ export class ProductDetails implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error adding to cart:', error);
+        // Check if it's a duplicate item error (400 Bad Request)
+        if (error.status === 400) {
+          // Product is likely already in cart, update state and redirect
+          console.log('Product already in cart, redirecting to cart page');
+          this.isInCart = true;
+          this.router.navigate(['/cart-checkout']);
+        } else {
+          // Only log unexpected errors
+          console.error('Unexpected error adding to cart:', error);
+        }
       }
     });
-// =======
-//     // Add to cart logic
-//     console.log('Added to cart:', this.product?.name);
-//     // Redirect to checkout page
-//     this.router.navigate(['/checkout']);
+  }
 
+  // Get button text based on cart status
+  getCartButtonText(): string {
+    if (this.checkingCartStatus) {
+      return 'Checking...';
+    }
+    return this.isInCart ? 'View In Cart' : 'Add To Cart';
+  }
+
+  // Check if cart button should be disabled
+  isCartButtonDisabled(): boolean {
+    return this.checkingCartStatus;
   }
 
   buyNow() {
@@ -397,10 +730,270 @@ export class ProductDetails implements OnInit {
     this.router.navigate(['/checkout']);
   }
 
+  // Navigate to library when product is already purchased
+  goToLibrary() {
+    this.router.navigate(['/library']);
+  }
+
   // Wishlist methods
-  toggleWishlist() {
-    this.isInWishlist = !this.isInWishlist;
-    console.log('Wishlist toggled:', this.isInWishlist);
+  toggleWishlist(event?: Event) {
+    // Prevent event bubbling
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    // Check if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    // Prevent multiple clicks while loading
+    if (this.loadingWishlist || !this.product) {
+      return;
+    }
+
+    // Refresh wishlist status first to ensure we have the current state
+    this.loadingWishlist = true;
+    const productId = this.product.id;
+    const productTitle = this.product.name;
+
+    // First, get the current wishlist status to avoid 400 errors
+    this.productService.getWishlist().subscribe({
+      next: (wishlistProducts: any[]) => {
+        const wishlistIds = wishlistProducts.map(p => p.id);
+        const currentlyInWishlist = wishlistIds.includes(productId);
+        
+        // Update our local state to match the server
+        this.isInWishlist = currentlyInWishlist;
+
+        // Now perform the toggle action based on current server state
+        if (currentlyInWishlist) {
+          // Remove from wishlist
+          this.productService.removeFromWishlist(productId).subscribe({
+            next: (response: any) => {
+              this.isInWishlist = false;
+              this.loadingWishlist = false;
+              this.showToast(`"${productTitle}" removed from wishlist`, 'success');
+            },
+            error: (error) => {
+              console.error('Error removing from wishlist:', error);
+              this.loadingWishlist = false;
+              this.showToast('Failed to remove from wishlist', 'error');
+              // Refresh status on error
+              this.refreshWishlistStatus();
+            }
+          });
+        } else {
+          // Add to wishlist
+          this.productService.addToWishlist(productId).subscribe({
+            next: (response: any) => {
+              this.isInWishlist = true;
+              this.loadingWishlist = false;
+              this.showWishlistSuccessPopup(productTitle);
+            },
+            error: (error) => {
+              console.error('Error adding to wishlist:', error);
+              this.loadingWishlist = false;
+              
+              // Check if it's already in wishlist (400 error)
+              if (error.status === 400) {
+                this.showToast('Product is already in your wishlist', 'error');
+                this.isInWishlist = true; // Update state to reflect reality
+              } else {
+                this.showToast('Failed to add to wishlist', 'error');
+              }
+              
+              // Refresh status on error
+              this.refreshWishlistStatus();
+            }
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error checking wishlist status:', error);
+        this.loadingWishlist = false;
+        this.showToast('Failed to check wishlist status', 'error');
+      }
+    });
+  }
+
+  // Wishlist hover handlers
+  onWishlistHover(isHovered: boolean, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.wishlistHovered = isHovered;
+  }
+
+  // Check if user is logged in
+  isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  // Navigate to login page
+  navigateToLogin() {
+    this.router.navigate(['/login']);
+  }
+
+  // Show wishlist success popup (similar to discover page)
+  showWishlistSuccessPopup(productTitle: string) {
+    // Find or create toast container
+    let toastContainer = document.querySelector('.toast-container') as HTMLElement;
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container';
+      toastContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1003;
+        pointer-events: none;
+      `;
+      document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-success';
+    
+    // Add inline styles to ensure visibility
+    toast.style.cssText = `
+      position: relative;
+      background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      margin: 20px auto;
+      max-width: 600px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      padding: 16px 20px;
+      color: white;
+      transform: translateY(-20px) scale(0.95);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 90px;
+      pointer-events: auto;
+    `;
+    
+    toast.innerHTML = `
+      <div class="toast-content wishlist-content" style="background: transparent; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <div class="wishlist-icon-large" style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-heart" style="color: white; font-size: 1.5rem;"></i>
+        </div>
+        <div class="wishlist-info" style="flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span class="wishlist-title" style="font-size: 1rem; font-weight: 600; color: white; margin: 0;">Added to Wishlist</span>
+          <span class="wishlist-subtitle" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.9); margin: 0;">"${productTitle}"</span>
+          <span class="wishlist-count" style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); margin: 0;">1 item saved to your wishlist</span>
+          <button class="btn-view-wishlist" style="padding: 8px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <i class="fas fa-eye"></i>
+            View Wishlist
+          </button>
+        </div>
+        <div class="wishlist-actions" style="display: flex; align-items: center;">
+          <button class="btn-close-popup" style="background: transparent; border: none; color: white; cursor: pointer; padding: 4px; font-size: 1rem;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add to container
+    toastContainer.appendChild(toast);
+
+    // Show with animation
+    setTimeout(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0) scale(1)';
+    }, 50);
+
+    // Add click handlers
+    const viewWishlistBtn = toast.querySelector('.btn-view-wishlist');
+    const closeBtn = toast.querySelector('.btn-close-popup');
+    
+    if (viewWishlistBtn) {
+      viewWishlistBtn.addEventListener('click', () => {
+        this.router.navigate(['/library/wishlist']);
+        this.dismissToast(toast);
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        this.dismissToast(toast);
+      });
+    }
+
+    // Auto dismiss after 4 seconds
+    setTimeout(() => {
+      this.dismissToast(toast);
+    }, 4000);
+  }
+
+  // Helper method to dismiss toast
+  private dismissToast(toast: HTMLElement) {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-20px) scale(0.95)';
+      setTimeout(() => {
+        toast.remove();
+      }, 400);
+    }
+  }
+
+  // Show toast notification
+  showToast(message: string, type: 'success' | 'error' = 'success') {
+    // Create toast for simple messages
+    let toastContainer = document.querySelector('.toast-container') as HTMLElement;
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container';
+      toastContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1003;
+        pointer-events: none;
+      `;
+      document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const bgColor = type === 'success' ? '#16a34a' : '#dc2626';
+    toast.style.cssText = `
+      position: relative;
+      background: ${bgColor};
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      margin: 20px auto;
+      max-width: 400px;
+      padding: 16px 20px;
+      color: white;
+      transform: translateY(-20px) scale(0.95);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 90px;
+      pointer-events: auto;
+      text-align: center;
+    `;
+    
+    toast.innerHTML = `<span>${message}</span>`;
+    toastContainer.appendChild(toast);
+
+    // Show with animation
+    setTimeout(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0) scale(1)';
+    }, 50);
+
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+      this.dismissToast(toast);
+    }, 3000);
   }
 
   // Share methods

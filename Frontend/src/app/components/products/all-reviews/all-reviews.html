@@ -90,8 +90,8 @@
                 <div class="review-rating">
                   <i class="bi bi-star-fill text-warning"
                      *ngFor="let star of [1,2,3,4,5]"
-                     [class.text-warning]="star <= review.rating"
-                     [class.text-muted]="star > review.rating"></i>
+                                        [class.text-warning]="star <= review.rating"
+                   [class.text-muted]="star > review.rating"></i>
                 </div>
               </div>
             </div>

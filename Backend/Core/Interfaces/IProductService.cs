@@ -53,6 +53,12 @@ namespace Core.Interfaces
         Task<PagedResultDTO<ProductListItemDTO>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize);
         Task<bool> ApproveProductAsync(int productId, int adminId);
         Task<bool> RejectProductAsync(int productId, int adminId, string reason);
+        
+        // --- Review Management ---
+        Task<bool> HasUserPurchasedProductAsync(int productId, int userId);
+        Task<Raqmiya.Infrastructure.Review?> GetUserReviewAsync(int productId, int userId);
         Task AddReviewAsync(int productId, int userId, Shared.DTOs.ProductDTOs.ReviewDTO reviewDto);
+        Task UpdateUserReviewAsync(int productId, int userId, Shared.DTOs.ProductDTOs.ReviewDTO reviewDto);
+        Task DeleteUserReviewAsync(int productId, int userId);
     }
 }
