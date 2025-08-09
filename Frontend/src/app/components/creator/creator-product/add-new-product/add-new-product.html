@@ -127,17 +127,7 @@
               <h4 class="section-title">Choose Subcategory</h4>
               <p class="section-subtitle">Refine your product classification</p>
               
-              <div class="subcategory-selector">
-                <select id="subcategory" 
-                        (change)="selectSubcategory($any($event.target).value)" 
-                        class="elegant-select">
-                  <option [ngValue]="null">Select a subcategory...</option>
-                  <option *ngFor="let sub of subcategories" [value]="sub.id">{{ sub.name }}</option>
-                </select>
-                <div class="select-arrow">
-                  <i class="fas fa-chevron-down"></i>
-                </div>
-              </div>
+
               
               <div class="subcategory-chips" *ngIf="subcategories.length > 0">
                 <div *ngFor="let sub of subcategories" 
