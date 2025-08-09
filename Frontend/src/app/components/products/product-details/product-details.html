@@ -166,9 +166,40 @@
                   <i class="fas fa-shopping-cart"></i>
                   Add To Cart
                 </button>
-                <button class="btn btn-outline btn-lg w-100" (click)="buyNow()">
-                  <i class="fas fa-bolt"></i>
-                  Add To Wishlist
+                <!-- Wishlist Toggle Button (Only for logged-in users) -->
+                <button 
+                  *ngIf="isLoggedIn()" 
+                  class="btn btn-lg w-100 wishlist-btn"
+                  [class.btn-outline]="!isInWishlist"
+                  [class.btn-success]="isInWishlist"
+                  [class.loading]="loadingWishlist"
+                  [class.hovered]="wishlistHovered"
+                  [disabled]="loadingWishlist"
+                  (click)="toggleWishlist($event)"
+                  (mouseenter)="onWishlistHover(true, $event)"
+                  (mouseleave)="onWishlistHover(false, $event)"
+                >
+                  <!-- Loading Spinner -->
+                  <i class="fas fa-spinner fa-spin" *ngIf="loadingWishlist"></i>
+                  <!-- Plus Icon (not in wishlist) -->
+                  <i class="fas fa-plus" *ngIf="!isInWishlist && !loadingWishlist"></i>
+                  <!-- Checkmark Icon (in wishlist) -->
+                  <i class="fas fa-check" *ngIf="isInWishlist && !loadingWishlist"></i>
+                  <!-- Dynamic Text -->
+                  <span *ngIf="!loadingWishlist">
+                    {{ isInWishlist ? 'In Wishlist' : 'Add To Wishlist' }}
+                  </span>
+                  <span *ngIf="loadingWishlist">Processing...</span>
+                </button>
+
+                <!-- Login Required Message for Anonymous Users -->
+                <button 
+                  *ngIf="!isLoggedIn()" 
+                  class="btn btn-outline btn-lg w-100"
+                  (click)="navigateToLogin()"
+                >
+                  <i class="fas fa-sign-in-alt"></i>
+                  Login to Add to Wishlist
                 </button>
               </div>
             </div>

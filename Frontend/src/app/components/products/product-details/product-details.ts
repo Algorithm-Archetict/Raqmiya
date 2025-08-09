@@ -1,9 +1,10 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
 import { CartService } from '../../../core/services/cart.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
@@ -22,11 +23,13 @@ interface MediaItem {
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })
-export class ProductDetails implements OnInit {
+export class ProductDetails implements OnInit, AfterViewInit {
   product: ProductDetailDTO | null = null;
   selectedMediaIndex: number = 0;
   selectedMedia: MediaItem = { type: 'image', url: '' };
   isInWishlist: boolean = false;
+  loadingWishlist: boolean = false;
+  wishlistHovered: boolean = false;
   reviews: ReviewDTO[] = [];
   relatedProducts: ProductDetailDTO[] = [];
   isDarkTheme: boolean = false;
@@ -39,12 +42,44 @@ export class ProductDetails implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private productService: ProductService,
-    private cartService: CartService
+    private cartService: CartService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
     this.loadProduct();
     this.loadTheme();
+  }
+
+  ngAfterViewInit() {
+    // Refresh wishlist status after component is fully loaded
+    // This handles cases where user navigated from discover page
+    setTimeout(() => {
+      this.refreshWishlistStatus();
+    }, 100);
+  }
+
+  // Refresh wishlist status by checking current user's wishlist
+  refreshWishlistStatus() {
+    if (!this.authService.isLoggedIn() || !this.product) {
+      return;
+    }
+
+    this.productService.getWishlist().subscribe({
+      next: (wishlistProducts: any[]) => {
+        const wishlistIds = wishlistProducts.map(p => p.id);
+        const wasInWishlist = this.isInWishlist;
+        this.isInWishlist = wishlistIds.includes(this.product!.id);
+        
+        // Log the change for debugging
+        if (wasInWishlist !== this.isInWishlist) {
+          console.log(`Wishlist status updated for product ${this.product!.id}: ${wasInWishlist} -> ${this.isInWishlist}`);
+        }
+      },
+      error: (error) => {
+        console.error('Error refreshing wishlist status:', error);
+      }
+    });
   }
 
   // Load product data from backend
@@ -53,6 +88,10 @@ export class ProductDetails implements OnInit {
       const productId = params['id'];
       if (productId) {
         this.fetchProduct(productId);
+        // Also refresh wishlist status when route changes
+        setTimeout(() => {
+          this.refreshWishlistStatus();
+        }, 500); // Small delay to ensure product is loaded first
       } else {
         this.error = 'Product ID not found';
       }
@@ -70,6 +109,7 @@ export class ProductDetails implements OnInit {
         next: (product) => {
           this.product = product;
           this.reviews = product.reviews;
+          this.isInWishlist = product.isInWishlist || false;
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -84,6 +124,7 @@ export class ProductDetails implements OnInit {
         next: (product) => {
           this.product = product;
           this.reviews = product.reviews;
+          this.isInWishlist = product.isInWishlist || false;
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -390,9 +431,264 @@ export class ProductDetails implements OnInit {
   }
 
   // Wishlist methods
-  toggleWishlist() {
-    this.isInWishlist = !this.isInWishlist;
-    console.log('Wishlist toggled:', this.isInWishlist);
+  toggleWishlist(event?: Event) {
+    // Prevent event bubbling
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    // Check if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    // Prevent multiple clicks while loading
+    if (this.loadingWishlist || !this.product) {
+      return;
+    }
+
+    // Refresh wishlist status first to ensure we have the current state
+    this.loadingWishlist = true;
+    const productId = this.product.id;
+    const productTitle = this.product.name;
+
+    // First, get the current wishlist status to avoid 400 errors
+    this.productService.getWishlist().subscribe({
+      next: (wishlistProducts: any[]) => {
+        const wishlistIds = wishlistProducts.map(p => p.id);
+        const currentlyInWishlist = wishlistIds.includes(productId);
+        
+        // Update our local state to match the server
+        this.isInWishlist = currentlyInWishlist;
+
+        // Now perform the toggle action based on current server state
+        if (currentlyInWishlist) {
+          // Remove from wishlist
+          this.productService.removeFromWishlist(productId).subscribe({
+            next: (response: any) => {
+              this.isInWishlist = false;
+              this.loadingWishlist = false;
+              this.showToast(`"${productTitle}" removed from wishlist`, 'success');
+            },
+            error: (error) => {
+              console.error('Error removing from wishlist:', error);
+              this.loadingWishlist = false;
+              this.showToast('Failed to remove from wishlist', 'error');
+              // Refresh status on error
+              this.refreshWishlistStatus();
+            }
+          });
+        } else {
+          // Add to wishlist
+          this.productService.addToWishlist(productId).subscribe({
+            next: (response: any) => {
+              this.isInWishlist = true;
+              this.loadingWishlist = false;
+              this.showWishlistSuccessPopup(productTitle);
+            },
+            error: (error) => {
+              console.error('Error adding to wishlist:', error);
+              this.loadingWishlist = false;
+              
+              // Check if it's already in wishlist (400 error)
+              if (error.status === 400) {
+                this.showToast('Product is already in your wishlist', 'error');
+                this.isInWishlist = true; // Update state to reflect reality
+              } else {
+                this.showToast('Failed to add to wishlist', 'error');
+              }
+              
+              // Refresh status on error
+              this.refreshWishlistStatus();
+            }
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error checking wishlist status:', error);
+        this.loadingWishlist = false;
+        this.showToast('Failed to check wishlist status', 'error');
+      }
+    });
+  }
+
+  // Wishlist hover handlers
+  onWishlistHover(isHovered: boolean, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.wishlistHovered = isHovered;
+  }
+
+  // Check if user is logged in
+  isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  // Navigate to login page
+  navigateToLogin() {
+    this.router.navigate(['/login']);
+  }
+
+  // Show wishlist success popup (similar to discover page)
+  showWishlistSuccessPopup(productTitle: string) {
+    // Find or create toast container
+    let toastContainer = document.querySelector('.toast-container') as HTMLElement;
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container';
+      toastContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1003;
+        pointer-events: none;
+      `;
+      document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-success';
+    
+    // Add inline styles to ensure visibility
+    toast.style.cssText = `
+      position: relative;
+      background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      margin: 20px auto;
+      max-width: 600px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      padding: 16px 20px;
+      color: white;
+      transform: translateY(-20px) scale(0.95);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 90px;
+      pointer-events: auto;
+    `;
+    
+    toast.innerHTML = `
+      <div class="toast-content wishlist-content" style="background: transparent; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <div class="wishlist-icon-large" style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-heart" style="color: white; font-size: 1.5rem;"></i>
+        </div>
+        <div class="wishlist-info" style="flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span class="wishlist-title" style="font-size: 1rem; font-weight: 600; color: white; margin: 0;">Added to Wishlist</span>
+          <span class="wishlist-subtitle" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.9); margin: 0;">"${productTitle}"</span>
+          <span class="wishlist-count" style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); margin: 0;">1 item saved to your wishlist</span>
+          <button class="btn-view-wishlist" style="padding: 8px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <i class="fas fa-eye"></i>
+            View Wishlist
+          </button>
+        </div>
+        <div class="wishlist-actions" style="display: flex; align-items: center;">
+          <button class="btn-close-popup" style="background: transparent; border: none; color: white; cursor: pointer; padding: 4px; font-size: 1rem;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add to container
+    toastContainer.appendChild(toast);
+
+    // Show with animation
+    setTimeout(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0) scale(1)';
+    }, 50);
+
+    // Add click handlers
+    const viewWishlistBtn = toast.querySelector('.btn-view-wishlist');
+    const closeBtn = toast.querySelector('.btn-close-popup');
+    
+    if (viewWishlistBtn) {
+      viewWishlistBtn.addEventListener('click', () => {
+        this.router.navigate(['/library']);
+        this.dismissToast(toast);
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        this.dismissToast(toast);
+      });
+    }
+
+    // Auto dismiss after 4 seconds
+    setTimeout(() => {
+      this.dismissToast(toast);
+    }, 4000);
+  }
+
+  // Helper method to dismiss toast
+  private dismissToast(toast: HTMLElement) {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-20px) scale(0.95)';
+      setTimeout(() => {
+        toast.remove();
+      }, 400);
+    }
+  }
+
+  // Show toast notification
+  showToast(message: string, type: 'success' | 'error' = 'success') {
+    // Create toast for simple messages
+    let toastContainer = document.querySelector('.toast-container') as HTMLElement;
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container';
+      toastContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1003;
+        pointer-events: none;
+      `;
+      document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const bgColor = type === 'success' ? '#16a34a' : '#dc2626';
+    toast.style.cssText = `
+      position: relative;
+      background: ${bgColor};
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      margin: 20px auto;
+      max-width: 400px;
+      padding: 16px 20px;
+      color: white;
+      transform: translateY(-20px) scale(0.95);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 90px;
+      pointer-events: auto;
+      text-align: center;
+    `;
+    
+    toast.innerHTML = `<span>${message}</span>`;
+    toastContainer.appendChild(toast);
+
+    // Show with animation
+    setTimeout(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0) scale(1)';
+    }, 50);
+
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+      this.dismissToast(toast);
+    }, 3000);
   }
 
   // Share methods
