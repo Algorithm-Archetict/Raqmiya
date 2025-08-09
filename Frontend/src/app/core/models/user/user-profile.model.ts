@@ -4,7 +4,7 @@ export interface UserProfile {
   email: string;
   role: string;
   profileDescription?: string;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
   createdAt: Date;
   isActive: boolean;
 }
@@ -12,7 +12,7 @@ export interface UserProfile {
 export interface UserProfileUpdateRequest {
   username?: string;
   profileDescription?: string;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
 }
 
 export interface UserProfileUpdateResponse {
