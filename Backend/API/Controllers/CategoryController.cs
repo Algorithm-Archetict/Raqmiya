@@ -3,7 +3,6 @@ using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Raqmiya.Infrastructure;
-using API.Constants;
 using Shared.Constants;
 using Shared.DTOs.CategoryDTOs;
 
