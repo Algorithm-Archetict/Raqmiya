@@ -6,12 +6,10 @@ using Raqmiya.Infrastructure;
 using Shared.DTOs.AuthDTOs;
 using System.Security.Claims;
 using Shared.Constants;
+using System.Security.Cryptography;
 
 namespace API.Controllers
 {
-    /// <summary>
-    /// Controller for user profile management.
-    /// </summary>
     [ApiController]
     [Route("api/users")]
     public class UsersController : ControllerBase
