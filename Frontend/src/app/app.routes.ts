@@ -71,7 +71,7 @@ export const routes: Routes = [
     {path:"products/new", loadComponent: () => import('./components/creator/creator-product/add-new-product/add-new-product').then(m => m.AddNewProduct), canActivate: [CreatorGuard]},
     {path:"products/:id/edit", loadComponent: () => import('./components/creator/creator-product/product-edit/product-edit').then(m => m.ProductEdit), canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content", loadComponent: () => import('./components/creator/creator-product/product-edit-content/product-edit-content').then(m => m.ProductEditContent), canActivate: [CreatorGuard]},
-    {path:"sales", loadComponent: () => import('./components/creator/dashboard/dashboard').then(m => m.Dashboard), canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
+    {path:"sales", loadComponent: () => import('./components/creator/sales/sales').then(m => m.Sales), canActivate: [CreatorGuard]},
 
     // Admin-only routes
     { path: 'admin', loadComponent: () => import('./components/admin/dashboard/dashboard').then(m => m.AdminDashboard), canActivate: [AdminGuard] },

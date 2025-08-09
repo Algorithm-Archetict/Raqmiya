@@ -1,0 +1,45 @@
+<div class="sales-page">
+  <div class="layout">
+    <app-dashboard-sidebar />
+    <div class="content">
+      <h2>Sales</h2>
+
+      <div class="cards">
+        <div class="card">
+          <div class="card-title">Total Sales</div>
+          <div class="card-value">{{ totalSales }}</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Revenue</div>
+          <div class="card-value">${{ totalRevenue | number:'1.0-2' }}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Top Products</h3>
+        <div *ngIf="topProducts.length === 0 && !loading" class="empty">No products yet.</div>
+        <div *ngIf="loading" class="loading">Loading…</div>
+        <table *ngIf="topProducts.length > 0" class="table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Sales</th>
+              <th>Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of topProducts">
+              <td>{{ p.productName }}</td>
+              <td>${{ p.price | number:'1.0-2' }}</td>
+              <td>{{ p.sales }}</td>
+              <td>${{ p.revenue | number:'1.0-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="error" class="error">{{ error }}</div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+.sales-page .layout{display:flex;gap:24px}
+.sales-page .content{flex:1}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:12px 0}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px}
+.card-title{font-size:12px;color:#6b7280}
+.card-value{font-size:24px;font-weight:700;margin-top:8px}
+.section{margin-top:24px}
+.table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+.table th,.table td{padding:12px 16px;border-bottom:1px solid #f3f4f6;text-align:left}
+.empty,.loading,.error{margin-top:12px;color:#6b7280}
+.error{color:#b91c1c}

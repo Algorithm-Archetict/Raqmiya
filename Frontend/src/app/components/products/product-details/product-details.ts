@@ -7,7 +7,7 @@ import { CartService } from '../../../core/services/cart.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
-import Swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.js';
 import { Alert } from '../../../shared/alert/alert';
 
 
