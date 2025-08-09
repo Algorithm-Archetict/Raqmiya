@@ -30,7 +30,7 @@ export const AuthInterceptor: HttpInterceptorFn = (request, next) => {
       } else if (error.status === 403) {
         // Forbidden - user doesn't have permission
         console.warn('Access forbidden for user');
-        // Don't logout for 403, just show error
+        router.navigate(['/forbidden']);
       }
       return throwError(() => error);
     })

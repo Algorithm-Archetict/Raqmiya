@@ -20,7 +20,7 @@ export class RoleGuard implements CanActivate {
     const has = requiredRoles.some(r => this.auth.hasRole(r));
     if (has) return true;
 
-    // If logged-in but lacks role: send to discover
-    return this.router.createUrlTree(['/discover']);
+  // If logged-in but lacks role: send to forbidden page
+  return this.router.createUrlTree(['/forbidden']);
   }
 }

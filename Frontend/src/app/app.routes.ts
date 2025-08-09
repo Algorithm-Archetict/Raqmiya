@@ -63,6 +63,9 @@ export const routes: Routes = [
     },
     {path:"dashboard",component:DashboardRedirect, canActivate: [AuthGuard]}, // Redirect to role-appropriate dashboard
 
+    // Forbidden route
+    { path: 'forbidden', loadComponent: () => import('./components/forbidden/forbidden').then(m => m.Forbidden) },
+
     // Creator-only routes - require authentication and creator role
     {path:"products", loadComponent: () => import('./components/creator/creator-product/all-products/all-products').then(m => m.AllProducts), canActivate: [CreatorGuard]},
     {path:"products/new", loadComponent: () => import('./components/creator/creator-product/add-new-product/add-new-product').then(m => m.AddNewProduct), canActivate: [CreatorGuard]},
