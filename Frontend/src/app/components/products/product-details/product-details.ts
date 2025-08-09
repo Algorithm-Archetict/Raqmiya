@@ -72,7 +72,8 @@ export class ProductDetails implements OnInit {
       this.productService.getProductById(numericId).subscribe({
         next: (product: ProductDetailDTO) => {
           this.product = product;
-          this.reviews = product.reviews;
+          this.reviews = product.reviews || [];
+          this.isInWishlist = !!product.isInWishlist;
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -86,7 +87,8 @@ export class ProductDetails implements OnInit {
       this.productService.getProductByPermalink(productId).subscribe({
         next: (product: ProductDetailDTO) => {
           this.product = product;
-          this.reviews = product.reviews;
+          this.reviews = product.reviews || [];
+          this.isInWishlist = !!product.isInWishlist;
           this.loadRelatedProducts();
           this.isLoading = false;
         },
@@ -339,8 +341,15 @@ export class ProductDetails implements OnInit {
     });
   }
   loadRelatedProducts() {
-    // TODO: Implement API call to get related products
-    this.relatedProducts = [];
+    this.productService.getTopRated().subscribe({
+      next: (list) => {
+        const currentId = this.product?.id;
+        this.relatedProducts = (list || []).filter(p => p.id !== currentId).slice(0, 6) as any;
+      },
+      error: () => {
+        this.relatedProducts = [];
+      }
+    });
   }
 
   // Helper method to generate placeholder product images
@@ -362,6 +371,49 @@ export class ProductDetails implements OnInit {
         url: this.product.files[index].fileUrl
       };
     }
+  }
+
+  // Wishlist methods
+  toggleWishlist() {
+    if (!this.product) return;
+    const id = this.product.id;
+    const op = this.isInWishlist ? this.productService.removeFromWishlist(id) : this.productService.addToWishlist(id);
+    op.subscribe({
+      next: () => {
+        this.isInWishlist = !this.isInWishlist;
+        if (this.product) {
+          this.product.isInWishlist = this.isInWishlist;
+          this.product.wishlistCount = Math.max(0, (this.product.wishlistCount || 0) + (this.isInWishlist ? 1 : -1));
+        }
+      },
+      error: (err) => {
+        console.error('Wishlist toggle failed', err);
+      }
+    });
+  }
+
+  // Share product URL
+  async shareProduct() {
+    try {
+      const url = window.location.href;
+      if (navigator.share) {
+        await navigator.share({ title: this.product?.name || 'Product', url });
+      } else {
+        await navigator.clipboard.writeText(url);
+      }
+    } catch (e) {
+      console.warn('Share failed', e);
+    }
+  }
+
+  // Rating distribution helpers
+  getRatingCount(star: number): number {
+    return (this.product?.reviews || []).filter(r => r.rating === star).length;
+  }
+
+  getRatingPercentage(star: number): number {
+    const total = (this.product?.reviews || []).length || 1;
+    return Math.round((this.getRatingCount(star) / total) * 100);
   }
 
   // Purchase methods
@@ -397,47 +449,12 @@ export class ProductDetails implements OnInit {
     this.router.navigate(['/checkout']);
   }
 
-  // Wishlist methods
-  toggleWishlist() {
-    this.isInWishlist = !this.isInWishlist;
-    console.log('Wishlist toggled:', this.isInWishlist);
-  }
-
-  // Share methods
-  shareProduct() {
-    if (navigator.share) {
-      navigator.share({
-        title: this.product?.name,
-        text: `Check out this amazing product: ${this.product?.name}`,
-        url: window.location.href
-      });
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      console.log('Link copied to clipboard');
-    }
-  }
-
   // Creator methods
   viewCreator() {
     // Navigate to creator profile
     console.log('Viewing creator:', { id: this.product?.creatorId, username: this.product?.creatorUsername });
   }
 
-  // Rating distribution methods
-  getRatingPercentage(rating: number): number {
-    if (!this.product) return 0;
-    const totalReviews = this.product.reviews.length;
-    // Mock distribution - in real app, this would come from API
-    const distribution = { 5: 60, 4: 25, 3: 10, 2: 3, 1: 2 };
-    return (distribution[rating as keyof typeof distribution] || 0);
-  }
-
-  getRatingCount(rating: number): number {
-    if (!this.product) return 0;
-    const percentage = this.getRatingPercentage(rating);
-    return Math.round((percentage / 100) * this.product.reviews.length);
-  }
 
   // Theme methods
   loadTheme() {
