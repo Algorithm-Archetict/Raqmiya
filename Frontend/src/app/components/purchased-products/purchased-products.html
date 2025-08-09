@@ -1,10 +1,7 @@
 <div class="purchased-products-container">
-  <!-- Left Sidebar - Brand and Navigation -->
-  <app-dashboard-sidebar></app-dashboard-sidebar>
-
   <div class="main-content">
     <!-- Header Section -->
-    <div class="library-header">
+    <!-- <div class="library-header">
       <div class="header-content">
         <h1 class="library-title">Purchased Products</h1>
         <button class="btn btn-primary" (click)="showInLibrary()">
@@ -14,7 +11,7 @@
       </div>
       
       <!-- Tabs -->
-      <div class="tabs">
+      <!-- <div class="tabs">
         <button 
           class="tab-btn" 
           [class.active]="activeTab === 'purchased'"
@@ -37,7 +34,7 @@
           Reviews
         </button>
       </div>
-    </div>
+    </div> and we can remove this--> 
     
     <!-- Loading State -->
     <div class="loading-state" *ngIf="isLoading">
@@ -82,7 +79,7 @@
           
           <div class="product-actions">
             <a href="#" class="creator-link">
-              {{ product.creatorUsername }}
+              {{ getCreatorName(product) }}
             </a>
             
             <div class="action-buttons">

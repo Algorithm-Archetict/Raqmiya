@@ -184,7 +184,7 @@ export class CartCheckout implements OnInit {
         this.cartService.clearCart().subscribe();
         
         // Redirect to purchased products page
-        this.router.navigate(['/purchased-products'], { 
+        this.router.navigate(['/library/purchased-products'], { 
           state: { orderId: orderResponse.order.id } 
         });
       } else {

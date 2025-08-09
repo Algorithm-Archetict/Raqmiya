@@ -40,8 +40,9 @@ export const routes: Routes = [
     {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
     {path:"cart-checkout",component:CartCheckout, canActivate: [AuthGuard]},
     {path:"package/:id",component:PurchasedPackage, canActivate: [AuthGuard]},
-    {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]},
-    {path:"library",component:Library, canActivate: [AuthGuard]},
+    // {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]}, // Commented out - now under library
+    {path:"library", redirectTo:"library/purchased-products", pathMatch:"full"},
+    {path:"library/:tab",component:Library, canActivate: [AuthGuard]},
     {
         path:"settings",
         component:Settings,
@@ -62,6 +63,6 @@ export const routes: Routes = [
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
 
-    {path:"wishlist",component:WishList, canActivate: [AuthGuard]},
+    // {path:"wishlist",component:WishList, canActivate: [AuthGuard]}, // Commented out - now under library
     {path:"**",component:NotFound},
 ];

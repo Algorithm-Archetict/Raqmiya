@@ -22,7 +22,14 @@
       <div class="rating-section">
         <h3>Your Rating</h3>
         
-        <div class="rating-stars" *ngIf="!isRatingSubmitted">
+        <!-- Loading Review Status -->
+        <div *ngIf="loadingReview" class="text-center py-3">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span class="ms-2">Loading your review...</span>
+        </div>
+
+        <!-- Rating Form (New or Editing) -->
+        <div class="rating-stars" *ngIf="!loadingReview && (!isRatingSubmitted || isEditingReview)">
           <div class="stars-container">
             <i 
               class="fas fa-star star" 
@@ -32,6 +39,7 @@
               (click)="setRating(star)"
               (mouseenter)="setRating(star)"
               (mouseleave)="setRating(userRating)"
+              [style.pointer-events]="submittingReview ? 'none' : 'auto'"
             ></i>
           </div>
           <p class="rating-text">{{ getRatingText() }}</p>
@@ -43,26 +51,52 @@
               placeholder="Write your review (optional)..."
               rows="3"
               class="review-textarea"
+              [disabled]="submittingReview"
             ></textarea>
-            <button class="btn btn-primary" (click)="submitRating()">
-              Submit Rating
-            </button>
+            <div class="review-actions mt-3">
+              <button class="btn btn-primary me-2" 
+                      (click)="submitRating()" 
+                      [disabled]="submittingReview || !userRating">
+                <i class="fas fa-spinner fa-spin me-1" *ngIf="submittingReview"></i>
+                {{ submittingReview 
+                   ? 'Saving...' 
+                   : existingReview 
+                     ? 'Update Review' 
+                     : 'Submit Rating' }}
+              </button>
+              <button *ngIf="isEditingReview" 
+                      class="btn btn-outline-secondary" 
+                      (click)="cancelEdit()" 
+                      [disabled]="submittingReview">
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
 
-        <div class="rating-submitted" *ngIf="isRatingSubmitted">
+        <!-- Submitted Review Display -->
+        <div class="rating-submitted" *ngIf="!loadingReview && isRatingSubmitted && !isEditingReview">
           <div class="stars-container">
             <i 
-              class="fas fa-star star active" 
+              class="fas fa-star star" 
               *ngFor="let star of [1,2,3,4,5]"
+              [class.active]="star <= userRating"
               [class.filled]="star <= userRating"
             ></i>
           </div>
           <p class="rating-text">{{ getRatingText() }}</p>
           <p class="review-text" *ngIf="userReview">{{ userReview }}</p>
-          <button class="btn btn-outline" (click)="editReview()">
-            Edit Review
-          </button>
+          <small class="text-muted" *ngIf="existingReview">
+            Reviewed on {{ existingReview.createdAt }}
+          </small>
+          <div class="review-actions mt-3">
+            <button class="btn btn-outline me-2" (click)="editReview()" title="Edit Review">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteReview()" title="Delete Review">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
         </div>
       </div>
 

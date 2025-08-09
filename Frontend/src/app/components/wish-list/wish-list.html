@@ -1,14 +1,11 @@
 <div class="wishlist-container">
-  <!-- Left Sidebar - Brand and Navigation -->
-  <app-dashboard-sidebar></app-dashboard-sidebar>
-
   <!-- Main Content Area -->
   <div class="main-content">
     <!-- Header Section -->
-    <div class="wishlist-header">
+    <!-- <div class="wishlist-header">
       <h1 class="wishlist-title">Wishlist</h1>
       <p class="wishlist-subtitle">Your saved products and favorites</p>
-    </div>
+    </div> -->
 
     <!-- Loading State -->
     <div class="loading-state" *ngIf="isLoading">
@@ -85,7 +82,7 @@
                 <div class="rating-stars">
                   <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]"></i>
                 </div>
-                <span class="rating-text">{{ product.rating }}</span>
+                <span class="rating-text">{{ product.rating | number:'1.1-1' }}</span>
               </div>
             </div>
             
