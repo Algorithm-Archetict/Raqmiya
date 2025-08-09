@@ -11,6 +11,7 @@ import { Library } from './components/library/library';
 import { Login } from './components/account/login/login';
 import { Register } from './components/account/register/register';
 import { Dashboard } from './components/creator/dashboard/dashboard';
+import { DashboardRedirect } from './components/dashboard-redirect/dashboard-redirect';
 import { Settings } from './components/settings/settings';
 import { Profile } from './components/settings/profile/profile';
 import { Security } from './components/settings/security/security';
@@ -21,6 +22,14 @@ import { ProductEdit } from './components/creator/creator-product/product-edit/p
 import { ProductEditContent } from './components/creator/creator-product/product-edit-content/product-edit-content';
 import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
+import { AdminGuard } from './core/guards/admin.guard';
+import { CustomerGuard } from './core/guards/customer.guard';
+import { AnonymousOnlyGuard } from './core/guards/anonymous-only.guard';
+import { RoleGuard } from './core/guards/role.guard';
+import { AdminDashboard } from './components/admin/dashboard/dashboard';
+import { AdminUsers } from './components/admin/users/users';
+import { AdminContent } from './components/admin/content/content';
+import { AdminSettings } from './components/admin/settings/settings';
 import { AllReviews } from './components/products/all-reviews/all-reviews';
 
 export const routes: Routes = [
@@ -31,8 +40,8 @@ export const routes: Routes = [
     {path:"discover",component:Discover},
     {path:"discover/:id",component:ProductDetails},
     {path:"login", redirectTo:"auth/login", pathMatch:"full"}, // Redirect /login to /auth/login
-    {path:"auth/login", component:Login},
-    {path:"auth/register", component:Register},
+    {path:"auth/login", component:Login, canActivate: [AnonymousOnlyGuard]},
+    {path:"auth/register", component:Register, canActivate: [AnonymousOnlyGuard]},
     { path: "products/:id/reviews", component: AllReviews },
 
     // Protected routes - require authentication
@@ -52,7 +61,7 @@ export const routes: Routes = [
             {path:"payment", component:Payment}
         ]
     },
-    {path:"dashboard",component:Dashboard, canActivate: [AuthGuard]}, // Both creators and customers can access dashboard
+    {path:"dashboard",component:DashboardRedirect, canActivate: [AuthGuard]}, // Redirect to role-appropriate dashboard
 
     // Creator-only routes - require authentication and creator role
     {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
@@ -60,6 +69,12 @@ export const routes: Routes = [
     {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
+
+    // Admin-only routes
+    { path: 'admin', component: AdminDashboard, canActivate: [AdminGuard] },
+    { path: 'admin/users', component: AdminUsers, canActivate: [AdminGuard] },
+    { path: 'admin/content', component: AdminContent, canActivate: [AdminGuard] },
+    { path: 'admin/settings', component: AdminSettings, canActivate: [AdminGuard] },
 
     {path:"**",component:NotFound},
 ];
