@@ -212,6 +212,10 @@ namespace Raqmiya.Infrastructure
                 .HasForeignKey(m => m.AdminId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Configure CustomerInfo as owned entity
+            modelBuilder.Entity<Order>()
+                .OwnsOne(o => o.CustomerInfo);
+
             // Ensure other entity configurations (e.g., string lengths) are present.
         }
     }

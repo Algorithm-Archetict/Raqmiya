@@ -32,6 +32,39 @@ export class AuthService {
     }
   }
 
+  // Normalize AuthResponse coming from backend (handles PascalCase vs camelCase)
+  private normalizeAuthResponse(res: any): LoginResponse {
+    return {
+      success: (res?.success ?? res?.Success) ?? false,
+      token: (res?.token ?? res?.Token) ?? '',
+      message: (res?.message ?? res?.Message) ?? undefined,
+      username: (res?.username ?? res?.Username) ?? undefined,
+      email: (res?.email ?? res?.Email) ?? undefined,
+      roles: (res?.roles ?? res?.Roles) ?? []
+    } as LoginResponse;
+  }
+
+  // Normalize UserProfile coming from backend
+  private normalizeUserProfile(u: any): User {
+    if (!u) return u;
+    const user: User = {
+      id: u.id ?? u.Id ?? 0,
+      username: u.username ?? u.Username ?? '',
+      email: u.email ?? u.Email ?? '',
+      role: u.role ?? u.Role ?? undefined,
+      roles: u.roles ?? u.Roles ?? undefined,
+      profileImageUrl: u.profileImageUrl ?? u.ProfileImageUrl ?? undefined,
+      profileDescription: u.profileDescription ?? u.ProfileDescription ?? undefined,
+      createdAt: u.createdAt ?? u.CreatedAt ?? undefined,
+      isActive: u.isActive ?? u.IsActive ?? undefined,
+    };
+    // Ensure roles array exists based on role string
+    if (!user.roles) {
+      user.roles = user.role ? [user.role] : [];
+    }
+    return user;
+  }
+
   // Check if a token exists in local storage
   private hasToken(): boolean {
     return !!localStorage.getItem('authToken');
@@ -64,6 +97,7 @@ export class AuthService {
   login(credentials: LoginRequest): Observable<LoginResponse> {
     if (this.useMockService) {
       return this.mockAuthService.login(credentials).pipe(
+        map(res => this.normalizeAuthResponse(res)),
         tap(response => {
           if (response.success && response.token) {
             // Clear any existing user data first
@@ -85,6 +119,7 @@ export class AuthService {
       );
     } else {
       return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
+        map(res => this.normalizeAuthResponse(res)),
         tap(response => {
           if (response.success && response.token) {
             // Clear any existing user data first
@@ -183,10 +218,9 @@ export class AuthService {
   // Fetch complete user profile from backend
   fetchUserProfile(): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/users/me`).pipe(
+      map(u => this.normalizeUserProfile(u)),
       tap(user => {
         if (user) {
-          // Add roles array for compatibility
-          user.roles = user.role ? [user.role] : [];
           localStorage.setItem('userData', JSON.stringify(user));
           this._currentUser.next(user);
           this._isLoggedIn.next(true);
@@ -208,9 +242,9 @@ export class AuthService {
     }
 
     return this.http.get<User>(`${this.apiUrl}/users/me`).pipe(
+      map(u => this.normalizeUserProfile(u)),
       tap(user => {
         if (user) {
-          user.roles = user.role ? [user.role] : [];
           localStorage.setItem('userData', JSON.stringify(user));
           this._currentUser.next(user);
           this._isLoggedIn.next(true);
