@@ -17,14 +17,9 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   categories: Category[] = [];
   visibleCategories: Category[] = [];
   hiddenCategories: Category[] = [];
-  hoveredCategory: Category | null = null;
-  showMoreDropdown = false;
   
-  private categoryHoverTimeout: any;
-  private moreHoverTimeout: any;
-
   // Configuration
-  maxVisibleCategories = 16; // Show first 6 categories directly, rest in "More" dropdown
+  maxVisibleCategories = 16;
 
   constructor(
     private categoryService: CategoryService,
@@ -45,12 +40,14 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
       next: (apiCategories: CategoryDTO[]) => {
         this.categories = apiCategories.map((cat: CategoryDTO) => this.categoryService.convertToCategory(cat));
         this.organizeCategories();
+        this.debugCategories();
       },
       error: (error: any) => {
         console.warn('Failed to load categories from API, using static data:', error);
         // Fallback to static hierarchical categories
         this.categories = HIERARCHICAL_CATEGORIES;
         this.organizeCategories();
+        this.debugCategories();
       }
     });
   }
@@ -60,82 +57,23 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     this.hiddenCategories = this.categories.slice(this.maxVisibleCategories);
   }
 
-  onCategoryHover(category: Category | null, event?: MouseEvent) {
-    if (category) {
-      clearTimeout(this.categoryHoverTimeout);
-      this.hoveredCategory = category;
-      if (event && event.target) {
-        this.positionDropdown(event.target as HTMLElement);
-      }
-    } else {
-      this.categoryHoverTimeout = setTimeout(() => {
-        this.hoveredCategory = null;
-      }, 200);      // i edited
-    }
-  }
-
-  onDropdownHover() {
-    clearTimeout(this.categoryHoverTimeout);
-  }
-
-  onDropdownLeave() {
-    this.categoryHoverTimeout = setTimeout(() => {
-      this.hoveredCategory = null;
-    }, 200);
-  }
-
-  private positionDropdown(buttonElement: HTMLElement) {
-    // Wait for next tick to ensure dropdown is rendered
-    setTimeout(() => {
-      const dropdown = this.elementRef.nativeElement.querySelector('.subcategory-dropdown');
-      if (dropdown) {
-        const buttonRect = buttonElement.getBoundingClientRect();
-        const navHeight = this.elementRef.nativeElement.getBoundingClientRect().height;
-        
-        // Position the dropdown below the entire navigation area
-        const top = buttonRect.bottom + 10; // 10px gap
-        const left = buttonRect.left + (buttonRect.width / 2) - (dropdown.offsetWidth / 2);
-        
-        dropdown.style.top = `${top}px`;
-        dropdown.style.left = `${Math.max(20, Math.min(left, window.innerWidth - dropdown.offsetWidth - 20))}px`; // Keep within viewport
-        dropdown.style.transform = 'none'; // Remove the transform since we're setting exact positions
+  debugCategories() {
+    console.log('All categories:', this.categories);
+    console.log('Visible categories:', this.visibleCategories);
+    
+    // Check which categories have subcategories
+    this.visibleCategories.forEach(category => {
+      if (category.subcategories && category.subcategories.length > 0) {
+        console.log(`Category "${category.name}" has ${category.subcategories.length} subcategories:`, category.subcategories);
+      } else {
+        console.log(`Category "${category.name}" has no subcategories`);
       }
     });
-  }
-
-  onMoreHover(show: boolean) {
-    if (show) {
-      clearTimeout(this.moreHoverTimeout);
-      this.showMoreDropdown = true;
-    } else {
-      this.moreHoverTimeout = setTimeout(() => {
-        this.showMoreDropdown = false;
-      }, 200);
-    }
-  }
-
-  onMoreDropdownHover() {
-    clearTimeout(this.moreHoverTimeout);
-  }
-
-  onMoreDropdownLeave() {
-    this.moreHoverTimeout = setTimeout(() => {
-      this.showMoreDropdown = false;
-    }, 200);
-  }
-
-  onBackdropClick() {
-    this.hoveredCategory = null;
-    this.showMoreDropdown = false;
   }
 
   onCategoryClick(categoryId: number | 'all', includeNested: boolean = true) {
     this.selectedCategoryId = categoryId;
     this.categorySelected.emit({ id: categoryId, includeNested });
-    
-    // Hide dropdowns
-    this.hoveredCategory = null;
-    this.showMoreDropdown = false;
   }
 
   onSubcategoryClick(event: Event, categoryId: number, includeNested: boolean = false) {
