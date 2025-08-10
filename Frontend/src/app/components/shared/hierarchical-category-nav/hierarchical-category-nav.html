@@ -38,6 +38,8 @@
         <div 
           class="subcategory-dropdown"
           *ngIf="hoveredCategory?.id === category.id && category.subcategories && category.subcategories.length > 0"
+          (mouseenter)="onDropdownHover()"
+          (mouseleave)="onDropdownLeave()"
         >
           <div class="dropdown-content">
             <!-- All in this category option -->
@@ -97,15 +99,17 @@
         (mouseenter)="onMoreHover(true)"
         (mouseleave)="onMoreHover(false)"
       >
-        <button class="filter-btn more-btn">
+        <!-- <button class="filter-btn more-btn">
           <i class="fas fa-ellipsis-h"></i>
           More
-        </button>
+        </button> -->
 
         <!-- More Categories Dropdown -->
         <div 
           class="subcategory-dropdown more-dropdown"
           *ngIf="showMoreDropdown"
+          (mouseenter)="onMoreDropdownHover()"
+          (mouseleave)="onMoreDropdownLeave()"
         >
           <div class="dropdown-content">
             <div 
@@ -132,6 +136,8 @@
               <div 
                 *ngIf="hoveredCategory?.id === category.id && category.subcategories && category.subcategories.length > 0"
                 class="nested-subcategories"
+                (mouseenter)="onDropdownHover()"
+                (mouseleave)="onDropdownLeave()"
               >
                 <div class="subcategory-divider"></div>
                 <div class="subcategories-list">
