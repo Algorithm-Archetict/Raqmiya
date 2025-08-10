@@ -20,8 +20,11 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   hoveredCategory: Category | null = null;
   showMoreDropdown = false;
   
+  private categoryHoverTimeout: any;
+  private moreHoverTimeout: any;
+
   // Configuration
-  maxVisibleCategories = 6; // Show first 6 categories directly, rest in "More" dropdown
+  maxVisibleCategories = 16; // Show first 6 categories directly, rest in "More" dropdown
 
   constructor(
     private categoryService: CategoryService,
@@ -58,11 +61,27 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   }
 
   onCategoryHover(category: Category | null, event?: MouseEvent) {
-    this.hoveredCategory = category;
-    
-    if (category && event && event.target) {
-      this.positionDropdown(event.target as HTMLElement);
+    if (category) {
+      clearTimeout(this.categoryHoverTimeout);
+      this.hoveredCategory = category;
+      if (event && event.target) {
+        this.positionDropdown(event.target as HTMLElement);
+      }
+    } else {
+      this.categoryHoverTimeout = setTimeout(() => {
+        this.hoveredCategory = null;
+      }, 200);      // i edited
     }
+  }
+
+  onDropdownHover() {
+    clearTimeout(this.categoryHoverTimeout);
+  }
+
+  onDropdownLeave() {
+    this.categoryHoverTimeout = setTimeout(() => {
+      this.hoveredCategory = null;
+    }, 200);
   }
 
   private positionDropdown(buttonElement: HTMLElement) {
@@ -85,7 +104,24 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   }
 
   onMoreHover(show: boolean) {
-    this.showMoreDropdown = show;
+    if (show) {
+      clearTimeout(this.moreHoverTimeout);
+      this.showMoreDropdown = true;
+    } else {
+      this.moreHoverTimeout = setTimeout(() => {
+        this.showMoreDropdown = false;
+      }, 200);
+    }
+  }
+
+  onMoreDropdownHover() {
+    clearTimeout(this.moreHoverTimeout);
+  }
+
+  onMoreDropdownLeave() {
+    this.moreHoverTimeout = setTimeout(() => {
+      this.showMoreDropdown = false;
+    }, 200);
   }
 
   onBackdropClick() {
