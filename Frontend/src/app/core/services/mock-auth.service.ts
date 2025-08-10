@@ -8,13 +8,13 @@ import { LoginRequest, LoginResponse, RegisterRequest, User } from '../models/au
 export class MockAuthService {
   private mockUsers: User[] = [
     {
-      id: '1',
-      username: 'demoUser',
-      email: 'demo@example.com',
-      roles: ['Customer']
+      id: 1,
+      username: 'admin',
+      email: 'admin@example.com',
+      roles: ['Admin']
     },
     {
-      id: '2',
+      id: 2,
       username: 'creator',
       email: 'creator@example.com',
       roles: ['Creator']
@@ -49,7 +49,7 @@ export class MockAuthService {
     } else {
       // Create a new user for demo purposes
       const newUser: User = {
-        id: (this.mockUsers.length + 1).toString(),
+        id: this.mockUsers.length + 1,
         username: credentials.EmailOrUsername,
         email: credentials.EmailOrUsername.includes('@') ? credentials.EmailOrUsername : credentials.EmailOrUsername + '@example.com',
         roles: ['Customer']
@@ -82,19 +82,19 @@ export class MockAuthService {
     }
 
     // Create new user
-    const newUser: User = {
-      id: (this.mockUsers.length + 1).toString(),
+    const user: User = {
+      id: this.mockUsers.length + 1,
       username: userData.Username,
       email: userData.Email,
       roles: [userData.Role]
     };
 
-    this.mockUsers.push(newUser);
+    this.mockUsers.push(user);
 
     return {
       success: true,
       message: 'Registration successful! You can now log in.',
-      user: newUser
+      user: user
     };
   }
 } 

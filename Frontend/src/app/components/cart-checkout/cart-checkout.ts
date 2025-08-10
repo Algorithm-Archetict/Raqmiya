@@ -122,7 +122,7 @@ export class CartCheckout implements OnInit {
       // Step 2: Process mock payment
       const mockOrder: Order = {
         id: `temp_${Date.now()}`,
-        userId: this.authService.getCurrentUser()?.id || '',
+        userId: this.authService.getCurrentUser()?.id?.toString() || '',
         items: this.cartItems.map(item => ({
           productId: item.productId,
           name: item.name,
@@ -184,7 +184,7 @@ export class CartCheckout implements OnInit {
         this.cartService.clearCart().subscribe();
         
         // Redirect to purchased products page
-        this.router.navigate(['/purchased-products'], { 
+        this.router.navigate(['/library/purchased-products'], { 
           state: { orderId: orderResponse.order.id } 
         });
       } else {

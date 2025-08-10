@@ -153,10 +153,9 @@ namespace Raqmiya.Infrastructure.Data
             var adminUser = context.Users.FirstOrDefault(u => u.Username == "admin" || u.Email == "admin@example.com");
             if (adminUser != null)
             {
-                var tempAuthRepo = new Raqmiya.Infrastructure.AuthRepository(context);
                 var newAdminPassword = "Admin123!"; // Set your desired admin password here
-                var newSalt = tempAuthRepo.GenerateSalt();
-                var newHash = tempAuthRepo.HashPassword(newAdminPassword, newSalt); // Now PBKDF2
+                var newSalt = GenerateSalt();
+                var newHash = HashPassword(newAdminPassword, newSalt); // Now PBKDF2
                 adminUser.Salt = newSalt;
                 adminUser.HashedPassword = newHash;
                 adminUser.IsActive = true;

@@ -1,0 +1,123 @@
+<div class="wishlist-container">
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Header Section -->
+    <!-- <div class="wishlist-header">
+      <h1 class="wishlist-title">Wishlist</h1>
+      <p class="wishlist-subtitle">Your saved products and favorites</p>
+    </div> -->
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <p>Loading your wishlist...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state" *ngIf="errorMessage">
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ errorMessage }}
+        <button class="btn btn-outline-danger btn-sm" (click)="loadWishlist()">
+          Try Again
+        </button>
+      </div>
+    </div>
+
+    <!-- Wishlist Content -->
+    <div class="wishlist-content" *ngIf="!isLoading && !errorMessage">
+      <!-- Products Grid -->
+      <div class="products-grid" *ngIf="wishlistProducts.length > 0">
+        <div class="product-card" *ngFor="let product of wishlistProducts">
+          <div class="product-image">
+            <img [src]="product.image" [alt]="product.title">
+            <div class="product-badge" *ngIf="product.badge">
+              {{ product.badge }}
+            </div>
+          </div>
+          
+          <div class="product-info">
+            <div class="product-meta">
+              <ul class="platform-tags">
+                <li class="platform-tag">
+                  <span class="platform-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                      <title>Windows</title>
+                      <g>
+                        <path fill="currentColor" d="M0.175 256l-0.175-156.037 192-26.072v182.109zM224 69.241l255.936-37.241v224h-255.936zM479.999 288l-0.063 224-255.936-36.008v-187.992zM192 471.918l-191.844-26.297-0.010-157.621h191.854z"></path>
+                      </g>
+                    </svg>
+                  </span>
+                  <span class="platform-text">Windows</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div class="product-details">
+              <div class="product-type">
+                <span class="type-badge">Base Game</span>
+              </div>
+              
+              <div class="product-title">
+                <a class="product-link" (click)="viewProduct(product.id)">
+                  {{ product.title }}
+                </a>
+              </div>
+            </div>
+            
+            <div class="product-price">
+              <div class="price-container">
+                <div class="price-wrapper">
+                  <div class="price-value">
+                    <span class="price-amount">${{ product.price }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="product-rating" *ngIf="product.rating > 0">
+              <div class="rating-container">
+                <div class="rating-stars">
+                  <i class="fas fa-star" *ngFor="let star of [1,2,3,4,5]"></i>
+                </div>
+                <span class="rating-text">{{ product.rating | number:'1.1-1' }}</span>
+              </div>
+            </div>
+            
+            <div class="product-actions">
+              <div class="action-buttons">
+                <div class="remove-button">
+                  <button type="button" class="btn btn-remove" (click)="removeFromWishlist(product.id)">
+                    <span class="btn-text">Remove</span>
+                  </button>
+                </div>
+                <div class="add-to-cart-button">
+                  <button type="button" class="btn btn-add-to-cart" (click)="addToCart(product.id)">
+                    <span class="btn-text">Add To Cart</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="wishlistProducts.length === 0">
+        <div class="empty-content">
+          <i class="fas fa-heart"></i>
+          <h3>You haven't added anything to your wishlist yet.</h3>
+          <p>Start building your wishlist by discovering amazing products!</p>
+          <a routerLink="/discover" class="btn btn-primary">
+            Discover Amazing Products
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+

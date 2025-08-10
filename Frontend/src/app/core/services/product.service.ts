@@ -29,8 +29,21 @@ export class ProductService {
     );
   }
 
-  getProductList(page = 1, size = 10): Observable<ProductListItemDTO[]> {
-    return this.getAll(page, size).pipe(map(res => res.items || []));
+  // ======= PRODUCTS =======
+  getProductList(pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTO[]> {
+    return this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
+      map(response => {
+        // Handle both paged and direct array responses
+        if (response && response.items && Array.isArray(response.items)) {
+          return response.items;
+        } else if (Array.isArray(response)) {
+          return response;
+        } else {
+          console.warn('Unexpected product list response format:', response);
+          return [];
+        }
+      })
+    );
   }
 
   // Get products by current creator (authenticated user)
@@ -60,16 +73,36 @@ export class ProductService {
   }
 
   // ======= WISHLIST =======
-  addToWishlist(id: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/wishlist`, {});
+  addToWishlist(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/wishlist`, {}, { responseType: 'text' }).pipe(
+      map(response => {
+        return { success: true, message: response };
+      })
+    );
   }
 
-  removeFromWishlist(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}/wishlist`);
+  removeFromWishlist(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}/wishlist`, { responseType: 'text' }).pipe(
+      map(response => {
+        return { success: true, message: response };
+      })
+    );
   }
 
   getWishlist(): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/my-wishlist`);
+    return this.http.get<any>(`${this.apiUrl}/my-wishlist`).pipe(
+      map(response => {
+        // Handle both paged and direct array responses
+        if (response && response.items && Array.isArray(response.items)) {
+          return response.items;
+        } else if (Array.isArray(response)) {
+          return response;
+        } else {
+          console.warn('Unexpected wishlist response format:', response);
+          return [];
+        }
+      })
+    );
   }
 
   // ======= ANALYTICS =======
@@ -129,7 +162,28 @@ export class ProductService {
     return this.http.get<ReviewDTO[]>(`${this.apiUrl}/${productId}/reviews`);
   }
 
+  // Check if user has purchased the product
+  checkPurchaseStatus(productId: number): Observable<{ hasPurchased: boolean }> {
+    return this.http.get<{ hasPurchased: boolean }>(`${this.apiUrl}/${productId}/purchase-status`);
+  }
+
+  // Get current user's review for the product
+  getMyReview(productId: number): Observable<{ hasReview: boolean; review?: ReviewDTO }> {
+    return this.http.get<{ hasReview: boolean; review?: ReviewDTO }>(`${this.apiUrl}/${productId}/my-review`);
+  }
+
+  // Submit a new review (only for purchased products)
   submitReview(productId: number, review: { rating: number; comment: string }): Observable<any> {
     return this.http.post(`${this.apiUrl}/${productId}/reviews`, review);
+  }
+
+  // Update existing review
+  updateReview(productId: number, review: { rating: number; comment: string }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${productId}/reviews/my-review`, review);
+  }
+
+  // Delete user's review
+  deleteReview(productId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/${productId}/reviews/my-review`);
   }
 }

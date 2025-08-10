@@ -98,6 +98,7 @@
   margin-bottom: var(--spacing-xl);
   line-height: 1.6;
   font-weight: 400;
+  font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 .hero-actions {
@@ -419,38 +420,110 @@
   font-weight: 500;
 }
 
+
 /* CTA Section */
 .cta-section {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: var(--text-inverse);
+  padding: 4rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent 70%);
+  animation: rotateBg 30s linear infinite;
+  z-index: 0;
+}
+
+@keyframes rotateBg {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cta-content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
 }
 
 .cta-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: var(--spacing-md);
+  font-size: 2.75rem;
+  font-weight: 800;
   color: var(--text-inverse);
+  margin-bottom: 1.25rem;
+  line-height: 1.2;
+}
+
+.text-gradient-1 {
+  background: linear-gradient(135deg, #d3cdcd, #b7adad, #9e9494);
+  font-family: 'Orbitron', sans-serif;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .cta-subtitle {
-  font-size: 1.125rem;
-  margin-bottom: var(--spacing-xl);
-  opacity: 0.9;
+  font-size: 1.25rem;
+  font-family: 'Orbitron', sans-serif;
+  opacity: 0.95;
+  margin-bottom: 2rem;
 }
 
 .cta-actions {
-  margin-top: var(--spacing-xl);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cta-actions .btn {
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
 }
 
 .cta-actions .btn-outline {
-  border-color: var(--text-inverse);
+  border: 2px solid var(--text-inverse);
+  background: transparent;
   color: var(--text-inverse);
 }
 
 .cta-actions .btn-outline:hover {
   background: var(--text-inverse);
   color: var(--primary-color);
+  box-shadow: var(--shadow-md);
 }
+
+.cta-actions .btn-primary {
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+  border: none;
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+.cta-actions .btn-primary:hover {
+  background: var(--gradient-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
+}
+
 
 /* Responsive Design */
 @media (max-width: 768px) {

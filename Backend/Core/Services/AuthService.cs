@@ -157,7 +157,7 @@ namespace Core.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var expires = DateTime.UtcNow.AddHours(int.Parse(_configuration["Jwt:TokenValidityInHours"] ?? "1"));
+            var expires = DateTime.UtcNow.AddHours(int.Parse(_configuration["Jwt:TokenValidityInHours"] ?? "24"));
 
             var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],

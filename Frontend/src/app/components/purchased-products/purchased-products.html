@@ -1,9 +1,40 @@
 <div class="purchased-products-container">
-  <div class="container">
-    <div class="page-header">
-      <h1>My Purchased Products</h1>
-      <p>Access all your digital products and downloads</p>
-    </div>
+  <div class="main-content">
+    <!-- Header Section -->
+    <!-- <div class="library-header">
+      <div class="header-content">
+        <h1 class="library-title">Purchased Products</h1>
+        <button class="btn btn-primary" (click)="showInLibrary()">
+          <i class="fas fa-book-open"></i>
+          Show in Library
+        </button>
+      </div>
+      
+      <!-- Tabs -->
+      <!-- <div class="tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'purchased'"
+          (click)="setActiveTab('purchased')"
+        >
+          Purchased
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'wishlist'"
+          (click)="setActiveTab('wishlist')"
+        >
+          Wishlist
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'reviews'"
+          (click)="setActiveTab('reviews')"
+        >
+          Reviews
+        </button>
+      </div>
+    </div> and we can remove this--> 
     
     <!-- Loading State -->
     <div class="loading-state" *ngIf="isLoading">
@@ -35,24 +66,32 @@
         </div>
         
         <div class="product-info">
-          <h3>{{ product.productName }}</h3>
-          <p class="creator">by {{ product.creatorUsername }}</p>
-          <p class="purchase-date">
-            Purchased: {{ product.purchaseDate | date:'mediumDate' }}
-          </p>
-          <p class="purchase-price">
-            {{ product.purchasePrice | currency:'USD' }}
-          </p>
+          <h3 class="product-title">{{ product.productName }}</h3>
+          
+          <div class="product-details">
+            <p class="purchase-date">
+              Purchased: {{ product.purchaseDate | date:'mediumDate' }}
+            </p>
+            <p class="purchase-price">
+              {{ product.purchasePrice | currency:'USD' }}
+            </p>
+          </div>
           
           <div class="product-actions">
-            <button class="btn btn-primary" (click)="viewProduct(product.productId)">
-              <i class="fas fa-eye"></i>
-              View Details
-            </button>
-            <button class="btn btn-secondary" (click)="downloadProduct(product.productId)">
-              <i class="fas fa-download"></i>
-              Download
-            </button>
+            <a href="#" class="creator-link">
+              {{ getCreatorName(product) }}
+            </a>
+            
+            <div class="action-buttons">
+              <button class="btn btn-primary btn-sm" (click)="viewProduct(product.productId)">
+                <i class="fas fa-eye"></i>
+                View
+              </button>
+              <button class="btn btn-secondary btn-sm" (click)="downloadProduct(product.productId)">
+                <i class="fas fa-download"></i>
+                Download
+              </button>
+            </div>
           </div>
         </div>
       </div>

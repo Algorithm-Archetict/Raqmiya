@@ -36,6 +36,8 @@ export class Login implements OnInit {
       // Redirect based on user role
       if (this.authService.isCreator()) {
         this.router.navigate(['/products']);
+      } else if (this.authService.isAdmin()) {
+        this.router.navigate(['/dashboard']);
       } else {
         this.router.navigate(['/home']);
       }
@@ -48,6 +50,9 @@ export class Login implements OnInit {
     this.successMessage = null;
 
     if (this.loginForm.valid) {
+      // Clear any existing cached data before login to ensure data isolation
+      this.authService.clearAllCachedData();
+      
       const loginData: LoginRequest = {
         EmailOrUsername: this.loginForm.get('EmailOrUsername')?.value,
         Password: this.loginForm.get('Password')?.value
@@ -57,8 +62,14 @@ export class Login implements OnInit {
         next: (response) => {
           this.isLoading = false;
           this.successMessage = response.message || 'Login successful!';
-          // Navigate to products page like old frontend
-          this.router.navigate(['/products']);
+          // Redirect based on user role
+          if (this.authService.isCreator()) {
+            this.router.navigate(['/products']);
+          } else if (this.authService.isAdmin()) {
+            this.router.navigate(['/dashboard']);
+          } else {
+            this.router.navigate(['/home']);
+          }
         },
         error: (error) => {
           this.isLoading = false;
