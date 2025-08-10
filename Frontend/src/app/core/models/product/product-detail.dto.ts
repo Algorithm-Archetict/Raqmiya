@@ -31,7 +31,7 @@ export interface ProductDetailDTO {
   variants: VariantDTO[];
   offerCodes: OfferCodeDTO[];
   reviews: ReviewDTO[];
-  categories: CategoryDTO[];
+  category: CategoryDTO;
   tags: TagDTO[];
   wishlistCount: number;
   averageRating: number;
