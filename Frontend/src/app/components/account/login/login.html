@@ -33,6 +33,7 @@
                                 <div class="input-container">
                                     <input type="text" class="form-control" id="EmailOrUsername"
                                         formControlName="EmailOrUsername" placeholder="Enter your email or username"
+                                        autocomplete="username"
                                         [class.is-invalid]="loginForm.get('EmailOrUsername')?.invalid && loginForm.get('EmailOrUsername')?.touched">
                                     <div class="input-icon">
                                         <i class="fas fa-user"></i>
@@ -49,6 +50,7 @@
                                 <div class="input-container">
                                     <input type="password" class="form-control" id="Password" formControlName="Password"
                                         placeholder="Enter your password"
+                                        autocomplete="current-password"
                                         [class.is-invalid]="loginForm.get('Password')?.invalid && loginForm.get('Password')?.touched">
                                     <div class="input-icon">
                                         <i class="fas fa-lock"></i>

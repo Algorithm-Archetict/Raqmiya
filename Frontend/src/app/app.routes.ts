@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { Home } from './components/home/home';
 import { NotFound } from './components/not-found/not-found';
 import { Discover } from './components/discover/discover';
-import { Browse } from './components/browse/browse';
 import { ProductDetails } from './components/products/product-details/product-details';
 import { Checkout } from './components/checkout/checkout';
 import { CartCheckout } from './components/cart-checkout/cart-checkout';
@@ -23,6 +22,7 @@ import { ProductEditContent } from './components/creator/creator-product/product
 import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
 import { AllReviews } from './components/products/all-reviews/all-reviews';
+import { WishList } from './components/wish-list/wish-list';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -30,8 +30,8 @@ export const routes: Routes = [
 
     // Public routes
     {path:"discover",component:Discover},
-    {path:"browse",component:Browse},
     {path:"discover/:id",component:ProductDetails},
+    {path:"login", redirectTo:"auth/login", pathMatch:"full"}, // Redirect /login to /auth/login
     {path:"auth/login", component:Login},
     {path:"auth/register", component:Register},
     { path: "products/:id/reviews", component: AllReviews },
@@ -40,8 +40,9 @@ export const routes: Routes = [
     {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
     {path:"cart-checkout",component:CartCheckout, canActivate: [AuthGuard]},
     {path:"package/:id",component:PurchasedPackage, canActivate: [AuthGuard]},
-    {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]},
-    {path:"library",component:Library, canActivate: [AuthGuard]},
+    // {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]}, // Commented out - now under library
+    {path:"library", redirectTo:"library/purchased-products", pathMatch:"full"},
+    {path:"library/:tab",component:Library, canActivate: [AuthGuard]},
     {
         path:"settings",
         component:Settings,
@@ -62,5 +63,6 @@ export const routes: Routes = [
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
 
+    // {path:"wishlist",component:WishList, canActivate: [AuthGuard]}, // Commented out - now under library
     {path:"**",component:NotFound},
 ];

@@ -4,34 +4,60 @@
     <p class="section-description">Update your personal information and profile details</p>
   </div>
 
+  <!-- Error and Success Messages -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <i class="fas fa-exclamation-circle"></i>
+    {{ errorMessage }}
+  </div>
+
+  <div class="alert alert-success" *ngIf="successMessage">
+    <i class="fas fa-check-circle"></i>
+    {{ successMessage }}
+  </div>
+
   <div class="profile-form">
     <!-- Profile Picture -->
     <div class="form-group profile-picture-group">
       <label class="form-label">Profile Picture</label>
       <div class="profile-picture-container">
         <div class="profile-picture">
+          <!-- Show image if available -->
           <img 
-               
-               alt="" 
-               class="profile-image"
-               (error)="onImageError($event)">
-          <div class="profile-picture-overlay" (click)="uploadPicture()">
+               *ngIf="getProfileImageUrl()" 
+               [src]="getProfileImageUrl()" 
+               alt="Profile Picture" 
+               class="profile-image">
+          
+          <!-- Show initials fallback when no image -->
+          <div 
+               *ngIf="!getProfileImageUrl()" 
+               class="profile-avatar-fallback">
+            {{ getUserInitials() }}
+          </div>
+          
+          <div class="profile-picture-overlay" (click)="uploadPicture()" *ngIf="!isUploading">
             <i class="fas fa-upload"></i>
+          </div>
+          <div class="profile-picture-loading" *ngIf="isUploading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Uploading...</span>
           </div>
         </div>
         <div class="profile-picture-info">
           <p class="profile-picture-description">
-            Your logo will be visible next to your name in your Raqmiya profile and product pages. Your image should be at least 200x200px and must be in JPG or PNG format.
+            Your profile picture will be visible next to your name in your Raqmiya profile and product pages. Your image should be at least 200x200px and must be in JPG, PNG, or GIF format (max 5MB).
           </p>
         </div>
         <div class="profile-picture-actions">
-          <button type="button" class="btn btn-secondary" (click)="uploadPicture()">
-            <i class="fas fa-upload"></i>
-            Upload Picture
+          <button type="button" class="btn btn-secondary" (click)="uploadPicture()" [disabled]="isUploading || isRemoving">
+            <i class="fas fa-upload" *ngIf="!isUploading"></i>
+            <i class="fas fa-spinner fa-spin" *ngIf="isUploading"></i>
+            {{ isUploading ? 'Uploading...' : 'Upload Picture' }}
           </button>
-          <button type="button" class="btn btn-outline" (click)="removePicture()" *ngIf="profilePicture">
-            <i class="fas fa-trash"></i>
-            Remove
+          <button type="button" class="btn btn-outline" (click)="removePicture()" *ngIf="showRemoveButton()" [disabled]="isRemoving || isUploading">
+            <i class="fas fa-trash" *ngIf="!isRemoving"></i>
+            <i class="fas fa-spinner fa-spin" *ngIf="isRemoving"></i>
+            {{ isRemoving ? 'Removing...' : 'Remove' }}
           </button>
         </div>
       </div>
@@ -46,19 +72,24 @@
         name="username"
         [(ngModel)]="profileData.username"
         class="form-input"
-        placeholder="Enter your username">
+        placeholder="Enter your username"
+        disabled
+        readonly>
     </div>
 
-    <!-- Email -->
+    <!-- Email (Read-only) -->
     <div class="form-group">
       <label for="email" class="form-label">Email</label>
       <input 
         type="email" 
         id="email" 
         name="email"
-        [(ngModel)]="profileData.email"
+        [value]="currentUser?.email || ''"
         class="form-input"
-        placeholder="Enter your email address">
+        placeholder="Enter your email address"
+        readonly
+        disabled>
+      <div class="form-help">Email address cannot be changed. Contact support if you need to update your email.</div>
     </div>
 
     <!-- Profile Description -->
@@ -67,11 +98,21 @@
       <textarea 
         id="description" 
         name="description"
-        [(ngModel)]="profileData.description"
+        [(ngModel)]="profileData.profileDescription"
         class="form-textarea"
         rows="4"
-        placeholder="Tell us about yourself..."></textarea>
+        placeholder="Tell us about yourself..."
+        [disabled]="isSaving || isRemoving"></textarea>
       <div class="form-help">Share a brief description about yourself or your work</div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" (click)="saveProfile()" [disabled]="isSaving || isRemoving || !profileData.username?.trim()">
+        <i class="fas fa-save" *ngIf="!isSaving"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="isSaving"></i>
+        {{ isSaving ? 'Saving...' : 'Save Changes' }}
+      </button>
     </div>
   </div>
 </div> 

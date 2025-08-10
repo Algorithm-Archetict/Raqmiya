@@ -50,14 +50,6 @@ export class DashboardSidebar implements OnInit {
     this.isLoggedIn = this.authService.isLoggedIn();
     this.isCreator = this.authService.isCreator();
     this.isCustomer = this.authService.isCustomer();
-    
-    // Debug logging
-    console.log('Dashboard Sidebar - Auth Status:', {
-      isLoggedIn: this.isLoggedIn,
-      isCreator: this.isCreator,
-      isCustomer: this.isCustomer,
-      currentUser: this.authService.getCurrentUser()
-    });
   }
 
   logout() {

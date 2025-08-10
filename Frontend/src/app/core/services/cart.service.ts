@@ -236,7 +236,7 @@ export class CartService {
   private createEmptyCart(): Cart {
     return {
       id: `cart_${Date.now()}`,
-      userId: this.authService.getCurrentUser()?.id || 'anonymous',
+      userId: this.authService.getCurrentUser()?.id?.toString() || 'anonymous',
       items: [],
       subtotal: 0,
       discount: 0,

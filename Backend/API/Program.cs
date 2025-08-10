@@ -40,6 +40,7 @@ namespace API
             builder.Services.AddScoped<IOrderService, Core.Services.OrderService>(); // Register OrderService
             builder.Services.AddScoped<IPurchaseValidationService, PurchaseValidationService>(); // NEW: Purchase Validation Service
             builder.Services.AddScoped<ICartService, Core.Services.CartService>(); // NEW: Cart Service
+            builder.Services.AddScoped<IEmailService, Core.Services.EmailService>(); // NEW: Email Service
 
             // --- 4. Configure Logging ---
             builder.Logging.AddConsole();

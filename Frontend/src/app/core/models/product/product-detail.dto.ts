@@ -31,13 +31,18 @@ export interface ProductDetailDTO {
   variants: VariantDTO[];
   offerCodes: OfferCodeDTO[];
   reviews: ReviewDTO[];
-  category: CategoryDTO;
+  categories: CategoryDTO[];
   tags: TagDTO[];
   wishlistCount: number;
   averageRating: number;
   salesCount: number;
   viewsCount: number;
   isInWishlist: boolean; // Specific to user context
-
-  title: string;
+  // Additional properties for UI
+  downloadCount?: number;
+  creator?: {
+    name: string;
+    avatarUrl?: string;
+    productsCount?: number;
+  };
 }
