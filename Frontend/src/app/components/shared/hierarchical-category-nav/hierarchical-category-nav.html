@@ -1,0 +1,168 @@
+<div class="hierarchical-category-nav">
+  <div class="category-filters">
+    <div class="filter-buttons">
+      <!-- All Categories Button -->
+      <button 
+        class="filter-btn" 
+        [class.active]="selectedCategoryId === 'all'"
+        (click)="onCategoryClick('all')"
+      >
+        <i class="fas fa-th-large"></i>
+        All
+      </button>
+
+      <!-- Visible Category Buttons -->
+      <div 
+        *ngFor="let category of visibleCategories; trackBy: trackByCategory"
+        class="category-wrapper"
+        (mouseenter)="onCategoryHover(category)"
+        (mouseleave)="onCategoryHover(null)"
+      >
+        <button 
+          class="filter-btn category-btn" 
+          [class.active]="selectedCategoryId === category.id"
+          (click)="onCategoryClick(category.id)"
+        >
+          <i [class]="getCategoryIcon(category.name)"></i>
+          {{ category.name }}
+        </button>
+
+        <!-- Subcategory Dropdown -->
+        <div 
+          class="subcategory-dropdown"
+          *ngIf="hoveredCategory?.id === category.id && category.subcategories && category.subcategories.length > 0"
+        >
+          <div class="dropdown-content">
+            <!-- All in this category option -->
+            <button 
+              class="subcategory-item all-in-category"
+              (click)="onSubcategoryClick($event, category.id, true)"
+            >
+              <i class="fas fa-layer-group"></i>
+              <span class="subcategory-text">
+                <strong>All {{ category.name }}</strong>
+                <small>Including all subcategories</small>
+              </span>
+            </button>
+
+            <div class="subcategory-divider"></div>
+
+            <!-- Individual subcategories -->
+            <div class="subcategories-list">
+              <div 
+                *ngFor="let subcategory of category.subcategories"
+                class="subcategory-group"
+              >
+                <button 
+                  class="subcategory-item"
+                  [class.active]="selectedCategoryId === subcategory.id"
+                  (click)="onSubcategoryClick($event, subcategory.id, false)"
+                >
+                  <i class="fas fa-folder"></i>
+                  <span class="subcategory-text">{{ subcategory.name }}</span>
+                </button>
+
+                <!-- Sub-subcategories -->
+                <div 
+                  *ngIf="subcategory.subcategories && subcategory.subcategories.length > 0"
+                  class="sub-subcategories"
+                >
+                  <button 
+                    *ngFor="let subSubcategory of subcategory.subcategories"
+                    class="subcategory-item sub-subcategory"
+                    [class.active]="selectedCategoryId === subSubcategory.id"
+                    (click)="onSubcategoryClick($event, subSubcategory.id, false)"
+                  >
+                    <i class="fas fa-file"></i>
+                    <span class="subcategory-text">{{ subSubcategory.name }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- More Categories Button -->
+      <div 
+        *ngIf="hiddenCategories.length > 0"
+        class="category-wrapper more-wrapper"
+        (mouseenter)="onMoreHover(true)"
+        (mouseleave)="onMoreHover(false)"
+      >
+        <button class="filter-btn more-btn">
+          <i class="fas fa-ellipsis-h"></i>
+          More
+        </button>
+
+        <!-- More Categories Dropdown -->
+        <div 
+          class="subcategory-dropdown more-dropdown"
+          *ngIf="showMoreDropdown"
+        >
+          <div class="dropdown-content">
+            <div 
+              *ngFor="let category of hiddenCategories; trackBy: trackByCategory"
+              class="more-category-group"
+              (mouseenter)="onCategoryHover(category)"
+              (mouseleave)="onCategoryHover(null)"
+            >
+              <button 
+                class="subcategory-item category-item"
+                [class.active]="selectedCategoryId === category.id"
+                (click)="onSubcategoryClick($event, category.id, true)"
+              >
+                <i [class]="getCategoryIcon(category.name)"></i>
+                <span class="subcategory-text">
+                  <strong>{{ category.name }}</strong>
+                  <small *ngIf="category.subcategories && category.subcategories.length > 0">
+                    {{ category.subcategories.length }} subcategories
+                  </small>
+                </span>
+              </button>
+
+              <!-- Subcategories in More dropdown -->
+              <div 
+                *ngIf="hoveredCategory?.id === category.id && category.subcategories && category.subcategories.length > 0"
+                class="nested-subcategories"
+              >
+                <div class="subcategory-divider"></div>
+                <div class="subcategories-list">
+                  <div 
+                    *ngFor="let subcategory of category.subcategories"
+                    class="subcategory-group"
+                  >
+                    <button 
+                      class="subcategory-item nested-item"
+                      [class.active]="selectedCategoryId === subcategory.id"
+                      (click)="onSubcategoryClick($event, subcategory.id, false)"
+                    >
+                      <i class="fas fa-folder"></i>
+                      <span class="subcategory-text">{{ subcategory.name }}</span>
+                    </button>
+
+                    <!-- Sub-subcategories in More dropdown -->
+                    <div 
+                      *ngIf="subcategory.subcategories && subcategory.subcategories.length > 0"
+                      class="sub-subcategories"
+                    >
+                      <button 
+                        *ngFor="let subSubcategory of subcategory.subcategories"
+                        class="subcategory-item sub-subcategory nested-item"
+                        [class.active]="selectedCategoryId === subSubcategory.id"
+                        (click)="onSubcategoryClick($event, subSubcategory.id, false)"
+                      >
+                        <i class="fas fa-file"></i>
+                        <span class="subcategory-text">{{ subSubcategory.name }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
