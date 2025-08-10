@@ -1,6 +1,30 @@
 /* Hierarchical Category Navigation Styles */
 .hierarchical-category-nav {
   margin: 1.5rem 0;
+  position: relative;
+}
+
+/* Backdrop Overlay */
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(2px);
+  z-index: 9998;
+  opacity: 0;
+  animation: backdropFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .category-filters {
@@ -69,38 +93,41 @@
 
 /* Subcategory Dropdown Styles */
 .subcategory-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
+  position: fixed;
+  z-index: 9999;
   margin-top: 0.5rem;
   opacity: 0;
   animation: fadeInDown 0.3s ease-out forwards;
+  /* Will be positioned dynamically by JavaScript */
 }
 
 @keyframes fadeInDown {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-10px);
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 }
 
 .dropdown-content {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
   border-radius: 16px;
   padding: 1rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.3);
   min-width: 280px;
   max-width: 400px;
   max-height: 500px;
   overflow-y: auto;
+  /* Add a subtle glow effect */
+  filter: drop-shadow(0 8px 16px rgba(79, 70, 229, 0.1));
 }
 
 /* Subcategory Items */

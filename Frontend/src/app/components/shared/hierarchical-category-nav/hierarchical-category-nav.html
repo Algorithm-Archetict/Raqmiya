@@ -1,4 +1,11 @@
 <div class="hierarchical-category-nav">
+  <!-- Backdrop overlay -->
+  <div 
+    class="dropdown-backdrop"
+    *ngIf="hoveredCategory || showMoreDropdown"
+    (click)="onBackdropClick()"
+  ></div>
+
   <div class="category-filters">
     <div class="filter-buttons">
       <!-- All Categories Button -->
@@ -15,8 +22,8 @@
       <div 
         *ngFor="let category of visibleCategories; trackBy: trackByCategory"
         class="category-wrapper"
-        (mouseenter)="onCategoryHover(category)"
-        (mouseleave)="onCategoryHover(null)"
+        (mouseenter)="onCategoryHover(category, $event)"
+        (mouseleave)="onCategoryHover(null, $event)"
       >
         <button 
           class="filter-btn category-btn" 
@@ -104,8 +111,8 @@
             <div 
               *ngFor="let category of hiddenCategories; trackBy: trackByCategory"
               class="more-category-group"
-              (mouseenter)="onCategoryHover(category)"
-              (mouseleave)="onCategoryHover(null)"
+              (mouseenter)="onCategoryHover(category, $event)"
+              (mouseleave)="onCategoryHover(null, $event)"
             >
               <button 
                 class="subcategory-item category-item"

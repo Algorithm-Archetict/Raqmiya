@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, ViewEncapsulation, AfterViewInit, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Category, HIERARCHICAL_CATEGORIES } from '../../../core/data/categories';
 import { CategoryService, CategoryDTO } from '../../../core/services/category.service';
@@ -10,7 +10,7 @@ import { CategoryService, CategoryDTO } from '../../../core/services/category.se
   styleUrl: './hierarchical-category-nav.css',
   encapsulation: ViewEncapsulation.None
 })
-export class HierarchicalCategoryNav implements OnInit {
+export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   @Input() selectedCategoryId: number | 'all' = 'all';
   @Output() categorySelected = new EventEmitter<{id: number | 'all', includeNested: boolean}>();
 
@@ -23,10 +23,17 @@ export class HierarchicalCategoryNav implements OnInit {
   // Configuration
   maxVisibleCategories = 6; // Show first 6 categories directly, rest in "More" dropdown
 
-  constructor(private categoryService: CategoryService) {}
+  constructor(
+    private categoryService: CategoryService,
+    private elementRef: ElementRef
+  ) {}
 
   ngOnInit() {
     this.loadCategories();
+  }
+
+  ngAfterViewInit() {
+    // Component is ready for DOM manipulation
   }
 
   loadCategories() {
@@ -50,12 +57,40 @@ export class HierarchicalCategoryNav implements OnInit {
     this.hiddenCategories = this.categories.slice(this.maxVisibleCategories);
   }
 
-  onCategoryHover(category: Category | null) {
+  onCategoryHover(category: Category | null, event?: MouseEvent) {
     this.hoveredCategory = category;
+    
+    if (category && event && event.target) {
+      this.positionDropdown(event.target as HTMLElement);
+    }
+  }
+
+  private positionDropdown(buttonElement: HTMLElement) {
+    // Wait for next tick to ensure dropdown is rendered
+    setTimeout(() => {
+      const dropdown = this.elementRef.nativeElement.querySelector('.subcategory-dropdown');
+      if (dropdown) {
+        const buttonRect = buttonElement.getBoundingClientRect();
+        const navHeight = this.elementRef.nativeElement.getBoundingClientRect().height;
+        
+        // Position the dropdown below the entire navigation area
+        const top = buttonRect.bottom + 10; // 10px gap
+        const left = buttonRect.left + (buttonRect.width / 2) - (dropdown.offsetWidth / 2);
+        
+        dropdown.style.top = `${top}px`;
+        dropdown.style.left = `${Math.max(20, Math.min(left, window.innerWidth - dropdown.offsetWidth - 20))}px`; // Keep within viewport
+        dropdown.style.transform = 'none'; // Remove the transform since we're setting exact positions
+      }
+    });
   }
 
   onMoreHover(show: boolean) {
     this.showMoreDropdown = show;
+  }
+
+  onBackdropClick() {
+    this.hoveredCategory = null;
+    this.showMoreDropdown = false;
   }
 
   onCategoryClick(categoryId: number | 'all', includeNested: boolean = true) {
