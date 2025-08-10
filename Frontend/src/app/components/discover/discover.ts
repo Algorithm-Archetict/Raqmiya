@@ -3,10 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
+import { CategoryService } from '../../core/services/category.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
 import { Navbar } from '../navbar/navbar';
 import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
+import { HierarchicalCategoryNav } from '../shared/hierarchical-category-nav/hierarchical-category-nav';
 
 interface Product {
   id: number;
@@ -30,7 +32,7 @@ interface Product {
 
 @Component({
   selector: 'app-discover',
-  imports: [CommonModule, FormsModule, RouterModule, Navbar],
+  imports: [CommonModule, FormsModule, RouterModule, Navbar, HierarchicalCategoryNav],
   templateUrl: './discover.html',
   styleUrl: './discover.css',
   encapsulation: ViewEncapsulation.None
@@ -40,7 +42,7 @@ export class Discover implements OnInit, AfterViewInit {
 
   // Search and Filter Properties
   searchQuery: string = '';
-  selectedCategory: string = 'all';
+  selectedCategory: number | 'all' = 'all';
   priceRange: number = 1000; // Increased from 50 to 1000 to show all products
   selectedRating: number = 0;
   selectedTags: string[] = [];
@@ -61,6 +63,7 @@ export class Discover implements OnInit, AfterViewInit {
   constructor(
     private router: Router,
     private productService: ProductService,
+    private categoryService: CategoryService,
     private authService: AuthService,
     private orderService: OrderService
   ) {}
@@ -618,10 +621,122 @@ export class Discover implements OnInit, AfterViewInit {
     this.applyFilters();
   }
 
+  // Helper method to convert CategoryService ProductListItemDTO to the main ProductListItemDTO
+  private convertCategoryProductToMain(product: import('../../core/services/category.service').ProductListItemDTO): ProductListItemDTO {
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      coverImageUrl: product.coverImageUrl,
+      averageRating: product.averageRating,
+      creatorUsername: product.creatorUsername,
+      isPublic: product.isPublic,
+      category: {
+        id: product.category.id,
+        name: product.category.name,
+        parentCategoryId: product.category.parentCategoryId === null ? undefined : product.category.parentCategoryId
+      },
+      salesCount: 0, // Default value since not provided by category service
+      currency: 'USD', // Default currency
+      permalink: `product-${product.id}`, // Generate a default permalink
+      status: 'Published', // Default status
+      publishedAt: new Date().toISOString() // Default published date
+    };
+  }
+
+  // Helper method to update products from API response
+  private updateProductsFromAPI(products: ProductListItemDTO[]) {
+    this.allProducts = products.map(product => ({
+      id: product.id,
+      title: product.name || 'Untitled Product',
+      creator: product.creatorUsername || 'Unknown Creator',
+      price: product.price,
+      rating: product.averageRating,
+      ratingCount: 0, // Will be populated with actual review count
+      image: this.ensureFullUrl(product.coverImageUrl),
+      category: 'design', // Default category, you might want to add this to the DTO
+      tags: ['Design'], // Default tags, you might want to add this to the DTO
+      badge: product.isPublic ? 'Public' : 'Private',
+      // Initialize wishlist properties
+      inWishlist: false,
+      loadingWishlist: false,
+      wishlistHovered: false,
+      // Initialize purchase properties
+      isPurchased: false,
+      loadingPurchase: false
+    }));
+    
+    this.recommendedProducts = this.allProducts.slice(0, 6);
+    this.filteredProducts = [...this.allProducts];
+    
+    // Load wishlist status for all products
+    this.loadWishlistStatus();
+    
+    // Load actual review counts for all products
+    this.loadReviewCounts();
+    
+    // Load purchase status for all products
+    this.loadPurchaseStatus();
+  }
+
   // Category filtering
+  onCategorySelected(event: {id: number | 'all', includeNested: boolean}) {
+    this.selectedCategory = event.id;
+    this.loadProductsByCategory(event.id, event.includeNested);
+  }
+
+  loadProductsByCategory(categoryId: number | 'all', includeNested: boolean = true) {
+    this.loading = true;
+    
+    if (categoryId === 'all') {
+      // Load all products
+      this.productService.getProductList(1, 1000).subscribe({
+        next: (products: ProductListItemDTO[]) => {
+          this.updateProductsFromAPI(products);
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error loading all products:', error);
+          this.loading = false;
+        }
+      });
+    } else {
+      // Load products by category
+      const categoryCall = includeNested 
+        ? this.categoryService.getCategoryProductsIncludeNested(categoryId, 1, 1000)
+        : this.categoryService.getCategoryProducts(categoryId, 1, 1000);
+      
+      categoryCall.subscribe({
+        next: (result) => {
+          // Convert category service DTOs to main DTOs
+          const convertedProducts = result.items.map(item => this.convertCategoryProductToMain(item));
+          this.updateProductsFromAPI(convertedProducts);
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error loading products by category:', error);
+          this.loading = false;
+        }
+      });
+    }
+  }
+
+  // Legacy method for backward compatibility
   filterByCategory(category: string) {
-    this.selectedCategory = category;
-    this.applyFilters();
+    // Convert old string-based categories to new number-based system
+    const categoryMap: {[key: string]: number} = {
+      '3d': 6,
+      'design': 15,
+      'sound': 7,
+      'other': 1 // Default fallback
+    };
+    
+    if (category === 'all') {
+      this.onCategorySelected({ id: 'all', includeNested: true });
+    } else {
+      const categoryId = categoryMap[category] || 1;
+      this.onCategorySelected({ id: categoryId, includeNested: true });
+    }
   }
 
   // Price range filtering

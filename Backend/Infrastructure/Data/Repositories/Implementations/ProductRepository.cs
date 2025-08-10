@@ -149,6 +149,19 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Product>> GetProductsByMultipleCategoryIdsAsync(List<int> categoryIds, int pageNumber, int pageSize)
+        {
+            return await _context.Products
+                .Where(p => categoryIds.Contains(p.CategoryId))
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .AsNoTracking()
+                .Include(p => p.Creator)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
+                .ToListAsync();
+        }
         public async Task<List<Product>> GetProductsByTagIdAsync(int tagId, int? pageNumber = 1, int? pageSize = 10)
         {
             var query = _context.Products

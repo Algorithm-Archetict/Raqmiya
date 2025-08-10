@@ -9,6 +9,33 @@ export interface Category {
   subcategories?: Category[];
 }
 
+// Helper function to build hierarchical structure from flat array
+export function buildCategoryHierarchy(categories: Category[]): Category[] {
+  const categoryMap = new Map<number, Category>();
+  const rootCategories: Category[] = [];
+
+  // Create a map of all categories
+  categories.forEach(category => {
+    categoryMap.set(category.id, { ...category, subcategories: [] });
+  });
+
+  // Build the hierarchy
+  categories.forEach(category => {
+    const categoryWithSubcategories = categoryMap.get(category.id)!;
+    
+    if (category.parentId) {
+      const parent = categoryMap.get(category.parentId);
+      if (parent) {
+        parent.subcategories!.push(categoryWithSubcategories);
+      }
+    } else {
+      rootCategories.push(categoryWithSubcategories);
+    }
+  });
+
+  return rootCategories;
+}
+
 export const CATEGORIES: Category[] = [
   // Parent Categories
   { id: 1, name: 'Fitness & Health' },
@@ -153,3 +180,6 @@ export const CATEGORIES: Category[] = [
   { id: 108, name: 'Vegan', parentId: 21 },
   { id: 109, name: 'Astrology', parentId: 28 },
 ];
+
+// Get hierarchical categories
+export const HIERARCHICAL_CATEGORIES = buildCategoryHierarchy(CATEGORIES);
