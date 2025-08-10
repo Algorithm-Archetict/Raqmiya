@@ -35,7 +35,7 @@ export interface ProductListItemDTO {
   providedIn: 'root'
 })
 export class CategoryService {
-  private readonly apiUrl = `${environment.apiUrl}/api/category`;
+  private readonly apiUrl = `${environment.apiUrl}/category`;
 
   constructor(private http: HttpClient) {}
 

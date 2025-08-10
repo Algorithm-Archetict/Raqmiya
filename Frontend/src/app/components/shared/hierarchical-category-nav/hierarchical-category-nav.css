@@ -5,25 +5,6 @@
   position: relative;
 }
 
-/* Backdrop Overlay */
-.dropdown-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(17, 24, 39, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 9998;
-  opacity: 0;
-  animation: backdropFadeIn 0.3s ease-out forwards;
-}
-
-@keyframes backdropFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 .category-filters {
   display: flex;
   justify-content: center;
@@ -51,7 +32,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease;
   cursor: pointer;
   position: relative;
   white-space: nowrap;
@@ -244,29 +225,60 @@
   color: #ffffff;
 }
 
-
 /* Category Wrapper with Dropdown */
 .category-wrapper {
   position: relative;
   display: inline-block;
 }
 
-/* Subcategory Dropdown Styles - Dark Theme */
+/* Pure CSS hover behavior - dropdown stays visible when hovering over dropdown content */
 .subcategory-dropdown {
-  position: fixed;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 9999;
   margin-top: 0.75rem;
   opacity: 0;
-  animation: fadeInDown 0.3s ease-out forwards;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
 }
 
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+/* Add invisible bridge to prevent hover state from breaking */
+.subcategory-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -0.75rem;
+  left: 0;
+  right: 0;
+  height: 0.75rem;
+  background: transparent;
+}
+
+/* Show dropdown when hovering over category wrapper */
+.category-wrapper:hover .subcategory-dropdown {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+/* Keep dropdown visible when hovering over the dropdown itself */
+.subcategory-dropdown:hover {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+/* Hide dropdown with a small delay when leaving */
+.category-wrapper .subcategory-dropdown {
+  transition-delay: 0.1s;
 }
 
 .dropdown-content {
-  background: rgba(31, 41, 55, 0.9);
+  background: rgba(31, 41, 55, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 16px;
   padding: 1rem;
@@ -274,7 +286,7 @@
   border: 1px solid #4b5563;
   min-width: 320px;
   max-width: 450px;
-  max-height: 500px;
+  max-height: 600px;
   overflow-y: auto;
 }
 
@@ -291,7 +303,7 @@
   color: #d1d5db;
   font-size: 0.95rem;
   text-align: left;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   cursor: pointer;
   margin-bottom: 0.25rem;
 }
@@ -398,11 +410,53 @@
   margin-left: 1rem;
 }
 
+/* More dropdown specific styles */
+.more-wrapper .subcategory-dropdown {
+  left: 0;
+  transform: none;
+  min-width: 280px;
+}
+
+.more-category-group {
+  position: relative;
+}
+
+.more-category-group .nested-subcategories {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: rgba(31, 41, 55, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  padding: 0.75rem;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid #4b5563;
+  min-width: 250px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.more-category-group:hover .nested-subcategories {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .filter-buttons { gap: 0.5rem; }
   .filter-btn { padding: 0.7rem 1.1rem; font-size: 0.85rem; }
-  .subcategory-dropdown { left: 0.5rem; right: 0.5rem; transform: none; margin: 0.5rem; }
+  .subcategory-dropdown { 
+    left: 0; 
+    right: 0; 
+    transform: none; 
+    margin: 0.5rem;
+    position: fixed;
+    top: auto;
+    bottom: 0;
+  }
   .dropdown-content { min-width: auto; max-width: none; }
 }
 

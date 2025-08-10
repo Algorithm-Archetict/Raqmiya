@@ -1,11 +1,4 @@
 <div class="hierarchical-category-nav">
-  <!-- Backdrop overlay -->
-  <div 
-    class="dropdown-backdrop"
-    *ngIf="hoveredCategory || showMoreDropdown"
-    (click)="onBackdropClick()"
-  ></div>
-
   <div class="category-filters">
     <div class="filter-buttons">
       <!-- All Categories Button -->
@@ -22,8 +15,6 @@
       <div 
         *ngFor="let category of visibleCategories; trackBy: trackByCategory"
         class="category-wrapper"
-        (mouseenter)="onCategoryHover(category, $event)"
-        (mouseleave)="onCategoryHover(null, $event)"
       >
         <button 
           class="filter-btn category-btn" 
@@ -32,14 +23,17 @@
         >
           <i [class]="getCategoryIcon(category.name)"></i>
           {{ category.name }}
+          <!-- Debug indicator for subcategories -->
+          <span *ngIf="category.subcategories && category.subcategories.length > 0" 
+                style="font-size: 0.7rem; margin-left: 5px; color: #10b981;">
+            ({{ category.subcategories.length }})
+          </span>
         </button>
 
-        <!-- Subcategory Dropdown -->
+        <!-- Subcategory Dropdown - Always in DOM, controlled by CSS -->
         <div 
           class="subcategory-dropdown"
-          *ngIf="hoveredCategory?.id === category.id && category.subcategories && category.subcategories.length > 0"
-          (mouseenter)="onDropdownHover()"
-          (mouseleave)="onDropdownLeave()"
+          *ngIf="category.subcategories && category.subcategories.length > 0"
         >
           <div class="dropdown-content">
             <!-- All in this category option -->
@@ -96,27 +90,18 @@
       <div 
         *ngIf="hiddenCategories.length > 0"
         class="category-wrapper more-wrapper"
-        (mouseenter)="onMoreHover(true)"
-        (mouseleave)="onMoreHover(false)"
       >
-        <!-- <button class="filter-btn more-btn">
+        <button class="filter-btn more-btn">
           <i class="fas fa-ellipsis-h"></i>
           More
-        </button> -->
+        </button>
 
         <!-- More Categories Dropdown -->
-        <div 
-          class="subcategory-dropdown more-dropdown"
-          *ngIf="showMoreDropdown"
-          (mouseenter)="onMoreDropdownHover()"
-          (mouseleave)="onMoreDropdownLeave()"
-        >
+        <div class="subcategory-dropdown more-dropdown">
           <div class="dropdown-content">
             <div 
               *ngFor="let category of hiddenCategories; trackBy: trackByCategory"
               class="more-category-group"
-              (mouseenter)="onCategoryHover(category, $event)"
-              (mouseleave)="onCategoryHover(null, $event)"
             >
               <button 
                 class="subcategory-item category-item"
@@ -134,10 +119,8 @@
 
               <!-- Subcategories in More dropdown -->
               <div 
-                *ngIf="hoveredCategory?.id === category.id && category.subcategories && category.subcategories.length > 0"
+                *ngIf="category.subcategories && category.subcategories.length > 0"
                 class="nested-subcategories"
-                (mouseenter)="onDropdownHover()"
-                (mouseleave)="onDropdownLeave()"
               >
                 <div class="subcategory-divider"></div>
                 <div class="subcategories-list">
