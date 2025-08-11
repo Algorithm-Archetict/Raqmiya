@@ -4,7 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { CategoryService } from '../../core/services/category.service';
+import { TagService } from '../../core/services/tag.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
+import { TagDTO } from '../../core/models/product/tag.dto';
 import { Navbar } from '../navbar/navbar';
 import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
@@ -55,7 +57,8 @@ export class Discover implements OnInit, AfterViewInit {
   allProducts: Product[] = [];
   filteredProducts: Product[] = [];
   recommendedProducts: Product[] = [];
-  popularTags: string[] = ['3D', 'Design', 'Audio', 'Templates', 'Icons', 'Fonts', 'Graphics', 'Code'];
+  popularTags: string[] = [];
+  availableTags: TagDTO[] = [];
   
   // Wishlist Counter for Multiple Additions
   wishlistCounter: number = 0;
@@ -66,6 +69,7 @@ export class Discover implements OnInit, AfterViewInit {
     private router: Router,
     private productService: ProductService,
     private categoryService: CategoryService,
+    private tagService: TagService,
     private authService: AuthService,
     private orderService: OrderService,
     private analyticsService: AnalyticsService
@@ -73,6 +77,7 @@ export class Discover implements OnInit, AfterViewInit {
 
   ngOnInit() {
     this.initializeProducts();
+    this.loadAvailableTags();
     this.applyFilters();
   }
 
@@ -835,6 +840,23 @@ export class Discover implements OnInit, AfterViewInit {
   }
 
   // Tag filtering
+  loadAvailableTags() {
+    this.tagService.getAllTags().subscribe({
+      next: (tags) => {
+        this.availableTags = tags;
+        this.popularTags = tags
+          .filter(tag => tag.name) // Filter out tags without names
+          .map(tag => tag.name!) // Get the names
+          .slice(0, 8); // Take first 8 tags as popular tags
+      },
+      error: (error) => {
+        console.error('Failed to load tags:', error);
+        // Fallback to default tags if API fails
+        this.popularTags = ['3D', 'Design', 'Audio', 'Templates', 'Icons', 'Fonts', 'Graphics', 'Code'];
+      }
+    });
+  }
+
   toggleTag(tag: string) {
     const index = this.selectedTags.indexOf(tag);
     if (index > -1) {

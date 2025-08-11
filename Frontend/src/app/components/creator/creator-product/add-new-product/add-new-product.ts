@@ -9,6 +9,8 @@ import { ProductCreateRequestDTO } from '../../../../core/models/product/product
 import { ProductService } from '../../../../core/services/product.service';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { FileDTO } from '../../../../core/models/product/file.dto';
+import { TagService } from '../../../../core/services/tag.service';
+import { TagDTO } from '../../../../core/models/product/tag.dto';
 import { CATEGORIES, Category } from '../../../../core/data/categories';
 
 interface ProductDetail {
@@ -62,7 +64,12 @@ export class AddNewProduct implements OnInit {
   selectedParentCategory: Category | null = null;
   hoveredCategory: number | null = null;
 
-  constructor(private fb: FormBuilder, private productService: ProductService) {}
+  // Tag-related properties
+  availableTags: TagDTO[] = [];
+  selectedTags: TagDTO[] = [];
+  newTagInput: string = '';
+
+  constructor(private fb: FormBuilder, private productService: ProductService, private tagService: TagService) {}
 
   ngOnInit(): void {
     this.parentCategories = CATEGORIES.filter(c => !c.parentId);
@@ -81,6 +88,69 @@ export class AddNewProduct implements OnInit {
       license: [''],
       updates: ['']
     });
+    
+    // Load available tags
+    this.loadAvailableTags();
+  }
+
+  // Tag management methods
+  loadAvailableTags(): void {
+    this.tagService.getAllTags().subscribe({
+      next: (tags) => {
+        this.availableTags = tags;
+      },
+      error: (error) => {
+        console.error('Failed to load tags:', error);
+      }
+    });
+  }
+
+  getFilteredAvailableTags(): TagDTO[] {
+    return this.availableTags.filter(tag => 
+      !this.selectedTags.some(selected => selected.id === tag.id)
+    );
+  }
+
+  selectSuggestedTag(tag: TagDTO): void {
+    if (this.selectedTags.length < 5 && !this.selectedTags.some(selected => selected.id === tag.id)) {
+      this.selectedTags.push(tag);
+    }
+  }
+
+  addCustomTag(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    
+    const tagName = this.newTagInput.trim();
+    if (tagName && this.selectedTags.length < 5) {
+      // Check if tag already exists in available tags
+      const existingTag = this.availableTags.find(tag => 
+        tag.name && tag.name.toLowerCase() === tagName.toLowerCase()
+      );
+      
+      if (existingTag) {
+        // Use existing tag
+        this.selectSuggestedTag(existingTag);
+      } else {
+        // Create new tag (for now, just add it locally - backend will handle creation)
+        const newTag: TagDTO = {
+          id: 0, // Temporary ID, backend will assign real ID
+          name: tagName
+        };
+        this.selectedTags.push(newTag);
+      }
+      
+      this.newTagInput = '';
+    }
+  }
+
+  onTagInputChange(event: any): void {
+    this.newTagInput = event.target.value;
+  }
+
+  removeTag(index: number): void {
+    this.selectedTags.splice(index, 1);
   }
 
   getCategoryIcon(categoryName: string): string {
@@ -198,7 +268,7 @@ export class AddNewProduct implements OnInit {
         license: formValue.license,
         updates: formValue.updates,
         categoryId: formValue.categoryId, // Changed to single categoryId
-        tagIds: [] // TODO: Add tag selection
+        tagIds: this.selectedTags.map(tag => tag.id).filter(id => id > 0) // Only include tags with real IDs
       };
 
       this.productService.createProduct(productDto).subscribe({
@@ -380,7 +450,7 @@ export class AddNewProduct implements OnInit {
         license: formValue.license,
         updates: formValue.updates,
         categoryId: formValue.categoryId, // Changed to single categoryId
-        tagIds: [], // TODO: Add tag selection
+        tagIds: this.selectedTags.map(tag => tag.id).filter(id => id > 0), // Only include tags with real IDs
         status: 'published' // Set status to published
       };
       
