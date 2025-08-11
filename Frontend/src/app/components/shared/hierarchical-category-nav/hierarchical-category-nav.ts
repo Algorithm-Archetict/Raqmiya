@@ -18,9 +18,6 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   visibleCategories: Category[] = [];
   hiddenCategories: Category[] = [];
   
-  // Configuration
-  maxVisibleCategories = 16;
-
   constructor(
     private categoryService: CategoryService,
     private elementRef: ElementRef
@@ -39,22 +36,17 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     this.categoryService.getCategoriesHierarchy().subscribe({
       next: (apiCategories: CategoryDTO[]) => {
         this.categories = apiCategories.map((cat: CategoryDTO) => this.categoryService.convertToCategory(cat));
-        this.organizeCategories();
+        this.visibleCategories = this.categories;
         this.debugCategories();
       },
       error: (error: any) => {
         console.warn('Failed to load categories from API, using static data:', error);
         // Fallback to static hierarchical categories
         this.categories = HIERARCHICAL_CATEGORIES;
-        this.organizeCategories();
+        this.visibleCategories = this.categories;
         this.debugCategories();
       }
     });
-  }
-
-  organizeCategories() {
-    this.visibleCategories = this.categories.slice(0, this.maxVisibleCategories);
-    this.hiddenCategories = this.categories.slice(this.maxVisibleCategories);
   }
 
   debugCategories() {
