@@ -680,42 +680,112 @@ export class Discover implements OnInit, AfterViewInit {
   }
 
   // Category filtering
-  onCategorySelected(event: {id: number | 'all', includeNested: boolean}) {
+  onCategorySelected(event: {id: number | 'all', includeNested: boolean, allCategoryIds?: number[]}) {
+    console.log('Category selected event received:', event);
     this.selectedCategory = event.id;
-    this.loadProductsByCategory(event.id, event.includeNested);
+    
+    if (event.allCategoryIds && event.allCategoryIds.length > 0) {
+      // Use hierarchical search with all category IDs
+      this.loadProductsByMultipleCategories(event.allCategoryIds);
+    } else {
+      // Use single category search
+      this.loadProductsByCategory(event.id, event.includeNested);
+    }
+  }
+
+  // New method to load products by multiple categories (for hierarchical search)
+  loadProductsByMultipleCategories(categoryIds: number[]) {
+    console.log('=== Loading Products by Multiple Categories ===');
+    console.log('Category IDs:', categoryIds);
+    console.log('API URL will be:', `http://localhost:5255/api/products/by-categories?${categoryIds.map(id => `categoryIds=${id}`).join('&')}`);
+    
+    this.loading = true;
+    
+    // Use the new single API endpoint for multiple categories
+    this.productService.getProductsByMultipleCategories(categoryIds, 1, 1000).subscribe({
+      next: (result) => {
+        console.log('✅ Products loaded successfully for multiple categories:', result);
+        console.log('Number of products found:', result.items?.length || 0);
+        console.log('Products:', result.items);
+        
+        this.updateProductsFromAPI(result.items || []);
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error loading products for multiple categories:', error);
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          message: error.message
+        });
+        this.loading = false;
+      }
+    });
   }
 
   loadProductsByCategory(categoryId: number | 'all', includeNested: boolean = true) {
+    console.log('=== Loading Products by Category ===');
+    console.log('Category ID:', categoryId);
+    console.log('Include nested:', includeNested);
+    console.log('API URL will be:', `http://localhost:5255/api/products${categoryId !== 'all' ? '?categoryId=' + categoryId : ''}`);
+    
     this.loading = true;
     
     if (categoryId === 'all') {
-      // Load all products
-      this.productService.getProductList(1, 1000).subscribe({
-        next: (products: ProductListItemDTO[]) => {
-          this.updateProductsFromAPI(products);
+      // Load all products using the main products endpoint
+      this.productService.getAll(1, 1000).subscribe({
+        next: (result) => {
+          console.log('✅ All products loaded successfully:', result);
+          console.log('Number of products:', result.items?.length || 0);
+          this.updateProductsFromAPI(result.items || []);
           this.loading = false;
         },
         error: (error) => {
-          console.error('Error loading all products:', error);
+          console.error('❌ Error loading all products:', error);
           this.loading = false;
         }
       });
     } else {
-      // Load products by category
-      const categoryCall = includeNested 
-        ? this.categoryService.getCategoryProductsIncludeNested(categoryId, 1, 1000)
-        : this.categoryService.getCategoryProducts(categoryId, 1, 1000);
-      
-      categoryCall.subscribe({
+      // Use the Products API with categoryId parameter - this calls the backend GetProducts endpoint
+      console.log('🔍 Calling ProductService.getProductsByCategory...');
+      this.productService.getProductsByCategory(categoryId, 1, 1000).subscribe({
         next: (result) => {
-          // Convert category service DTOs to main DTOs
-          const convertedProducts = result.items.map(item => this.convertCategoryProductToMain(item));
-          this.updateProductsFromAPI(convertedProducts);
+          console.log('✅ Products loaded successfully for category', categoryId, ':', result);
+          console.log('Number of products found:', result.items?.length || 0);
+          console.log('Products:', result.items);
+          this.updateProductsFromAPI(result.items || []);
           this.loading = false;
         },
         error: (error) => {
-          console.error('Error loading products by category:', error);
+          console.error('❌ Error loading products for category', categoryId, ':', error);
+          console.error('Error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            url: error.url,
+            message: error.message
+          });
           this.loading = false;
+          
+          // Fallback: try the category service approach
+          console.log('🔄 Falling back to category service...');
+          const categoryCall = includeNested 
+            ? this.categoryService.getCategoryProductsIncludeNested(categoryId, 1, 1000)
+            : this.categoryService.getCategoryProducts(categoryId, 1, 1000);
+          
+          categoryCall.subscribe({
+            next: (result) => {
+              console.log('✅ Fallback: Products loaded for category', categoryId, ':', result);
+              console.log('Fallback: Number of products found:', result.items?.length || 0);
+              const convertedProducts = result.items.map(item => this.convertCategoryProductToMain(item));
+              this.updateProductsFromAPI(convertedProducts);
+              this.loading = false;
+            },
+            error: (fallbackError) => {
+              console.error('❌ Fallback error loading products by category:', fallbackError);
+              this.loading = false;
+            }
+          });
         }
       });
     }
