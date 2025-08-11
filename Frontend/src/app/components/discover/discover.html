@@ -37,6 +37,7 @@
             <!-- Hierarchical Category Navigation -->
             <div class="category-filters">
               <app-hierarchical-category-nav 
+                [navigateToPages]="false"
                 (categorySelected)="onCategorySelected($event)">
               </app-hierarchical-category-nav>
             </div>
@@ -218,6 +219,16 @@
         
         <!-- Products Grid -->
         <div class="col-lg-9">
+          <!-- Debug Info -->
+          <div class="debug-info" style="background: #f8f9fa; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+            <h6>Debug Info:</h6>
+            <p>Loading: {{ loading }}</p>
+            <p>All Products Count: {{ allProducts.length }}</p>
+            <p>Filtered Products Count: {{ filteredProducts.length }}</p>
+            <p>Recommended Products Count: {{ recommendedProducts.length }}</p>
+            <p>Selected Category: {{ selectedCategory }}</p>
+          </div>
+          
           <div class="products-grid">
             <div class="row g-4">
               <div 

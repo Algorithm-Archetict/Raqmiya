@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, Output, EventEmitter, ViewEncapsulation, AfterViewInit, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Category, HIERARCHICAL_CATEGORIES } from '../../../core/data/categories';
 import { CategoryService, CategoryDTO } from '../../../core/services/category.service';
 
@@ -12,6 +13,7 @@ import { CategoryService, CategoryDTO } from '../../../core/services/category.se
 })
 export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   @Input() selectedCategoryId: number | 'all' = 'all';
+  @Input() navigateToPages: boolean = true; // New input to control navigation behavior
   @Output() categorySelected = new EventEmitter<{id: number | 'all', includeNested: boolean, allCategoryIds?: number[]}>();
 
   categories: Category[] = [];
@@ -31,7 +33,8 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   
   constructor(
     private categoryService: CategoryService,
-    private elementRef: ElementRef
+    private elementRef: ElementRef,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -87,6 +90,32 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     
     this.selectedCategoryId = categoryId;
     
+    // Navigate to category page if enabled
+    if (this.navigateToPages && categoryId !== 'all') {
+      const categorySlug = this.getCategorySlugById(categoryId);
+      if (categorySlug) {
+        this.router.navigate(['/category', categorySlug], { 
+          queryParams: { sort: 'curated' }
+        });
+        // Hide dropdowns
+        this.hoveredCategory = null;
+        this.showMoreDropdown = false;
+        return;
+      }
+    }
+    
+    // Navigate to discover page for 'all' categories
+    if (categoryId === 'all') {
+      if (this.navigateToPages) {
+        this.router.navigate(['/discover']);
+        // Hide dropdowns
+        this.hoveredCategory = null;
+        this.showMoreDropdown = false;
+        return;
+      }
+    }
+    
+    // Fallback to event emission if navigation is disabled or fails
     // If includeNested is true and we have a parent category, collect all subcategory IDs
     if (includeNested && categoryId !== 'all') {
       const category = this.categories.find(c => c.id === categoryId);
@@ -128,6 +157,21 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     
     this.selectedCategoryId = categoryId;
     
+    // Navigate to category page if enabled
+    if (this.navigateToPages) {
+      const categorySlug = this.getCategorySlugById(categoryId);
+      if (categorySlug) {
+        this.router.navigate(['/category', categorySlug], { 
+          queryParams: { sort: 'curated' }
+        });
+        // Hide dropdowns
+        this.hoveredCategory = null;
+        this.showMoreDropdown = false;
+        return;
+      }
+    }
+    
+    // Fallback to event emission if navigation is disabled or fails
     // If includeNested is true, collect all subcategory IDs
     if (includeNested) {
       const category = this.findCategoryById(categoryId);
@@ -145,6 +189,31 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     // Hide dropdowns
     this.hoveredCategory = null;
     this.showMoreDropdown = false;
+  }
+
+  // Helper method to get category slug by ID
+  private getCategorySlugById(categoryId: number): string | null {
+    const slugMap: { [key: number]: string } = {
+      1: 'fitness-health',
+      2: 'self-improvement',
+      3: 'writings-publishing-education',
+      4: 'business-money',
+      5: 'drawing-painting',
+      6: '3d',
+      7: 'music-sound-design',
+      8: 'films',
+      9: 'software-development',
+      10: 'gaming',
+      11: 'photography',
+      12: 'comics-graphic-novels',
+      13: 'fiction-books',
+      14: 'education',
+      15: 'design',
+      110: 'audio',
+      111: 'recorded-music'
+    };
+    
+    return slugMap[categoryId] || null;
   }
 
   // Helper method to find category by ID in the hierarchy

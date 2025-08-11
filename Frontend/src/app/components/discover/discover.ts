@@ -646,6 +646,10 @@ export class Discover implements OnInit, AfterViewInit {
 
   // Helper method to update products from API response
   private updateProductsFromAPI(products: ProductListItemDTO[]) {
+    console.log('=== Updating Products from API ===');
+    console.log('Raw API products:', products);
+    console.log('Number of products received:', products.length);
+    
     this.allProducts = products.map(product => ({
       id: product.id,
       title: product.name || 'Untitled Product',
@@ -666,8 +670,15 @@ export class Discover implements OnInit, AfterViewInit {
       loadingPurchase: false
     }));
     
+    console.log('Mapped allProducts:', this.allProducts);
+    console.log('Number of mapped products:', this.allProducts.length);
+    
     this.recommendedProducts = this.allProducts.slice(0, 6);
     this.filteredProducts = [...this.allProducts];
+    
+    console.log('Recommended products:', this.recommendedProducts);
+    console.log('Filtered products:', this.filteredProducts);
+    console.log('filteredProducts length:', this.filteredProducts.length);
     
     // Load wishlist status for all products
     this.loadWishlistStatus();

@@ -1,0 +1,222 @@
+<div class="category-page">
+  <!-- Navbar -->
+  <app-navbar></app-navbar>
+
+  <!-- Category Navigation -->
+  <div class="category-nav-container">
+    <app-hierarchical-category-nav 
+      (categorySelected)="onCategorySelected($event)">
+    </app-hierarchical-category-nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <!-- Category Header -->
+      <div class="category-header">
+        <div class="category-title">
+          <h1>{{ categoryName }}</h1>
+          <p class="category-description" *ngIf="currentCategory?.description">
+            {{ currentCategory?.description }}
+          </p>
+        </div>
+        
+        <!-- Search and Sort Controls -->
+        <div class="controls-section">
+          <div class="search-box">
+            <input 
+              type="text" 
+              [(ngModel)]="searchQuery" 
+              (input)="onSearch()"
+              placeholder="Search products..."
+              class="search-input">
+            <i class="fas fa-search search-icon"></i>
+          </div>
+          
+          <div class="sort-dropdown">
+            <select [(ngModel)]="sortBy" (change)="onSortChange()" class="sort-select">
+              <option *ngFor="let option of sortOptions" [value]="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters Section -->
+      <div class="filters-section">
+        <div class="filters-row">
+          <!-- Price Range -->
+          <div class="filter-group">
+            <label class="filter-label">Max Price: ${{ priceRange }}</label>
+            <input 
+              type="range" 
+              [(ngModel)]="priceRange" 
+              (input)="onPriceRangeChange()"
+              min="0" 
+              max="1000" 
+              step="10"
+              class="price-slider">
+          </div>
+
+          <!-- Rating Filter -->
+          <div class="filter-group">
+            <label class="filter-label">Minimum Rating</label>
+            <div class="rating-buttons">
+              <button 
+                *ngFor="let rating of [0, 1, 2, 3, 4, 5]"
+                (click)="filterByRating(rating)"
+                [class.active]="selectedRating === rating"
+                class="rating-btn">
+                <span *ngIf="rating === 0">All</span>
+                <span *ngIf="rating > 0">{{ rating }}+ ⭐</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tags Filter -->
+          <div class="filter-group">
+            <label class="filter-label">Tags</label>
+            <div class="tags-filter">
+              <button 
+                *ngFor="let tag of availableTags"
+                (click)="toggleTag(tag)"
+                [class.active]="selectedTags.includes(tag)"
+                class="tag-btn">
+                {{ tag }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Info -->
+      <div class="results-info">
+        <p class="results-count">
+          Showing {{ filteredProducts.length }} of {{ totalProducts }} products
+        </p>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Loading products...</p>
+      </div>
+
+      <!-- Products Grid -->
+      <div *ngIf="!loading" class="products-section">
+        <div class="products-grid" #productsContainer>
+          <div 
+            *ngFor="let product of filteredProducts" 
+            class="product-card"
+            (click)="viewProduct(product.id)">
+            
+            <!-- Product Image -->
+            <div class="product-image-container">
+              <img [src]="product.image" [alt]="product.title" class="product-image">
+              
+              <!-- Badge -->
+              <div *ngIf="product.badge" class="product-badge">
+                {{ product.badge }}
+              </div>
+
+              <!-- Wishlist Button -->
+              <button 
+                *ngIf="isLoggedIn() && !product.isPurchased"
+                class="wishlist-btn"
+                [class.active]="product.inWishlist"
+                [class.loading]="product.loadingWishlist"
+                [class.hovered]="product.wishlistHovered"
+                (click)="toggleWishlist(product, $event)"
+                (mouseenter)="onWishlistHover(product, true, $event)"
+                (mouseleave)="onWishlistHover(product, false, $event)">
+                <i class="fas fa-heart"></i>
+              </button>
+
+              <!-- Purchased Indicator -->
+              <div *ngIf="product.isPurchased" class="purchased-indicator">
+                <i class="fas fa-check-circle"></i>
+                <span>Owned</span>
+              </div>
+            </div>
+
+            <!-- Product Info -->
+            <div class="product-info">
+              <h3 class="product-title">{{ product.title }}</h3>
+              <p class="product-creator">by {{ product.creator }}</p>
+              
+              <div class="product-rating">
+                <div class="stars">
+                  <span class="star" [class.filled]="product.rating >= 1">⭐</span>
+                  <span class="star" [class.filled]="product.rating >= 2">⭐</span>
+                  <span class="star" [class.filled]="product.rating >= 3">⭐</span>
+                  <span class="star" [class.filled]="product.rating >= 4">⭐</span>
+                  <span class="star" [class.filled]="product.rating >= 5">⭐</span>
+                </div>
+                <span class="rating-text">{{ product.rating.toFixed(1) }}</span>
+              </div>
+
+              <div class="product-price">
+                ${{ product.price.toFixed(2) }}
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="product-actions" *ngIf="isLoggedIn()">
+                <button 
+                  *ngIf="product.isPurchased"
+                  class="action-btn primary"
+                  (click)="goToLibrary(product, $event)">
+                  <i class="fas fa-book-open"></i>
+                  Go to Library
+                </button>
+                
+                <button 
+                  *ngIf="!product.isPurchased"
+                  class="action-btn primary"
+                  (click)="viewProduct(product.id)">
+                  <i class="fas fa-eye"></i>
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="filteredProducts.length === 0 && !loading" class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-box-open"></i>
+          </div>
+          <h3>No products found</h3>
+          <p>Try adjusting your filters or search terms</p>
+          <button class="action-btn" (click)="searchQuery = ''; selectedTags = []; selectedRating = 0; applyFilters()">
+            Clear All Filters
+          </button>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1" class="pagination-container">
+        <div class="pagination">
+          <button 
+            class="page-btn"
+            [disabled]="currentPage <= 1"
+            (click)="onPageChange(currentPage - 1)">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          
+          <span class="page-info">
+            Page {{ currentPage }} of {{ totalPages }}
+          </span>
+          
+          <button 
+            class="page-btn"
+            [disabled]="currentPage >= totalPages"
+            (click)="onPageChange(currentPage + 1)">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

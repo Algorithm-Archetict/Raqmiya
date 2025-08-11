@@ -23,6 +23,7 @@ import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
 import { AllReviews } from './components/products/all-reviews/all-reviews';
 import { WishList } from './components/wish-list/wish-list';
+import { CategoryPageComponent } from './components/category-page/category-page.component';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -31,6 +32,7 @@ export const routes: Routes = [
     // Public routes
     {path:"discover",component:Discover},
     {path:"discover/:id",component:ProductDetails},
+    {path:"category/:categorySlug",component:CategoryPageComponent},
     {path:"login", redirectTo:"auth/login", pathMatch:"full"}, // Redirect /login to /auth/login
     {path:"auth/login", component:Login},
     {path:"auth/register", component:Register},
