@@ -186,4 +186,33 @@ export class ProductService {
   deleteReview(productId: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/${productId}/reviews/my-review`);
   }
+
+  // ======= CATEGORY FILTERING =======
+  getProductsByCategory(categoryId: number, pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    return this.http.get<ProductListItemDTOPagedResultDTO>(
+      `${this.apiUrl}?categoryId=${categoryId}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+    );
+  }
+
+  // Search products by query
+  searchProducts(search: string, pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    return this.http.get<ProductListItemDTOPagedResultDTO>(
+      `${this.apiUrl}?search=${encodeURIComponent(search)}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+    );
+  }
+
+  // Get products by tag
+  getProductsByTag(tagId: number, pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    return this.http.get<ProductListItemDTOPagedResultDTO>(
+      `${this.apiUrl}?tagId=${tagId}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+    );
+  }
+
+  // Get products by multiple categories (for hierarchical filtering)
+  getProductsByMultipleCategories(categoryIds: number[], pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    const categoryParams = categoryIds.map(id => `categoryIds=${id}`).join('&');
+    return this.http.get<ProductListItemDTOPagedResultDTO>(
+      `${this.apiUrl}/by-categories?${categoryParams}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+    );
+  }
 }

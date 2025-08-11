@@ -12,11 +12,22 @@ import { CategoryService, CategoryDTO } from '../../../core/services/category.se
 })
 export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   @Input() selectedCategoryId: number | 'all' = 'all';
-  @Output() categorySelected = new EventEmitter<{id: number | 'all', includeNested: boolean}>();
+  @Output() categorySelected = new EventEmitter<{id: number | 'all', includeNested: boolean, allCategoryIds?: number[]}>();
 
   categories: Category[] = [];
   visibleCategories: Category[] = [];
   hiddenCategories: Category[] = [];
+  hoveredCategory: Category | null = null;
+  showMoreDropdown = false;
+  
+  // Track if mouse is over category button or dropdown
+  private isOverCategoryButton = false;
+  private isOverCategoryDropdown = false;
+  private isOverMoreButton = false;
+  private isOverMoreDropdown = false;
+
+  // Configuration
+  maxVisibleCategories = 16; // Show first 6 categories directly, rest in "More" dropdown
   
   constructor(
     private categoryService: CategoryService,
@@ -36,17 +47,22 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     this.categoryService.getCategoriesHierarchy().subscribe({
       next: (apiCategories: CategoryDTO[]) => {
         this.categories = apiCategories.map((cat: CategoryDTO) => this.categoryService.convertToCategory(cat));
-        this.visibleCategories = this.categories;
+        this.organizeCategories();
         this.debugCategories();
       },
       error: (error: any) => {
         console.warn('Failed to load categories from API, using static data:', error);
         // Fallback to static hierarchical categories
         this.categories = HIERARCHICAL_CATEGORIES;
-        this.visibleCategories = this.categories;
+        this.organizeCategories();
         this.debugCategories();
       }
     });
+  }
+
+  organizeCategories() {
+    this.visibleCategories = this.categories.slice(0, this.maxVisibleCategories);
+    this.hiddenCategories = this.categories.slice(this.maxVisibleCategories);
   }
 
   debugCategories() {
@@ -64,13 +80,175 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   }
 
   onCategoryClick(categoryId: number | 'all', includeNested: boolean = true) {
+    console.log('=== Category Nav: Category Click ===');
+    console.log('Category ID clicked:', categoryId);
+    console.log('Include nested:', includeNested);
+    console.log('Category name:', categoryId === 'all' ? 'All Categories' : this.categories.find(c => c.id === categoryId)?.name || 'Unknown');
+    
     this.selectedCategoryId = categoryId;
-    this.categorySelected.emit({ id: categoryId, includeNested });
+    
+    // If includeNested is true and we have a parent category, collect all subcategory IDs
+    if (includeNested && categoryId !== 'all') {
+      const category = this.categories.find(c => c.id === categoryId);
+      if (category && category.subcategories && category.subcategories.length > 0) {
+        const allCategoryIds = this.getAllCategoryIds(category);
+        console.log('All category IDs to search (parent + subcategories):', allCategoryIds);
+        this.categorySelected.emit({ id: categoryId, includeNested, allCategoryIds });
+      } else {
+        this.categorySelected.emit({ id: categoryId, includeNested });
+      }
+    } else {
+      this.categorySelected.emit({ id: categoryId, includeNested });
+    }
+    
+    // Hide dropdowns
+    this.hoveredCategory = null;
+    this.showMoreDropdown = false;
+  }
+
+  // Helper method to get all category IDs including subcategories recursively
+  private getAllCategoryIds(category: Category): number[] {
+    let ids = [category.id];
+    
+    if (category.subcategories) {
+      for (const subcategory of category.subcategories) {
+        ids = ids.concat(this.getAllCategoryIds(subcategory));
+      }
+    }
+    
+    return ids;
   }
 
   onSubcategoryClick(event: Event, categoryId: number, includeNested: boolean = false) {
     event.stopPropagation(); // Prevent parent category hover from closing
-    this.onCategoryClick(categoryId, includeNested);
+    console.log('=== Category Nav: Subcategory Click ===');
+    console.log('Subcategory ID clicked:', categoryId);
+    console.log('Include nested:', includeNested);
+    console.log('Subcategory name:', this.findCategoryById(categoryId)?.name || 'Unknown');
+    
+    this.selectedCategoryId = categoryId;
+    
+    // If includeNested is true, collect all subcategory IDs
+    if (includeNested) {
+      const category = this.findCategoryById(categoryId);
+      if (category && category.subcategories && category.subcategories.length > 0) {
+        const allCategoryIds = this.getAllCategoryIds(category);
+        console.log('All subcategory IDs to search:', allCategoryIds);
+        this.categorySelected.emit({ id: categoryId, includeNested, allCategoryIds });
+      } else {
+        this.categorySelected.emit({ id: categoryId, includeNested });
+      }
+    } else {
+      this.categorySelected.emit({ id: categoryId, includeNested });
+    }
+    
+    // Hide dropdowns
+    this.hoveredCategory = null;
+    this.showMoreDropdown = false;
+  }
+
+  // Helper method to find category by ID in the hierarchy
+  private findCategoryById(id: number): Category | null {
+    for (const category of this.categories) {
+      if (category.id === id) return category;
+      if (category.subcategories) {
+        for (const subcategory of category.subcategories) {
+          if (subcategory.id === id) return subcategory;
+          if (subcategory.subcategories) {
+            for (const subSubcategory of subcategory.subcategories) {
+              if (subSubcategory.id === id) return subSubcategory;
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  // --- Hover Management ---
+  onCategoryHover(category: Category | null, event?: MouseEvent) {
+    if (category) {
+      this.isOverCategoryButton = true;
+      this.hoveredCategory = category;
+      if (event && event.target) {
+        this.positionDropdown(event.target as HTMLElement);
+      }
+    } else {
+      this.isOverCategoryButton = false;
+      // Only hide if we're not over the dropdown either
+      this.checkAndHideDropdown();
+    }
+  }
+
+  onDropdownHover() {
+    this.isOverCategoryDropdown = true;
+  }
+
+  onDropdownLeave() {
+    this.isOverCategoryDropdown = false;
+    // Only hide if we're not over the button either
+    this.checkAndHideDropdown();
+  }
+
+  private checkAndHideDropdown() {
+    // Small delay to prevent flickering when moving between button and dropdown
+    setTimeout(() => {
+      if (!this.isOverCategoryButton && !this.isOverCategoryDropdown) {
+        this.hoveredCategory = null;
+      }
+    }, 10);
+  }
+
+  private positionDropdown(buttonElement: HTMLElement) {
+    // Wait for next tick to ensure dropdown is rendered
+    setTimeout(() => {
+      const dropdown = this.elementRef.nativeElement.querySelector('.subcategory-dropdown');
+      if (dropdown) {
+        const buttonRect = buttonElement.getBoundingClientRect();
+        const navHeight = this.elementRef.nativeElement.getBoundingClientRect().height;
+        
+        // Position the dropdown below the entire navigation area
+        const top = buttonRect.bottom + 10; // 10px gap
+        const left = buttonRect.left + (buttonRect.width / 2) - (dropdown.offsetWidth / 2);
+        
+        dropdown.style.top = `${top}px`;
+        dropdown.style.left = `${Math.max(20, Math.min(left, window.innerWidth - dropdown.offsetWidth - 20))}px`; // Keep within viewport
+        dropdown.style.transform = 'none'; // Remove the transform since we're setting exact positions
+      }
+    });
+  }
+
+  onMoreHover(show: boolean) {
+    if (show) {
+      this.isOverMoreButton = true;
+      this.showMoreDropdown = true;
+    } else {
+      this.isOverMoreButton = false;
+      this.checkAndHideMoreDropdown();
+    }
+  }
+
+  onMoreDropdownHover() {
+    this.isOverMoreDropdown = true;
+  }
+
+  onMoreDropdownLeave() {
+    this.isOverMoreDropdown = false;
+    this.checkAndHideMoreDropdown();
+  }
+
+  private checkAndHideMoreDropdown() {
+    // Small delay to prevent flickering when moving between button and dropdown
+    setTimeout(() => {
+      if (!this.isOverMoreButton && !this.isOverMoreDropdown) {
+        this.showMoreDropdown = false;
+      }
+    }, 10);
+  }
+
+  onBackdropClick() {
+    this.hoveredCategory = null;
+    this.showMoreDropdown = false;
   }
 
   getCategoryIcon(categoryName: string): string {

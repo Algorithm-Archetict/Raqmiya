@@ -45,6 +45,25 @@ namespace API.Controllers
         }
 
         /// <summary>
+        /// Get products by multiple category IDs (for hierarchical category filtering).
+        /// </summary>
+        [HttpGet("by-categories")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetProductsByCategories([FromQuery] List<int> categoryIds, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (categoryIds == null || !categoryIds.Any())
+            {
+                return BadRequest("At least one category ID must be provided.");
+            }
+
+            _logger.LogInformation("GetProductsByCategories called with categoryIds: {CategoryIds}, pageNumber: {PageNumber}, pageSize: {PageSize}", 
+                string.Join(",", categoryIds), pageNumber, pageSize);
+
+            return Ok(await _productService.GetProductsByMultipleCategoriesAsync(categoryIds, pageNumber, pageSize));
+        }
+
+        /// <summary>
         /// Get product details by ID.
         /// </summary>
         [HttpGet("{id}")]
