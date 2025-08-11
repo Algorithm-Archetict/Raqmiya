@@ -743,6 +743,35 @@ namespace API.Controllers
             return Ok(products);
         }
 
+        /// <summary>
+        /// Get all available tags.
+        /// </summary>
+        [HttpGet("tags")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(List<TagDTO>), 200)]
+        public async Task<IActionResult> GetAllTags()
+        {
+            var tags = await _productService.GetAllTagsAsync();
+            return Ok(tags);
+        }
+
+        /// <summary>
+        /// Get tags for specific categories.
+        /// </summary>
+        [HttpGet("tags/by-categories")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(List<TagDTO>), 200)]
+        public async Task<IActionResult> GetTagsForCategories([FromQuery] List<int> categoryIds)
+        {
+            if (categoryIds == null || !categoryIds.Any())
+            {
+                return BadRequest("At least one category ID must be provided.");
+            }
+
+            var tags = await _productService.GetTagsForCategoriesAsync(categoryIds);
+            return Ok(tags);
+        }
+
         // --- Helpers ---
         protected int GetCurrentUserId()
         {

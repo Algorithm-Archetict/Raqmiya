@@ -432,6 +432,80 @@
                 </div>
               </div>
             </div>
+
+            <!-- Product Tags Section -->
+            <div class="section-divider"></div>
+            <div class="form-group">
+              <label class="form-label">Product Tags</label>
+              <div class="tags-section">
+                <p class="tags-hint">
+                  Add up to 5 tags to help customers find your product. Tags make your product discoverable to your target audience.
+                </p>
+                
+                <!-- Tag Input -->
+                <div class="tag-input-container" *ngIf="selectedTags.length < 5">
+                  <input 
+                    type="text" 
+                    class="form-input tag-input"
+                    placeholder="Type a tag and press Enter"
+                    [(ngModel)]="newTagInput"
+                    [ngModelOptions]="{standalone: true}"
+                    (keydown.enter)="addCustomTag($event)"
+                    (input)="onTagInputChange($event)"
+                  >
+                  <button 
+                    class="btn btn-secondary add-tag-btn"
+                    (click)="addCustomTag()"
+                    [disabled]="!newTagInput.trim() || selectedTags.length >= 5"
+                  >
+                    Add Tag
+                  </button>
+                </div>
+
+                <!-- Popular/Suggested Tags -->
+                <div class="suggested-tags" *ngIf="availableTags.length > 0">
+                  <h5 class="suggested-tags-title">Suggested Tags:</h5>
+                  <div class="tags-chips">
+                    <span 
+                      *ngFor="let tag of getFilteredAvailableTags()" 
+                      class="tag-chip suggested"
+                      [class.disabled]="selectedTags.length >= 5"
+                      (click)="selectSuggestedTag(tag)"
+                    >
+                      <i class="fas fa-plus"></i>
+                      {{ tag.name }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Selected Tags -->
+                <div class="selected-tags" *ngIf="selectedTags.length > 0">
+                  <h5 class="selected-tags-title">Selected Tags ({{ selectedTags.length }}/5):</h5>
+                  <div class="tags-chips">
+                    <span 
+                      *ngFor="let tag of selectedTags; let i = index" 
+                      class="tag-chip selected"
+                    >
+                      {{ tag.name }}
+                      <button class="remove-tag-btn" (click)="removeTag(i)">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Tag Guidelines -->
+                <div class="tag-guidelines">
+                  <h6 class="guidelines-title">Tag Guidelines:</h6>
+                  <ul class="guidelines-list">
+                    <li>Use specific, relevant keywords (e.g., "3D Models", "Unity Assets", "Game Ready")</li>
+                    <li>Avoid generic words like "good", "quality", "best"</li>
+                    <li>Think about what your target customers would search for</li>
+                    <li>Use categories or style descriptors (e.g., "Low Poly", "Realistic", "Cartoon")</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
           
           <!-- Right Section - Preview -->
