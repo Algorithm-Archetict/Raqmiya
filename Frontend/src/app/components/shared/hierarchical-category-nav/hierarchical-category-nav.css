@@ -64,6 +64,19 @@
   opacity: 1;
 }
 
+/* Subcategory Indicator */
+.subcategory-indicator {
+  font-size: 0.7rem !important;
+  margin-left: 0.25rem;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover .subcategory-indicator {
+  opacity: 1;
+  transform: rotate(180deg);
+}
+
 /* Elegant Category-Specific Colors - Extended to cover all categories */
 .category-wrapper:nth-of-type(1) .filter-btn,
 .category-wrapper:nth-of-type(46) .filter-btn,
