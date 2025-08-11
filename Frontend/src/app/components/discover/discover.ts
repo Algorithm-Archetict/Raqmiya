@@ -9,6 +9,8 @@ import { Navbar } from '../navbar/navbar';
 import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
 import { HierarchicalCategoryNav } from '../shared/hierarchical-category-nav/hierarchical-category-nav';
+import { AnalyticsService } from '../../core/services/analytics.service';
+import { ProductCarouselComponent } from '../shared/product-carousel/product-carousel.component';
 
 interface Product {
   id: number;
@@ -32,7 +34,7 @@ interface Product {
 
 @Component({
   selector: 'app-discover',
-  imports: [CommonModule, FormsModule, RouterModule, Navbar, HierarchicalCategoryNav],
+  imports: [CommonModule, FormsModule, RouterModule, Navbar, HierarchicalCategoryNav, ProductCarouselComponent],
   templateUrl: './discover.html',
   styleUrl: './discover.css',
   encapsulation: ViewEncapsulation.None
@@ -65,7 +67,8 @@ export class Discover implements OnInit, AfterViewInit {
     private productService: ProductService,
     private categoryService: CategoryService,
     private authService: AuthService,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private analyticsService: AnalyticsService
   ) {}
 
   ngOnInit() {
