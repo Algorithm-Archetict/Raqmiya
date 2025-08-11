@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ProductService } from '../../core/services/product.service';
 import { Order } from '../../core/models/order/order.model';
 
 interface CartItem {
@@ -45,6 +46,7 @@ export class CartCheckout implements OnInit {
     private cartService: CartService,
     private orderService: OrderService,
     private authService: AuthService,
+    private productService: ProductService,
     private router: Router,
     private formBuilder: FormBuilder
   ) {
@@ -88,6 +90,19 @@ export class CartCheckout implements OnInit {
     this.totalAmount = this.cartItems.reduce((total, item) => {
       return total + (item.price * 1); // Always quantity 1
     }, 0);
+  }
+
+  private async removePurchasedProductsFromWishlist() {
+    // Remove each purchased product from the user's wishlist
+    for (const item of this.cartItems) {
+      try {
+        await firstValueFrom(this.productService.removeFromWishlist(item.productId));
+        console.log(`Product ${item.productId} removed from wishlist after purchase`);
+      } catch (error) {
+        // Log error but don't fail the purchase process
+        console.warn(`Failed to remove product ${item.productId} from wishlist:`, error);
+      }
+    }
   }
   
   async processCheckout() {
@@ -182,6 +197,9 @@ export class CartCheckout implements OnInit {
       if (orderResponse?.success) {
         // Clear cart
         this.cartService.clearCart().subscribe();
+        
+        // Remove purchased products from wishlist
+        await this.removePurchasedProductsFromWishlist();
         
         // Redirect to purchased products page
         this.router.navigate(['/library/purchased-products'], { 

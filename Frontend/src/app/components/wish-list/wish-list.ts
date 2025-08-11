@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
+import { CartService } from '../../core/services/cart.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
 
 
@@ -30,7 +31,11 @@ export class WishList implements OnInit {
   isLoading: boolean = false;
   errorMessage: string = '';
 
-  constructor(private productService: ProductService) {}
+  constructor(
+    private productService: ProductService,
+    private cartService: CartService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.loadWishlist();
@@ -45,7 +50,7 @@ export class WishList implements OnInit {
         this.wishlistProducts = products.map(product => ({
           id: product.id,
           title: product.name || 'Untitled Product',
-          creator: product.creatorUsername || 'Unknown Creator',
+          creator: product.creatorUsername && product.creatorUsername.trim() !== '' ? product.creatorUsername : 'Unknown Creator',
           price: product.price,
           rating: product.averageRating,
           ratingCount: product.salesCount,
@@ -55,6 +60,10 @@ export class WishList implements OnInit {
           badge: product.isPublic ? 'Public' : 'Private',
           addedDate: new Date() // You might want to add this to the DTO
         }));
+        
+        // Debug log to see what data we're getting
+        console.log('Wishlist products:', this.wishlistProducts);
+        console.log('Raw products from API:', products);
         this.isLoading = false;
       },
       error: (error) => {
@@ -83,7 +92,11 @@ export class WishList implements OnInit {
     return url;
   }
 
-  removeFromWishlist(productId: number) {
+  removeFromWishlist(productId: number, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    
     this.productService.removeFromWishlist(productId).subscribe({
       next: () => {
         // Remove from local array
@@ -97,15 +110,39 @@ export class WishList implements OnInit {
     });
   }
 
-  addToCart(productId: number) {
-    // TODO: Implement add to cart functionality
-    this.showToast(`Product added to cart`, 'success');
+  addToCart(productId: number, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    this.cartService.addToCart(productId, 1).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('Product added to cart successfully');
+          // Redirect to cart-checkout page
+          this.router.navigate(['/cart-checkout']);
+        } else {
+          console.error('Failed to add to cart:', response.message);
+          this.showToast(response.message || 'Failed to add product to cart', 'error');
+        }
+      },
+      error: (error) => {
+        console.error('Error adding to cart:', error);
+        // Check if it's a duplicate item error (400 Bad Request)
+        if (error.status === 400) {
+          // Product is likely already in cart, redirect to cart page
+          console.log('Product already in cart, redirecting to cart page');
+          this.router.navigate(['/cart-checkout']);
+        } else {
+          this.showToast('Failed to add product to cart', 'error');
+        }
+      }
+    });
   }
 
   viewProduct(productId: number) {
     // Navigate to product details
-    // You can implement navigation here
-    console.log('View product:', productId);
+    this.router.navigate(['/discover', productId]);
   }
 
   // Show toast notification

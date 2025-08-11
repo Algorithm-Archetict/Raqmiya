@@ -6,6 +6,7 @@ import { Subscription, firstValueFrom } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ProductService } from '../../core/services/product.service';
 import { Cart, CartItem } from '../../core/models/cart/cart.model';
 import { PaymentMethod, CustomerInfo } from '../../core/models/order/order.model';
 
@@ -70,7 +71,8 @@ export class Checkout implements OnInit, OnDestroy {
     private router: Router,
     private cartService: CartService,
     private orderService: OrderService,
-    private authService: AuthService
+    private authService: AuthService,
+    private productService: ProductService
   ) {}
 
   ngOnInit() {
@@ -239,6 +241,9 @@ export class Checkout implements OnInit, OnDestroy {
           // Clear cart after successful payment
           this.cartService.clearCart().subscribe();
           
+          // Remove purchased products from wishlist
+          await this.removePurchasedProductsFromWishlist();
+          
           // Redirect to success page or library
           setTimeout(() => {
             this.router.navigate(['/library']);
@@ -291,5 +296,18 @@ export class Checkout implements OnInit, OnDestroy {
 
   getItemCount(): number {
     return this.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  private async removePurchasedProductsFromWishlist() {
+    // Remove each purchased product from the user's wishlist
+    for (const item of this.cartItems) {
+      try {
+        await firstValueFrom(this.productService.removeFromWishlist(item.productId));
+        console.log(`Product ${item.productId} removed from wishlist after purchase`);
+      } catch (error) {
+        // Log error but don't fail the purchase process
+        console.warn(`Failed to remove product ${item.productId} from wishlist:`, error);
+      }
+    }
   }
 }

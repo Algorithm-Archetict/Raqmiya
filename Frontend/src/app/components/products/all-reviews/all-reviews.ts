@@ -70,7 +70,9 @@ export class AllReviews implements OnInit {
       }
     });
   }
-
+  goBack() {
+    window.history.back();
+  }
   fetchReviews(): void {
     this.isLoading = true;
     this.error = null;

@@ -157,7 +157,7 @@ namespace Core.Services
             var purchasedProducts = new List<PurchasedProductDTO>();
             foreach (var license in licenses)
             {
-                var product = await _productRepository.GetByIdAsync(license.ProductId);
+                var product = await _productRepository.GetProductWithAllDetailsAsync(license.ProductId);
                 if (product == null) continue;
                 
                 var order = await _orderRepository.GetByIdAsync(license.OrderId);
@@ -166,14 +166,15 @@ namespace Core.Services
                 var orderItem = order.OrderItems.FirstOrDefault(oi => oi.ProductId == license.ProductId);
                 if (orderItem == null) continue;
                 
-                // Get product files
-                var files = await _productRepository.GetProductFilesAsync(product.Id);
-                var fileDtos = files.Select(f => new FileDTO 
-                { 
-                    Id = f.Id, 
-                    Name = f.Name, 
-                    FileUrl = f.FileUrl 
-                }).ToList();
+                            // Get product files
+            var files = await _productRepository.GetProductFilesAsync(product.Id);
+            var fileDtos = files.Select(f => new FileDTO 
+            { 
+                Id = f.Id, 
+                Name = f.Name, 
+                FileUrl = f.FileUrl,
+                Size = f.Size
+            }).ToList();
                 
                 purchasedProducts.Add(new PurchasedProductDTO
                 {
@@ -203,7 +204,7 @@ namespace Core.Services
             
             if (license == null) return null;
             
-            var product = await _productRepository.GetByIdAsync(license.ProductId);
+            var product = await _productRepository.GetProductWithAllDetailsAsync(license.ProductId);
             if (product == null) return null;
             
             var order = await _orderRepository.GetByIdAsync(license.OrderId);
@@ -218,7 +219,8 @@ namespace Core.Services
             { 
                 Id = f.Id, 
                 Name = f.Name, 
-                FileUrl = f.FileUrl 
+                FileUrl = f.FileUrl,
+                Size = f.Size
             }).ToList();
             
             return new PurchasedProductDTO
