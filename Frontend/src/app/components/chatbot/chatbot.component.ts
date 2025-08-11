@@ -44,6 +44,15 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.checkAdminStatus();
     this.loadChatHistory();
+    
+    // Subscribe to auth state changes to update chatbot role
+    this.authService.isLoggedIn$.subscribe(isLoggedIn => {
+      if (isLoggedIn) {
+        this.updateChatbotRole();
+      } else {
+        this.clearChatbotRole();
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -51,8 +60,21 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   }
 
   private checkAdminStatus() {
+    // Check chatbot's local role storage first
+    const chatbotRole = this.getChatbotRole();
+    if (chatbotRole) {
+      this.isAdmin = chatbotRole === 'Admin';
+      console.log('Chatbot role from local storage:', chatbotRole);
+      console.log('Is admin:', this.isAdmin);
+      return;
+    }
+    
+    // Fallback to auth service
     const currentUser = this.authService.getCurrentUser();
+    console.log('Current user:', currentUser);
+    console.log('User roles:', currentUser?.roles);
     this.isAdmin = currentUser?.roles?.includes('Admin') || false;
+    console.log('Is admin:', this.isAdmin);
   }
 
   private loadChatHistory() {
@@ -350,5 +372,26 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   trackByMessage(index: number, message: ChatMessage): string {
     return `${message.role}-${message.timestamp.getTime()}`;
+  }
+
+  // Chatbot-specific role management methods
+  private updateChatbotRole(): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser?.roles && currentUser.roles.length > 0) {
+      const role = currentUser.roles[0]; // Get the primary role
+      localStorage.setItem('chatbot_user_role', role);
+      console.log('Chatbot role updated:', role);
+      this.checkAdminStatus(); // Re-check admin status
+    }
+  }
+
+  private clearChatbotRole(): void {
+    localStorage.removeItem('chatbot_user_role');
+    this.isAdmin = false;
+    console.log('Chatbot role cleared');
+  }
+
+  private getChatbotRole(): string | null {
+    return localStorage.getItem('chatbot_user_role');
   }
 }

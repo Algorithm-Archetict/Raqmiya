@@ -8,6 +8,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
+import { environment } from '../../../../environments/environment';
 import Swal from 'sweetalert2';
 
 
@@ -240,7 +241,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
 
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
-      return `http://localhost:5255${url}`;
+      // Extract the base URL from the API URL (remove /api suffix)
+      const baseUrl = environment.apiUrl.replace('/api', '');
+      return `${baseUrl}${url}`;
     }
 
     // Unknown URL format, return as is
@@ -281,6 +284,21 @@ export class ProductDetails implements OnInit, AfterViewInit {
         <text x="25" y="32" font-family="Arial" font-size="20" fill="white" text-anchor="middle">${initial.toUpperCase()}</text>
       </svg>
     `)}`;
+  }
+
+  // Helper method to get user avatar with proper URL handling
+  getUserAvatar(userAvatar: string | null | undefined, userName: string | undefined): string {
+    if (userAvatar) {
+      return this.ensureFullUrl(userAvatar) || this.getPlaceholderAvatar(userName);
+    }
+    return this.getPlaceholderAvatar(userName);
+  }
+
+  // Handle image loading errors
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    const userName = img.alt;
+    img.src = this.getPlaceholderAvatar(userName);
   }
 
   getMediaItems(): MediaItem[] {

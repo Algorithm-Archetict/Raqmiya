@@ -186,4 +186,11 @@ export class AllReviews implements OnInit {
       .reduce((sum, [rating, count]) => sum + Number(rating) * count, 0);
     return totalScore / this.totalReviews;
   }
+
+  // Handle image loading errors
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    const userName = img.alt;
+    img.src = this.getPlaceholderAvatar(userName?.charAt(0) || 'A');
+  }
 }

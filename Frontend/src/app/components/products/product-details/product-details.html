@@ -403,10 +403,11 @@
               <div class="card-body">
                 <div class="review-header d-flex justify-content-between align-items-start mb-3">
                   <div class="reviewer-info d-flex align-items-center">
-                    <img [src]="review.userAvatar || getPlaceholderAvatar(review.userName)"
+                    <img [src]="getUserAvatar(review.userAvatar, review.userName)"
                          [alt]="review.userName"
                          class="reviewer-avatar rounded-circle me-3"
-                         style="width: 48px; height: 48px; object-fit: cover;">
+                         style="width: 48px; height: 48px; object-fit: cover;"
+                         (error)="onImageError($event)">
                     <div>
                       <h6 class="mb-1">
                         {{ review.userName}}

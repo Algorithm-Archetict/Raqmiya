@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 interface KnowledgeBaseDocument {
   name: string;
@@ -21,7 +21,7 @@ interface UploadedFile {
   providedIn: 'root'
 })
 export class ChatbotService {
-  private readonly apiKey = 'ENTER API KEY HERE'; // Replace with your actual API key
+  private readonly apiKey = 'Enter the actual API key here!!!!'; // Replace with your actual API key
   private readonly openaiUrl = 'https://api.openai.com/v1';
   private knowledgeBase: KnowledgeBaseDocument[] = [];
 
@@ -31,6 +31,10 @@ export class ChatbotService {
 
   async sendMessage(content: string, files: UploadedFile[] = []): Promise<string> {
     try {
+      console.log('Chatbot: Starting to send message...');
+      console.log('Chatbot: API Key length:', this.apiKey.length);
+      console.log('Chatbot: OpenAI URL:', this.openaiUrl);
+      
       // Get RAG context if available
       let ragContext = '';
       if (this.knowledgeBase.length > 0) {
@@ -85,7 +89,7 @@ export class ChatbotService {
         'Authorization': `Bearer ${this.apiKey}`
       });
 
-      const response = await this.http.post(`${this.openaiUrl}/chat/completions`, requestBody, { headers }).toPromise();
+      const response = await firstValueFrom(this.http.post(`${this.openaiUrl}/chat/completions`, requestBody, { headers }));
       
       if (response && typeof response === 'object' && 'choices' in response) {
         return (response as any).choices[0]?.message?.content || 'No response received.';
@@ -95,6 +99,20 @@ export class ChatbotService {
 
     } catch (error) {
       console.error('Chatbot API error:', error);
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          throw new Error('API key is invalid or expired. Please check your OpenAI API key.');
+        } else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+          throw new Error('OpenAI service is experiencing issues. Please try again later.');
+        } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+          throw new Error('Network error. Please check your internet connection.');
+        }
+      }
+      
       throw new Error('Failed to get response from AI assistant. Please try again.');
     }
   }
@@ -174,7 +192,7 @@ export class ChatbotService {
 
   private async createEmbedding(text: string): Promise<number[]> {
     try {
-      const response = await this.http.post(`${this.openaiUrl}/embeddings`, {
+      const response = await firstValueFrom(this.http.post(`${this.openaiUrl}/embeddings`, {
         input: text,
         model: 'text-embedding-3-small'
       }, {
@@ -182,7 +200,7 @@ export class ChatbotService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`
         })
-      }).toPromise();
+      }));
 
       if (response && typeof response === 'object' && 'data' in response) {
         return (response as any).data[0]?.embedding || [];
