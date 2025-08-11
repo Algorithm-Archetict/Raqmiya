@@ -711,5 +711,152 @@ namespace Core.Services
             reviewDto.userName = user.Username;
             reviewDto.UserAvatar = user.ProfileImageUrl;
         }
+
+        // --- Analytics Methods ---
+        public async Task<IEnumerable<ProductListItemDTO>> GetMostWishedProductsAsync(int count = 12)
+        {
+            try
+            {
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.WishlistItems)
+                    .Where(p => p.IsPublic)
+                    .OrderByDescending(p => p.WishlistItems.Count)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting most wished products");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetRecommendedProductsAsync(int? userId = null, int count = 12)
+        {
+            try
+            {
+                // Simple recommendation: highest rated products with recent activity
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.Reviews)
+                    .Where(p => p.IsPublic)
+                    .Where(p => p.Reviews.Any()) // Has reviews
+                    .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
+                    .ThenByDescending(p => p.PublishedAt)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting recommended products");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetBestSellerProductsAsync(int count = 12)
+        {
+            try
+            {
+                // Products with most purchases (using OrderItems as proxy for sales)
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.OrderItems)
+                    .Where(p => p.IsPublic)
+                    .OrderByDescending(p => p.OrderItems.Count)
+                    .ThenByDescending(p => p.PublishedAt)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting best seller products");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetTopRatedProductsAsync(int count = 12)
+        {
+            try
+            {
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.Reviews)
+                    .Where(p => p.IsPublic)
+                    .Where(p => p.Reviews.Count >= 3) // Minimum 3 reviews for credibility
+                    .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
+                    .ThenByDescending(p => p.Reviews.Count)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting top rated products");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetNewArrivalsAsync(int count = 12)
+        {
+            try
+            {
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Where(p => p.IsPublic)
+                    .OrderByDescending(p => p.PublishedAt)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting new arrivals");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetTrendingProductsAsync(int count = 12)
+        {
+            try
+            {
+                // Trending: combination of recent views, wishlists, and purchases
+                var cutoffDate = DateTime.UtcNow.AddDays(-30); // Last 30 days
+                
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.WishlistItems)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.ProductViews)
+                    .Where(p => p.IsPublic)
+                    .OrderByDescending(p => 
+                        p.WishlistItems.Count * 2 +
+                        p.OrderItems.Count * 3 +
+                        p.ProductViews.Count)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trending products");
+                return new List<ProductListItemDTO>();
+            }
+        }
     }
 }

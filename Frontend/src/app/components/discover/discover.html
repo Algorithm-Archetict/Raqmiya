@@ -1,4 +1,4 @@
-<!-- Discover Page - Epic Games Style -->
+<!-- Discover Page - Analytics-Driven Modern Design -->
 <div class="discover-container">
   <!-- Use existing navbar component -->
   <app-navbar></app-navbar>
@@ -47,92 +47,75 @@
     </div>
   </header>
 
-  <!-- Recommended Products Carousel -->
-  <section class="recommended-section">
+  <!-- Analytics-Driven Carousels Section -->
+  <main class="analytics-carousels-section">
     <div class="container">
-      <div class="row">
-        <div class="col-12">
-          <div class="section-header">
-            <h2 class="section-title">
-              <i class="fas fa-star text-warning"></i>
-              Recommended for You
-            </h2>
-            <div class="carousel-controls">
-              <button class="btn btn-outline carousel-btn" (click)="scrollCarousel('left')">
-                <i class="fas fa-chevron-left"></i>
-              </button>
-              <button class="btn btn-outline carousel-btn" (click)="scrollCarousel('right')">
-                <i class="fas fa-chevron-right"></i>
-              </button>
-            </div>
-          </div>
-          
-          <div class="products-carousel" #carouselContainer>
-            <div class="carousel-track">
-              <div 
-                class="product-card carousel-item" 
-                *ngFor="let product of recommendedProducts; let i = index"
-                (click)="viewProduct(product.id)"
-              >
-                <div class="product-image">
-                  <img [src]="product.image" [alt]="product.title">
-                  
-                  <!-- Wishlist Toggle Button (Only for logged-in users) -->
-                  <div *ngIf="isLoggedIn()" class="wishlist-toggle"
-                       (click)="toggleWishlist(product, $event)"
-                       (mouseenter)="onWishlistHover(product, true, $event)"
-                       (mouseleave)="onWishlistHover(product, false, $event)"
-                       [class.in-wishlist]="product.inWishlist"
-                       [class.loading]="product.loadingWishlist"
-                       [class.hovered]="product.wishlistHovered">
-                    <div class="wishlist-icon">
-                      <!-- Loading Spinner -->
-                      <i class="fas fa-spinner fa-spin" *ngIf="product.loadingWishlist"></i>
-                      <!-- Plus Icon (not in wishlist) -->
-                      <i class="fas fa-plus" *ngIf="!product.inWishlist && !product.loadingWishlist"></i>
-                      <!-- Checkmark Icon (in wishlist) -->
-                      <i class="fas fa-check" *ngIf="product.inWishlist && !product.loadingWishlist"></i>
-                    </div>
-                    <!-- Tooltip -->
-                    <div class="wishlist-tooltip" *ngIf="product.wishlistHovered && !product.loadingWishlist">
-                      {{ product.inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}
-                    </div>
-                  </div>
-                  
-                  <div class="product-overlay">
-                    <button class="btn btn-primary btn-sm">
-                      <i class="fas fa-eye"></i>
-                      View Details
-                    </button>
-                  </div>
-                </div>
-                <div class="product-info">
-                  <h5 class="product-title">{{ product.title }}</h5>
-                  <p class="product-creator">by {{ product.creator }}</p>
-                  <div class="product-meta">
-                    <span class="product-price">${{ product.price }}</span>
-                    <div class="product-rating">
-                      <i class="fas fa-star text-warning"></i>
-                      <span>{{ product.rating | number:'1.1-1' }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+      
+      <!-- Most Wished Products -->
+      <app-product-carousel
+        title="Most Wished"
+        subtitle="Products everyone wants to have"
+        icon="fas fa-heart"
+        dataType="most-wished"
+        viewAllRoute="/category/most-wished">
+      </app-product-carousel>
 
-  <!-- Curated Products Section -->
-  <section class="curated-section">
+      <!-- Recommended Products -->
+      <app-product-carousel
+        title="Recommended for You"
+        subtitle="Handpicked products based on your interests"
+        icon="fas fa-sparkles"
+        dataType="recommended"
+        viewAllRoute="/category/recommended">
+      </app-product-carousel>
+
+      <!-- Best Seller Products -->
+      <app-product-carousel
+        title="Best Sellers"
+        subtitle="Top-selling products this month"
+        icon="fas fa-trophy"
+        dataType="best-sellers"
+        viewAllRoute="/category/best-sellers">
+      </app-product-carousel>
+
+      <!-- Top Rated Products -->
+      <app-product-carousel
+        title="Top Rated"
+        subtitle="Highest rated products by our community"
+        icon="fas fa-star"
+        dataType="top-rated"
+        viewAllRoute="/category/top-rated">
+      </app-product-carousel>
+
+      <!-- New Arrivals -->
+      <app-product-carousel
+        title="New Arrivals"
+        subtitle="Fresh products just added to our marketplace"
+        icon="fas fa-clock"
+        dataType="new-arrivals"
+        viewAllRoute="/category/new-arrivals">
+      </app-product-carousel>
+
+      <!-- Trending Products -->
+      <app-product-carousel
+        title="Trending Now"
+        subtitle="Products gaining popularity this week"
+        icon="fas fa-fire"
+        dataType="trending"
+        viewAllRoute="/category/trending">
+      </app-product-carousel>
+
+    </div>
+  </main>
+
+  <!-- Curated Products Section (Legacy) -->
+  <section class="curated-section" *ngIf="selectedCategory !== 'all' || searchQuery.trim()">
     <div class="container">
       <div class="row">
         <div class="col-12">
           <h2 class="section-title text-center mb-5">
             <i class="fas fa-magic text-primary"></i>
-            Curated for You
+            {{ selectedCategory !== 'all' ? 'Category Results' : 'Search Results' }}
           </h2>
         </div>
       </div>
@@ -155,7 +138,7 @@
                     type="range" 
                     class="form-range" 
                     min="0" 
-                    max="100" 
+                    max="1000" 
                     [(ngModel)]="priceRange"
                     [ngModelOptions]="{standalone: true}"
                     (input)="onPriceRangeChange()"
@@ -163,7 +146,7 @@
                   <div class="price-labels">
                     <span>$0</span>
                     <span>${{ priceRange }}</span>
-                    <span>$100</span>
+                    <span>$1000</span>
                   </div>
                 </div>
               </div>
@@ -220,7 +203,7 @@
         <!-- Products Grid -->
         <div class="col-lg-9">
           <!-- Debug Info -->
-          <div class="debug-info" style="background: #f8f9fa; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+          <div class="debug-info" style="background: #f8f9fa; padding: 10px; margin-bottom: 20px; border-radius: 5px;" *ngIf="false">
             <h6>Debug Info:</h6>
             <p>Loading: {{ loading }}</p>
             <p>All Products Count: {{ allProducts.length }}</p>
@@ -317,20 +300,4 @@
   <div class="toast-container">
     <!-- Toasts will be dynamically inserted here -->
   </div>
-  
-  <!-- Wishlist Counter Popup -->
-  <!-- <div class="wishlist-counter-popup" [class.show]="showWishlistCounterPopup" #wishlistCounterPopup>
-    <div class="popup-content">
-      <div class="popup-icon">
-        <i class="fas fa-heart"></i>
-      </div>
-      <div class="popup-text">
-        <span class="popup-count">{{wishlistCounter}} Item{{wishlistCounter > 1 ? 's' : ''}} saved</span>
-        <button class="btn-view-wishlist" (click)="viewWishlist()">
-          <i class="fas fa-eye"></i>
-          View Wishlist
-        </button>
-      </div>
-    </div>
-  </div> -->
 </div>

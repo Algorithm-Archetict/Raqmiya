@@ -668,6 +668,81 @@ namespace API.Controllers
             return Ok("Product rejected.");
         }
 
+        // --- Analytics Endpoints for Carousels ---
+        
+        /// <summary>
+        /// Get most wished products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/most-wished")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetMostWishedForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetMostWishedProductsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get recommended products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/recommended")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetRecommendedForCarousel([FromQuery] int count = 12)
+        {
+            var userId = GetCurrentUserIdOrNull();
+            var products = await _productService.GetRecommendedProductsAsync(userId, count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get best seller products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/best-sellers")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetBestSellerForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetBestSellerProductsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get top rated products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/top-rated")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetTopRatedForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetTopRatedProductsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get new arrivals for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/new-arrivals")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetNewArrivalsForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetNewArrivalsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get trending products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/trending")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetTrendingForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetTrendingProductsAsync(count);
+            return Ok(products);
+        }
+
         // --- Helpers ---
         protected int GetCurrentUserId()
         {

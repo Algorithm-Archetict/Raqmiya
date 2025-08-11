@@ -40,6 +40,14 @@ namespace Core.Interfaces
         Task<PagedResultDTO<ProductListItemDTO>> GetBestSellingProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
         Task<PagedResultDTO<ProductListItemDTO>> GetTrendyProductsAsync(int count, int daysBack, int pageNumber, int pageSize); // Added pagination
 
+        // Simplified Analytics for Carousels (without pagination)
+        Task<IEnumerable<ProductListItemDTO>> GetMostWishedProductsAsync(int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetRecommendedProductsAsync(int? userId = null, int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetBestSellerProductsAsync(int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetTopRatedProductsAsync(int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetNewArrivalsAsync(int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetTrendingProductsAsync(int count = 12);
+
         // Category & Tag helpers for forms (API endpoints will call these)
         Task<List<CategoryDTO>> GetAllCategoriesAsync();
         Task<List<TagDTO>> GetAllTagsAsync();
