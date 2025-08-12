@@ -17,7 +17,7 @@ namespace Raqmiya.Infrastructure.Data
         {
             // For a clean seed, it's often best to start from a known state.
             // WARNING: This will delete all data in the specified tables.
-            ClearData(context);
+            //ClearData(context);
 
             context.Database.Migrate();
 

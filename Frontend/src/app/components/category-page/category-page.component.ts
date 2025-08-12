@@ -134,21 +134,21 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
     const categorySlugMap: { [key: string]: { id: number, name: string } } = {
       'fitness-health': { id: 1, name: 'Fitness & Health' },
       'self-improvement': { id: 2, name: 'Self Improvement' },
-      'writings-publishing-education': { id: 3, name: 'Writings & Publishing & Education' },
-      'business-money': { id: 4, name: 'Business & Money' },
-      'drawing-painting': { id: 5, name: 'Drawing & Painting' },
-      '3d': { id: 6, name: '3D' },
-      'music-sound-design': { id: 7, name: 'Music & Sound Design' },
-      'films': { id: 8, name: 'Films' },
-      'software-development': { id: 9, name: 'Software Development' },
-      'gaming': { id: 10, name: 'Gaming' },
-      'photography': { id: 11, name: 'Photography' },
-      'comics-graphic-novels': { id: 12, name: 'Comics & Graphic Novels' },
-      'fiction-books': { id: 13, name: 'Fiction Books' },
-      'education': { id: 14, name: 'Education' },
-      'design': { id: 15, name: 'Design' },
-      'audio': { id: 110, name: 'Audio' },
-      'recorded-music': { id: 111, name: 'Recorded Music' }
+      'writings-publishing': { id: 3, name: 'Writings & Publishing' },
+      'education': { id: 4, name: 'Education' },
+      'business-money': { id: 5, name: 'Business & Money' },
+      'drawing-painting': { id: 6, name: 'Drawing & Painting' },
+      'design': { id: 7, name: 'Design' },
+      '3d': { id: 8, name: '3D' },
+      'music-sound-design': { id: 9, name: 'Music & Sound Design' },
+      'films': { id: 10, name: 'Films' },
+      'software-development': { id: 11, name: 'Software Development' },
+      'gaming': { id: 12, name: 'Gaming' },
+      'photography': { id: 13, name: 'Photography' },
+      'comics-graphic-novels': { id: 14, name: 'Comics & Graphic Novels' },
+      'fiction-books': { id: 15, name: 'Fiction Books' },
+      'audio': { id: 16, name: 'Audio' },
+      'recorded-music': { id: 17, name: 'Recorded Music' }
     };
 
     const categoryInfo = categorySlugMap[slug];
@@ -287,21 +287,21 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
     const slugMap: { [key: number]: string } = {
       1: 'fitness-health',
       2: 'self-improvement',
-      3: 'writings-publishing-education',
-      4: 'business-money',
-      5: 'drawing-painting',
-      6: '3d',
-      7: 'music-sound-design',
-      8: 'films',
-      9: 'software-development',
-      10: 'gaming',
-      11: 'photography',
-      12: 'comics-graphic-novels',
-      13: 'fiction-books',
-      14: 'education',
-      15: 'design',
-      110: 'audio',
-      111: 'recorded-music'
+      3: 'writings-publishing',
+      4: 'education',
+      5: 'business-money',
+      6: 'drawing-painting',
+      7: 'design',
+      8: '3d',
+      9: 'music-sound-design',
+      10: 'films',
+      11: 'software-development',
+      12: 'gaming',
+      13: 'photography',
+      14: 'comics-graphic-novels',
+      15: 'fiction-books', 
+      16: 'audio',
+      17: 'recorded-music'
     };
     
     return slugMap[categoryId] || null;

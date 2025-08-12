@@ -29,7 +29,7 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   private isOverMoreDropdown = false;
 
   // Configuration
-  maxVisibleCategories = 16; // Show first 6 categories directly, rest in "More" dropdown
+  maxVisibleCategories = 16; // Show first 16 categories directly, rest in "More" dropdown
   
   constructor(
     private categoryService: CategoryService,
@@ -199,21 +199,21 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     const slugMap: { [key: number]: string } = {
       1: 'fitness-health',
       2: 'self-improvement',
-      3: 'writings-publishing-education',
-      4: 'business-money',
-      5: 'drawing-painting',
-      6: '3d',
-      7: 'music-sound-design',
-      8: 'films',
-      9: 'software-development',
-      10: 'gaming',
-      11: 'photography',
-      12: 'comics-graphic-novels',
-      13: 'fiction-books',
-      14: 'education',
-      15: 'design',
-      110: 'audio',
-      111: 'recorded-music'
+      3: 'writings-publishing',
+      4: 'education',
+      5: 'business-money',
+      6: 'drawing-painting',
+      7: 'design',
+      8: '3d',
+      9: 'music-sound-design',
+      10: 'films',
+      11: 'software-development',
+      12: 'gaming',
+      13: 'photography',
+      14: 'comics-graphic-novels',
+      15: 'fiction-books',
+      16: 'audio',
+      17: 'recorded-music'
     };
     
     return slugMap[categoryId] || null;
@@ -327,7 +327,7 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     const iconMap: { [key: string]: string } = {
       'Fitness & Health': 'fas fa-dumbbell',
       'Self Improvement': 'fas fa-user-plus',
-      'Writings & Publishing & Education': 'fas fa-pen-fancy',
+      'Writings & Publishing': 'fas fa-pen-fancy',
       'Business & Money': 'fas fa-chart-line',
       'Drawing & Painting': 'fas fa-palette',
       '3D': 'fas fa-cube',
