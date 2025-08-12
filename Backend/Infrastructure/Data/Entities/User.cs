@@ -1,4 +1,4 @@
-﻿//using Microsoft.Extensions.Hosting;
+﻿﻿//using Microsoft.Extensions.Hosting;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -25,6 +25,11 @@ namespace Raqmiya.Infrastructure
         public string? StripeConnectAccountId { get; set; } // Nullable, for creators
         public string? PayoutSettings { get; set; } // Store as JSON string or complex type, nullable
 
+        // Test card information for development/testing purposes
+        public string? TestCardNumber { get; set; } // Nullable, stores the assigned test card number
+        public string? TestCardType { get; set; } // Nullable, stores the card type (visa, mastercard, etc.)
+        public string? TestCardDescription { get; set; } // Nullable, stores the expected result (success, declined, error)
+
         public bool IsActive { get; set; } = true; // Indicates if the user account is active
 
         // Navigation properties
@@ -36,5 +41,7 @@ namespace Raqmiya.Infrastructure
         public ICollection<WishlistItem> WishlistItems { get; set; } = new List<WishlistItem>();
         public ICollection<ProductView> ProductViews { get; set; } = new List<ProductView>();
         public ICollection<License> Licenses { get; set; } = new List<License>();
+        public string? StripeCustomerId { get; set; } // Stores Stripe customer ID
+        public decimal AccountBalance { get; set; } = 1000m; // Initial $1000 balance
     }
 }

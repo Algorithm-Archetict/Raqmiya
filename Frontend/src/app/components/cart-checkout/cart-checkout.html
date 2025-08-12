@@ -5,7 +5,7 @@
       <div class="col-lg-8">
         <div class="cart-section">
           <h2>Shopping Cart</h2>
-          
+
           <div class="cart-items" *ngIf="cartItems.length > 0">
             <div class="cart-item" *ngFor="let item of cartItems">
               <div class="item-image">
@@ -22,7 +22,7 @@
                 </button>
               </div>
             </div>
-            
+
             <!-- Continue Shopping Button -->
             <div class="continue-shopping">
               <a routerLink="/discover" class="btn btn-outline-primary">
@@ -31,7 +31,7 @@
               </a>
             </div>
           </div>
-          
+
           <div class="empty-cart" *ngIf="cartItems.length === 0">
             <i class="fas fa-shopping-cart"></i>
             <h3>Your cart is empty</h3>
@@ -40,12 +40,24 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Checkout Section -->
       <div class="col-lg-4" *ngIf="cartItems.length > 0">
         <div class="checkout-section">
           <h3>Checkout</h3>
-          
+
+          <!-- Account Balance Display -->
+          <div class="balance-section">
+            <div class="balance-card">
+              <h4>Account Balance</h4>
+              <div class="balance-amount">${{ currentBalance.toFixed(2) }}</div>
+              <div class="balance-status" [class.sufficient]="hasSufficientBalance" [class.insufficient]="!hasSufficientBalance">
+                <i class="fas" [class.fa-check-circle]="hasSufficientBalance" [class.fa-exclamation-triangle]="!hasSufficientBalance"></i>
+                {{ hasSufficientBalance ? 'Sufficient balance for purchase' : 'Insufficient balance for purchase' }}
+              </div>
+            </div>
+          </div>
+
           <!-- Order Summary -->
           <div class="order-summary">
             <h4>Order Summary</h4>
@@ -57,15 +69,15 @@
               <strong>Total: {{ totalAmount | currency:'USD' }}</strong>
             </div>
           </div>
-          
+
           <!-- Payment Method -->
           <div class="payment-method">
             <h4>Payment Method</h4>
             <div class="payment-options">
               <div class="payment-option" *ngFor="let method of paymentMethods">
-                <input type="radio" 
-                       [id]="method.id" 
-                       name="paymentMethod" 
+                <input type="radio"
+                       [id]="method.id"
+                       name="paymentMethod"
                        [value]="method.id"
                        [(ngModel)]="selectedPaymentMethod">
                 <label [for]="method.id">
@@ -74,15 +86,25 @@
                 </label>
               </div>
             </div>
+
+            <!-- Payment Method Notice -->
+            <div class="payment-notice">
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Payment Method Required:</strong> You need to add a payment method in your
+                <a routerLink="/settings/payment" class="alert-link">Payment Settings</a> before making a purchase.
+                Your account balance will be used for payments.
+              </div>
+            </div>
           </div>
-          
+
           <!-- Checkout Form -->
           <form [formGroup]="checkoutForm" (ngSubmit)="processCheckout()">
             <div class="form-group">
               <label>Email</label>
               <input type="email" formControlName="email" class="form-control">
             </div>
-            
+
             <div class="form-row">
               <div class="form-group col-md-6">
                 <label>First Name</label>
@@ -93,34 +115,18 @@
                 <input type="text" formControlName="lastName" class="form-control">
               </div>
             </div>
-            
-            <div class="form-group">
-              <label>Card Number</label>
-              <input type="text" formControlName="cardNumber" class="form-control">
-            </div>
-            
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label>Expiry Date</label>
-                <input type="text" formControlName="expiryDate" placeholder="MM/YY" class="form-control">
-              </div>
-              <div class="form-group col-md-6">
-                <label>CVV</label>
-                <input type="text" formControlName="cvv" class="form-control">
-              </div>
-            </div>
-            
+
             <div class="form-group">
               <label>Billing Address</label>
               <textarea formControlName="billingAddress" class="form-control" rows="3"></textarea>
             </div>
-            
+
             <div class="error-message" *ngIf="errorMessage">
               {{ errorMessage }}
             </div>
-            
-            <button type="submit" 
-                    class="btn btn-primary btn-block" 
+
+            <button type="submit"
+                    class="btn btn-primary btn-block"
                     [disabled]="checkoutForm.invalid || isLoading">
               <span *ngIf="!isLoading">Complete Purchase</span>
               <span *ngIf="isLoading">Processing...</span>
@@ -130,4 +136,4 @@
       </div>
     </div>
   </div>
-</div> 
+</div>

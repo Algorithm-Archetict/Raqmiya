@@ -47,11 +47,18 @@ export class ProductService {
   }
 
   // Get products by current creator (authenticated user)
-  // TODO: Replace with proper backend endpoint when available
   getMyProducts(page = 1, size = 10): Observable<ProductListItemDTO[]> {
-    // For now, we'll use the main products endpoint and filter on frontend
-    // This is a temporary solution until the backend provides /my-products endpoint
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}`);
+    return this.http.get<any>(`${this.apiUrl}/my-products?pageNumber=${page}&pageSize=${size}`).pipe(
+      map(response => {
+        if (response && response.items && Array.isArray(response.items)) {
+          return response.items;
+        } else if (Array.isArray(response)) {
+          return response;
+        } else {
+          return [];
+        }
+      })
+    );
   }
 
   getById(id: number): Observable<ProductDetailDTO> {
