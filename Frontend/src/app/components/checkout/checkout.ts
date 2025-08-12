@@ -6,8 +6,10 @@ import { Subscription, firstValueFrom } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
+import { PaymentService, BalanceResponse } from '../../core/services/payment.service';
 import { Cart, CartItem } from '../../core/models/cart/cart.model';
 import { PaymentMethod, CustomerInfo } from '../../core/models/order/order.model';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-checkout',
@@ -21,31 +23,32 @@ export class Checkout implements OnInit, OnDestroy {
   subtotal: number = 0;
   discount: number = 0;
   total: number = 0;
-  
+
   // User information
   userEmail: string = '';
   isLoggedIn: boolean = false;
-  
+
+  // Balance information
+  currentBalance: number = 0;
+  hasSufficientBalance: boolean = false;
+
   // Payment information
   paymentMethods: PaymentMethod[] = [
     { id: 'card', name: 'Credit/Debit Card', icon: 'fas fa-credit-card', selected: true },
     { id: 'paypal', name: 'PayPal', icon: 'fab fa-paypal', selected: false }
   ];
-  
-  cardInfo = {
-    name: '',
-    number: '',
-    expiry: '',
-    cvc: ''
-  };
-  
+
+  // Saved payment methods from Stripe
+  savedPaymentMethods: any[] = [];
+  selectedPaymentMethodId: string = '';
+
   contactInfo: CustomerInfo = {
     email: '',
     phone: '',
     country: '',
     zipCode: ''
   };
-  
+
   countries = [
     { code: 'US', name: 'United States' },
     { code: 'CA', name: 'Canada' },
@@ -58,37 +61,40 @@ export class Checkout implements OnInit, OnDestroy {
     { code: 'BR', name: 'Brazil' },
     { code: 'MX', name: 'Mexico' }
   ];
-  
+
   selectedPaymentMethod: string = 'card';
   isLoading: boolean = false;
   errorMessage: string = '';
   successMessage: string = '';
 
-  private cartSubscription: Subscription = new Subscription();
+  private subscriptions = new Subscription();
 
   constructor(
     private router: Router,
     private cartService: CartService,
     private orderService: OrderService,
-    private authService: AuthService
+    private authService: AuthService,
+    private paymentService: PaymentService
   ) {}
 
   ngOnInit() {
     this.loadCart();
     this.checkLoginStatus();
     this.setupCartSubscription();
+    this.loadBalance();
+    this.loadSavedPaymentMethods();
   }
 
   ngOnDestroy() {
-    this.cartSubscription.unsubscribe();
+    this.subscriptions.unsubscribe();
   }
 
   private setupCartSubscription(): void {
-    this.cartSubscription = this.cartService.cart$.subscribe(cart => {
+    this.subscriptions.add(this.cartService.cart$.subscribe(cart => {
       this.cart = cart;
       this.cartItems = cart?.items || [];
       this.calculateTotals();
-    });
+    }));
   }
 
   private loadCart(): void {
@@ -128,6 +134,25 @@ export class Checkout implements OnInit, OnDestroy {
     }
   }
 
+  private loadBalance(): void {
+    this.paymentService.getBalance().subscribe({
+      next: (response: BalanceResponse) => {
+        this.currentBalance = response.currentBalance;
+        this.checkBalanceForPurchase();
+      },
+      error: (error) => {
+        console.error('Error loading balance:', error);
+        this.errorMessage = 'Failed to load balance.';
+      }
+    });
+  }
+
+  private checkBalanceForPurchase(): void {
+    if (this.total > 0) {
+      this.hasSufficientBalance = this.currentBalance >= this.total;
+    }
+  }
+
   continueShopping(): void {
     this.router.navigate(['/discover']);
   }
@@ -136,58 +161,11 @@ export class Checkout implements OnInit, OnDestroy {
     this.router.navigate(['/discover']);
   }
 
-  removeItem(productId: number): void {
-    this.cartService.removeFromCart(productId).subscribe({
-      next: (response) => {
-        if (response.success) {
-          console.log('Item removed from cart');
-        }
-      },
-      error: (error) => {
-        console.error('Error removing item:', error);
-        this.errorMessage = 'Failed to remove item from cart.';
-      }
-    });
-  }
-
-  updateQuantity(productId: number, quantity: number): void {
-    if (quantity <= 0) {
-      this.removeItem(productId);
-    } else {
-      this.cartService.updateCartItem(productId, quantity).subscribe({
-        next: (response) => {
-          if (response.success) {
-            console.log('Cart updated');
-          }
-        },
-        error: (error) => {
-          console.error('Error updating cart:', error);
-          this.errorMessage = 'Failed to update cart.';
-        }
-      });
-    }
-  }
-
   selectPaymentMethod(methodId: string): void {
     this.selectedPaymentMethod = methodId;
     this.paymentMethods.forEach(method => {
       method.selected = method.id === methodId;
     });
-  }
-
-  formatCardNumber(event: any): void {
-    const formatted = this.orderService.formatCardNumber(event.target.value);
-    this.cardInfo.number = formatted;
-  }
-
-  formatExpiry(event: any): void {
-    const formatted = this.orderService.formatExpiry(event.target.value);
-    this.cardInfo.expiry = formatted;
-  }
-
-  formatCVC(event: any): void {
-    const formatted = this.orderService.formatCVC(event.target.value);
-    this.cardInfo.cvc = formatted;
   }
 
   async processPayment(): Promise<void> {
@@ -206,15 +184,7 @@ export class Checkout implements OnInit, OnDestroy {
     this.successMessage = '';
 
     try {
-      // Prepare payment data
-      const paymentData = {
-        method: this.selectedPaymentMethod,
-        ...this.contactInfo,
-        email: this.userEmail, // Ensure email is explicitly set after spreading contactInfo
-        ...(this.selectedPaymentMethod === 'card' ? this.cardInfo : {})
-      };
-
-      // Create order
+      // Create order with payment processing
       const orderData = {
         items: this.cartItems.map(item => ({
           productId: item.productId,
@@ -223,35 +193,30 @@ export class Checkout implements OnInit, OnDestroy {
         paymentMethod: this.selectedPaymentMethod,
         customerInfo: this.contactInfo
       };
-      
+
       const orderResponse = await firstValueFrom(this.orderService.createOrder(orderData));
 
       if (orderResponse?.success && orderResponse.order) {
-        // Process payment
-        const paymentResponse = await firstValueFrom(this.orderService.processMockPayment(
-          orderResponse.order,
-          paymentData
-        ));
-
-        if (paymentResponse?.success) {
-          this.successMessage = 'Payment processed successfully!';
-          
+        // Show success alert
+        Swal.fire({
+          title: 'Purchase Successful! 🎉',
+          text: 'Product has been purchased successfully and a notification has been sent to your email',
+          icon: 'success',
+          confirmButtonText: 'Continue',
+          confirmButtonColor: '#28a745'
+        }).then(() => {
           // Clear cart after successful payment
           this.cartService.clearCart().subscribe();
-          
+
           // Redirect to success page or library
-          setTimeout(() => {
-            this.router.navigate(['/library']);
-          }, 2000);
-        } else {
-          this.errorMessage = paymentResponse?.message || 'Payment failed. Please try again.';
-        }
+          this.router.navigate(['/library']);
+        });
       } else {
         this.errorMessage = orderResponse?.message || 'Failed to create order.';
       }
-    } catch (error) {
-      console.error('Payment error:', error);
-      this.errorMessage = 'An error occurred during payment processing. Please try again.';
+    } catch (error: any) {
+      console.error('Payment processing error:', error);
+      this.errorMessage = error.message || 'An error occurred during payment processing.';
     } finally {
       this.isLoading = false;
     }
@@ -262,7 +227,6 @@ export class Checkout implements OnInit, OnDestroy {
       method: this.selectedPaymentMethod,
       ...this.contactInfo,
       email: this.userEmail, // Ensure email is explicitly set after spreading contactInfo
-      ...(this.selectedPaymentMethod === 'card' ? this.cardInfo : {})
     });
 
     if (!validation.isValid) {
@@ -291,5 +255,55 @@ export class Checkout implements OnInit, OnDestroy {
 
   getItemCount(): number {
     return this.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  removeItem(productId: number): void {
+    this.cartService.removeFromCart(productId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('Item removed from cart');
+          // Reload cart to update the display
+          this.loadCart();
+        }
+      },
+      error: (error) => {
+        console.error('Error removing item:', error);
+        this.errorMessage = 'Failed to remove item from cart.';
+      }
+    });
+  }
+
+  updateQuantity(productId: number, quantity: number): void {
+    if (quantity <= 0) {
+      this.removeItem(productId);
+    } else {
+      this.cartService.updateCartItem(productId, quantity).subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log('Cart updated');
+            // Reload cart to update the display
+            this.loadCart();
+          }
+        },
+        error: (error) => {
+          console.error('Error updating cart:', error);
+          this.errorMessage = 'Failed to update cart.';
+        }
+      });
+    }
+  }
+
+  private loadSavedPaymentMethods(): void {
+    this.paymentService.getPaymentMethods().subscribe({
+      next: (methods) => {
+        this.savedPaymentMethods = methods;
+        if (methods.length > 0) {
+          this.selectedPaymentMethodId = methods[0].id; // Select first method by default
+        }
+      },
+      error: (error) => {
+        console.error('Error loading payment methods:', error);
+      }
+    });
   }
 }

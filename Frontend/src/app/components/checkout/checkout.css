@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   background: var(--bg-primary);
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 80%, rgba(0, 116, 228, 0.2) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(108, 43, 217, 0.2) 0%, transparent 50%),
     radial-gradient(circle at 40% 40%, rgba(0, 212, 255, 0.15) 0%, transparent 50%);
@@ -103,9 +103,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.1) 0%, 
-    rgba(108, 43, 217, 0.1) 50%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.1) 0%,
+    rgba(108, 43, 217, 0.1) 50%,
     rgba(0, 212, 255, 0.1) 100%);
   opacity: 0.3;
   z-index: -1;
@@ -199,8 +199,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   z-index: -1;
 }
@@ -292,8 +292,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   z-index: -1;
 }
@@ -488,8 +488,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   z-index: -1;
 }
@@ -589,8 +589,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   opacity: 0;
   transition: var(--transition-fast);
@@ -901,16 +901,16 @@
     grid-template-columns: 1fr;
     gap: 30px;
   }
-  
+
   .product-summary-section,
   .payment-section {
     width: 100%;
   }
-  
+
   .header-content {
     padding: 24px 40px;
   }
-  
+
   .empty-cart-section {
     margin: 0 20px;
   }
@@ -920,46 +920,46 @@
   .hero-content {
     padding: 15px;
   }
-  
+
   .header-content {
     padding: 20px 24px;
     flex-direction: column;
     gap: 20px;
   }
-  
+
   .header-title {
     font-size: 24px;
   }
-  
+
   .empty-cart-section {
     margin: 0 10px;
     padding: 30px 20px;
   }
-  
+
   .empty-cart-title {
     font-size: 24px;
   }
-  
+
   .product-summary-section,
   .payment-section {
     padding: 20px;
   }
-  
+
   .cart-item {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .item-image {
     width: 100%;
     height: 200px;
   }
-  
+
   .card-row {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .summary-header {
     flex-direction: column;
     align-items: flex-start;
@@ -971,43 +971,177 @@
   .hero-content {
     padding: 10px;
   }
-  
+
   .header-content {
     padding: 16px 20px;
   }
-  
+
   .header-title {
     font-size: 20px;
   }
-  
+
   .empty-cart-section {
     margin: 0 5px;
     padding: 20px 15px;
   }
-  
+
   .empty-cart-title {
     font-size: 20px;
   }
-  
+
   .empty-cart-message {
     font-size: 14px;
   }
-  
+
   .discover-products-btn {
     font-size: 16px;
     padding: 14px 24px;
   }
-  
+
   .product-summary-section,
   .payment-section {
     padding: 15px;
   }
-  
+
   .payment-method {
     padding: 12px;
   }
-  
+
   .payment-method i {
     font-size: 18px;
   }
+}
+
+/* Balance Section Styles */
+.balance-section {
+  margin-bottom: 2rem;
+}
+
+.balance-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.balance-card h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.balance-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.balance-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.balance-status.sufficient {
+  color: #4ade80;
+}
+
+.balance-status.insufficient {
+  color: #f87171;
+}
+
+.balance-status i {
+  font-size: 1.1rem;
+}
+
+/* Payment Method Selection Styles */
+.saved-payment-methods {
+  margin-bottom: 1.5rem;
+}
+
+.saved-payment-methods h5 {
+  margin-bottom: 1rem;
+  color: #333;
+  font-size: 1rem;
+}
+
+.payment-method-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.payment-method-option {
+  position: relative;
+}
+
+.payment-method-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.payment-method-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+.payment-method-option input[type="radio"]:checked + .payment-method-label {
+  border-color: #007bff;
+  background: #f8f9ff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.payment-method-label:hover {
+  border-color: #007bff;
+  background: #f8f9ff;
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.card-brand {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.card-number {
+  color: #666;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.card-expiry {
+  color: #888;
+  font-size: 0.8rem;
 }

@@ -2,7 +2,7 @@
 .cart-checkout-container {
   min-height: 100vh;
   background: var(--bg-primary);
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 80%, rgba(0, 116, 228, 0.2) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(108, 43, 217, 0.2) 0%, transparent 50%),
     radial-gradient(circle at 40% 40%, rgba(0, 212, 255, 0.15) 0%, transparent 50%);
@@ -21,7 +21,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
+  background-image:
     radial-gradient(circle at 25% 25%, rgba(0, 116, 228, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 75% 75%, rgba(108, 43, 217, 0.1) 0%, transparent 50%);
   animation: gradientShift 8s ease-in-out infinite;
@@ -48,8 +48,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   z-index: -1;
 }
@@ -75,8 +75,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   opacity: 0;
   transition: var(--transition-fast);
@@ -180,8 +180,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   z-index: -1;
 }
@@ -245,8 +245,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   z-index: -1;
 }
@@ -318,8 +318,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(0, 116, 228, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(0, 116, 228, 0.05) 0%,
     rgba(108, 43, 217, 0.05) 100%);
   opacity: 0;
   transition: var(--transition-fast);
@@ -490,24 +490,73 @@
     flex-direction: column;
     gap: 0;
   }
-  
+
   .cart-item {
     flex-direction: column;
     text-align: center;
     gap: 1rem;
   }
-  
+
   .item-details {
     margin-left: 0;
     margin-top: 0;
   }
-  
+
   .item-actions {
     margin-left: 0;
     margin-top: 0;
   }
-  
+
   .cart-section, .checkout-section {
     padding: 1.5rem;
   }
-} 
+}
+
+/* Balance Section Styles */
+.balance-section {
+  margin-bottom: 1.5rem;
+}
+
+.balance-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.balance-card h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.balance-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.balance-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.balance-status.sufficient {
+  color: #4ade80;
+}
+
+.balance-status.insufficient {
+  color: #f87171;
+}
+
+.balance-status i {
+  font-size: 1.1rem;
+}

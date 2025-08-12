@@ -88,6 +88,29 @@ namespace API.Controllers
         }
 
         /// <summary>
+        /// Get products created by the current authenticated creator.
+        /// </summary>
+        [HttpGet("my-products")]
+        [Authorize(Roles = RoleConstants.Creator)]
+        [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        public async Task<IActionResult> GetMyProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+        {
+            try
+            {
+                var creatorId = GetCurrentUserId();
+                var products = await _productService.GetCreatorProductsAsync(creatorId, pageNumber, pageSize);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting products for creator {CreatorId}", GetCurrentUserId());
+                return Problem("An error occurred while retrieving your products.");
+            }
+        }
+
+        /// <summary>
         /// Create a new product (creator only).
         /// </summary>
         [HttpPost]

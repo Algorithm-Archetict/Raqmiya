@@ -19,6 +19,7 @@ import { AllProducts } from './components/creator/creator-product/all-products/a
 import { AddNewProduct } from './components/creator/creator-product/add-new-product/add-new-product';
 import { ProductEdit } from './components/creator/creator-product/product-edit/product-edit';
 import { ProductEditContent } from './components/creator/creator-product/product-edit-content/product-edit-content';
+import { Sales } from './components/creator/sales/sales';
 import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
 import { AllReviews } from './components/products/all-reviews/all-reviews';
@@ -61,7 +62,7 @@ export const routes: Routes = [
     {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
     {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
-    {path:"sales",component:Dashboard, canActivate: [CreatorGuard]}, // TODO: Replace with actual Sales component
+    {path:"sales",component:Sales, canActivate: [CreatorGuard]},
 
     // {path:"wishlist",component:WishList, canActivate: [AuthGuard]}, // Commented out - now under library
     {path:"**",component:NotFound},
