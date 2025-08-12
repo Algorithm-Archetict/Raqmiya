@@ -6,9 +6,11 @@ import { firstValueFrom } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
+import { PaymentService, BalanceResponse } from '../../core/services/payment.service';
 import { Order } from '../../core/models/order/order.model';
+import Swal from 'sweetalert2';
 
-interface CartItem {
+interface CartItemDisplay {
   productId: number;
   name: string;
   price: number;
@@ -16,6 +18,7 @@ interface CartItem {
   creator: string;
   image: string;
   quantity: number;
+  description: string;
 }
 
 @Component({
@@ -25,26 +28,31 @@ interface CartItem {
   styleUrl: './cart-checkout.css'
 })
 export class CartCheckout implements OnInit {
-  cartItems: CartItem[] = [];
+  cartItems: CartItemDisplay[] = [];
   totalAmount: number = 0;
   isLoading: boolean = false;
   errorMessage: string = '';
-  
+
+  // Balance information
+  currentBalance: number = 0;
+  hasSufficientBalance: boolean = false;
+
   // Checkout form
   checkoutForm: FormGroup;
-  
+
   // Payment methods
   paymentMethods = [
     { id: 'card', name: 'Credit/Debit Card', icon: 'fas fa-credit-card' },
     { id: 'paypal', name: 'PayPal', icon: 'fab fa-paypal' }
   ];
-  
+
   selectedPaymentMethod: string = 'card';
-  
+
   constructor(
     private cartService: CartService,
     private orderService: OrderService,
     private authService: AuthService,
+    private paymentService: PaymentService,
     private router: Router,
     private formBuilder: FormBuilder
   ) {
@@ -52,114 +60,83 @@ export class CartCheckout implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      cardNumber: ['', Validators.required],
-      expiryDate: ['', Validators.required],
-      cvv: ['', Validators.required],
       billingAddress: ['', Validators.required]
     });
   }
-  
+
   ngOnInit() {
-    // Check if user is authenticated
-    if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login'], { 
-        queryParams: { returnUrl: this.router.url } 
-      });
-      return;
-    }
-    
-    this.loadCart();
+    this.loadCartItems();
+    this.loadBalance();
   }
-  
-  loadCart() {
-    this.cartService.getCart().subscribe(cart => {
-      this.cartItems = cart.cart.items;
-      this.calculateTotal();
+
+  loadCartItems() {
+    this.cartService.getCart().subscribe({
+      next: (cartResponse) => {
+        if (cartResponse && cartResponse.success && cartResponse.cart && cartResponse.cart.items) {
+          this.cartItems = cartResponse.cart.items.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
+            currency: item.currency,
+            creator: item.creator,
+            image: item.image,
+            quantity: item.quantity,
+            description: item.description
+          }));
+          this.calculateTotal();
+        }
+      },
+      error: (error) => {
+        console.error('Error loading cart:', error);
+      }
     });
   }
-  
+
+  loadBalance() {
+    this.paymentService.getBalance().subscribe({
+      next: (response: BalanceResponse) => {
+        this.currentBalance = response.currentBalance;
+        this.checkBalanceForPurchase();
+      },
+      error: (error) => {
+        console.error('Error loading balance:', error);
+      }
+    });
+  }
+
+  checkBalanceForPurchase() {
+    if (this.totalAmount > 0) {
+      this.hasSufficientBalance = this.currentBalance >= this.totalAmount;
+    }
+  }
+
   removeFromCart(productId: number) {
     this.cartService.removeFromCart(productId).subscribe(() => {
-      this.loadCart();
+      this.loadCartItems();
     });
   }
-  
+
+  loadCart() {
+    this.loadCartItems();
+  }
+
   calculateTotal() {
     this.totalAmount = this.cartItems.reduce((total, item) => {
       return total + (item.price * 1); // Always quantity 1
     }, 0);
   }
-  
+
   async processCheckout() {
     if (this.checkoutForm.invalid) {
       this.errorMessage = 'Please fill in all required fields.';
       return;
     }
-    
+
     this.isLoading = true;
     this.errorMessage = '';
-    
+
     try {
-      // Skip validation for now - proceed directly to payment processing
-      
-      // Step 1: Validate payment data (mock validation)
-      const paymentData = {
-        method: this.selectedPaymentMethod,
-        cardNumber: this.checkoutForm.value.cardNumber,
-        expiry: this.checkoutForm.value.expiryDate,
-        cvc: this.checkoutForm.value.cvv,
-        name: `${this.checkoutForm.value.firstName} ${this.checkoutForm.value.lastName}`,
-        email: this.checkoutForm.value.email
-      };
-      
-      const paymentValidation = this.orderService.validatePaymentData(paymentData);
-      if (!paymentValidation.isValid) {
-        this.errorMessage = paymentValidation.errors.join(', ');
-        this.isLoading = false;
-        return;
-      }
-      
-      // Step 2: Process mock payment
-      const mockOrder: Order = {
-        id: `temp_${Date.now()}`,
-        userId: this.authService.getCurrentUser()?.id?.toString() || '',
-        items: this.cartItems.map(item => ({
-          productId: item.productId,
-          name: item.name,
-          price: item.price,
-          currency: item.currency,
-          quantity: item.quantity
-        })),
-        subtotal: this.totalAmount,
-        discount: 0,
-        total: this.totalAmount,
-        currency: 'USD',
-        status: 'pending' as any,
-        paymentMethod: this.selectedPaymentMethod,
-        paymentStatus: 'pending' as any,
-        customerInfo: {
-          email: this.checkoutForm.value.email
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      try {
-        const paymentResult = await firstValueFrom(this.orderService.processMockPayment(mockOrder, paymentData));
-        if (!paymentResult.success) {
-          this.errorMessage = 'Payment processing failed. Please try again.';
-          this.isLoading = false;
-          return;
-        }
-        console.log('Mock payment processed successfully:', paymentResult);
-      } catch (error) {
-        console.error('Mock payment error:', error);
-        this.errorMessage = 'Payment processing failed. Please try again.';
-        this.isLoading = false;
-        return;
-      }
-      
-      // Step 3: Create real order in backend
+      // Create order with payment processing
       const orderData = {
         items: this.cartItems.map(item => ({
           productId: item.productId,
@@ -170,35 +147,37 @@ export class CartCheckout implements OnInit {
           email: this.checkoutForm.value.email,
           firstName: this.checkoutForm.value.firstName,
           lastName: this.checkoutForm.value.lastName,
-          cardNumber: this.checkoutForm.value.cardNumber,
-          expiryDate: this.checkoutForm.value.expiryDate,
-          cvv: this.checkoutForm.value.cvv,
           billingAddress: this.checkoutForm.value.billingAddress
         }
       };
-      
+
       const orderResponse = await firstValueFrom(this.orderService.createOrder(orderData));
-      
+
       if (orderResponse?.success) {
-        // Clear cart
-        this.cartService.clearCart().subscribe();
-        
-        // Redirect to purchased products page
-        this.router.navigate(['/library/purchased-products'], { 
-          state: { orderId: orderResponse.order.id } 
+        // Show success alert
+        Swal.fire({
+          title: 'Purchase Successful! 🎉',
+          text: 'Product has been purchased successfully and a notification has been sent to your email',
+          icon: 'success',
+          confirmButtonText: 'Continue',
+          confirmButtonColor: '#28a745'
+        }).then(() => {
+          // Clear cart
+          this.cartService.clearCart().subscribe();
+
+          // Redirect to purchased products page
+          this.router.navigate(['/library/purchased-products'], {
+            state: { orderId: orderResponse.order.id }
+          });
         });
       } else {
         this.errorMessage = orderResponse?.message || 'Order creation failed.';
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error);
-      if (error instanceof Error) {
-        this.errorMessage = error.message;
-      } else {
-        this.errorMessage = 'An unexpected error occurred during checkout. Please try again.';
-      }
+      this.errorMessage = error.message || 'An error occurred during checkout.';
     } finally {
       this.isLoading = false;
     }
   }
-} 
+}

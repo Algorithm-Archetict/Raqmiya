@@ -9,7 +9,7 @@
         <div class="shape shape-4"></div>
       </div>
     </div>
-    
+
     <div class="hero-content">
       <!-- Header Section (Always Visible) -->
       <div class="checkout-header">
@@ -37,7 +37,7 @@
         <i class="fas fa-exclamation-triangle me-2"></i>
         {{ errorMessage }}
       </div>
-      
+
       <div class="alert alert-success" *ngIf="successMessage" role="alert">
         <i class="fas fa-check-circle me-2"></i>
         {{ successMessage }}
@@ -45,11 +45,23 @@
 
       <!-- Checkout Content (Only show when items exist) -->
       <div class="checkout-content" *ngIf="cartItems.length > 0">
-        <!-- Product Summary Section (Left Side) -->
+        <!-- Order Summary Section (Left Side) -->
         <div class="product-summary-section">
           <div class="summary-header">
             <h2>Order Summary</h2>
             <span class="item-count">{{ getItemCount() }} item{{ getItemCount() !== 1 ? 's' : '' }}</span>
+          </div>
+
+          <!-- Account Balance Display -->
+          <div class="balance-section" *ngIf="isLoggedIn">
+            <div class="balance-card">
+              <h4>Account Balance</h4>
+              <div class="balance-amount">${{ currentBalance.toFixed(2) }}</div>
+              <div class="balance-status" [class.sufficient]="hasSufficientBalance" [class.insufficient]="!hasSufficientBalance">
+                <i class="fas" [class.fa-check-circle]="hasSufficientBalance" [class.fa-exclamation-triangle]="!hasSufficientBalance"></i>
+                {{ hasSufficientBalance ? 'Sufficient balance for purchase' : 'Insufficient balance for purchase' }}
+              </div>
+            </div>
           </div>
 
           <div class="cart-items">
@@ -107,10 +119,10 @@
           <!-- Email Section -->
           <div class="email-section">
             <label for="userEmail">Email address</label>
-            <input 
-              type="email" 
-              id="userEmail" 
-              [(ngModel)]="userEmail" 
+            <input
+              type="email"
+              id="userEmail"
+              [(ngModel)]="userEmail"
               [ngModelOptions]="{standalone: true}"
               placeholder="Enter your email address"
               [class.logged-in]="isLoggedIn"
@@ -123,69 +135,43 @@
           <!-- Payment Method Selection -->
           <div class="payment-method-section">
             <h3>Payment Method</h3>
-            <div class="payment-methods">
-              <div 
-                class="payment-method" 
-                *ngFor="let method of paymentMethods"
-                [class.selected]="method.selected"
-                (click)="selectPaymentMethod(method.id)"
-              >
-                <i [class]="method.icon"></i>
-                <span>{{ method.name }}</span>
-                <div class="radio-button">
-                  <div class="radio-inner" *ngIf="method.selected"></div>
+
+            <!-- Saved Payment Methods -->
+            <div class="saved-payment-methods" *ngIf="savedPaymentMethods.length > 0">
+              <h5>Choose from your saved payment methods:</h5>
+              <div class="payment-method-options">
+                <div class="payment-method-option" *ngFor="let method of savedPaymentMethods">
+                  <input type="radio"
+                         [id]="'method-' + method.id"
+                         name="selectedPaymentMethodId"
+                         [value]="method.id"
+                         [(ngModel)]="selectedPaymentMethodId">
+                  <label [for]="'method-' + method.id" class="payment-method-label">
+                    <div class="card-icon">
+                      <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="card-info">
+                      <span class="card-brand">{{ method.card.brand | titlecase }}</span>
+                      <span class="card-number">•••• {{ method.card.last4 }}</span>
+                      <span class="card-expiry">{{ method.card.expMonth }}/{{ method.card.expYear }}</span>
+                    </div>
+                  </label>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Card Information (shown when card is selected) -->
-          <div class="card-section" *ngIf="selectedPaymentMethod === 'card'">
-            <div class="form-group">
-              <label for="cardName">Name on card</label>
-              <input 
-                type="text" 
-                id="cardName" 
-                [(ngModel)]="cardInfo.name" 
-                [ngModelOptions]="{standalone: true}"
-                placeholder="Full name as it appears on card"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="cardNumber">Card number</label>
-              <input 
-                type="text" 
-                id="cardNumber" 
-                [value]="cardInfo.number"
-                (input)="formatCardNumber($event)"
-                placeholder="1234 5678 9012 3456"
-                maxlength="19"
-              />
-            </div>
-
-            <div class="card-row">
-              <div class="form-group">
-                <label for="cardExpiry">Expiry date</label>
-                <input 
-                  type="text" 
-                  id="cardExpiry" 
-                  [value]="cardInfo.expiry"
-                  (input)="formatExpiry($event)"
-                  placeholder="MM/YY"
-                  maxlength="5"
-                />
-              </div>
-              <div class="form-group">
-                <label for="cardCVC">CVC</label>
-                <input 
-                  type="text" 
-                  id="cardCVC" 
-                  [value]="cardInfo.cvc"
-                  (input)="formatCVC($event)"
-                  placeholder="123"
-                  maxlength="3"
-                />
+            <!-- Payment Method Notice -->
+            <div class="payment-notice">
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Payment Method Required:</strong>
+                <span *ngIf="savedPaymentMethods.length === 0">
+                  You need to add a payment method in your
+                  <a routerLink="/settings/payment" class="alert-link">Payment Settings</a> before making a purchase.
+                </span>
+                <span *ngIf="savedPaymentMethods.length > 0">
+                  Select a payment method above. Your account balance will be used for payments.
+                </span>
               </div>
             </div>
           </div>
@@ -193,13 +179,13 @@
           <!-- Contact Information -->
           <div class="contact-section">
             <h3>Contact Information</h3>
-            
+
             <div class="form-group">
               <label for="phone">Phone number (optional)</label>
-              <input 
-                type="tel" 
-                id="phone" 
-                [(ngModel)]="contactInfo.phone" 
+              <input
+                type="tel"
+                id="phone"
+                [(ngModel)]="contactInfo.phone"
                 [ngModelOptions]="{standalone: true}"
                 placeholder="Phone number"
               />
@@ -217,10 +203,10 @@
 
             <div class="form-group">
               <label for="zipCode">ZIP/Postal code</label>
-              <input 
-                type="text" 
-                id="zipCode" 
-                [(ngModel)]="contactInfo.zipCode" 
+              <input
+                type="text"
+                id="zipCode"
+                [(ngModel)]="contactInfo.zipCode"
                 [ngModelOptions]="{standalone: true}"
                 placeholder="ZIP code"
               />
@@ -229,8 +215,8 @@
 
           <!-- Payment Button -->
           <div class="payment-button-section">
-            <button 
-              class="payment-button" 
+            <button
+              class="payment-button"
               [class.loading]="isLoading"
               [disabled]="isButtonDisabled()"
               (click)="processPayment()"
@@ -238,7 +224,7 @@
               <span *ngIf="!isLoading">{{ getButtonText() }}</span>
               <span *ngIf="isLoading">Processing...</span>
             </button>
-            
+
             <p class="secure-note">
               <i class="fas fa-lock"></i>
               Your payment information is secure and encrypted
