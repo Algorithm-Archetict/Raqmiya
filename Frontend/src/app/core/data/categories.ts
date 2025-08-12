@@ -302,8 +302,8 @@ export const CATEGORIES: Category[] = [
   { id: 189, name: 'Node.Js', parentId: 163 },
   { id: 190, name: 'NestJs', parentId: 163 },
   { id: 191, name: 'Django', parentId: 163 },
-  { id: 192, name: 'Laravel', parentId: 163 },
-  { id: 193, name: 'Spring Boot', parentId: 163 },
+  { id: 192, name: 'Flask', parentId: 163 },
+  { id: 193, name: 'Laravel', parentId: 163 },
 
 
   

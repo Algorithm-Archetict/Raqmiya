@@ -139,7 +139,7 @@ namespace API
                 using (var scope = app.Services.CreateScope())
                 {
                     var db = scope.ServiceProvider.GetRequiredService<RaqmiyaDbContext>();
-                    //DbInitializer.Seed(db);
+                    DbInitializer.Seed(db);
                 }
             }
 
