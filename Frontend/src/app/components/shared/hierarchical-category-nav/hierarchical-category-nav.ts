@@ -46,21 +46,24 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   }
 
   loadCategories() {
-    // Try to load from API first, fallback to static data
-    this.categoryService.getCategoriesHierarchy().subscribe({
-      next: (apiCategories: CategoryDTO[]) => {
-        this.categories = apiCategories.map((cat: CategoryDTO) => this.categoryService.convertToCategory(cat));
-        this.organizeCategories();
-        this.debugCategories();
-      },
-      error: (error: any) => {
-        console.warn('Failed to load categories from API, using static data:', error);
-        // Fallback to static hierarchical categories
-        this.categories = HIERARCHICAL_CATEGORIES;
-        this.organizeCategories();
-        this.debugCategories();
-      }
-    });
+    // // Try to load from API first, fallback to static data
+    // this.categoryService.getCategoriesHierarchy().subscribe({
+    //   next: (apiCategories: CategoryDTO[]) => {
+    //     this.categories = apiCategories.map((cat: CategoryDTO) => this.categoryService.convertToCategory(cat));
+    //     this.organizeCategories();
+    //     this.debugCategories();
+    //   },
+    //   error: (error: any) => {
+    //     console.warn('Failed to load categories from API, using static data:', error);
+    //     // Fallback to static hierarchical categories
+    //     this.categories = HIERARCHICAL_CATEGORIES;
+    //     this.organizeCategories();
+    //     this.debugCategories();
+    //   }
+    // });
+    this.categories = HIERARCHICAL_CATEGORIES;
+    this.organizeCategories();
+    this.debugCategories();
   }
 
   organizeCategories() {
