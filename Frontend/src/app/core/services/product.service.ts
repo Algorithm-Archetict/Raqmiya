@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, shareReplay } from 'rxjs';
 
 import { ProductCreateRequestDTO } from '../models/product/product-create-request.dto';
 import { ProductUpdateRequestDTO } from '../models/product/product-update-request.dto';
@@ -14,6 +14,9 @@ import { ReviewDTO } from '../models/product/review.dto';
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private apiUrl = 'http://localhost:5255/api/Products';
+  // Simple in-memory caches to avoid repeated network calls
+  private allCacheKey = 'all:page=1:size=1000';
+  private cache = new Map<string, Observable<any>>();
 
   constructor(private http: HttpClient) {}
 
@@ -24,26 +27,36 @@ export class ProductService {
 
   // ======= READ =======
   getAll(page = 1, size = 10): Observable<ProductListItemDTOPagedResultDTO> {
-    return this.http.get<ProductListItemDTOPagedResultDTO>(
-      `${this.apiUrl}?pageNumber=${page}&pageSize=${size}`
-    );
+    const key = `all:page=${page}:size=${size}`;
+    if (!this.cache.has(key)) {
+      const req$ = this.http
+        .get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}`)
+        .pipe(shareReplay(1));
+      this.cache.set(key, req$);
+    }
+    return this.cache.get(key) as Observable<ProductListItemDTOPagedResultDTO>;
   }
 
   // ======= PRODUCTS =======
   getProductList(pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTO[]> {
-    return this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
-      map(response => {
-        // Handle both paged and direct array responses
-        if (response && response.items && Array.isArray(response.items)) {
-          return response.items;
-        } else if (Array.isArray(response)) {
-          return response;
-        } else {
-          console.warn('Unexpected product list response format:', response);
-          return [];
-        }
-      })
-    );
+    const key = `list:page=${pageNumber}:size=${pageSize}`;
+    if (!this.cache.has(key)) {
+      const req$ = this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
+        map(response => {
+          if (response && response.items && Array.isArray(response.items)) {
+            return response.items;
+          } else if (Array.isArray(response)) {
+            return response;
+          } else {
+            console.warn('Unexpected product list response format:', response);
+            return [];
+          }
+        }),
+        shareReplay(1)
+      );
+      this.cache.set(key, req$);
+    }
+    return this.cache.get(key) as Observable<ProductListItemDTO[]>;
   }
 
   // Get products by current creator (authenticated user)
@@ -189,9 +202,14 @@ export class ProductService {
 
   // ======= CATEGORY FILTERING =======
   getProductsByCategory(categoryId: number, pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
-    return this.http.get<ProductListItemDTOPagedResultDTO>(
-      `${this.apiUrl}?categoryId=${categoryId}&pageNumber=${pageNumber}&pageSize=${pageSize}`
-    );
+    const key = `byCategory:${categoryId}:page=${pageNumber}:size=${pageSize}`;
+    if (!this.cache.has(key)) {
+      const req$ = this.http
+        .get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}?categoryId=${categoryId}&pageNumber=${pageNumber}&pageSize=${pageSize}`)
+        .pipe(shareReplay(1));
+      this.cache.set(key, req$);
+    }
+    return this.cache.get(key) as Observable<ProductListItemDTOPagedResultDTO>;
   }
 
   // Search products by query
@@ -211,8 +229,13 @@ export class ProductService {
   // Get products by multiple categories (for hierarchical filtering)
   getProductsByMultipleCategories(categoryIds: number[], pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
     const categoryParams = categoryIds.map(id => `categoryIds=${id}`).join('&');
-    return this.http.get<ProductListItemDTOPagedResultDTO>(
-      `${this.apiUrl}/by-categories?${categoryParams}&pageNumber=${pageNumber}&pageSize=${pageSize}`
-    );
+    const key = `byCategories:${categoryIds.sort((a,b)=>a-b).join(',')}:page=${pageNumber}:size=${pageSize}`;
+    if (!this.cache.has(key)) {
+      const req$ = this.http
+        .get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}/by-categories?${categoryParams}&pageNumber=${pageNumber}&pageSize=${pageSize}`)
+        .pipe(shareReplay(1));
+      this.cache.set(key, req$);
+    }
+    return this.cache.get(key) as Observable<ProductListItemDTOPagedResultDTO>;
   }
 }

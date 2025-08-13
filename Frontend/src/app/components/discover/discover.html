@@ -56,8 +56,8 @@
         title="Most Wished"
         subtitle="Products everyone wants to have"
         icon="fas fa-heart"
-        dataType="most-wished"
-        viewAllRoute="/category/most-wished">
+        [products]="sectionMostWishedDto"
+        [loading]="loading">
       </app-product-carousel>
 
       <!-- Recommended Products -->
@@ -65,8 +65,8 @@
         title="Recommended for You"
         subtitle="Handpicked products based on your interests"
         icon="fas fa-sparkles"
-        dataType="recommended"
-        viewAllRoute="/category/recommended">
+        [products]="sectionRecommendedDto"
+        [loading]="loading">
       </app-product-carousel>
 
       <!-- Best Seller Products -->
@@ -74,8 +74,8 @@
         title="Best Sellers"
         subtitle="Top-selling products this month"
         icon="fas fa-trophy"
-        dataType="best-sellers"
-        viewAllRoute="/category/best-sellers">
+        [products]="sectionBestSellersDto"
+        [loading]="loading">
       </app-product-carousel>
 
       <!-- Top Rated Products -->
@@ -83,8 +83,8 @@
         title="Top Rated"
         subtitle="Highest rated products by our community"
         icon="fas fa-star"
-        dataType="top-rated"
-        viewAllRoute="/category/top-rated">
+        [products]="sectionTopRatedDto"
+        [loading]="loading">
       </app-product-carousel>
 
       <!-- New Arrivals -->
@@ -92,8 +92,8 @@
         title="New Arrivals"
         subtitle="Fresh products just added to our marketplace"
         icon="fas fa-clock"
-        dataType="new-arrivals"
-        viewAllRoute="/category/new-arrivals">
+        [products]="sectionNewArrivalsDto"
+        [loading]="loading">
       </app-product-carousel>
 
       <!-- Trending Products -->
@@ -101,8 +101,8 @@
         title="Trending Now"
         subtitle="Products gaining popularity this week"
         icon="fas fa-fire"
-        dataType="trending"
-        viewAllRoute="/category/trending">
+        [products]="sectionTrendingDto"
+        [loading]="loading">
       </app-product-carousel>
 
     </div>

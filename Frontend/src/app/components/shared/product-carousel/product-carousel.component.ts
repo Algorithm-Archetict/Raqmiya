@@ -32,7 +32,7 @@ interface CarouselProduct {
 export class ProductCarouselComponent implements OnChanges {
   @Input() title: string = '';
   @Input() subtitle: string = '';
-  @Input() products: ProductListItemDTO[] = [];
+  @Input() products: ProductListItemDTO[] = [] as ProductListItemDTO[];
   @Input() loading: boolean = false;
   @Input() icon: string = 'fas fa-star';
   @Output() productClick = new EventEmitter<number>();
