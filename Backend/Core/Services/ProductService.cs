@@ -19,19 +19,22 @@ namespace Core.Services
         private readonly ITagRepository _tagRepository;
         private readonly ILogger<ProductService> _logger;
         private readonly RaqmiyaDbContext _context;
+        private readonly IRecommendationService _recommendationService;
 
         public ProductService(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
             ITagRepository tagRepository,
             ILogger<ProductService> logger,
-            RaqmiyaDbContext context)
+            RaqmiyaDbContext context,
+            IRecommendationService recommendationService)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _tagRepository = tagRepository;
             _logger = logger;
             _context = context;
+            _recommendationService = recommendationService;
         }
 
         // --- Helper for mapping (consider AutoMapper for complex scenarios) ---
@@ -357,6 +360,17 @@ namespace Core.Services
                 throw new InvalidOperationException("Product is already in your wishlist.");
             }
             await _productRepository.AddProductToWishlistAsync(userId, productId);
+
+            // Track wishlist interaction for personalization
+            try
+            {
+                await _recommendationService.RecordUserInteractionAsync(userId, productId, InteractionType.Wishlist);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to record wishlist interaction for personalization");
+                // Don't fail the main operation
+            }
         }
 
         public async Task RemoveProductFromWishlistAsync(int userId, int productId)
@@ -370,6 +384,9 @@ namespace Core.Services
                 throw new InvalidOperationException("Product is not in your wishlist.");
             }
             await _productRepository.RemoveProductFromWishlistAsync(userId, productId);
+
+            // Note: We don't track wishlist removal as it might skew personalization
+            // The removal is already captured by the absence of the wishlist item
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> GetUserWishlistAsync(int userId, int pageNumber, int pageSize)
@@ -393,6 +410,21 @@ namespace Core.Services
         {
             // The service is responsible for knowing the IP source or receiving it from the controller
             await _productRepository.RecordProductViewAsync(productId, userId, ipAddress);
+
+            // Also record in UserInteractions for personalization (if user is logged in)
+            if (userId.HasValue && userId.Value > 0)
+            {
+                try
+                {
+                    await _recommendationService.RecordUserInteractionAsync(userId.Value, productId, InteractionType.View, 
+                        System.Text.Json.JsonSerializer.Serialize(new { IpAddress = ipAddress, ViewedAt = DateTime.UtcNow }));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to record user interaction for personalization");
+                    // Don't fail the main operation
+                }
+            }
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> GetMostWishedProductsAsync(int count, int pageNumber, int pageSize)
@@ -762,7 +794,24 @@ namespace Core.Services
         {
             try
             {
-                // Simple recommendation: highest rated products with recent activity
+                // Use the sophisticated recommendation service
+                if (userId.HasValue && userId.Value > 0)
+                {
+                    _logger.LogInformation("Getting personalized recommendations for user {UserId}", userId.Value);
+                    return await _recommendationService.GetPersonalizedRecommendationsAsync(userId.Value, count);
+                }
+                else
+                {
+                    _logger.LogInformation("Getting generic recommendations for anonymous user");
+                    return await _recommendationService.GetGenericRecommendationsAsync(count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting recommended products for user {UserId}", userId);
+                
+                // Fallback to simple recommendation logic
+                _logger.LogInformation("Falling back to simple recommendation logic");
                 var products = await _context.Products
                     .Include(p => p.Creator)
                     .Include(p => p.Category)
@@ -775,11 +824,6 @@ namespace Core.Services
                     .ToListAsync();
 
                 return products.Select(MapToProductListItemDTO);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting recommended products");
-                return new List<ProductListItemDTO>();
             }
         }
 

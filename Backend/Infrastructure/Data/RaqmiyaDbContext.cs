@@ -33,6 +33,11 @@ namespace Raqmiya.Infrastructure
         // public DbSet<ProductCategory> ProductCategories { get; set; } = null!;
         public DbSet<CategoryTag> CategoryTags { get; set; } = null!;
         public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
+        
+        // Personalization & Analytics Entities
+        public DbSet<UserPreference> UserPreferences { get; set; } = null!;
+        public DbSet<UserInteraction> UserInteractions { get; set; } = null!;
+        public DbSet<UserProfile> UserProfiles { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -207,6 +212,62 @@ namespace Raqmiya.Infrastructure
                 .WithMany()
                 .HasForeignKey(m => m.AdminId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure personalization entities
+            
+            // UserPreference configuration
+            modelBuilder.Entity<UserPreference>()
+                .HasOne(up => up.User)
+                .WithMany()
+                .HasForeignKey(up => up.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserPreference>()
+                .HasOne(up => up.Category)
+                .WithMany()
+                .HasForeignKey(up => up.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserPreference>()
+                .HasOne(up => up.Tag)
+                .WithMany()
+                .HasForeignKey(up => up.TagId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserPreference>()
+                .HasIndex(up => new { up.UserId, up.CategoryId, up.TagId })
+                .IsUnique();
+
+            // UserInteraction configuration
+            modelBuilder.Entity<UserInteraction>()
+                .HasOne(ui => ui.User)
+                .WithMany()
+                .HasForeignKey(ui => ui.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserInteraction>()
+                .HasOne(ui => ui.Product)
+                .WithMany()
+                .HasForeignKey(ui => ui.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserInteraction>()
+                .HasIndex(ui => new { ui.UserId, ui.ProductId, ui.Type, ui.CreatedAt });
+
+            // UserProfile configuration
+            modelBuilder.Entity<UserProfile>()
+                .HasOne(up => up.User)
+                .WithOne()
+                .HasForeignKey<UserProfile>(up => up.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserProfile>(entity =>
+            {
+                entity.Property(e => e.Profession).HasMaxLength(100);
+                entity.Property(e => e.Industry).HasMaxLength(100);
+                entity.Property(e => e.PreferredStyle).HasMaxLength(100);
+                entity.Property(e => e.PreferredFormats).HasMaxLength(500);
+            });
 
             // Ensure other entity configurations (e.g., string lengths) are present.
         }
