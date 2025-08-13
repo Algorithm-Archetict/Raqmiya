@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using System;
 
 
 namespace Core.Services
@@ -17,6 +18,7 @@ namespace Core.Services
         private readonly ILicenseRepository _licenseRepository;
         private readonly IProductRepository _productRepository;
         private readonly IPurchaseValidationService _purchaseValidationService;
+        private readonly IPaymentMethodBalanceRepository _paymentMethodBalanceRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<OrderService> _logger;
 
@@ -25,6 +27,7 @@ namespace Core.Services
             ILicenseRepository licenseRepository,
             IProductRepository productRepository,
             IPurchaseValidationService purchaseValidationService,
+            IPaymentMethodBalanceRepository paymentMethodBalanceRepository,
             IMapper mapper,
             ILogger<OrderService> logger)
         {
@@ -32,6 +35,7 @@ namespace Core.Services
             _licenseRepository = licenseRepository;
             _productRepository = productRepository;
             _purchaseValidationService = purchaseValidationService;
+            _paymentMethodBalanceRepository = paymentMethodBalanceRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -63,7 +67,7 @@ namespace Core.Services
             {
                 BuyerId = userId,
                 OrderedAt = DateTime.UtcNow,
-                Status = "Pending",
+                Status = "Completed", // Changed from "Pending" to "Completed"
                 OrderItems = new List<OrderItem>()
             };
             
@@ -89,6 +93,8 @@ namespace Core.Services
             order.TotalAmount = order.OrderItems.Sum(i => i.UnitPrice);
             await _orderRepository.AddAsync(order);
 
+            // Update balances: deduct from buyer, add to creator
+            await UpdateBalancesForOrder(order);
             
             // Generate licenses for each product
             await GenerateLicensesAsync(order);
@@ -96,27 +102,72 @@ namespace Core.Services
             _logger.LogInformation("Order {OrderId} created for user {UserId} with {ItemCount} items", 
                 order.Id, userId, order.OrderItems.Count);
             
-// =======
-
-//             // Generate a permanent license for each product in the order
-//             foreach (var item in order.OrderItems)
-//             {
-//                 var license = new License
-//                 {
-//                     OrderId = order.Id,
-//                     ProductId = item.ProductId,
-//                     BuyerId = userId,
-//                     LicenseKey = Guid.NewGuid().ToString(),
-//                     AccessGrantedAt = DateTime.UtcNow,
-//                     ExpiresAt = null, // Permanent license
-//                     Status = "active"
-//                 };
-//                 order.Licenses.Add(license);
-//             }
-//             await _orderRepository.UpdateAsync(order);
-
-// >>>>>>> main
             return _mapper.Map<OrderDTO>(order);
+        }
+
+        private async Task UpdateBalancesForOrder(Order order)
+        {
+            try
+            {
+                foreach (var item in order.OrderItems)
+                {
+                    var product = await _productRepository.GetByIdAsync(item.ProductId);
+                    if (product == null) continue;
+
+                    var totalItemCost = item.UnitPrice * item.Quantity;
+
+                    // Deduct from buyer's selected payment method
+                    var buyerSelectedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(order.BuyerId);
+                    if (buyerSelectedBalance != null)
+                    {
+                        // Convert currency if needed
+                        var buyerCurrency = buyerSelectedBalance.Currency;
+                        var convertedAmount = ConvertCurrencyForBalance(totalItemCost, product.Currency, buyerCurrency).Result;
+                        
+                        await _paymentMethodBalanceRepository.UpdateBalanceAsync(
+                            order.BuyerId, 
+                            buyerSelectedBalance.PaymentMethodId, 
+                            -convertedAmount, 
+                            buyerCurrency);
+                    }
+
+                    // Add to creator's selected payment method
+                    var creatorSelectedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(product.CreatorId);
+                    if (creatorSelectedBalance != null)
+                    {
+                        // Convert currency if needed
+                        var creatorCurrency = creatorSelectedBalance.Currency;
+                        var convertedAmount = ConvertCurrencyForBalance(totalItemCost, product.Currency, creatorCurrency).Result;
+                        
+                        await _paymentMethodBalanceRepository.UpdateBalanceAsync(
+                            product.CreatorId, 
+                            creatorSelectedBalance.PaymentMethodId, 
+                            convertedAmount, 
+                            creatorCurrency);
+                    }
+                }
+
+                _logger.LogInformation("Balances updated for order {OrderId}", order.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating balances for order {OrderId}", order.Id);
+                throw;
+            }
+        }
+
+        private Task<decimal> ConvertCurrencyForBalance(decimal amount, string fromCurrency, string toCurrency)
+        {
+            if (fromCurrency == toCurrency) return Task.FromResult(amount);
+
+            // Use the same conversion logic as the repository
+            decimal convertedAmount = amount;
+            if (fromCurrency == "USD" && toCurrency == "EGP")
+                convertedAmount = amount * 50; // 1 USD = 50 EGP
+            else if (fromCurrency == "EGP" && toCurrency == "USD")
+                convertedAmount = amount * 0.02m; // 1 EGP = 0.02 USD
+
+            return Task.FromResult(convertedAmount);
         }
 
         private async Task GenerateLicensesAsync(Order order)

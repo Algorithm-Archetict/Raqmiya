@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DashboardSidebar } from '../../dashboard-sidebar/dashboard-sidebar';
-import { PaymentService, BalanceResponse } from '../../../core/services/payment.service';
+import { PaymentService, BalanceResponse, RevenueAnalytics } from '../../../core/services/payment.service';
 import { OrderService } from '../../../core/services/order.service';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -9,19 +10,22 @@ interface SalesData {
   totalSales: number;
   totalRevenue: number;
   monthlyRevenue: number;
+  weeklyRevenue: number;
   averageOrderValue: number;
+  currency: string; // Added missing currency property
   topProducts: Array<{
     id: number;
     name: string;
     sales: number;
     revenue: number;
+    currency: string;
   }>;
 }
 
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, DashboardSidebar],
+  imports: [CommonModule, FormsModule, DashboardSidebar],
   templateUrl: './sales.html',
   styleUrl: './sales.css'
 })
@@ -30,13 +34,20 @@ export class Sales implements OnInit {
     totalSales: 0,
     totalRevenue: 0,
     monthlyRevenue: 0,
+    weeklyRevenue: 0,
     averageOrderValue: 0,
+    currency: 'USD', // Initialize currency
     topProducts: []
   };
+
+  // Original data no longer needed; server handles conversion
+  private originalSalesData: SalesData | null = null; // deprecated
 
   currentBalance: number = 0;
   loading: boolean = false;
   error: string = '';
+  selectedCurrency: string = 'USD';
+  availableCurrencies = ['USD', 'EGP'];
 
   constructor(
     private paymentService: PaymentService,
@@ -50,13 +61,12 @@ export class Sales implements OnInit {
   }
 
   private loadBalance() {
-    this.paymentService.getBalance().subscribe({
+    this.paymentService.getBalance(this.selectedCurrency).subscribe({
       next: (response: BalanceResponse) => {
         this.currentBalance = response.currentBalance;
       },
       error: (error) => {
         console.error('Failed to load balance:', error);
-        // Use fallback data
         this.currentBalance = 0;
       }
     });
@@ -66,25 +76,68 @@ export class Sales implements OnInit {
     this.loading = true;
     this.error = '';
 
-    // Get current user to filter data
-    const currentUsername = this.authService.getCurrentUsername();
+    console.log('Loading sales data with currency:', this.selectedCurrency);
 
-    // For now, we'll use mock data since we need to implement the backend sales endpoints
-    // TODO: Replace with actual API calls when backend sales endpoints are implemented
-    this.salesData = {
-      totalSales: 12,
-      totalRevenue: 1250.00,
-      monthlyRevenue: 450.00,
-      averageOrderValue: 104.17,
-      topProducts: [
-        { id: 1, name: 'Digital Art Template', sales: 5, revenue: 500.00 },
-        { id: 2, name: '3D Model Pack', sales: 4, revenue: 400.00 },
-        { id: 3, name: 'Video Tutorial', sales: 3, revenue: 350.00 }
-      ]
-    };
+    this.paymentService.getRevenueAnalytics(this.selectedCurrency).subscribe({
+      next: (analytics: RevenueAnalytics) => {
+        console.log('Received analytics data:', analytics);
 
-    this.loading = false;
+        // Handle cases where analytics might be null or undefined
+        if (analytics) {
+          this.salesData = {
+            totalSales: analytics.totalSales || 0,
+            totalRevenue: analytics.totalRevenue || 0,
+            monthlyRevenue: analytics.monthlyRevenue || 0,
+            weeklyRevenue: analytics.weeklyRevenue || 0,
+            averageOrderValue: analytics.averageOrderValue || 0,
+            currency: this.selectedCurrency, // Set currency from selectedCurrency
+            topProducts: analytics.topProducts || []
+          };
+          // No client-side currency conversion; use server data only
+          this.originalSalesData = null;
+        } else {
+          console.log('No analytics data received, setting defaults');
+          // Set default values if no analytics data
+          this.salesData = {
+            totalSales: 0,
+            totalRevenue: 0,
+            monthlyRevenue: 0,
+            weeklyRevenue: 0,
+            averageOrderValue: 0,
+            currency: this.selectedCurrency, // Set currency from selectedCurrency
+            topProducts: []
+          };
+          this.originalSalesData = null;
+        }
+        this.loading = false;
+        this.error = ''; // Clear any previous errors
+      },
+      error: (error) => {
+        console.error('Failed to load sales data:', error);
+        // Set default values on error instead of showing error message
+        this.salesData = {
+          totalSales: 0,
+          totalRevenue: 0,
+          monthlyRevenue: 0,
+          weeklyRevenue: 0,
+          averageOrderValue: 0,
+          currency: this.selectedCurrency, // Set currency from selectedCurrency
+          topProducts: []
+        };
+        this.originalSalesData = null;
+        this.loading = false;
+        this.error = ''; // Don't show error message, just display 0 values
+      }
+    });
   }
+
+  onCurrencyChange() {
+    // Always fetch fresh data in the selected currency
+    this.loadSalesData();
+    this.loadBalance();
+  }
+
+  // Removed client-side conversion; server provides numbers in requested currency
 
   getRevenuePercentage(): number {
     if (this.salesData.totalRevenue === 0) return 0;
@@ -92,6 +145,11 @@ export class Sales implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return `$${amount.toFixed(2)}`;
+    const symbol = this.selectedCurrency === 'EGP' ? 'EGP' : '$';
+    return `${symbol}${amount.toFixed(2)}`;
+  }
+
+  getCurrencySymbol(): string {
+    return this.selectedCurrency === 'EGP' ? 'EGP' : '$';
   }
 }

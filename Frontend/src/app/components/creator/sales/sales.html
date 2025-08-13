@@ -8,6 +8,18 @@
     <div class="sales-header">
       <h1 class="sales-title">Sales Analytics</h1>
       <div class="header-actions">
+        <!-- Currency Selector -->
+        <div class="currency-selector me-3">
+          <label for="currencySelect" class="form-label me-2">Currency:</label>
+          <select
+            id="currencySelect"
+            class="form-select form-select-sm"
+            [(ngModel)]="selectedCurrency"
+            (change)="onCurrencyChange()">
+            <option value="USD">USD ($)</option>
+            <option value="EGP">EGP (EGP)</option>
+          </select>
+        </div>
         <button class="btn btn-outline-primary">
           <i class="fas fa-download me-2"></i>
           Export Report
@@ -74,6 +86,16 @@
 
           <div class="summary-card">
             <div class="card-icon">
+              <i class="fas fa-calendar-week"></i>
+            </div>
+            <div class="card-content">
+              <h3 class="card-value">{{ formatCurrency(salesData.weeklyRevenue) }}</h3>
+              <p class="card-label">Weekly Revenue</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon">
               <i class="fas fa-calculator"></i>
             </div>
             <div class="card-content">
@@ -94,7 +116,7 @@
             </div>
             <div class="card-body">
               <div class="balance-amount">
-                <span class="currency">$</span>
+                <span class="currency">{{ getCurrencySymbol() }}</span>
                 <span class="amount">{{ currentBalance.toFixed(2) }}</span>
               </div>
               <small class="text-muted">

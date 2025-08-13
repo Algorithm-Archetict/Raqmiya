@@ -1,19 +1,22 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { DashboardSidebar } from '../../dashboard-sidebar/dashboard-sidebar';
-import { PaymentService, BalanceResponse } from '../../../core/services/payment.service';
+import { PaymentService, BalanceResponse, RevenueAnalytics } from '../../../core/services/payment.service';
 
 interface DashboardData {
   balance: number;
   last7Days: number;
   last28Days: number;
   totalEarnings: number;
+  currency: string;
 }
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, RouterModule, DashboardSidebar],
+  standalone: true,
+  imports: [CommonModule, RouterModule, FormsModule, DashboardSidebar],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
@@ -22,8 +25,13 @@ export class Dashboard implements OnInit {
     balance: 0,
     last7Days: 0,
     last28Days: 0,
-    totalEarnings: 0
+    totalEarnings: 0,
+    currency: 'USD'
   };
+
+  selectedCurrency: string = 'USD';
+  availableCurrencies = ['USD', 'EGP'];
+  loading: boolean = false;
 
   constructor(private paymentService: PaymentService) {}
 
@@ -32,26 +40,62 @@ export class Dashboard implements OnInit {
   }
 
   loadDashboardData() {
-    // Load real balance data
-    this.paymentService.getBalance().subscribe({
+    this.loading = true;
+
+    // Load real balance and revenue data
+    this.paymentService.getBalance(this.selectedCurrency).subscribe({
       next: (response: BalanceResponse) => {
         this.dashboardData.balance = response.currentBalance;
-        // For now, we'll set total earnings to current balance
-        // In a real app, you'd have separate endpoints for revenue analytics
-        this.dashboardData.totalEarnings = response.currentBalance;
-        this.dashboardData.last7Days = Math.round(response.currentBalance * 0.3); // Mock data
-        this.dashboardData.last28Days = Math.round(response.currentBalance * 0.7); // Mock data
+        this.dashboardData.currency = response.currency;
+
+        // Load revenue analytics
+        this.loadRevenueAnalytics();
       },
       error: (error) => {
         console.error('Error loading dashboard data:', error);
-        // Keep mock data if API fails
-        this.dashboardData = {
-          balance: 1250.75,
-          last7Days: 375.25,
-          last28Days: 875.50,
-          totalEarnings: 1250.75
-        };
+        this.loading = false;
       }
     });
+  }
+
+  private loadRevenueAnalytics() {
+    this.paymentService.getRevenueAnalytics(this.selectedCurrency).subscribe({
+      next: (analytics: RevenueAnalytics) => {
+        if (analytics) {
+          this.dashboardData.totalEarnings = analytics.totalRevenue || 0;
+          this.dashboardData.last7Days = analytics.weeklyRevenue || 0;
+          this.dashboardData.last28Days = analytics.monthlyRevenue || 0;
+          this.dashboardData.currency = analytics.currency || 'USD';
+        } else {
+          // Set default values if no analytics data
+          this.dashboardData.totalEarnings = 0;
+          this.dashboardData.last7Days = 0;
+          this.dashboardData.last28Days = 0;
+          this.dashboardData.currency = this.selectedCurrency;
+        }
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading revenue analytics:', error);
+        // Set default values on error
+        this.dashboardData.totalEarnings = 0;
+        this.dashboardData.last7Days = 0;
+        this.dashboardData.last28Days = 0;
+        this.dashboardData.currency = this.selectedCurrency;
+        this.loading = false;
+      }
+    });
+  }
+
+  onCurrencyChange() {
+    // Always fetch fresh numbers in selected currency
+    this.loadDashboardData();
+  }
+
+  // Removed client-side conversion; server returns currency-adjusted values
+
+  formatCurrency(amount: number): string {
+    const symbol = this.selectedCurrency === 'EGP' ? 'EGP' : '$';
+    return `${symbol}${amount.toFixed(2)}`;
   }
 }

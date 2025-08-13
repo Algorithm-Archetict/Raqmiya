@@ -34,6 +34,7 @@ namespace API
             builder.Services.AddScoped<IAuthRepository, AuthRepository>(); // Register AuthRepository for IAuthRepository
             builder.Services.AddScoped<IOrderRepository,OrderRepository>(); // Register OrderRepository
             builder.Services.AddScoped<ILicenseRepository, LicenseRepository>(); // NEW: License Repository
+            builder.Services.AddScoped<IPaymentMethodBalanceRepository, PaymentMethodBalanceRepository>(); // NEW: Payment Method Balance Repository
             // --- 3. Configure Services (Core/Business Logic Layer) ---
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAuthService, AuthService>(); // NEW: Auth Service
@@ -42,6 +43,8 @@ namespace API
             builder.Services.AddScoped<ICartService, Core.Services.CartService>(); // NEW: Cart Service
             builder.Services.AddScoped<IEmailService, Core.Services.EmailService>(); // NEW: Email Service
             builder.Services.AddScoped<IStripeService, Core.Services.StripeService>(); // NEW: Stripe Service
+            builder.Services.AddScoped<IRevenueAnalyticsService, Core.Services.RevenueAnalyticsService>(); // NEW: Revenue Analytics Service
+            builder.Services.AddScoped<ICurrencyService, Core.Services.CurrencyService>(); // NEW: Currency Service
 
             // --- 4. Configure Logging ---
             builder.Logging.AddConsole();
