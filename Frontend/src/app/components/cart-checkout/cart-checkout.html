@@ -50,7 +50,12 @@
           <div class="balance-section">
             <div class="balance-card">
               <h4>Account Balance</h4>
-              <div class="balance-amount">${{ currentBalance.toFixed(2) }}</div>
+              <div class="balance-amount" *ngIf="!balanceLoading">
+                ${{ currentBalance.toFixed(2) }}
+              </div>
+              <div class="balance-loading" *ngIf="balanceLoading">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </div>
               <div class="balance-status" [class.sufficient]="hasSufficientBalance" [class.insufficient]="!hasSufficientBalance">
                 <i class="fas" [class.fa-check-circle]="hasSufficientBalance" [class.fa-exclamation-triangle]="!hasSufficientBalance"></i>
                 {{ hasSufficientBalance ? 'Sufficient balance for purchase' : 'Insufficient balance for purchase' }}
@@ -67,34 +72,6 @@
             </div>
             <div class="summary-total">
               <strong>Total: {{ totalAmount | currency:'USD' }}</strong>
-            </div>
-          </div>
-
-          <!-- Payment Method -->
-          <div class="payment-method">
-            <h4>Payment Method</h4>
-            <div class="payment-options">
-              <div class="payment-option" *ngFor="let method of paymentMethods">
-                <input type="radio"
-                       [id]="method.id"
-                       name="paymentMethod"
-                       [value]="method.id"
-                       [(ngModel)]="selectedPaymentMethod">
-                <label [for]="method.id">
-                  <i [class]="method.icon"></i>
-                  {{ method.name }}
-                </label>
-              </div>
-            </div>
-
-            <!-- Payment Method Notice -->
-            <div class="payment-notice">
-              <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong>Payment Method Required:</strong> You need to add a payment method in your
-                <a routerLink="/settings/payment" class="alert-link">Payment Settings</a> before making a purchase.
-                Your account balance will be used for payments.
-              </div>
             </div>
           </div>
 
@@ -127,7 +104,7 @@
 
             <button type="submit"
                     class="btn btn-primary btn-block"
-                    [disabled]="checkoutForm.invalid || isLoading">
+                    [disabled]="checkoutForm.invalid || isLoading || !hasSufficientBalance">
               <span *ngIf="!isLoading">Complete Purchase</span>
               <span *ngIf="isLoading">Processing...</span>
             </button>
