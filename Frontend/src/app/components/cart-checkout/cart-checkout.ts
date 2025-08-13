@@ -6,11 +6,12 @@ import { firstValueFrom } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
-import { PaymentService, BalanceResponse } from '../../core/services/payment.service';
+import { ProductService } from '../../core/services/product.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { Order } from '../../core/models/order/order.model';
-import Swal from 'sweetalert2';
+import { BalanceResponse } from '../../core/services/payment.service';
 
-interface CartItemDisplay {
+interface CartItem {
   productId: number;
   name: string;
   price: number;
@@ -18,7 +19,6 @@ interface CartItemDisplay {
   creator: string;
   image: string;
   quantity: number;
-  description: string;
 }
 
 @Component({
@@ -28,30 +28,24 @@ interface CartItemDisplay {
   styleUrl: './cart-checkout.css'
 })
 export class CartCheckout implements OnInit {
-  cartItems: CartItemDisplay[] = [];
+  cartItems: CartItem[] = [];
   totalAmount: number = 0;
   isLoading: boolean = false;
   errorMessage: string = '';
-
+  
   // Balance information
   currentBalance: number = 0;
   hasSufficientBalance: boolean = false;
-
+  balanceLoading: boolean = false;
+  
   // Checkout form
   checkoutForm: FormGroup;
-
-  // Payment methods
-  paymentMethods = [
-    { id: 'card', name: 'Credit/Debit Card', icon: 'fas fa-credit-card' },
-    { id: 'paypal', name: 'PayPal', icon: 'fab fa-paypal' }
-  ];
-
-  selectedPaymentMethod: string = 'card';
-
+  
   constructor(
     private cartService: CartService,
     private orderService: OrderService,
     private authService: AuthService,
+    private productService: ProductService,
     private paymentService: PaymentService,
     private router: Router,
     private formBuilder: FormBuilder
@@ -63,86 +57,98 @@ export class CartCheckout implements OnInit {
       billingAddress: ['', Validators.required]
     });
   }
-
+  
   ngOnInit() {
-    this.loadCartItems();
+    // Check if user is authenticated
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login'], { 
+        queryParams: { returnUrl: this.router.url } 
+      });
+      return;
+    }
+    
+    this.loadCart();
     this.loadBalance();
   }
-
-  loadCartItems() {
-    this.cartService.getCart().subscribe({
-      next: (cartResponse) => {
-        if (cartResponse && cartResponse.success && cartResponse.cart && cartResponse.cart.items) {
-          this.cartItems = cartResponse.cart.items.map(item => ({
-            productId: item.productId,
-            name: item.name,
-            price: item.price,
-            currency: item.currency,
-            creator: item.creator,
-            image: item.image,
-            quantity: item.quantity,
-            description: item.description
-          }));
-          this.calculateTotal();
-        }
-      },
-      error: (error) => {
-        console.error('Error loading cart:', error);
-      }
+  
+  loadCart() {
+    this.cartService.getCart().subscribe(cart => {
+      this.cartItems = cart.cart.items;
+      this.calculateTotal();
+      this.checkBalanceSufficiency();
     });
   }
-
+  
   loadBalance() {
+    this.balanceLoading = true;
     this.paymentService.getBalance().subscribe({
-      next: (response: BalanceResponse) => {
-        this.currentBalance = response.currentBalance;
-        this.checkBalanceForPurchase();
+      next: (balance: BalanceResponse) => {
+        this.currentBalance = balance.currentBalance;
+        this.checkBalanceSufficiency();
+        this.balanceLoading = false;
       },
       error: (error) => {
         console.error('Error loading balance:', error);
+        this.balanceLoading = false;
+        // Set default balance if API fails
+        this.currentBalance = 0;
+        this.hasSufficientBalance = false;
       }
     });
   }
-
-  checkBalanceForPurchase() {
-    if (this.totalAmount > 0) {
-      this.hasSufficientBalance = this.currentBalance >= this.totalAmount;
-    }
+  
+  checkBalanceSufficiency() {
+    this.hasSufficientBalance = this.currentBalance >= this.totalAmount;
   }
-
+  
   removeFromCart(productId: number) {
     this.cartService.removeFromCart(productId).subscribe(() => {
-      this.loadCartItems();
+      this.loadCart();
     });
   }
-
-  loadCart() {
-    this.loadCartItems();
-  }
-
+  
   calculateTotal() {
     this.totalAmount = this.cartItems.reduce((total, item) => {
-      return total + (item.price * 1); // Always quantity 1
+      return total + (item.price * item.quantity);
     }, 0);
+    this.checkBalanceSufficiency();
   }
 
+  private async removePurchasedProductsFromWishlist() {
+    // Remove each purchased product from the user's wishlist
+    for (const item of this.cartItems) {
+      try {
+        await firstValueFrom(this.productService.removeFromWishlist(item.productId));
+        console.log(`Product ${item.productId} removed from wishlist after purchase`);
+      } catch (error) {
+        // Log error but don't fail the purchase process
+        console.warn(`Failed to remove product ${item.productId} from wishlist:`, error);
+      }
+    }
+  }
+  
   async processCheckout() {
     if (this.checkoutForm.invalid) {
       this.errorMessage = 'Please fill in all required fields.';
       return;
     }
-
+    
+    if (!this.hasSufficientBalance) {
+      this.errorMessage = `Insufficient balance. You have $${this.currentBalance.toFixed(2)} but need $${this.totalAmount.toFixed(2)}.`;
+      return;
+    }
+    
     this.isLoading = true;
     this.errorMessage = '';
-
+    
     try {
-      // Create order with payment processing
+      // Create order data
       const orderData = {
         items: this.cartItems.map(item => ({
           productId: item.productId,
-          quantity: 1 // Always 1
+          quantity: item.quantity
         })),
-        paymentMethod: this.selectedPaymentMethod,
+        paymentMethod: 'direct',
         customerInfo: {
           email: this.checkoutForm.value.email,
           firstName: this.checkoutForm.value.firstName,
@@ -150,34 +156,35 @@ export class CartCheckout implements OnInit {
           billingAddress: this.checkoutForm.value.billingAddress
         }
       };
-
+      
       const orderResponse = await firstValueFrom(this.orderService.createOrder(orderData));
-
+      
       if (orderResponse?.success) {
-        // Show success alert
-        Swal.fire({
-          title: 'Purchase Successful! 🎉',
-          text: 'Product has been purchased successfully and a notification has been sent to your email',
-          icon: 'success',
-          confirmButtonText: 'Continue',
-          confirmButtonColor: '#28a745'
-        }).then(() => {
-          // Clear cart
-          this.cartService.clearCart().subscribe();
-
-          // Redirect to purchased products page
-          this.router.navigate(['/library/purchased-products'], {
-            state: { orderId: orderResponse.order.id }
-          });
+        // Clear cart
+        this.cartService.clearCart().subscribe();
+        
+        // Remove purchased products from wishlist
+        await this.removePurchasedProductsFromWishlist();
+        
+        // Refresh balance to reflect the purchase
+        this.loadBalance();
+        
+        // Redirect to purchased products page
+        this.router.navigate(['/library/purchased-products'], { 
+          state: { orderId: orderResponse.order.id } 
         });
       } else {
         this.errorMessage = orderResponse?.message || 'Order creation failed.';
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Checkout error:', error);
-      this.errorMessage = error.message || 'An error occurred during checkout.';
+      if (error instanceof Error) {
+        this.errorMessage = error.message;
+      } else {
+        this.errorMessage = 'An unexpected error occurred during checkout. Please try again.';
+      }
     } finally {
       this.isLoading = false;
     }
   }
-}
+} 

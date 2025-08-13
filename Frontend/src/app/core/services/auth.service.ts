@@ -129,10 +129,22 @@ export class AuthService {
   private clearUserData(): void {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
+    
+    // Clear chatbot data
+    this.clearChatbotData();
+    
     // Also clear any cached user data in other services
     // This ensures complete data isolation between users
     // Note: We can't inject UserService here due to circular dependency
     // The UserService will clear its cache when it encounters errors
+  }
+
+  // Clear chatbot data when user logs out
+  private clearChatbotData(): void {
+    // Clear chatbot chat history but preserve knowledge base for all users
+    localStorage.removeItem('chatbot_chat_history');
+    localStorage.removeItem('chatbot_messages');
+    console.log('Chatbot chat data cleared on logout (knowledge base preserved)');
   }
 
   // Public method to clear all cached data (useful for user switching)

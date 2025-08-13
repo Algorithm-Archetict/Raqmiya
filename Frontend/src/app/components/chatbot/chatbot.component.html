@@ -25,6 +25,10 @@
   <div class="admin-panel" *ngIf="showAdminPanel && isAdmin">
     <div class="admin-panel-header">
       <h6>Knowledge Base Management</h6>
+      <div class="kb-status" [class.available]="isKnowledgeBaseAvailable()">
+        <i class="bi" [class.bi-check-circle]="isKnowledgeBaseAvailable()" [class.bi-x-circle]="!isKnowledgeBaseAvailable()"></i>
+        <span>{{ isKnowledgeBaseAvailable() ? 'Available' : 'Not Available' }}</span>
+      </div>
     </div>
     <div class="admin-panel-content">
       <div class="mb-3">
@@ -38,8 +42,56 @@
           <i class="bi bi-upload"></i> Upload KB
         </button>
         <button class="btn btn-primary btn-sm flex-fill" (click)="listKnowledgeBaseDocuments()">
-          <i class="bi bi-list"></i> List Docs
+          <i class="bi bi-list"></i> {{ showDocumentList ? 'Hide Docs' : 'List Docs' }}
         </button>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Load Knowledge Base Files</label>
+        <div class="d-flex gap-2 mb-2">
+          <button class="btn btn-info btn-sm flex-fill" (click)="loadAssetFile('faq.txt')">
+            <i class="bi bi-file-text"></i> Load FAQ
+          </button>
+          <button class="btn btn-info btn-sm flex-fill" (click)="loadAssetFile('return-policy.txt')">
+            <i class="bi bi-file-text"></i> Load Return Policy
+          </button>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-info btn-sm flex-fill" (click)="loadAssetFile('platform-overview.txt')">
+            <i class="bi bi-file-text"></i> Load Platform Overview
+          </button>
+          <button class="btn btn-warning btn-sm flex-fill" (click)="reloadKnowledgeBase()">
+            <i class="bi bi-trash"></i> Clear All
+          </button>
+        </div>
+      </div>
+      
+      <!-- Upload Messages -->
+      <div class="upload-message success" *ngIf="uploadSuccessMessage">
+        {{ uploadSuccessMessage }}
+      </div>
+      <div class="upload-message error" *ngIf="uploadErrorMessage">
+        {{ uploadErrorMessage }}
+      </div>
+      
+      <!-- Document List Display -->
+      <div class="document-list" *ngIf="knowledgeBaseDocuments.length > 0 && showDocumentList">
+        <h6 class="mb-2">📚 Knowledge Base Documents</h6>
+        <div class="document-item" *ngFor="let doc of knowledgeBaseDocuments">
+          <div class="document-info">
+            <i class="bi bi-file-text"></i>
+            <span class="document-name">{{ doc.name }}</span>
+            <span class="document-size">({{ doc.content.length }} chars)</span>
+          </div>
+          <button class="btn btn-danger btn-sm" (click)="deleteDocumentFromAdminPanel(doc.name)" 
+                  title="Delete document">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- No Documents Message -->
+      <div class="no-documents" *ngIf="knowledgeBaseDocuments.length === 0 && showDocumentList">
+        <p class="text-muted text-center mb-0">No documents in knowledge base.</p>
       </div>
     </div>
   </div>

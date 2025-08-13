@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 import { OrderService } from '../../core/services/order.service';
 import { ProductService } from '../../core/services/product.service';
 import { HttpClient } from '@angular/common/http';
@@ -31,8 +31,9 @@ interface ProductFile {
   name: string;
   fileUrl: string;
   type?: string;
-  size?: string;
+  size?: number; // Changed from string to number to match backend
   icon?: string;
+  isDownloading?: boolean;
 }
 
 @Component({
@@ -117,11 +118,13 @@ export class PurchasedPackage implements OnInit {
         this.product = product;
         if (!this.product) {
           this.errorMessage = 'Product not found or you do not have access to it.';
+          this.isLoading = false;
         } else {
+          // Check if creator info is missing and fetch it
+          this.enrichProductWithCreatorInfo();
           // Load existing review after product is loaded
           this.loadExistingReview();
         }
-        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading product details:', error);
@@ -133,6 +136,39 @@ export class PurchasedPackage implements OnInit {
 
   backToLibrary() {
     this.router.navigate(['/library/purchased-products']);
+  }
+
+  // Method to enrich product with missing creator information
+  enrichProductWithCreatorInfo() {
+    if (!this.product) return;
+
+    // Check if creator info is missing
+    if (!this.product.creatorUsername || 
+        this.product.creatorUsername.trim() === '' || 
+        this.product.creatorUsername === 'Unknown') {
+      
+      console.log(`Product ${this.product.productId} has missing creator info, fetching details...`);
+      
+      // Fetch product details to get creator information
+      this.productService.getById(this.product.productId).subscribe({
+        next: (productDetail) => {
+          if (productDetail?.creatorUsername) {
+            this.product!.creatorUsername = productDetail.creatorUsername;
+            console.log(`Updated product ${this.product!.productId} with creator: ${productDetail.creatorUsername}`);
+          } else {
+            console.warn(`Product ${this.product!.productId} still missing creator info even after fetching details`);
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error fetching product details for creator info:', error);
+          this.isLoading = false;
+        }
+      });
+    } else {
+      // Creator info is already available
+      this.isLoading = false;
+    }
   }
 
   setRating(rating: number) {
@@ -277,15 +313,34 @@ export class PurchasedPackage implements OnInit {
 
   viewReceipt() {
     if (this.product) {
-      // Navigate to receipt view
-      alert(`Receipt for Order: ${this.product.orderId}\nDate: ${this.product.purchaseDate.toLocaleDateString()}\nAmount: $${this.product.purchasePrice}`);
+      // Show receipt details in a nice modal
+      Swal.fire({
+        title: 'Receipt Details',
+        html: `
+          <div class="text-left">
+            <p><strong>Order ID:</strong> ${this.product.orderId}</p>
+            <p><strong>Date:</strong> ${this.product.purchaseDate.toLocaleDateString()}</p>
+            <p><strong>Amount:</strong> $${this.product.purchasePrice}</p>
+            <p><strong>Product:</strong> ${this.product.productName}</p>
+          </div>
+        `,
+        icon: 'info',
+        confirmButtonText: 'Close'
+      });
     }
   }
 
   resendReceipt() {
     // In real app, this would trigger email resend
     // Resend receipt to user's email
-    alert('Receipt has been resent to your email address.');
+    Swal.fire({
+      icon: 'success',
+      title: 'Receipt Sent!',
+      text: 'Receipt has been resent to your email address.',
+      confirmButtonText: 'OK',
+      timer: 3000,
+      timerProgressBar: true
+    });
   }
 
   async downloadFile(file: ProductFile) {
@@ -295,7 +350,8 @@ export class PurchasedPackage implements OnInit {
       return;
     }
     
-    this.isDownloading = true;
+    // Set downloading state for this specific file only
+    file.isDownloading = true;
     this.downloadProgress = 0;
 
     try {
@@ -305,7 +361,7 @@ export class PurchasedPackage implements OnInit {
         if (this.downloadProgress >= 100) {
           this.downloadProgress = 100;
           clearInterval(interval);
-          this.isDownloading = false;
+          file.isDownloading = false;
           
           // Trigger actual download
           this.triggerDownload(file);
@@ -313,8 +369,13 @@ export class PurchasedPackage implements OnInit {
       }, 200);
     } catch (error) {
       console.error('Download error:', error);
-      this.isDownloading = false;
-      alert('Download failed. Please try again.');
+      file.isDownloading = false;
+      Swal.fire({
+        icon: 'error',
+        title: 'Download Failed',
+        text: 'Failed to download file. Please try again.',
+        confirmButtonText: 'OK'
+      });
     }
   }
 
@@ -350,26 +411,68 @@ export class PurchasedPackage implements OnInit {
         window.URL.revokeObjectURL(url);
         
         // Download completed successfully
-        alert('Download completed successfully!');
+        file.isDownloading = false;
+        Swal.fire({
+          icon: 'success',
+          title: 'Download Complete!',
+          text: `"${file.name}" has been downloaded successfully.`,
+          confirmButtonText: 'OK',
+          timer: 3000,
+          timerProgressBar: true
+        });
       },
       error: (error) => {
         console.error('Download failed:', error);
+        file.isDownloading = false;
         if (error.status === 401) {
-          alert('Download failed: Please log in again to download files.');
+          Swal.fire({
+            icon: 'error',
+            title: 'Authentication Required',
+            text: 'Please log in again to download files.',
+            confirmButtonText: 'OK'
+          });
         } else if (error.status === 403) {
-          alert('Download failed: You do not have access to this file.');
+          Swal.fire({
+            icon: 'error',
+            title: 'Access Denied',
+            text: 'You do not have access to this file.',
+            confirmButtonText: 'OK'
+          });
         } else if (error.status === 404) {
-          alert('Download failed: File not found.');
+          Swal.fire({
+            icon: 'error',
+            title: 'File Not Found',
+            text: 'The requested file could not be found.',
+            confirmButtonText: 'OK'
+          });
         } else {
-          alert('Download failed: Please try again later.');
+          Swal.fire({
+            icon: 'error',
+            title: 'Download Failed',
+            text: 'Failed to download file. Please try again later.',
+            confirmButtonText: 'OK'
+          });
         }
       }
     });
   }
 
   viewCreator() {
-    // In real app, this would navigate to creator profile
-    // Navigate to creator profile
+    if (this.product?.creatorUsername) {
+      // Show creator profile in a nice modal
+      Swal.fire({
+        title: 'Creator Profile',
+        html: `
+          <div class="text-center">
+            <h4>${this.getCreatorName()}</h4>
+            <p>This would navigate to the creator's profile page.</p>
+            <p><small>In a real application, this would show the creator's full profile, products, and contact information.</small></p>
+          </div>
+        `,
+        icon: 'info',
+        confirmButtonText: 'OK'
+      });
+    }
   }
 
   browseMoreProducts() {
@@ -400,8 +503,16 @@ export class PurchasedPackage implements OnInit {
     return iconMap[extension || ''] || 'fas fa-file';
   }
 
-  formatFileSize(size: string): string {
-    return size;
+  formatFileSize(size: number | undefined): string {
+    if (!size || size <= 0) {
+      return 'Unknown';
+    }
+    
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(size) / Math.log(1024));
+    const formattedSize = (size / Math.pow(1024, i)).toFixed(1);
+    
+    return `${formattedSize} ${sizes[i]}`;
   }
 
   getFileType(fileName: string): string {
@@ -430,5 +541,19 @@ export class PurchasedPackage implements OnInit {
     if (this.userRating === 4) return 'Very Good';
     if (this.userRating === 5) return 'Excellent';
     return 'Rate this product';
+  }
+
+  isAnyFileDownloading(): boolean {
+    return this.product?.files?.some(file => file.isDownloading) || false;
+  }
+
+  // Helper method to get creator username with fallback
+  getCreatorName(): string {
+    if (this.product?.creatorUsername && 
+        this.product.creatorUsername.trim() !== '' && 
+        this.product.creatorUsername !== 'Unknown') {
+      return this.product.creatorUsername;
+    }
+    return 'Unknown Creator';
   }
 }

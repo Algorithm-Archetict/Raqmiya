@@ -101,7 +101,7 @@
 /* Products Grid */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 32px;
   margin-top: 32px;
 }
@@ -116,6 +116,7 @@
   transition: var(--transition-normal);
   position: relative;
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
 }
 
 .product-card:hover {
@@ -128,7 +129,7 @@
 .product-image {
   position: relative;
   width: 100%;
-  height: 240px;
+  height: 200px;
   overflow: hidden;
   background: var(--bg-secondary);
 }
@@ -142,6 +143,51 @@
 
 .product-card:hover .product-image img {
   transform: scale(1.05);
+}
+
+/* Product Overlay */
+.product-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.product-card:hover .product-overlay {
+  opacity: 1;
+}
+
+/* Overlay Button Styling */
+.product-overlay .btn {
+  background: var(--primary-color);
+  color: var(--text-primary);
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.product-overlay .btn:hover {
+  background: var(--primary-color-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.product-overlay .btn i {
+  font-size: 16px;
 }
 
 /* Product Badge */
@@ -161,12 +207,56 @@
 
 /* Product Info */
 .product-info {
-  padding: 24px;
+  padding: 16px;
+}
+
+/* Product Title */
+.product-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Product Creator */
+.product-creator {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  font-weight: 400;
 }
 
 /* Product Meta */
 .product-meta {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Product Price */
+.product-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Product Rating */
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.product-rating i {
+  color: #fbbf24;
+  font-size: 11px;
 }
 
 .platform-tags {
@@ -205,113 +295,52 @@
   font-weight: 500;
 }
 
-/* Product Details */
-.product-details {
-  margin-bottom: 16px;
+/* Product Tags */
+.product-tags {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.product-type {
-  margin-bottom: 8px;
-}
-
-.type-badge {
+.tag {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-}
-
-.product-title {
-  margin-bottom: 16px;
-}
-
-.product-link {
-  color: var(--text-primary);
-  text-decoration: none;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.3;
-  cursor: pointer;
-  transition: var(--transition-normal);
-}
-
-.product-link:hover {
-  color: var(--primary-color);
-}
-
-/* Product Price */
-.product-price {
-  margin-bottom: 16px;
-}
-
-.price-container {
   display: flex;
   align-items: center;
+  gap: 4px;
 }
 
-.price-wrapper {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+.tag.platform-tag {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
 }
 
-.price-value {
-  display: flex;
-  align-items: center;
-}
 
-.price-amount {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--text-primary);
-}
 
-/* Product Rating */
-.product-rating {
-  margin-bottom: 24px;
-}
 
-.rating-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.rating-stars {
-  display: flex;
-  gap: 2px;
-}
-
-.rating-stars i {
-  color: var(--warning-color);
-  font-size: 14px;
-}
-
-.rating-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
 
 /* Product Actions */
 .product-actions {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .action-buttons {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .btn {
   flex: 1;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border: none;
   border-radius: var(--radius-md);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: var(--transition-normal);
   display: flex;
