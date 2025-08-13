@@ -1,4 +1,5 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, ViewEncapsulation } from '@angular/core';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -57,6 +58,22 @@ export class Discover implements OnInit, AfterViewInit {
   allProducts: Product[] = [];
   filteredProducts: Product[] = [];
   recommendedProducts: Product[] = [];
+  // Section datasets for carousels
+  sectionMostWished: Product[] = [];
+  sectionRecommended: Product[] = [];
+  sectionBestSellers: Product[] = [];
+  sectionTopRated: Product[] = [];
+  sectionNewArrivals: Product[] = [];
+  sectionTrending: Product[] = [];
+  // DTO mirrors for carousels
+  sectionMostWishedDto: ProductListItemDTO[] = [];
+  sectionRecommendedDto: ProductListItemDTO[] = [];
+  sectionBestSellersDto: ProductListItemDTO[] = [];
+  sectionTopRatedDto: ProductListItemDTO[] = [];
+  sectionNewArrivalsDto: ProductListItemDTO[] = [];
+  sectionTrendingDto: ProductListItemDTO[] = [];
+
+  private categorySelection$ = new Subject<{id: number | 'all', includeNested: boolean, allCategoryIds?: number[]}>();
   popularTags: string[] = [];
   availableTags: TagDTO[] = [];
   
@@ -79,6 +96,19 @@ export class Discover implements OnInit, AfterViewInit {
     this.initializeProducts();
     this.loadAvailableTags();
     this.applyFilters();
+    // Debounce category selection to avoid spamming backend
+    this.categorySelection$
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))
+      )
+      .subscribe((event) => {
+        if (event.allCategoryIds && event.allCategoryIds.length > 0) {
+          this.loadProductsByMultipleCategories(event.allCategoryIds);
+        } else {
+          this.loadProductsByCategory(event.id, event.includeNested);
+        }
+      });
   }
 
   ngAfterViewInit() {
@@ -115,10 +145,10 @@ export class Discover implements OnInit, AfterViewInit {
     return url;
   }
 
-  // Initialize product data from API
+  // Initialize product data from API (one-shot load, used for all sections)
   initializeProducts() {
     this.loading = true;
-    
+    // Use cached, shared observable to avoid repeated calls
     this.productService.getProductList(1, 1000).subscribe({
       next: (products: ProductListItemDTO[]) => {
         this.allProducts = products.map(product => ({
@@ -153,6 +183,9 @@ export class Discover implements OnInit, AfterViewInit {
         
         // Load purchase status for all products
         this.loadPurchaseStatus();
+
+        // Compute homepage sections locally as fallbacks until backend analytics are live
+        this.computeDiscoverSections();
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
@@ -169,6 +202,75 @@ export class Discover implements OnInit, AfterViewInit {
         this.loading = false;
       }
     });
+  }
+
+  // Compute “Most Wished, Recommended, Best Sellers, Top Rated, New Arrivals, Trending” locally
+  private computeDiscoverSections() {
+    // Currently ProductCarouselComponent expects @Input() products. We will bind later in the template or via a controller hook.
+    // For now, we keep results accessible on the component for binding.
+    const by = {
+      ratingDesc: [...this.allProducts].sort((a, b) => (b.rating || 0) - (a.rating || 0)),
+      ratingThenCount: [...this.allProducts].sort((a, b) => {
+        if ((b.rating || 0) !== (a.rating || 0)) return (b.rating || 0) - (a.rating || 0);
+        return (b.ratingCount || 0) - (a.ratingCount || 0);
+      }),
+      idDesc: [...this.allProducts].sort((a, b) => b.id - a.id),
+    };
+
+    const wishlistSignal = (p: Product) => (p.inWishlist ? 1 : 0) + (p.ratingCount || 0) * 0.01;
+    const salesSignal = (p: Product) => (p.ratingCount || 0); // fallback proxy
+    const trendingScore = (p: Product) => (p.rating || 0) * 2 + (p.ratingCount || 0) * 0.5 + (p.inWishlist ? 3 : 0);
+
+    // Sections
+    this.sectionMostWished = [...this.allProducts]
+      .sort((a, b) => wishlistSignal(b) - wishlistSignal(a))
+      .slice(0, 12);
+
+    // Simple content-based recommendation: overlap tags with wishlist items or top viewed
+    const userTags = new Set(
+      this.allProducts.filter(p => p.inWishlist).flatMap(p => p.tags || [])
+    );
+    const tagAffinity = (p: Product) => (p.tags || []).reduce((acc, t) => acc + (userTags.has(t) ? 1 : 0), 0);
+    this.sectionRecommended = [...this.allProducts]
+      .sort((a, b) => tagAffinity(b) - tagAffinity(a) || (b.rating || 0) - (a.rating || 0))
+      .slice(0, 12);
+
+    this.sectionBestSellers = [...this.allProducts]
+      .sort((a, b) => salesSignal(b) - salesSignal(a))
+      .slice(0, 12);
+
+    this.sectionTopRated = by.ratingThenCount.slice(0, 12);
+    this.sectionNewArrivals = by.idDesc.slice(0, 12);
+    this.sectionTrending = [...this.allProducts]
+      .sort((a, b) => trendingScore(b) - trendingScore(a))
+      .slice(0, 12);
+
+    // Convert to DTO for carousels
+    this.sectionMostWishedDto = this.sectionMostWished.map(p => this.toDTO(p));
+    this.sectionRecommendedDto = this.sectionRecommended.map(p => this.toDTO(p));
+    this.sectionBestSellersDto = this.sectionBestSellers.map(p => this.toDTO(p));
+    this.sectionTopRatedDto = this.sectionTopRated.map(p => this.toDTO(p));
+    this.sectionNewArrivalsDto = this.sectionNewArrivals.map(p => this.toDTO(p));
+    this.sectionTrendingDto = this.sectionTrending.map(p => this.toDTO(p));
+  }
+
+  private toDTO(p: Product): ProductListItemDTO {
+    return {
+      id: p.id,
+      name: p.title,
+      price: p.price,
+      coverImageUrl: p.image,
+      averageRating: p.rating,
+      creatorUsername: p.creator,
+      isPublic: true,
+      // Fill minimal category to satisfy consumers if needed
+      category: { id: 0, name: p.category, parentCategoryId: undefined },
+      salesCount: 0,
+      currency: 'USD',
+      permalink: `product-${p.id}`,
+      status: 'Published',
+      publishedAt: new Date().toISOString()
+    } as ProductListItemDTO;
   }
 
   // Load wishlist status for all products
@@ -702,14 +804,8 @@ export class Discover implements OnInit, AfterViewInit {
   onCategorySelected(event: {id: number | 'all', includeNested: boolean, allCategoryIds?: number[]}) {
     console.log('Category selected event received:', event);
     this.selectedCategory = event.id;
-    
-    if (event.allCategoryIds && event.allCategoryIds.length > 0) {
-      // Use hierarchical search with all category IDs
-      this.loadProductsByMultipleCategories(event.allCategoryIds);
-    } else {
-      // Use single category search
-      this.loadProductsByCategory(event.id, event.includeNested);
-    }
+    // Debounced fetch via subject
+    this.categorySelection$.next(event);
   }
 
   // New method to load products by multiple categories (for hierarchical search)
