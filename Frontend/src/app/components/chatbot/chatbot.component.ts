@@ -92,9 +92,14 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       }));
     } else {
       // Initialize with system message
+      const hasKnowledgeBase = this.chatbotService.isKnowledgeBaseAvailable();
+      const systemMessage = hasKnowledgeBase 
+        ? 'Hello! I\'m a specialized AI assistant with access to knowledge base documents. I can answer questions based on the loaded documents. I cannot answer general questions, programming questions, or any questions outside the scope of the loaded documents.'
+        : 'Hello! I\'m a specialized AI assistant that can only answer questions based on the knowledge base documents that have been loaded by an admin. I cannot answer general questions, programming questions, or any questions outside the scope of the loaded documents. Please ask an admin to upload relevant documents to the knowledge base if you need assistance.';
+      
       this.messages = [{
         role: 'system',
-        content: 'I am a helpful AI assistant for the Raqmiya platform. I can help with general questions, analyze images, and provide information from our knowledge base.',
+        content: systemMessage,
         timestamp: new Date()
       }];
     }
@@ -190,10 +195,15 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           await this.searchKnowledgeBaseDocuments(query);
         }
         break;
+      case 'reload':
+        if (parts[2] === 'knowledgebase') {
+          await this.reloadKnowledgeBase();
+        }
+        break;
       default:
         this.messages.push({
           role: 'assistant',
-          content: 'Unknown admin command. Available commands: admin: add document, admin: list documents, admin: delete document [name], admin: search documents [query]',
+          content: 'Unknown admin command. Available commands: admin: add document, admin: list documents, admin: delete document [name], admin: search documents [query], admin: reload knowledgebase (clears all documents)',
           timestamp: new Date()
         });
     }
@@ -280,6 +290,47 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         timestamp: new Date()
       });
     }
+  }
+
+  async reloadKnowledgeBase() {
+    try {
+      await this.chatbotService.reloadKnowledgeBase();
+      this.messages.push({
+        role: 'assistant',
+        content: '✅ Knowledge base cleared successfully! All documents have been removed. Please upload new documents to the knowledge base.',
+        timestamp: new Date()
+      });
+    } catch (error) {
+      this.messages.push({
+        role: 'assistant',
+        content: `Error reloading knowledge base: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date()
+      });
+    }
+  }
+
+  async loadAssetFile(fileName: string) {
+    try {
+      await this.chatbotService.loadAssetFile(fileName);
+      this.messages.push({
+        role: 'assistant',
+        content: `✅ Successfully loaded ${fileName} to the knowledge base! All users can now access this information.`,
+        timestamp: new Date()
+      });
+      // Refresh document list
+      await this.listKnowledgeBaseDocuments();
+    } catch (error) {
+      this.messages.push({
+        role: 'assistant',
+        content: `Error loading ${fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date()
+      });
+    }
+  }
+
+  // Check if knowledge base is available for all users
+  isKnowledgeBaseAvailable(): boolean {
+    return this.chatbotService.isKnowledgeBaseAvailable();
   }
 
   onFileUpload(event: any) {

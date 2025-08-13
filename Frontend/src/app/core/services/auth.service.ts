@@ -141,11 +141,10 @@ export class AuthService {
 
   // Clear chatbot data when user logs out
   private clearChatbotData(): void {
-    // Clear chatbot chat history and knowledge base
+    // Clear chatbot chat history but preserve knowledge base for all users
     localStorage.removeItem('chatbot_chat_history');
-    localStorage.removeItem('chatbot_knowledge_base');
     localStorage.removeItem('chatbot_messages');
-    console.log('Chatbot data cleared on logout');
+    console.log('Chatbot chat data cleared on logout (knowledge base preserved)');
   }
 
   // Public method to clear all cached data (useful for user switching)
