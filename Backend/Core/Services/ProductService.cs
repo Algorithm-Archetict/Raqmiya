@@ -455,6 +455,29 @@ namespace Core.Services
             };
         }
 
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetNewArrivalsProductsAsync(int count, int pageNumber, int pageSize)
+        {
+            // New Arrivals by PublishedAt desc
+            var products = await _context.Products
+                .Include(p => p.Creator)
+                .Include(p => p.Category)
+                .Where(p => p.IsPublic)
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var totalCount = await _productRepository.GetPublishedProductsCountAsync();
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                TotalCount = (int)totalCount
+            };
+        }
+
         public async Task<List<CategoryDTO>> GetAllCategoriesAsync()
         {
             var categories = await _categoryRepository.GetAllCategoriesAsync();

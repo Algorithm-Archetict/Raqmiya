@@ -38,6 +38,7 @@ namespace Core.Interfaces
         Task<PagedResultDTO<ProductListItemDTO>> GetMostWishedProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
         Task<PagedResultDTO<ProductListItemDTO>> GetTopRatedProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
         Task<PagedResultDTO<ProductListItemDTO>> GetBestSellingProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
+        Task<PagedResultDTO<ProductListItemDTO>> GetNewArrivalsProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
         Task<PagedResultDTO<ProductListItemDTO>> GetTrendyProductsAsync(int count, int daysBack, int pageNumber, int pageSize); // Added pagination
 
         // Simplified Analytics for Carousels (without pagination)
