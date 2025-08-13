@@ -16,6 +16,7 @@ namespace Raqmiya.Infrastructure
         public DbSet<Tag> Tags { get; set; } = default!;
         public DbSet<Review> Reviews { get; set; } = default!;
         public DbSet<WishlistItem> WishlistItems { get; set; } = default!;
+        public DbSet<PaymentMethodBalance> PaymentMethodBalances { get; set; }
         public DbSet<ProductView> ProductViews { get; set; } = default!;
         public DbSet<ProductCategory> ProductCategories { get; set; } = default!;
         public DbSet<ProductTag> ProductTags { get; set; } = default!;

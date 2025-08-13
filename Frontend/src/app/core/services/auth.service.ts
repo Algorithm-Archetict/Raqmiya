@@ -23,7 +23,7 @@ export class AuthService {
   currentUser$ = this._currentUser.asObservable();
 
   constructor(
-    private http: HttpClient, 
+    private http: HttpClient,
     private router: Router,
     private mockAuthService: MockAuthService
   ) {
@@ -129,10 +129,10 @@ export class AuthService {
   private clearUserData(): void {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
-    
+
     // Clear chatbot data
     this.clearChatbotData();
-    
+
     // Also clear any cached user data in other services
     // This ensures complete data isolation between users
     // Note: We can't inject UserService here due to circular dependency
@@ -162,8 +162,30 @@ export class AuthService {
     return this._currentUser.getValue()?.username || null;
   }
 
+  // Get current user email
+  getCurrentUserEmail(): string | null {
+    const currentUser = this._currentUser.value;
+    if (currentUser && currentUser.email) {
+      return currentUser.email;
+    }
+
+    // Fallback to localStorage if currentUser is not set
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        return user.email || null;
+      } catch (e) {
+        console.error('Error parsing user data from localStorage:', e);
+      }
+    }
+
+    return null;
+  }
+
+  // Get current user
   getCurrentUser(): User | null {
-    return this._currentUser.getValue();
+    return this._currentUser.value;
   }
 
   isLoggedIn(): boolean {
@@ -257,7 +279,7 @@ export class AuthService {
         if (currentUser && debugInfo) {
           const tokenUserId = parseInt(debugInfo.UserId);
           const cachedUserId = currentUser.id;
-          
+
           if (tokenUserId !== cachedUserId) {
             console.error('User data integrity check failed!');
             console.error('Token UserId:', tokenUserId);

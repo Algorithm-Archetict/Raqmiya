@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Core.Models;
 
 namespace Core.Services
 {
@@ -133,6 +134,19 @@ namespace Core.Services
         public string GetPublishableKey()
         {
             return _publishableKey;
+        }
+
+        public async Task<TestPaymentResult> CreateTestPaymentIntentForBalanceAsync(decimal amount, string currency, string description, CancellationToken cancellationToken = default)
+        {
+            // Simulate a successful payment for balance-based system
+            var paymentIntentId = $"pi_test_{Guid.NewGuid():N}";
+            
+            return new TestPaymentResult
+            {
+                Success = true,
+                PaymentIntentId = paymentIntentId,
+                ErrorMessage = null
+            };
         }
     }
 }

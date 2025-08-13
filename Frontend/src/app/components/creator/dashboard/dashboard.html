@@ -7,33 +7,56 @@
     <!-- Header Section -->
     <div class="dashboard-header">
       <h1 class="dashboard-title">Welcome to Raqmiya.</h1>
+      <!-- Currency Selector -->
+      <div class="currency-selector">
+        <label for="currencySelect" class="form-label me-2">Currency:</label>
+        <select
+          id="currencySelect"
+          class="form-select form-select-sm"
+          [(ngModel)]="selectedCurrency"
+          (change)="onCurrencyChange()">
+          <option value="USD">USD ($)</option>
+          <option value="EGP">EGP (EGP)</option>
+        </select>
+      </div>
     </div>
 
     <!-- Content Area -->
     <div class="content-area">
-      <!-- Activity Section -->
-      <div class="activity-section">
-        <h2 class="section-title">Activity</h2>
-        
-        <div class="activity-grid">
-          <div class="activity-card">
-            <div class="activity-label">Balance</div>
-            <div class="activity-value">${{ dashboardData.balance }}</div>
-          </div>
-          
-          <div class="activity-card">
-            <div class="activity-label">Last 7 days</div>
-            <div class="activity-value">${{ dashboardData.last7Days }}</div>
-          </div>
-          
-          <div class="activity-card">
-            <div class="activity-label">Last 28 days</div>
-            <div class="activity-value">${{ dashboardData.last28Days }}</div>
-          </div>
-          
-          <div class="activity-card">
-            <div class="activity-label">Total earnings</div>
-            <div class="activity-value">${{ dashboardData.totalEarnings }}</div>
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="loading">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading dashboard data...</p>
+        </div>
+      </div>
+
+      <!-- Dashboard Data -->
+      <div class="dashboard-data" *ngIf="!loading">
+        <!-- Activity Section -->
+        <div class="activity-section">
+          <h2 class="section-title">Activity</h2>
+
+          <div class="activity-grid">
+            <div class="activity-card">
+              <div class="activity-label">Balance</div>
+              <div class="activity-value">{{ formatCurrency(dashboardData.balance) }}</div>
+            </div>
+
+            <div class="activity-card">
+              <div class="activity-label">Last 7 days</div>
+              <div class="activity-value">{{ formatCurrency(dashboardData.last7Days) }}</div>
+            </div>
+
+            <div class="activity-card">
+              <div class="activity-label">Last 28 days</div>
+              <div class="activity-value">{{ formatCurrency(dashboardData.last28Days) }}</div>
+            </div>
+
+            <div class="activity-card">
+              <div class="activity-label">Total earnings</div>
+              <div class="activity-value">{{ formatCurrency(dashboardData.totalEarnings) }}</div>
+            </div>
           </div>
         </div>
       </div>
