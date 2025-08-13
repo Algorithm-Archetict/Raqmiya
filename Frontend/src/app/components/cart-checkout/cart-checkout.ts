@@ -10,6 +10,7 @@ import { ProductService } from '../../core/services/product.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { Order } from '../../core/models/order/order.model';
 import { BalanceResponse } from '../../core/services/payment.service';
+import Swal from 'sweetalert2';
 
 interface CartItem {
   productId: number;
@@ -31,7 +32,6 @@ export class CartCheckout implements OnInit {
   cartItems: CartItem[] = [];
   totalAmount: number = 0;
   isLoading: boolean = false;
-  errorMessage: string = '';
   
   // Balance information
   currentBalance: number = 0;
@@ -69,6 +69,16 @@ export class CartCheckout implements OnInit {
     
     this.loadCart();
     this.loadBalance();
+    this.autoFillUserEmail();
+  }
+  
+  autoFillUserEmail() {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser && currentUser.email) {
+      this.checkoutForm.patchValue({
+        email: currentUser.email
+      });
+    }
   }
   
   loadCart() {
@@ -129,17 +139,44 @@ export class CartCheckout implements OnInit {
   
   async processCheckout() {
     if (this.checkoutForm.invalid) {
-      this.errorMessage = 'Please fill in all required fields.';
+      Swal.fire({
+        icon: 'warning',
+        title: 'Form Validation Error',
+        text: 'Please fill in all required fields.',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
       return;
     }
     
     if (!this.hasSufficientBalance) {
-      this.errorMessage = `Insufficient balance. You have $${this.currentBalance.toFixed(2)} but need $${this.totalAmount.toFixed(2)}.`;
+      Swal.fire({
+        icon: 'error',
+        title: 'Insufficient Balance',
+        text: `You have $${this.currentBalance.toFixed(2)} but need $${this.totalAmount.toFixed(2)}.`,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+    
+    // Show confirmation alert with SweetAlert2
+    const result = await Swal.fire({
+      title: 'Confirm Purchase',
+      text: `Are you sure you want to purchase these items for $${this.totalAmount.toFixed(2)}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, purchase!',
+      cancelButtonText: 'Cancel'
+    });
+    
+    if (!result.isConfirmed) {
       return;
     }
     
     this.isLoading = true;
-    this.errorMessage = '';
     
     try {
       // Create order data
@@ -169,20 +206,42 @@ export class CartCheckout implements OnInit {
         // Refresh balance to reflect the purchase
         this.loadBalance();
         
+        // Show success alert with SweetAlert2
+        await Swal.fire({
+          icon: 'success',
+          title: 'Purchase Successful!',
+          text: 'Your purchase has been completed successfully for products: ' + this.cartItems.map(item => item.name).join(', ') + '. Redirecting to your library...',
+          timer: 5000,
+          timerProgressBar: true,
+          showConfirmButton: false
+        });
+        
         // Redirect to purchased products page
         this.router.navigate(['/library/purchased-products'], { 
           state: { orderId: orderResponse.order.id } 
         });
       } else {
-        this.errorMessage = orderResponse?.message || 'Order creation failed.';
+        Swal.fire({
+          icon: 'error',
+          title: 'Purchase Failed',
+          text: orderResponse?.message || 'Order creation failed.',
+          confirmButtonColor: '#d33',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (error) {
       console.error('Checkout error:', error);
+      let errorMsg = 'An unexpected error occurred during checkout. Please try again.';
       if (error instanceof Error) {
-        this.errorMessage = error.message;
-      } else {
-        this.errorMessage = 'An unexpected error occurred during checkout. Please try again.';
+        errorMsg = error.message;
       }
+      Swal.fire({
+        icon: 'error',
+        title: 'Checkout Error',
+        text: errorMsg,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'OK'
+      });
     } finally {
       this.isLoading = false;
     }

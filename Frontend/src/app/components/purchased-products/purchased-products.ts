@@ -12,6 +12,7 @@ interface PurchasedProductDTO {
   productName: string;
   productPermalink: string;
   coverImageUrl?: string;
+  thumbnailImageUrl?: string;
   creatorUsername: string;
   purchasePrice: number;
   purchaseDate: Date;

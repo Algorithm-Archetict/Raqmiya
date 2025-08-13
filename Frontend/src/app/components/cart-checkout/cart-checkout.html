@@ -98,10 +98,6 @@
               <textarea formControlName="billingAddress" class="form-control" rows="3"></textarea>
             </div>
 
-            <div class="error-message" *ngIf="errorMessage">
-              {{ errorMessage }}
-            </div>
-
             <button type="submit"
                     class="btn btn-primary btn-block"
                     [disabled]="checkoutForm.invalid || isLoading || !hasSufficientBalance">

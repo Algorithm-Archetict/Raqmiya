@@ -196,6 +196,8 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.reviews = product.reviews;
           this.isInWishlist = product.isInWishlist || false;
           
+          // Initialize selected media with the first media item (cover image)
+          this.initializeSelectedMedia();
           
           this.checkPurchaseAndReviewStatus(); // Check if user can review
           this.checkCartStatus(); // Check if product is in cart
@@ -214,6 +216,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.product = product;
           this.reviews = product.reviews;
           this.isInWishlist = product.isInWishlist || false;
+          
+          // Initialize selected media with the first media item (cover image)
+          this.initializeSelectedMedia();
           
           this.checkPurchaseAndReviewStatus(); // Check if user can review
           this.checkCartStatus(); // Check if product is in cart
@@ -303,6 +308,8 @@ export class ProductDetails implements OnInit, AfterViewInit {
 
   getMediaItems(): MediaItem[] {
     const items: MediaItem[] = [];
+    
+    // Always add cover image first if available
     if (this.product?.coverImageUrl) {
       items.push({
         type: 'image',
@@ -310,14 +317,35 @@ export class ProductDetails implements OnInit, AfterViewInit {
         thumbnail: this.ensureFullUrl(this.product.coverImageUrl)
       });
     }
+    
+    // Add preview video if available
     if (this.product?.previewVideoUrl) {
       items.push({
         type: 'video',
         url: this.ensureFullUrl(this.product.previewVideoUrl) || '',
-        thumbnail: this.ensureFullUrl(this.product.coverImageUrl)
+        thumbnail: this.ensureFullUrl(this.product.coverImageUrl) || this.ensureFullUrl(this.product.previewVideoUrl)
       });
     }
+    
+    // If no cover image or video, add a placeholder
+    if (items.length === 0) {
+      items.push({
+        type: 'image',
+        url: this.getPlaceholderImage('Product Image', '#2a2a2a'),
+        thumbnail: this.getPlaceholderImage('Product', '#2a2a2a')
+      });
+    }
+    
     return items;
+  }
+
+  // Initialize selected media with the first media item (cover image)
+  initializeSelectedMedia() {
+    const mediaItems = this.getMediaItems();
+    if (mediaItems.length > 0) {
+      this.selectedMedia = mediaItems[0];
+      this.selectedMediaIndex = 0;
+    }
   }
 
   createMediaFromProduct(backendProduct: ProductDetailDTO): MediaItem[] {
@@ -651,11 +679,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
   // Media gallery methods
   selectMedia(index: number) {
     this.selectedMediaIndex = index;
-    if (this.product && this.product.files && this.product.files[index]) {
-      this.selectedMedia = {
-        type: 'image',
-        url: this.product.files[index].fileUrl
-      };
+    const mediaItems = this.getMediaItems();
+    if (mediaItems[index]) {
+      this.selectedMedia = mediaItems[index];
     }
   }
 
