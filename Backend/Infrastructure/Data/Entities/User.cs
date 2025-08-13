@@ -1,4 +1,4 @@
-﻿﻿//using Microsoft.Extensions.Hosting;
+﻿//using Microsoft.Extensions.Hosting;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -42,6 +42,6 @@ namespace Raqmiya.Infrastructure
         public ICollection<ProductView> ProductViews { get; set; } = new List<ProductView>();
         public ICollection<License> Licenses { get; set; } = new List<License>();
         public string? StripeCustomerId { get; set; } // Stores Stripe customer ID
-        public decimal AccountBalance { get; set; } = 1000m; // Initial $1000 balance
+        public List<PaymentMethodBalance> PaymentMethodBalances { get; set; } = new List<PaymentMethodBalance>();
     }
 }

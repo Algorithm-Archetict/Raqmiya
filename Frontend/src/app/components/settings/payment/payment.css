@@ -76,7 +76,8 @@
 .payment-method-card:hover {
   border-color: #667eea;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-  transform: translateY(-2px);
+  /* Avoid shifting layout on hover */
+  transform: none;
 }
 
 .payment-method-card .card-body {
@@ -159,7 +160,8 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
+  /* Avoid shifting layout on hover */
+  transform: none;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
@@ -169,7 +171,8 @@
 }
 
 .btn-success:hover:not(:disabled) {
-  transform: translateY(-2px);
+  /* Avoid shifting layout on hover */
+  transform: none;
   box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
 }
 
@@ -333,6 +336,8 @@
 .payment-method-item:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-color: #007bff;
+  /* Avoid shifting layout on hover */
+  transform: none;
 }
 
 .payment-method-info {

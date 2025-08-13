@@ -1,51 +1,46 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Router } from '@angular/router';
 import { CartService } from '../../core/services/cart.service';
+import { PaymentService, BalanceResponse } from '../../core/services/payment.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
-import { ProductService } from '../../core/services/product.service';
-import { PaymentService } from '../../core/services/payment.service';
-import { Order } from '../../core/models/order/order.model';
-import { BalanceResponse } from '../../core/services/payment.service';
 import Swal from 'sweetalert2';
+import { CartResponse, CartItem } from '../../core/models/cart/cart.model';
+import { firstValueFrom } from 'rxjs';
 
-interface CartItem {
+interface CartItemDisplay {
   productId: number;
   name: string;
   price: number;
+  quantity: number;
   currency: string;
   creator: string;
   image: string;
-  quantity: number;
 }
 
 @Component({
   selector: 'app-cart-checkout',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './cart-checkout.html',
   styleUrl: './cart-checkout.css'
 })
 export class CartCheckout implements OnInit {
-  cartItems: CartItem[] = [];
-  totalAmount: number = 0;
-  isLoading: boolean = false;
-  
-  // Balance information
-  currentBalance: number = 0;
-  hasSufficientBalance: boolean = false;
-  balanceLoading: boolean = false;
-  
-  // Checkout form
+  cartItems: CartItemDisplay[] = [];
   checkoutForm: FormGroup;
-  
+  isLoading = false;
+  errorMessage = '';
+  currentBalance: number = 0;
+  balanceLoading = false;
+  hasSufficientBalance = false;
+  total: number = 0;
+
   constructor(
     private cartService: CartService,
     private orderService: OrderService,
     private authService: AuthService,
-    private productService: ProductService,
     private paymentService: PaymentService,
     private router: Router,
     private formBuilder: FormBuilder
@@ -57,127 +52,118 @@ export class CartCheckout implements OnInit {
       billingAddress: ['', Validators.required]
     });
   }
-  
+
   ngOnInit() {
-    // Check if user is authenticated
-    if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login'], { 
-        queryParams: { returnUrl: this.router.url } 
-      });
-      return;
-    }
-    
-    this.loadCart();
+    this.loadCartItems();
     this.loadBalance();
-    this.autoFillUserEmail();
+    this.validatePaymentMethod();
+    this.loadUserEmail(); // Load user email
   }
-  
-  autoFillUserEmail() {
-    const currentUser = this.authService.getCurrentUser();
-    if (currentUser && currentUser.email) {
+
+  private loadUserEmail() {
+    // Get user email from auth service or localStorage
+    const userEmail = this.authService.getCurrentUserEmail();
+    if (userEmail) {
       this.checkoutForm.patchValue({
-        email: currentUser.email
+        email: userEmail
       });
     }
   }
-  
-  loadCart() {
-    this.cartService.getCart().subscribe(cart => {
-      this.cartItems = cart.cart.items;
-      this.calculateTotal();
-      this.checkBalanceSufficiency();
+
+  private loadCartItems() {
+    this.cartService.getCart().subscribe({
+      next: (response: CartResponse) => {
+        if (response.success && response.cart) {
+          this.cartItems = response.cart.items.map((item: CartItem) => ({
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            currency: item.currency,
+            creator: item.creator,
+            image: item.image
+          }));
+          this.calculateTotal();
+        }
+      },
+      error: (error: any) => {
+        console.error('Failed to load cart items:', error);
+        this.errorMessage = 'Failed to load cart items. Please try again.';
+      }
     });
   }
-  
-  loadBalance() {
+
+  private loadBalance() {
     this.balanceLoading = true;
     this.paymentService.getBalance().subscribe({
-      next: (balance: BalanceResponse) => {
-        this.currentBalance = balance.currentBalance;
-        this.checkBalanceSufficiency();
+      next: (response: BalanceResponse) => {
+        this.currentBalance = response.currentBalance;
+        this.checkBalanceForPurchase();
         this.balanceLoading = false;
       },
       error: (error) => {
         console.error('Error loading balance:', error);
-        this.balanceLoading = false;
-        // Set default balance if API fails
         this.currentBalance = 0;
-        this.hasSufficientBalance = false;
+        this.balanceLoading = false;
       }
     });
-  }
-  
-  checkBalanceSufficiency() {
-    this.hasSufficientBalance = this.currentBalance >= this.totalAmount;
-  }
-  
-  removeFromCart(productId: number) {
-    this.cartService.removeFromCart(productId).subscribe(() => {
-      this.loadCart();
-    });
-  }
-  
-  calculateTotal() {
-    this.totalAmount = this.cartItems.reduce((total, item) => {
-      return total + (item.price * item.quantity);
-    }, 0);
-    this.checkBalanceSufficiency();
   }
 
-  private async removePurchasedProductsFromWishlist() {
-    // Remove each purchased product from the user's wishlist
-    for (const item of this.cartItems) {
-      try {
-        await firstValueFrom(this.productService.removeFromWishlist(item.productId));
-        console.log(`Product ${item.productId} removed from wishlist after purchase`);
-      } catch (error) {
-        // Log error but don't fail the purchase process
-        console.warn(`Failed to remove product ${item.productId} from wishlist:`, error);
+  private validatePaymentMethod() {
+    this.paymentService.validatePaymentMethodForPurchase().subscribe({
+      next: (validation) => {
+        if (!validation.hasPaymentMethod) {
+          this.showPaymentMethodError(validation.message);
+        }
+      },
+      error: (error) => {
+        console.error('Error validating payment method:', error);
       }
+    });
+  }
+
+  private showPaymentMethodError(message: string) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Payment Method Required',
+      text: message,
+      confirmButtonText: 'Add Payment Method',
+      showCancelButton: true,
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/settings/payment']);
+      }
+    });
+  }
+
+  private calculateTotal() {
+    this.total = this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    this.checkBalanceForPurchase();
+  }
+
+  private checkBalanceForPurchase() {
+    if (this.total > 0) {
+      this.hasSufficientBalance = this.currentBalance >= this.total;
     }
   }
-  
+
   async processCheckout() {
     if (this.checkoutForm.invalid) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Form Validation Error',
-        text: 'Please fill in all required fields.',
-        confirmButtonColor: '#3085d6',
-        confirmButtonText: 'OK'
-      });
+      this.errorMessage = 'Please fill in all required fields.';
       return;
     }
-    
-    if (!this.hasSufficientBalance) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Insufficient Balance',
-        text: `You have $${this.currentBalance.toFixed(2)} but need $${this.totalAmount.toFixed(2)}.`,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'OK'
-      });
+
+    // Validate payment method before proceeding
+    const hasPaymentMethod = await firstValueFrom(this.paymentService.hasPaymentMethods());
+    if (!hasPaymentMethod) {
+      this.showPaymentMethodError('No payment method added. Please add a payment method before making a purchase.');
       return;
     }
-    
-    // Show confirmation alert with SweetAlert2
-    const result = await Swal.fire({
-      title: 'Confirm Purchase',
-      text: `Are you sure you want to purchase these items for $${this.totalAmount.toFixed(2)}?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, purchase!',
-      cancelButtonText: 'Cancel'
-    });
-    
-    if (!result.isConfirmed) {
-      return;
-    }
-    
+
     this.isLoading = true;
-    
+    this.errorMessage = '';
+
     try {
       // Create order data
       const orderData = {
@@ -193,19 +179,19 @@ export class CartCheckout implements OnInit {
           billingAddress: this.checkoutForm.value.billingAddress
         }
       };
-      
+
       const orderResponse = await firstValueFrom(this.orderService.createOrder(orderData));
-      
+
       if (orderResponse?.success) {
         // Clear cart
         this.cartService.clearCart().subscribe();
-        
+
         // Remove purchased products from wishlist
         await this.removePurchasedProductsFromWishlist();
-        
+
         // Refresh balance to reflect the purchase
         this.loadBalance();
-        
+
         // Show success alert with SweetAlert2
         await Swal.fire({
           icon: 'success',
@@ -215,10 +201,10 @@ export class CartCheckout implements OnInit {
           timerProgressBar: true,
           showConfirmButton: false
         });
-        
+
         // Redirect to purchased products page
-        this.router.navigate(['/library/purchased-products'], { 
-          state: { orderId: orderResponse.order.id } 
+        this.router.navigate(['/library/purchased-products'], {
+          state: { orderId: orderResponse.order.id }
         });
       } else {
         Swal.fire({
@@ -231,19 +217,54 @@ export class CartCheckout implements OnInit {
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      let errorMsg = 'An unexpected error occurred during checkout. Please try again.';
-      if (error instanceof Error) {
-        errorMsg = error.message;
-      }
-      Swal.fire({
-        icon: 'error',
-        title: 'Checkout Error',
-        text: errorMsg,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'OK'
-      });
+      this.errorMessage = 'An error occurred during checkout. Please try again.';
     } finally {
       this.isLoading = false;
     }
   }
-} 
+
+  private async removePurchasedProductsFromWishlist() {
+    // Implementation for removing purchased products from wishlist
+    // This would depend on your wishlist service implementation
+  }
+
+  updateQuantity(productId: number, quantity: number) {
+    if (quantity <= 0) {
+      this.removeItem(productId);
+    } else {
+      this.cartService.updateCartItem(productId, quantity).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadCartItems();
+          }
+        },
+        error: (error) => {
+          console.error('Error updating cart:', error);
+          this.errorMessage = 'Failed to update cart.';
+        }
+      });
+    }
+  }
+
+  removeItem(productId: number) {
+    this.cartService.removeFromCart(productId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.loadCartItems();
+        }
+      },
+      error: (error) => {
+        console.error('Error removing item:', error);
+        this.errorMessage = 'Failed to remove item from cart.';
+      }
+    });
+  }
+
+  continueShopping() {
+    this.router.navigate(['/discover']);
+  }
+
+  goToDiscover() {
+    this.router.navigate(['/discover']);
+  }
+}

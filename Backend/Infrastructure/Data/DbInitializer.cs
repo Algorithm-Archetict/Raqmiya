@@ -69,6 +69,32 @@ namespace Raqmiya.Infrastructure.Data
                 };
                 context.Users.AddRange(admin, creator, customer);
                 context.SaveChanges();
+
+                // Create initial payment method balances for seeded users
+                var creatorBalance = new PaymentMethodBalance
+                {
+                    UserId = creator.Id,
+                    PaymentMethodId = "pm_seeded_creator",
+                    Balance = 1000m,
+                    Currency = "USD",
+                    IsSelected = true,
+                    CardBrand = "visa",
+                    CardLast4 = "1234"
+                };
+
+                var customerBalance = new PaymentMethodBalance
+                {
+                    UserId = customer.Id,
+                    PaymentMethodId = "pm_seeded_customer",
+                    Balance = 1000m,
+                    Currency = "USD",
+                    IsSelected = true,
+                    CardBrand = "mastercard",
+                    CardLast4 = "5678"
+                };
+
+                context.PaymentMethodBalances.AddRange(creatorBalance, customerBalance);
+                context.SaveChanges();
             }
 
             // --- Categories ---
