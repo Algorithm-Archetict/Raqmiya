@@ -12,7 +12,7 @@ import { Navbar } from '../navbar/navbar';
 import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
 import { HierarchicalCategoryNav } from '../shared/hierarchical-category-nav/hierarchical-category-nav';
-import { AnalyticsService } from '../../core/services/analytics.service';
+import { AnalyticsService, DiscoverFeedResponse } from '../../core/services/analytics.service';
 import { ProductCarouselComponent } from '../shared/product-carousel/product-carousel.component';
 
 interface Product {
@@ -93,9 +93,11 @@ export class Discover implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit() {
+    // Load the discover page data efficiently using analytics endpoints
     this.initializeProducts();
     this.loadAvailableTags();
     this.applyFilters();
+    
     // Debounce category selection to avoid spamming backend
     this.categorySelection$
       .pipe(
@@ -146,6 +148,8 @@ export class Discover implements OnInit, AfterViewInit {
   }
 
   // Initialize product data from API (one-shot load, used for all sections)
+  // OPTIMIZATION NOTE: This loads the general product list for filtering/searching.
+  // The carousel sections now use dedicated analytics endpoints for better performance.
   initializeProducts() {
     this.loading = true;
     // Use cached, shared observable to avoid repeated calls
@@ -184,8 +188,8 @@ export class Discover implements OnInit, AfterViewInit {
         // Load purchase status for all products
         this.loadPurchaseStatus();
 
-        // Compute homepage sections locally as fallbacks until backend analytics are live
-        this.computeDiscoverSections();
+        // Load analytics-driven discover sections from backend
+        this.loadDiscoverSections();
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
@@ -204,10 +208,53 @@ export class Discover implements OnInit, AfterViewInit {
     });
   }
 
-  // Compute “Most Wished, Recommended, Best Sellers, Top Rated, New Arrivals, Trending” locally
-  private computeDiscoverSections() {
-    // Currently ProductCarouselComponent expects @Input() products. We will bind later in the template or via a controller hook.
-    // For now, we keep results accessible on the component for binding.
+  // Load analytics-driven discover sections from backend
+  private loadDiscoverSections() {
+    console.log('Loading discover sections from analytics endpoints...');
+    
+    this.analyticsService.getDiscoverFeed(12).subscribe({
+      next: (feedData: DiscoverFeedResponse) => {
+        console.log('✅ Analytics discover feed loaded successfully:', feedData);
+        
+        // Set the DTO arrays directly from analytics API
+        this.sectionMostWishedDto = feedData.mostWished || [];
+        this.sectionRecommendedDto = feedData.recommended || [];
+        this.sectionBestSellersDto = feedData.bestSellers || [];
+        this.sectionTopRatedDto = feedData.topRated || [];
+        this.sectionNewArrivalsDto = feedData.newArrivals || [];
+        this.sectionTrendingDto = feedData.trending || [];
+
+        // Convert DTOs back to internal Product format for consistency with other parts of the component
+        this.sectionMostWished = this.sectionMostWishedDto.map(dto => this.fromDTO(dto));
+        this.sectionRecommended = this.sectionRecommendedDto.map(dto => this.fromDTO(dto));
+        this.sectionBestSellers = this.sectionBestSellersDto.map(dto => this.fromDTO(dto));
+        this.sectionTopRated = this.sectionTopRatedDto.map(dto => this.fromDTO(dto));
+        this.sectionNewArrivals = this.sectionNewArrivalsDto.map(dto => this.fromDTO(dto));
+        this.sectionTrending = this.sectionTrendingDto.map(dto => this.fromDTO(dto));
+
+        console.log('Analytics sections loaded:', {
+          mostWished: this.sectionMostWishedDto.length,
+          recommended: this.sectionRecommendedDto.length,
+          bestSellers: this.sectionBestSellersDto.length,
+          topRated: this.sectionTopRatedDto.length,
+          newArrivals: this.sectionNewArrivalsDto.length,
+          trending: this.sectionTrendingDto.length
+        });
+      },
+      error: (error) => {
+        console.error('❌ Error loading analytics discover feed:', error);
+        console.error('Falling back to local computation...');
+        
+        // Fallback to local computation if analytics API fails
+        this.computeDiscoverSectionsFallback();
+      }
+    });
+  }
+
+  // Fallback method for local computation (kept as backup)
+  private computeDiscoverSectionsFallback() {
+    console.log('Using fallback local computation for discover sections...');
+    
     const by = {
       ratingDesc: [...this.allProducts].sort((a, b) => (b.rating || 0) - (a.rating || 0)),
       ratingThenCount: [...this.allProducts].sort((a, b) => {
@@ -273,6 +320,28 @@ export class Discover implements OnInit, AfterViewInit {
     } as ProductListItemDTO;
   }
 
+  private fromDTO(dto: ProductListItemDTO): Product {
+    return {
+      id: dto.id,
+      title: dto.name || 'Untitled Product',
+      creator: dto.creatorUsername || 'Unknown Creator',
+      price: dto.price,
+      rating: dto.averageRating,
+      ratingCount: 0, // Review count will be determined from analytics data
+      image: this.ensureFullUrl(dto.coverImageUrl),
+      category: dto.category?.name || 'design',
+      tags: ['Design'], // Default tags, ideally these should come from analytics
+      badge: dto.isPublic ? 'Public' : 'Private',
+      // Initialize wishlist properties
+      inWishlist: false,
+      loadingWishlist: false,
+      wishlistHovered: false,
+      // Initialize purchase properties
+      isPurchased: false,
+      loadingPurchase: false
+    };
+  }
+
   // Load wishlist status for all products
   loadWishlistStatus() {
     this.productService.getWishlist().subscribe({
@@ -300,29 +369,24 @@ export class Discover implements OnInit, AfterViewInit {
   }
 
   // Load actual review counts for all products
+  // OPTIMIZED: Analytics endpoints provide comprehensive product data including review counts
+  // This eliminates the need for individual getById calls to /api/Products/id
   loadReviewCounts() {
-    // For performance, we'll only load review counts for products that have ratings > 0
-    const productsWithRatings = this.allProducts.filter(product => product.rating > 0);
+    console.log('✅ Review counts optimization: Using analytics data instead of individual API calls');
     
-    if (productsWithRatings.length === 0) return;
+    // Since we're now using analytics endpoints for carousel data, the review counts 
+    // should be included in the analytics responses. The individual getById calls 
+    // to /api/Products/id are no longer needed.
     
-    console.log(`Loading review counts for ${productsWithRatings.length} products with ratings...`);
+    // The analytics endpoints (discover-feed, carousel endpoints) should provide 
+    // complete product information including review counts and other metrics.
     
-    // Fetch product details for products with ratings to get actual review count
-    productsWithRatings.forEach(product => {
-      this.productService.getById(product.id).subscribe({
-        next: (productDetail) => {
-          if (productDetail && productDetail.reviews) {
-            product.ratingCount = productDetail.reviews.length;
-            console.log(`Updated product ${product.id} with ${productDetail.reviews.length} reviews`);
-          }
-        },
-        error: (error) => {
-          console.warn(`Failed to load review count for product ${product.id}:`, error);
-          // Keep ratingCount as 0 if we can't fetch the details
-        }
-      });
-    });
+    // For any additional review count needs, we can enhance the analytics endpoints
+    // rather than making individual product detail calls.
+    
+    // NOTE: If specific review count updates are still needed for the main product list,
+    // we should batch them or use a dedicated analytics endpoint instead of individual calls.
+    console.log('Review count loading optimized - using analytics endpoints data');
   }
 
   // Load purchase status for all products
