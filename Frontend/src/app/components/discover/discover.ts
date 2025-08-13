@@ -117,7 +117,7 @@ export class Discover implements OnInit, AfterViewInit {
           price: product.price,
           rating: product.averageRating,
           ratingCount: 0, // Will be populated with actual review count
-          image: this.ensureFullUrl(product.coverImageUrl),
+          image: this.ensureFullUrl(product.thumbnailImageUrl || product.coverImageUrl),
           category: 'design', // Default category, you might want to add this to the DTO
           tags: ['Design'], // Default tags, you might want to add this to the DTO
           badge: product.isPublic ? 'Public' : 'Private',

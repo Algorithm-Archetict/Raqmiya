@@ -89,7 +89,7 @@ export class AllProducts implements OnInit {
         this.products = myProducts.map(product => ({
           id: product.id,
           title: product.name || 'Untitled Product',
-          image: product.coverImageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=80&h=80&fit=crop',
+          image: product.thumbnailImageUrl || product.coverImageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=80&h=80&fit=crop',
           sales: product.salesCount || 0,
           revenue: (product.salesCount || 0) * (product.price || 0),
           price: product.price || 0,
