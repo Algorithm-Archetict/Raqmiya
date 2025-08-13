@@ -5,6 +5,7 @@ export interface ProductListItemDTO {
   price: number;
   currency?: string;
   coverImageUrl?: string;
+  thumbnailImageUrl?: string;
   creatorUsername?: string;
   averageRating: number;
   salesCount: number;

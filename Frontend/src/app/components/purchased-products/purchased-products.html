@@ -59,7 +59,7 @@
     <div class="products-grid" *ngIf="!isLoading && !errorMessage">
       <div class="product-card" *ngFor="let product of purchasedProducts">
         <div class="product-image">
-          <img [src]="product.coverImageUrl" [alt]="product.productName">
+          <img [src]="product.thumbnailImageUrl || product.coverImageUrl" [alt]="product.productName">
           <div class="license-badge" [class]="getLicenseStatusClass(product.licenseStatus)">
             {{ getLicenseStatusText(product.licenseStatus) }}
           </div>

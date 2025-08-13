@@ -109,7 +109,7 @@ namespace Core.Services
                     Price = product.Price,
                     Currency = product.Currency,
                     Creator = creatorName,
-                    Image = product.CoverImageUrl ?? "",
+                    Image = product.ThumbnailImageUrl ?? product.CoverImageUrl ?? "",
                     Quantity = 1 // Always 1 for digital products
                 };
 
