@@ -10,6 +10,7 @@
         public decimal Price { get; set; }
         public string Currency { get; set; } = string.Empty;
         public string? CoverImageUrl { get; set; }
+        public string? ThumbnailImageUrl { get; set; }
         public string CreatorUsername { get; set; } = string.Empty;
         public double AverageRating { get; set; }
         public int SalesCount { get; set; }

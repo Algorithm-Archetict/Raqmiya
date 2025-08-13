@@ -10,6 +10,7 @@ namespace Shared.DTOs.OrderDTOs
         public string ProductName { get; set; } = string.Empty;
         public string ProductPermalink { get; set; } = string.Empty;
         public string? CoverImageUrl { get; set; }
+        public string? ThumbnailImageUrl { get; set; }
         public string CreatorUsername { get; set; } = string.Empty;
         public decimal PurchasePrice { get; set; }
         public DateTime PurchaseDate { get; set; }

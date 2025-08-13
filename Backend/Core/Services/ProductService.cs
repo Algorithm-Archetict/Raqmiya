@@ -96,6 +96,7 @@ namespace Core.Services
                 Price = product.Price,
                 Currency = product.Currency,
                 CoverImageUrl = product.CoverImageUrl,
+                ThumbnailImageUrl = product.ThumbnailImageUrl,
                 CreatorUsername = product.Creator?.Username ?? "N/A",
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
                 SalesCount = product.OrderItems.Count(),

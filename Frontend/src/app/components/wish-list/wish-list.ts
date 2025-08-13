@@ -54,7 +54,7 @@ export class WishList implements OnInit {
           price: product.price,
           rating: product.averageRating,
           ratingCount: product.salesCount,
-          image: this.ensureFullUrl(product.coverImageUrl),
+          image: this.ensureFullUrl(product.thumbnailImageUrl || product.coverImageUrl),
           category: 'design', // Default category, you might want to add this to the DTO
           tags: ['Design'], // Default tags, you might want to add this to the DTO
           badge: product.isPublic ? 'Public' : 'Private',

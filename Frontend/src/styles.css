@@ -982,3 +982,92 @@ p {
   text-align: center;
   color: var(--text-muted);
 }
+
+/* Epic Games Style SweetAlert2 Customization */
+.swal2-popup {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-2xl) !important;
+  backdrop-filter: blur(20px) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.swal2-title {
+  color: var(--text-primary) !important;
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+}
+
+.swal2-html-container {
+  color: var(--text-secondary) !important;
+  font-size: 1rem !important;
+}
+
+.swal2-confirm {
+  background: var(--gradient-primary) !important;
+  border: none !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  transition: var(--transition-normal) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.swal2-confirm:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.swal2-cancel {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  color: var(--text-secondary) !important;
+  transition: var(--transition-normal) !important;
+}
+
+.swal2-cancel:hover {
+  background: var(--bg-card) !important;
+  border-color: var(--border-hover) !important;
+  color: var(--text-primary) !important;
+  transform: translateY(-2px) !important;
+}
+
+.swal2-icon {
+  border-width: 3px !important;
+}
+
+.swal2-icon.swal2-success {
+  border-color: var(--success-color) !important;
+  color: var(--success-color) !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: var(--danger-color) !important;
+  color: var(--danger-color) !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: var(--warning-color) !important;
+  color: var(--warning-color) !important;
+}
+
+.swal2-icon.swal2-question {
+  border-color: var(--epic-blue) !important;
+  color: var(--epic-blue) !important;
+}
+
+.swal2-timer-progress-bar {
+  background: var(--gradient-primary) !important;
+}
+
+/* SweetAlert2 backdrop */
+.swal2-backdrop-show {
+  background: var(--bg-overlay) !important;
+  backdrop-filter: blur(10px) !important;
+}
