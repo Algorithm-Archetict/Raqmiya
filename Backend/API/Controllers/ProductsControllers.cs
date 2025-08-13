@@ -309,6 +309,17 @@ namespace API.Controllers
         }
 
         /// <summary>
+        /// Get new arrivals products (paged).
+        /// </summary>
+        [HttpGet("analytics/new-arrivals")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetNewArrivals([FromQuery] int count = 10, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            return Ok(await _productService.GetNewArrivalsProductsAsync(count, pageNumber, pageSize));
+        }
+
+        /// <summary>
         /// Upload a file for a product. Files are stored in wwwroot/uploads/products/{productId}/.
         /// Only the product's creator can upload files. Allowed types: PDF, ZIP, JPG, PNG, MP4, etc.
         /// </summary>
@@ -741,6 +752,35 @@ namespace API.Controllers
         {
             var products = await _productService.GetTrendingProductsAsync(count);
             return Ok(products);
+        }
+
+        /// <summary>
+        /// Aggregate discover feed: returns all sections in one response to minimize requests.
+        /// </summary>
+        [HttpGet("discover")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetDiscoverFeed([FromQuery] int countPerSection = 12)
+        {
+            var userId = GetCurrentUserIdOrNull();
+
+            var mostWishedTask = _productService.GetMostWishedProductsAsync(countPerSection);
+            var recommendedTask = _productService.GetRecommendedProductsAsync(userId, countPerSection);
+            var bestSellersTask = _productService.GetBestSellerProductsAsync(countPerSection);
+            var topRatedTask = _productService.GetTopRatedProductsAsync(countPerSection);
+            var newArrivalsTask = _productService.GetNewArrivalsAsync(countPerSection);
+            var trendingTask = _productService.GetTrendingProductsAsync(countPerSection);
+
+            await Task.WhenAll(mostWishedTask, recommendedTask, bestSellersTask, topRatedTask, newArrivalsTask, trendingTask);
+
+            return Ok(new
+            {
+                mostWished = mostWishedTask.Result,
+                recommended = recommendedTask.Result,
+                bestSellers = bestSellersTask.Result,
+                topRated = topRatedTask.Result,
+                newArrivals = newArrivalsTask.Result,
+                trending = trendingTask.Result
+            });
         }
 
         /// <summary>
