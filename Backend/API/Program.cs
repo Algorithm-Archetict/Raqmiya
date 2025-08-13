@@ -41,6 +41,7 @@ namespace API
             builder.Services.AddScoped<IPurchaseValidationService, PurchaseValidationService>(); // NEW: Purchase Validation Service
             builder.Services.AddScoped<ICartService, Core.Services.CartService>(); // NEW: Cart Service
             builder.Services.AddScoped<IEmailService, Core.Services.EmailService>(); // NEW: Email Service
+            builder.Services.AddScoped<IRecommendationService, RecommendationService>(); // NEW: Recommendation Service for Personalization
 
             // --- 4. Configure Logging ---
             builder.Logging.AddConsole();
