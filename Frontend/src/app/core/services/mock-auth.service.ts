@@ -15,6 +15,12 @@ export class MockAuthService {
     },
     {
       id: 2,
+      username: 'demoUser',
+      email: 'demo@example.com',
+      roles: ['Customer']
+    },
+    {
+      id: 3,
       username: 'creator',
       email: 'creator@example.com',
       roles: ['Creator']

@@ -3,7 +3,6 @@ import { Home } from './components/home/home';
 import { NotFound } from './components/not-found/not-found';
 import { Discover } from './components/discover/discover';
 import { ProductDetails } from './components/products/product-details/product-details';
-import { Checkout } from './components/checkout/checkout';
 import { CartCheckout } from './components/cart-checkout/cart-checkout';
 import { PurchasedPackage } from './components/purchased-package/purchased-package';
 import { PurchasedProducts } from './components/purchased-products/purchased-products';
@@ -38,7 +37,6 @@ export const routes: Routes = [
     { path: "products/:id/reviews", component: AllReviews },
 
     // Protected routes - require authentication
-    {path:"checkout",component:Checkout, canActivate: [AuthGuard]},
     {path:"cart-checkout",component:CartCheckout, canActivate: [AuthGuard]},
     {path:"package/:id",component:PurchasedPackage, canActivate: [AuthGuard]},
     // {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]}, // Commented out - now under library
