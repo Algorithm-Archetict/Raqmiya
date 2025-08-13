@@ -1,8 +1,39 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { map } from 'rxjs/operators';
+
+export interface PaymentMethod {
+  id: string;
+  type: string;
+  card: {
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+    country: string;
+  };
+  isDefault: boolean;
+  created: Date;
+}
+
+export interface SelectPaymentMethodByStripeRequest {
+  paymentMethodId: string;
+}
+
+export interface BalanceResponse {
+  currentBalance: number;
+  currency: string;
+  lastUpdated: Date;
+  selectedPaymentMethod?: {
+    id: number;
+    paymentMethodId: string;
+    balance: number;
+    currency: string;
+    cardBrand: string;
+    cardLast4: string;
+  } | null;
+}
 
 export interface AddPaymentMethodRequest {
   paymentMethodId: string;
@@ -16,7 +47,7 @@ export interface AddPaymentMethodResponse {
 }
 
 export interface PaymentRequest {
-  amount: number; // Amount in cents
+  amount: number;
   currency: string;
   description?: string;
 }
@@ -30,28 +61,25 @@ export interface PaymentResponse {
   remainingBalance: number;
 }
 
-export interface BalanceResponse {
-  currentBalance: number;
-  currency: string;
-  lastUpdated: string;
-}
-
-export interface PaymentMethod {
-  id: string;
-  type: string;
-  card: {
-    brand: string;
-    last4: string;
-    expMonth: number;
-    expYear: number;
-    country: string;
-  };
-  isDefault: boolean;
-  created: string;
-}
-
 export interface StripeConfigResponse {
   publishableKey: string;
+}
+
+export interface RevenueAnalytics {
+  totalSales: number;
+  totalRevenue: number;
+  monthlyRevenue: number;
+  weeklyRevenue: number;
+  averageOrderValue: number;
+  currency: string;
+  topProducts: Array<{
+    id: number;
+    name: string;
+    sales: number;
+    revenue: number;
+    currency: string;
+  }>;
+  lastUpdated: Date;
 }
 
 @Injectable({
@@ -88,12 +116,18 @@ export class PaymentService {
     });
   }
 
-  getBalance(): Observable<BalanceResponse> {
-    return this.http.get<BalanceResponse>(`${this.baseUrl}/payment/balance`, { headers: this.getHeaders() });
+  getBalance(currency: string = 'USD'): Observable<BalanceResponse> {
+    return this.http.get<BalanceResponse>(`${this.baseUrl}/payment/balance?currency=${currency}`, { headers: this.getHeaders() });
   }
 
   getPaymentMethods(): Observable<PaymentMethod[]> {
     return this.http.get<PaymentMethod[]>(`${this.baseUrl}/payment/payment-methods`, { headers: this.getHeaders() });
+  }
+
+  selectPaymentMethodByStripe(req: SelectPaymentMethodByStripeRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/payment/select-payment-method-by-stripe`, req, {
+      headers: this.getHeaders()
+    });
   }
 
   // Check if user has sufficient balance for a purchase
@@ -103,6 +137,57 @@ export class PaymentService {
         hasSufficientBalance: balance.currentBalance >= amount,
         currentBalance: balance.currentBalance,
         requiredAmount: amount
+      }))
+    );
+  }
+
+  // Check if user has payment methods
+  hasPaymentMethods(): Observable<boolean> {
+    return this.getPaymentMethods().pipe(
+      map(methods => methods.length > 0)
+    );
+  }
+
+  // Get revenue analytics for creator
+  getRevenueAnalytics(currency: string = 'USD'): Observable<RevenueAnalytics> {
+    return this.http.get<RevenueAnalytics>(`${this.baseUrl}/revenue-analytics/my-analytics?currency=${currency}`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  // Convert currency with proper EGP/USD conversion
+  convertCurrency(amount: number, fromCurrency: string, toCurrency: string): Observable<{
+    originalAmount: number;
+    fromCurrency: string;
+    toCurrency: string;
+    convertedAmount: number;
+  }> {
+    let convertedAmount = amount;
+
+    // Simple conversion logic for USD <-> EGP
+    if (fromCurrency === 'USD' && toCurrency === 'EGP') {
+      convertedAmount = amount * 50; // 1 USD = 50 EGP
+    } else if (fromCurrency === 'EGP' && toCurrency === 'USD') {
+      convertedAmount = amount * 0.02; // 1 EGP = 0.02 USD
+    }
+
+    return new Observable(observer => {
+      observer.next({
+        originalAmount: amount,
+        fromCurrency,
+        toCurrency,
+        convertedAmount
+      });
+      observer.complete();
+    });
+  }
+
+  // Validate payment method before purchase
+  validatePaymentMethodForPurchase(): Observable<{ hasPaymentMethod: boolean; message: string }> {
+    return this.hasPaymentMethods().pipe(
+      map(hasPaymentMethod => ({
+        hasPaymentMethod,
+        message: hasPaymentMethod ? 'Payment method available' : 'No payment method added. Please add a payment method before making a purchase.'
       }))
     );
   }

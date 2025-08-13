@@ -187,24 +187,24 @@ namespace Core.Services
             }
         }
 
-        public async Task<CartResponseDTO> UpdateCartItemAsync(int userId, UpdateCartItemRequestDTO request)
+        public Task<CartResponseDTO> UpdateCartItemAsync(int userId, UpdateCartItemRequestDTO request)
         {
             try
             {
-                var cart = await GetUserCartAsync(userId);
+                var cart = GetUserCartAsync(userId).Result;
                 if (!cart.Success)
                 {
-                    return cart;
+                    return Task.FromResult(cart);
                 }
 
                 var item = cart.Cart.Items.FirstOrDefault(i => i.ProductId == request.ProductId);
                 if (item == null)
                 {
-                    return new CartResponseDTO
+                    return Task.FromResult(new CartResponseDTO
                     {
                         Success = false,
                         Message = "Product not found in cart"
-                    };
+                    });
                 }
 
                 // For digital products, quantity is always 1
@@ -215,25 +215,25 @@ namespace Core.Services
                 // Update in-memory storage
                 _userCarts[userId] = cart.Cart;
 
-                return new CartResponseDTO
+                return Task.FromResult(new CartResponseDTO
                 {
                     Success = true,
                     Cart = cart.Cart,
                     Message = "Cart updated successfully"
-                };
+                });
             }
             catch (System.Exception ex)
             {
                 _logger.LogError(ex, "Error updating cart for user {UserId}", userId);
-                return new CartResponseDTO
+                return Task.FromResult(new CartResponseDTO
                 {
                     Success = false,
                     Message = "Failed to update cart"
-                };
+                });
             }
         }
 
-        public async Task<CartResponseDTO> ClearCartAsync(int userId)
+        public Task<CartResponseDTO> ClearCartAsync(int userId)
         {
             try
             {
@@ -246,21 +246,21 @@ namespace Core.Services
 
                 _logger.LogInformation("Cart cleared for user {UserId}", userId);
 
-                return new CartResponseDTO
+                return Task.FromResult(new CartResponseDTO
                 {
                     Success = true,
                     Cart = _userCarts.ContainsKey(userId) ? _userCarts[userId] : new CartDTO(),
                     Message = "Cart cleared successfully"
-                };
+                });
             }
             catch (System.Exception ex)
             {
                 _logger.LogError(ex, "Error clearing cart for user {UserId}", userId);
-                return new CartResponseDTO
+                return Task.FromResult(new CartResponseDTO
                 {
                     Success = false,
                     Message = "Failed to clear cart"
-                };
+                });
             }
         }
 

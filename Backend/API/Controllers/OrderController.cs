@@ -24,6 +24,7 @@ namespace API.Controllers
         private readonly IUserRepository _userRepository;
         private readonly ILogger<OrderController> _logger;
         private readonly IEmailService _emailService; // Added email service
+        private readonly IPaymentMethodBalanceRepository _paymentMethodBalanceRepository; // Added payment method balance repository
 
         public OrderController(
             IOrderService orderService, 
@@ -33,7 +34,8 @@ namespace API.Controllers
             IStripeService stripeService,
             IUserRepository userRepository,
             ILogger<OrderController> logger,
-            IEmailService emailService) // Added email service to constructor
+            IEmailService emailService,
+            IPaymentMethodBalanceRepository paymentMethodBalanceRepository) // Added payment method balance repository to constructor
         {
             _orderService = orderService;
             _purchaseValidationService = purchaseValidationService;
@@ -43,6 +45,7 @@ namespace API.Controllers
             _userRepository = userRepository;
             _logger = logger;
             _emailService = emailService; // Initialize email service
+            _paymentMethodBalanceRepository = paymentMethodBalanceRepository; // Initialize payment method balance repository
         }
 
         [HttpPost]
@@ -82,10 +85,16 @@ namespace API.Controllers
                     totalAmount += product.Price * item.quantity;
                 }
 
-                // Check if user has sufficient balance
-                if (user.AccountBalance < totalAmount)
+                // Check if user has sufficient balance using the new balance system
+                var userSelectedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(userId);
+                if (userSelectedBalance == null)
                 {
-                    return BadRequest(new { success = false, message = $"Insufficient balance. You have ${user.AccountBalance:F2} but need ${totalAmount:F2}" });
+                    return BadRequest(new { success = false, message = "No payment method selected. Please add a payment method first." });
+                }
+
+                if (userSelectedBalance.Balance < totalAmount)
+                {
+                    return BadRequest(new { success = false, message = $"Insufficient balance. You have ${userSelectedBalance.Balance:F2} but need ${totalAmount:F2}" });
                 }
 
                 // Create Stripe payment intent for simulation
@@ -105,29 +114,8 @@ namespace API.Controllers
                     return BadRequest(new { success = false, message = "Payment processing failed. Please try again." });
                 }
 
-                // Deduct amount from user's balance
-                user.AccountBalance -= totalAmount;
-                await _userRepository.UpdateAsync(user);
-
-                // Update creator revenues for each product
-                foreach (var item in dto.items)
-                {
-                    var product = await _productRepository.GetByIdAsync(item.productId);
-                    if (product != null)
-                    {
-                        // Get creator user (CreatorId is required, not nullable)
-                        var creator = await _userRepository.GetByIdAsync(product.CreatorId);
-                        if (creator != null)
-                        {
-                            // Add revenue to creator's balance
-                            var creatorRevenue = product.Price * item.quantity;
-                            creator.AccountBalance += creatorRevenue;
-                            await _userRepository.UpdateAsync(creator);
-                            
-                            _logger.LogInformation($"Added ${creatorRevenue:F2} revenue to creator {creator.Username} for product {product.Name}");
-                        }
-                    }
-                }
+                // Note: Balance updates are now handled by OrderService.CreateOrderAsync
+                // which will update both buyer and creator balances automatically
 
                 // Create the order
                 var order = await _orderService.CreateOrderAsync(userId, dto);
@@ -185,7 +173,9 @@ namespace API.Controllers
                     {
                         success = true,
                         amount = totalAmount,
-                        remainingBalance = user.AccountBalance,
+                        // Fetch updated balance after order creation to return accurate remaining balance
+                        remainingBalance = (await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(userId))?.Balance 
+                                            ?? userSelectedBalance.Balance - totalAmount,
                         message = "Payment processed successfully from account balance"
                     }
                 };
@@ -193,6 +183,10 @@ namespace API.Controllers
                 // Send email notification to customer
                 try
                 {
+                    // Get updated balance after purchase
+                    var updatedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(userId);
+                    var remainingBalance = updatedBalance?.Balance ?? 0m;
+                    
                     var emailSubject = "Purchase Confirmation - Raqmiya";
                     var emailBody = $@"
                         <h2>Purchase Confirmation</h2>
@@ -202,8 +196,8 @@ namespace API.Controllers
                         <ul>
                             <li>Order ID: {orderEntity.Id}</li>
                             <li>Total Amount: ${totalAmount:F2}</li>
-                            <li>Payment Method: Account Balance</li>
-                            <li>Remaining Balance: ${user.AccountBalance:F2}</li>
+                            <li>Payment Method: {updatedBalance?.CardBrand?.ToUpper() ?? "Card"} •••• {updatedBalance?.CardLast4 ?? "****"}</li>
+                            <li>Remaining Balance: ${remainingBalance:F2}</li>
                         </ul>
                         <p><strong>Purchased Items:</strong></p>
                         <ul>";
@@ -314,7 +308,7 @@ namespace API.Controllers
 
         // Temporary test endpoint to verify routing
         [HttpGet("test-validate/{productId}")]
-        public async Task<IActionResult> TestValidatePurchase(int productId)
+        public IActionResult TestValidatePurchase(int productId)
         {
             return Ok(new { 
                 message = "Test endpoint working", 

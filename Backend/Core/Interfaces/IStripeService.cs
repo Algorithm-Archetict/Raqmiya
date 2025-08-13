@@ -1,6 +1,7 @@
 using Stripe;
 using System.Threading;
 using System.Threading.Tasks;
+using Core.Models;
 
 namespace Core.Interfaces
 {
@@ -58,6 +59,16 @@ namespace Core.Interfaces
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The created payment intent.</returns>
         Task<PaymentIntent> CreateTestPaymentIntentAsync(long amount, string currency, string customerId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates a test payment intent for balance-based payments.
+        /// </summary>
+        /// <param name="amount">The amount to charge.</param>
+        /// <param name="currency">The currency code.</param>
+        /// <param name="description">Payment description.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A test payment result.</returns>
+        Task<TestPaymentResult> CreateTestPaymentIntentForBalanceAsync(decimal amount, string currency, string description, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the publishable key for frontend Stripe integration.

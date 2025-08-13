@@ -14,20 +14,63 @@
             <i class="bi bi-wallet2 me-2"></i>
             Account Balance
           </h5>
+
+          <!-- Currency Selector -->
+          <div class="currency-selector mb-3">
+            <label for="currencySelect" class="form-label me-2">Display Currency:</label>
+            <select
+              id="currencySelect"
+              class="form-select form-select-sm"
+              [(ngModel)]="selectedCurrency"
+              (change)="onCurrencyChange()">
+              <option value="USD">USD ($)</option>
+              <option value="EGP">EGP (EGP)</option>
+            </select>
+          </div>
+
+          <!-- Payment Method Selector (if multiple methods exist) -->
+          <div class="payment-method-selector mb-3" *ngIf="paymentMethods.length > 1">
+            <label for="paymentMethodSelect" class="form-label me-2">Select Payment Method:</label>
+            <select
+              id="paymentMethodSelect"
+              class="form-select form-select-sm"
+              [(ngModel)]="selectedPaymentMethodId"
+              (change)="onPaymentMethodChange()">
+              <option value="">Select a payment method</option>
+              <option *ngFor="let method of paymentMethods" [value]="method.id">
+                {{ method.card.brand | titlecase }} •••• {{ method.card.last4 }}
+              </option>
+            </select>
+            <small class="form-text text-muted" *ngIf="paymentMethods.length > 1">
+              Different payment methods may have different balances
+            </small>
+          </div>
+
+          <!-- Currency Conversion Info -->
+          <div class="currency-info mb-2" *ngIf="selectedCurrency !== 'USD'">
+            <small class="text-info">
+              <i class="fas fa-info-circle me-1"></i>
+              Exchange Rate: 1 USD = 50 {{ selectedCurrency }}
+            </small>
+          </div>
+
           <!-- Show balance only if user has payment methods -->
           <div class="balance-amount" *ngIf="balance && paymentMethods.length > 0">
-            <span class="currency">$</span>
+            <span class="currency">{{ getCurrencySymbol() }}</span>
             <span class="amount">{{ balance.currentBalance.toFixed(2) }}</span>
-            <span class="currency-code ms-2">{{ balance.currency }}</span>
+            <span class="currency-code ms-2">{{ selectedCurrency }}</span>
           </div>
+
           <!-- Show "no payment methods" message if no payment methods -->
           <div class="balance-amount" *ngIf="balance && paymentMethods.length === 0">
             <span class="text-muted">No payment methods added</span>
           </div>
+
           <!-- Show loading if balance is still loading -->
           <div class="balance-amount" *ngIf="!balance">
             <span class="loading">Loading...</span>
           </div>
+
           <small class="text-muted" *ngIf="balance && paymentMethods.length > 0">
             Last updated: {{ formatDate(balance.lastUpdated) }}
           </small>
@@ -38,117 +81,107 @@
 
   <!-- Add Payment Method Section -->
   <div class="row mb-4">
-    <div class="col-md-8">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">
-            <i class="bi bi-credit-card me-2"></i>
+    <div class="col-12">
+      <div class="card payment-method-card">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="fas fa-credit-card me-2"></i>
             Add Payment Method
           </h5>
-        </div>
-        <div class="card-body">
-          <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Test Mode:</strong> Use test card numbers like 4242 4242 4242 4242 for Visa, 5555 5555 5555 4444 for Mastercard
-          </div>
 
-          <!-- Stripe Card Element -->
-          <div class="form-group mb-3">
-            <label class="form-label">Card Details</label>
-            <div id="card-element" class="stripe-card-element"></div>
-            <div id="card-errors" class="text-danger mt-2" role="alert"></div>
-          </div>
-
-          <button
-            type="button"
-            class="btn btn-primary"
-            (click)="addPaymentMethod()"
-            [disabled]="isLoading || !stripeConfig">
-            <span class="spinner-border spinner-border-sm me-2" *ngIf="isLoading"></span>
-            {{ isLoading ? 'Adding...' : 'Add Payment Method' }}
-          </button>
-
-          <div class="alert alert-success mt-3" *ngIf="successMessage">
-            <i class="bi bi-check-circle me-2"></i>
-            {{ successMessage }}
-          </div>
-
-          <div class="alert alert-danger mt-3" *ngIf="errorMessage">
-            <i class="bi bi-exclamation-triangle me-2"></i>
+          <!-- Error and Success Messages -->
+          <div class="alert alert-danger" *ngIf="errorMessage" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
             {{ errorMessage }}
+            <button type="button" class="btn-close float-end" (click)="clearMessages()"></button>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Test Payment Section -->
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">
-            <i class="bi bi-cash-coin me-2"></i>
-            Test Payment
-          </h5>
-        </div>
-        <div class="card-body">
-          <p class="text-muted mb-3">
-            Test the payment system by making a small payment from your account balance.
-          </p>
+          <div class="alert alert-success" *ngIf="successMessage" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            {{ successMessage }}
+            <button type="button" class="btn-close float-end" (click)="clearMessages()"></button>
+          </div>
 
-          <form [formGroup]="paymentForm" (ngSubmit)="makeTestPayment()">
-            <div class="form-group mb-3">
-              <label for="amount" class="form-label">Amount (USD)</label>
-              <div class="input-group">
-                <span class="input-group-text">$</span>
-                <input
-                  type="number"
-                  id="amount"
-                  class="form-control"
-                  formControlName="amount"
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0.01">
-              </div>
-              <div class="text-danger mt-1" *ngIf="paymentForm.get('amount')?.invalid && paymentForm.get('amount')?.touched">
-                <small *ngIf="paymentForm.get('amount')?.errors?.['required']">Amount is required</small>
-                <small *ngIf="paymentForm.get('amount')?.errors?.['min']">Amount must be greater than 0</small>
+          <div class="row">
+            <div class="col-md-8">
+              <!-- Stripe Card Element -->
+              <div class="form-group mb-3">
+                <label class="form-label">Card Details</label>
+                <div id="card-element" class="stripe-card-element"></div>
+                <small class="form-text text-muted">
+                  Enter your card information securely
+                </small>
               </div>
             </div>
 
-            <button
-              type="submit"
-              class="btn btn-success"
-              [disabled]="isLoading || !paymentForm.valid || !balance">
-              <span class="spinner-border spinner-border-sm me-2" *ngIf="isLoading"></span>
-              {{ isLoading ? 'Processing...' : 'Make Test Payment' }}
-            </button>
-          </form>
+            <div class="col-md-4">
+              <!-- Add Payment Method Button -->
+              <button
+                type="button"
+                class="btn btn-primary w-100"
+                (click)="addPaymentMethod()"
+                [disabled]="isLoading">
+                <span *ngIf="!isLoading">
+                  <i class="fas fa-plus me-2"></i>
+                  Add Payment Method
+                </span>
+                <span *ngIf="isLoading">
+                  <i class="fas fa-spinner fa-spin me-2"></i>
+                  Adding...
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Payment Methods Section -->
-  <div class="row">
+  <!-- Make Payment Section -->
+  <div class="row mb-4" *ngIf="paymentMethods.length > 0">
     <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">
-            <i class="fas fa-credit-card me-2"></i>
-            Saved Payment Methods
-          </h5>
-        </div>
+      <div class="card payment-method-card">
         <div class="card-body">
-          <!-- No Payment Methods Message -->
-          <div *ngIf="paymentMethods.length === 0" class="no-payment-methods">
-            <div class="text-center py-4">
-              <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
-              <h5 class="text-muted">No Payment Methods Added</h5>
-              <p class="text-muted mb-3">
-                You haven't added any payment methods yet. Add a card above to get started with purchases.
-              </p>
+          <h5 class="card-title">
+            <i class="fas fa-money-bill-wave me-2"></i>
+            Make Payment
+          </h5>
+
+          <div class="row">
+            <div class="col-md-6">
+              <form [formGroup]="paymentForm">
+                <div class="form-group mb-3">
+                  <label class="form-label">Amount</label>
+                  <div class="input-group">
+                    <span class="input-group-text">{{ getCurrencySymbol() }}</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      formControlName="amount"
+                      placeholder="Enter amount"
+                      min="1"
+                      step="0.01">
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  (click)="makePayment()"
+                  [disabled]="isLoading || paymentForm.invalid">
+                  <span *ngIf="!isLoading">
+                    <i class="fas fa-credit-card me-2"></i>
+                    Make Payment
+                  </span>
+                  <span *ngIf="isLoading">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    Processing...
+                  </span>
+                </button>
+              </form>
+            </div>
+
+            <div class="col-md-6">
               <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
                 <strong>Note:</strong> You need to add a payment method before you can make purchases.
@@ -156,30 +189,56 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <!-- Payment Methods List -->
-          <div *ngIf="paymentMethods.length > 0">
-            <div class="payment-method-item" *ngFor="let method of paymentMethods">
-              <div class="payment-method-info">
-                <div class="card-icon">
-                  <i class="fas fa-credit-card"></i>
-                </div>
-                <div class="card-details">
-                  <h6 class="card-brand">{{ method.card.brand | titlecase }}</h6>
-                  <p class="card-number">•••• •••• •••• {{ method.card.last4 }}</p>
-                  <small class="card-expiry">
-                    Expires: {{ method.card.expMonth }}/{{ method.card.expYear }}
-                  </small>
-                </div>
+  <!-- Payment Methods List -->
+  <div class="row" *ngIf="paymentMethods.length > 0">
+    <div class="col-12">
+      <div class="card payment-method-card">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="fas fa-credit-card me-2"></i>
+            Saved Payment Methods
+          </h5>
+
+          <div class="payment-method-item" *ngFor="let method of paymentMethods">
+            <div class="payment-method-info">
+              <div class="card-icon">
+                <i class="fas fa-credit-card"></i>
               </div>
-              <div class="payment-method-actions">
-                <span class="badge bg-success" *ngIf="method.isDefault">Default</span>
-                <small class="text-muted d-block mt-1">
-                  Added: {{ method.created | date:'shortDate' }}
+              <div class="card-details">
+                <h6 class="card-brand">{{ method.card.brand | titlecase }}</h6>
+                <p class="card-number">•••• •••• •••• {{ method.card.last4 }}</p>
+                <small class="card-expiry">
+                  Expires: {{ method.card.expMonth }}/{{ method.card.expYear }}
                 </small>
               </div>
             </div>
+            <div class="payment-method-actions">
+              <span class="badge bg-success" *ngIf="method.isDefault">Default</span>
+              <small class="text-muted d-block mt-1">
+                Added: {{ formatDate(method.created) }}
+              </small>
+            </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Payment Methods Message -->
+  <div class="row" *ngIf="paymentMethods.length === 0">
+    <div class="col-12">
+      <div class="card payment-method-card">
+        <div class="card-body text-center">
+          <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+          <h5 class="text-muted">No Payment Methods Added</h5>
+          <p class="text-muted">
+            You haven't added any payment methods yet. Add a credit or debit card to get started.
+          </p>
         </div>
       </div>
     </div>
