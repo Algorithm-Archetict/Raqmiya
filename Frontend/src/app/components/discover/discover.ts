@@ -93,7 +93,10 @@ export class Discover implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit() {
-    // Load the discover page data efficiently using analytics endpoints
+    // Load analytics-driven discover sections first (personalized carousels)
+    this.loadDiscoverSections();
+    
+    // Load the general product data for filtering/searching
     this.initializeProducts();
     this.loadAvailableTags();
     this.applyFilters();
@@ -188,8 +191,10 @@ export class Discover implements OnInit, AfterViewInit {
         // Load purchase status for all products
         this.loadPurchaseStatus();
 
-        // Load analytics-driven discover sections from backend
-        this.loadDiscoverSections();
+        // Load analytics-driven discover sections from backend (fallback if not already loaded)
+        if (this.sectionMostWishedDto.length === 0) {
+          this.loadDiscoverSections();
+        }
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
@@ -210,13 +215,17 @@ export class Discover implements OnInit, AfterViewInit {
 
   // Load analytics-driven discover sections from backend
   private loadDiscoverSections() {
-    console.log('Loading discover sections from analytics endpoints...');
+    console.log('🔍 Loading personalized discover sections from analytics endpoints...');
+    
+    // User ID is automatically passed via JWT token to backend
+    const isLoggedIn = this.authService.isLoggedIn();
+    console.log('🔍 User logged in for personalization:', isLoggedIn);
     
     this.analyticsService.getDiscoverFeed(12).subscribe({
       next: (feedData: DiscoverFeedResponse) => {
         console.log('✅ Analytics discover feed loaded successfully:', feedData);
         
-        // Set the DTO arrays directly from analytics API
+        // Verify each section is properly mapped
         this.sectionMostWishedDto = feedData.mostWished || [];
         this.sectionRecommendedDto = feedData.recommended || [];
         this.sectionBestSellersDto = feedData.bestSellers || [];
@@ -224,7 +233,7 @@ export class Discover implements OnInit, AfterViewInit {
         this.sectionNewArrivalsDto = feedData.newArrivals || [];
         this.sectionTrendingDto = feedData.trending || [];
 
-        // Convert DTOs back to internal Product format for consistency with other parts of the component
+        // Convert DTOs to internal Product format
         this.sectionMostWished = this.sectionMostWishedDto.map(dto => this.fromDTO(dto));
         this.sectionRecommended = this.sectionRecommendedDto.map(dto => this.fromDTO(dto));
         this.sectionBestSellers = this.sectionBestSellersDto.map(dto => this.fromDTO(dto));
@@ -232,7 +241,7 @@ export class Discover implements OnInit, AfterViewInit {
         this.sectionNewArrivals = this.sectionNewArrivalsDto.map(dto => this.fromDTO(dto));
         this.sectionTrending = this.sectionTrendingDto.map(dto => this.fromDTO(dto));
 
-        console.log('Analytics sections loaded:', {
+        console.log('📊 Analytics sections loaded:', {
           mostWished: this.sectionMostWishedDto.length,
           recommended: this.sectionRecommendedDto.length,
           bestSellers: this.sectionBestSellersDto.length,
@@ -240,66 +249,68 @@ export class Discover implements OnInit, AfterViewInit {
           newArrivals: this.sectionNewArrivalsDto.length,
           trending: this.sectionTrendingDto.length
         });
+
+        // Log first few products of each section for verification
+        console.log('🔍 Section verification (first 3 products of each):');
+        console.log('📍 Most Wished:', this.sectionMostWishedDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('🎯 Recommended:', this.sectionRecommendedDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('💰 Best Sellers:', this.sectionBestSellersDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('⭐ Top Rated:', this.sectionTopRatedDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('🆕 New Arrivals:', this.sectionNewArrivalsDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('🔥 Trending:', this.sectionTrendingDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        
+        // Verify sections have different products
+        const allProductIds = [
+          ...this.sectionMostWishedDto.map(p => p.id),
+          ...this.sectionRecommendedDto.map(p => p.id),
+          ...this.sectionBestSellersDto.map(p => p.id),
+          ...this.sectionTopRatedDto.map(p => p.id),
+          ...this.sectionNewArrivalsDto.map(p => p.id),
+          ...this.sectionTrendingDto.map(p => p.id)
+        ];
+        const uniqueProductIds = new Set(allProductIds);
+        console.log('📊 Product diversity check:', {
+          totalProductSlots: allProductIds.length,
+          uniqueProducts: uniqueProductIds.size,
+          diversityPercentage: `${Math.round((uniqueProductIds.size / allProductIds.length) * 100)}%`
+        });
+        
+        if (isLoggedIn) {
+          console.log('👤 Personalized recommendations loaded for logged-in user');
+        } else {
+          console.log('🌐 Generic recommendations loaded for anonymous user');
+        }
       },
       error: (error) => {
         console.error('❌ Error loading analytics discover feed:', error);
-        console.error('Falling back to local computation...');
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          message: error.message
+        });
         
-        // Fallback to local computation if analytics API fails
-        this.computeDiscoverSectionsFallback();
+        // Initialize empty arrays if API fails
+        this.sectionMostWishedDto = [];
+        this.sectionRecommendedDto = [];
+        this.sectionBestSellersDto = [];
+        this.sectionTopRatedDto = [];
+        this.sectionNewArrivalsDto = [];
+        this.sectionTrendingDto = [];
+        
+        this.sectionMostWished = [];
+        this.sectionRecommended = [];
+        this.sectionBestSellers = [];
+        this.sectionTopRated = [];
+        this.sectionNewArrivals = [];
+        this.sectionTrending = [];
+        
+        console.log('⚠️ Initialized empty carousel sections due to API error');
       }
     });
   }
 
-  // Fallback method for local computation (kept as backup)
-  private computeDiscoverSectionsFallback() {
-    console.log('Using fallback local computation for discover sections...');
-    
-    const by = {
-      ratingDesc: [...this.allProducts].sort((a, b) => (b.rating || 0) - (a.rating || 0)),
-      ratingThenCount: [...this.allProducts].sort((a, b) => {
-        if ((b.rating || 0) !== (a.rating || 0)) return (b.rating || 0) - (a.rating || 0);
-        return (b.ratingCount || 0) - (a.ratingCount || 0);
-      }),
-      idDesc: [...this.allProducts].sort((a, b) => b.id - a.id),
-    };
 
-    const wishlistSignal = (p: Product) => (p.inWishlist ? 1 : 0) + (p.ratingCount || 0) * 0.01;
-    const salesSignal = (p: Product) => (p.ratingCount || 0); // fallback proxy
-    const trendingScore = (p: Product) => (p.rating || 0) * 2 + (p.ratingCount || 0) * 0.5 + (p.inWishlist ? 3 : 0);
-
-    // Sections
-    this.sectionMostWished = [...this.allProducts]
-      .sort((a, b) => wishlistSignal(b) - wishlistSignal(a))
-      .slice(0, 12);
-
-    // Simple content-based recommendation: overlap tags with wishlist items or top viewed
-    const userTags = new Set(
-      this.allProducts.filter(p => p.inWishlist).flatMap(p => p.tags || [])
-    );
-    const tagAffinity = (p: Product) => (p.tags || []).reduce((acc, t) => acc + (userTags.has(t) ? 1 : 0), 0);
-    this.sectionRecommended = [...this.allProducts]
-      .sort((a, b) => tagAffinity(b) - tagAffinity(a) || (b.rating || 0) - (a.rating || 0))
-      .slice(0, 12);
-
-    this.sectionBestSellers = [...this.allProducts]
-      .sort((a, b) => salesSignal(b) - salesSignal(a))
-      .slice(0, 12);
-
-    this.sectionTopRated = by.ratingThenCount.slice(0, 12);
-    this.sectionNewArrivals = by.idDesc.slice(0, 12);
-    this.sectionTrending = [...this.allProducts]
-      .sort((a, b) => trendingScore(b) - trendingScore(a))
-      .slice(0, 12);
-
-    // Convert to DTO for carousels
-    this.sectionMostWishedDto = this.sectionMostWished.map(p => this.toDTO(p));
-    this.sectionRecommendedDto = this.sectionRecommended.map(p => this.toDTO(p));
-    this.sectionBestSellersDto = this.sectionBestSellers.map(p => this.toDTO(p));
-    this.sectionTopRatedDto = this.sectionTopRated.map(p => this.toDTO(p));
-    this.sectionNewArrivalsDto = this.sectionNewArrivals.map(p => this.toDTO(p));
-    this.sectionTrendingDto = this.sectionTrending.map(p => this.toDTO(p));
-  }
 
   private toDTO(p: Product): ProductListItemDTO {
     return {
