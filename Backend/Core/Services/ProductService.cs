@@ -776,6 +776,8 @@ namespace Core.Services
                     .Include(p => p.Creator)
                     .Include(p => p.Category)
                     .Include(p => p.WishlistItems)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
                     .Where(p => p.IsPublic)
                     .OrderByDescending(p => p.WishlistItems.Count)
                     .Take(count)
@@ -816,10 +818,15 @@ namespace Core.Services
                     .Include(p => p.Creator)
                     .Include(p => p.Category)
                     .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.WishlistItems)
                     .Where(p => p.IsPublic)
-                    .Where(p => p.Reviews.Any()) // Has reviews
-                    .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
-                    .ThenByDescending(p => p.PublishedAt)
+                    /*
+                    .OrderByDescending(p => p.WishlistItems.Count)
+                    .ThenByDescending(p => p.OrderItems.Count)
+                    .ThenByDescending(p => p.Reviews.Count)
+                    */
+                    .OrderByDescending(p => p.PublishedAt) // Most recent products
                     .Take(count)
                     .ToListAsync();
 
@@ -836,6 +843,8 @@ namespace Core.Services
                     .Include(p => p.Creator)
                     .Include(p => p.Category)
                     .Include(p => p.OrderItems)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.WishlistItems)
                     .Where(p => p.IsPublic)
                     .OrderByDescending(p => p.OrderItems.Count)
                     .ThenByDescending(p => p.PublishedAt)
@@ -859,8 +868,10 @@ namespace Core.Services
                     .Include(p => p.Creator)
                     .Include(p => p.Category)
                     .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.WishlistItems)
                     .Where(p => p.IsPublic)
-                    .Where(p => p.Reviews.Count >= 3) // Minimum 3 reviews for credibility
+                    .Where(p => p.Reviews.Count >= 1) // Minimum 1 review for credibility
                     .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
                     .ThenByDescending(p => p.Reviews.Count)
                     .Take(count)
@@ -882,6 +893,9 @@ namespace Core.Services
                 var products = await _context.Products
                     .Include(p => p.Creator)
                     .Include(p => p.Category)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.WishlistItems)
                     .Where(p => p.IsPublic)
                     .OrderByDescending(p => p.PublishedAt)
                     .Take(count)
@@ -909,6 +923,7 @@ namespace Core.Services
                     .Include(p => p.WishlistItems)
                     .Include(p => p.OrderItems)
                     .Include(p => p.ProductViews)
+                    .Include(p => p.Reviews)
                     .Where(p => p.IsPublic)
                     .OrderByDescending(p => 
                         p.WishlistItems.Count * 2 +

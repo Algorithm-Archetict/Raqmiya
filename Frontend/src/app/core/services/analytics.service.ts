@@ -24,7 +24,7 @@ export class AnalyticsService {
    * Get all analytics data for the discover page in a single optimized call
    */
   getDiscoverFeed(countPerSection: number = 12): Observable<DiscoverFeedResponse> {
-    return this.http.get<DiscoverFeedResponse>(`${this.baseUrl}/discover-feed?countPerSection=${countPerSection}`);
+    return this.http.get<DiscoverFeedResponse>(`${this.baseUrl}/discover?countPerSection=${countPerSection}`);
   }
 
   /**

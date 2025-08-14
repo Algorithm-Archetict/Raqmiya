@@ -48,6 +48,21 @@ namespace Raqmiya.Infrastructure.Data
             };
         }
 
+        private static decimal GetInteractionWeight(InteractionType interactionType)
+        {
+            return interactionType switch
+            {
+                InteractionType.View => 1.0m,
+                InteractionType.Wishlist => 2.0m,
+                InteractionType.Purchase => 5.0m,
+                InteractionType.Review => 3.0m,
+                InteractionType.Download => 4.0m,
+                InteractionType.Share => 1.5m,
+                InteractionType.Search => 0.5m,
+                _ => 1.0m
+            };
+        }
+
         public static void Seed(RaqmiyaDbContext context)
         {
             context.Database.Migrate();
@@ -572,61 +587,119 @@ namespace Raqmiya.Infrastructure.Data
                 
                 var faker = new Faker("en_US");
                 
-                // Define product templates for realistic digital products
-                var productTemplates = new[]
+                // Define category-specific product templates for realistic matching
+                var categoryBasedProducts = new Dictionary<string, object[]>
                 {
-                    // eBooks
-                    new { Names = new[] { "The Complete Guide to {0}", "Mastering {0} in 30 Days", "{0} for Beginners", "Advanced {0} Strategies", "The Ultimate {0} Handbook" }, 
-                          Descriptions = new[] { "Transform your skills with this comprehensive guide to {0}.", "Learn practical {0} techniques that actually work.", "Everything you need to know about {0} in one place.", "Step-by-step strategies for mastering {0}.", "The definitive resource for {0} success." },
-                          CategoryTypes = new[] { "Self Improvement", "Business & Money", "Education", "Fiction Books" },
-                          PriceRange = new { Min = 9.99m, Max = 49.99m } },
-                    
-                    // Online Courses
-                    new { Names = new[] { "Complete {0} Bootcamp", "Zero to Hero: {0} Course", "Professional {0} Training", "{0} Masterclass", "Learn {0} Fast" },
-                          Descriptions = new[] { "Master {0} with hands-on projects and real-world examples.", "From beginner to professional {0} developer.", "Industry-standard {0} training with lifetime access.", "Learn {0} the right way with expert instruction.", "Fast-track your {0} skills with this intensive course." },
-                          CategoryTypes = new[] { "Software Development", "Design", "Business & Money", "Education" },
-                          PriceRange = new { Min = 29.99m, Max = 199.99m } },
-                    
-                    // Music & Audio
-                    new { Names = new[] { "{0} Sample Pack", "Premium {0} Beats", "{0} Production Kit", "Professional {0} Loops", "{0} Sound Library" },
-                          Descriptions = new[] { "High-quality {0} samples for your next hit.", "Professionally produced {0} beats ready to use.", "Complete {0} production toolkit with stems.", "Royalty-free {0} loops for commercial use.", "Exclusive {0} sounds you won't find anywhere else." },
-                          CategoryTypes = new[] { "Recorded Music", "Music & Sound Design" },
-                          PriceRange = new { Min = 4.99m, Max = 79.99m } },
-                    
-                    // Software Tools
-                    new { Names = new[] { "{0} Pro Tool", "Smart {0} Assistant", "{0} Automation Suite", "Advanced {0} Manager", "{0} Productivity App" },
-                          Descriptions = new[] { "Streamline your {0} workflow with this powerful tool.", "Automate repetitive {0} tasks and save hours.", "Professional-grade {0} software for serious users.", "Boost your {0} productivity with smart automation.", "The ultimate {0} tool for power users." },
-                          CategoryTypes = new[] { "Software Development", "Gaming", "Productivity" },
-                          PriceRange = new { Min = 19.99m, Max = 149.99m } },
-                    
-                    // Digital Art & Design
-                    new { Names = new[] { "{0} Design Pack", "Premium {0} Templates", "{0} Asset Collection", "Professional {0} Kit", "{0} Creative Bundle" },
-                          Descriptions = new[] { "Stunning {0} designs ready for commercial use.", "High-quality {0} templates that save you time.", "Complete {0} asset pack for your projects.", "Professional {0} resources for designers.", "Everything you need for amazing {0} designs." },
-                          CategoryTypes = new[] { "Design", "Drawing & Painting", "Photography" },
-                          PriceRange = new { Min = 14.99m, Max = 89.99m } }
+                    ["Software Development"] = new object[]
+                    {
+                        new { Names = new[] { "Complete {0} Bootcamp", "Master {0} Programming", "{0} Developer Course", "Learn {0} from Scratch", "Professional {0} Training" },
+                              Descriptions = new[] { "Master {0} with hands-on projects and real-world examples.", "From beginner to professional {0} developer.", "Industry-standard {0} training with lifetime access.", "Learn {0} the right way with expert instruction.", "Complete {0} development course with practical projects." },
+                              Subjects = new[] { "Python", "JavaScript", "React", "Node.js", "C#", "Java", "Web Development", "Mobile App Development", "API Development", "Full Stack Development" },
+                              PriceRange = new { Min = 39.99m, Max = 199.99m } }
+                    },
+                    ["Design"] = new object[]
+                    {
+                        new { Names = new[] { "{0} Design Pack", "Premium {0} Templates", "{0} Asset Collection", "Professional {0} Kit", "{0} Creative Bundle" },
+                              Descriptions = new[] { "Stunning {0} designs ready for commercial use.", "High-quality {0} templates that save you time.", "Complete {0} asset pack for your projects.", "Professional {0} resources for designers.", "Everything you need for amazing {0} designs." },
+                              Subjects = new[] { "UI/UX Design", "Logo Design", "Graphic Design", "Web Design", "Brand Identity", "Typography", "Icon Design", "Print Design", "Mobile Design", "Wireframe Templates" },
+                              PriceRange = new { Min = 14.99m, Max = 89.99m } }
+                    },
+                    ["Business & Money"] = new object[]
+                    {
+                        new { Names = new[] { "The Complete Guide to {0}", "{0} Mastery Course", "Advanced {0} Strategies", "{0} Business Blueprint", "Professional {0} Toolkit" },
+                              Descriptions = new[] { "Transform your business with proven {0} strategies.", "Learn advanced {0} techniques from industry experts.", "Complete {0} system for sustainable growth.", "Professional {0} methods that deliver results.", "Master {0} and scale your business effectively." },
+                              Subjects = new[] { "Digital Marketing", "Entrepreneurship", "Personal Finance", "E-commerce", "Affiliate Marketing", "Dropshipping", "Real Estate Investing", "Stock Trading", "Business Planning", "Sales Strategies" },
+                              PriceRange = new { Min = 29.99m, Max = 149.99m } }
+                    },
+                    ["Education"] = new object[]
+                    {
+                        new { Names = new[] { "{0} Study Guide", "Complete {0} Course", "{0} Learning Materials", "Master {0} Concepts", "{0} Educational Resources" },
+                              Descriptions = new[] { "Comprehensive {0} materials for effective learning.", "Master {0} concepts with structured lessons.", "Complete {0} curriculum with practice exercises.", "Professional {0} education resources.", "Learn {0} step-by-step with expert guidance." },
+                              Subjects = new[] { "Mathematics", "Science", "History", "English", "Test Prep", "Study Skills", "Online Learning", "Language Learning", "Academic Writing", "Research Methods" },
+                              PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                    },
+                    ["Music & Sound Design"] = new object[]
+                    {
+                        new { Names = new[] { "{0} Sample Pack", "Premium {0} Beats", "{0} Production Kit", "Professional {0} Loops", "{0} Sound Library" },
+                              Descriptions = new[] { "High-quality {0} samples for your next hit.", "Professionally produced {0} beats ready to use.", "Complete {0} production toolkit with stems.", "Royalty-free {0} loops for commercial use.", "Exclusive {0} sounds you won't find anywhere else." },
+                              Subjects = new[] { "Hip Hop", "Electronic", "Pop", "Rock", "Jazz", "Classical", "Ambient", "Trap", "House Music", "Cinematic" },
+                              PriceRange = new { Min = 4.99m, Max = 79.99m } }
+                    },
+                    ["3D"] = new object[]
+                    {
+                        new { Names = new[] { "{0} 3D Models", "Premium {0} Assets", "{0} Animation Pack", "Professional {0} Kit", "{0} 3D Collection" },
+                              Descriptions = new[] { "High-quality {0} 3D models for your projects.", "Professional {0} assets ready for production.", "Complete {0} 3D package with textures.", "Premium {0} models with commercial license.", "Detailed {0} 3D assets for game development." },
+                              Subjects = new[] { "Character Models", "Environment Assets", "Vehicles", "Architecture", "Props", "Weapons", "Animals", "Furniture", "Sci-Fi Assets", "Fantasy Models" },
+                              PriceRange = new { Min = 9.99m, Max = 129.99m } }
+                    },
+                    ["Drawing & Painting"] = new object[]
+                    {
+                        new { Names = new[] { "{0} Art Tutorial", "Learn {0} Techniques", "{0} Masterclass", "Digital {0} Course", "{0} Art Guide" },
+                              Descriptions = new[] { "Master {0} with step-by-step tutorials.", "Learn professional {0} techniques from experts.", "Complete {0} course for all skill levels.", "Improve your {0} skills with practical exercises.", "Professional {0} training for artists." },
+                              Subjects = new[] { "Portrait Drawing", "Digital Painting", "Character Design", "Concept Art", "Illustration", "Watercolor", "Oil Painting", "Sketching", "Comic Art", "Fantasy Art" },
+                              PriceRange = new { Min = 19.99m, Max = 99.99m } }
+                    },
+                    ["Photography"] = new object[]
+                    {
+                        new { Names = new[] { "{0} Presets Pack", "{0} Photography Course", "Professional {0} Guide", "{0} Editing Tutorial", "{0} Photo Collection" },
+                              Descriptions = new[] { "Professional {0} presets for stunning photos.", "Master {0} photography with expert guidance.", "Complete {0} guide with practical tips.", "Learn {0} editing techniques step-by-step.", "High-quality {0} photos for commercial use." },
+                              Subjects = new[] { "Portrait Photography", "Landscape Photography", "Wedding Photography", "Street Photography", "Nature Photography", "Product Photography", "Travel Photography", "Fashion Photography", "Real Estate Photography", "Event Photography" },
+                              PriceRange = new { Min = 12.99m, Max = 89.99m } }
+                    },
+                    ["Self Improvement"] = new object[]
+                    {
+                        new { Names = new[] { "The Complete Guide to {0}", "{0} for Success", "Master {0} in 30 Days", "{0} Transformation", "Ultimate {0} System" },
+                              Descriptions = new[] { "Transform your life with proven {0} methods.", "Achieve success through effective {0} practices.", "Complete {0} system for personal growth.", "Master {0} and unlock your potential.", "Professional {0} strategies for lasting change." },
+                              Subjects = new[] { "Productivity", "Time Management", "Goal Setting", "Habit Building", "Mindfulness", "Stress Management", "Confidence Building", "Communication Skills", "Leadership", "Personal Finance" },
+                              PriceRange = new { Min = 14.99m, Max = 69.99m } }
+                    },
+                    ["Fitness & Health"] = new object[]
+                    {
+                        new { Names = new[] { "{0} Workout Plan", "Complete {0} Guide", "{0} Training Program", "Professional {0} Course", "{0} Health System" },
+                              Descriptions = new[] { "Comprehensive {0} program for optimal results.", "Professional {0} training with meal plans.", "Complete {0} system for lasting transformation.", "Expert {0} guidance for all fitness levels.", "Proven {0} methods for sustainable health." },
+                              Subjects = new[] { "Weight Loss", "Muscle Building", "Yoga", "Running", "CrossFit", "Nutrition", "Meal Planning", "Home Workouts", "Strength Training", "Cardio Training" },
+                              PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                    }
                 };
                 
-                var subjects = new[] { "Web Development", "Digital Marketing", "Graphic Design", "Photography", "Music Production", 
-                                     "Python Programming", "JavaScript", "React", "E-commerce", "Social Media", "SEO", "Content Creation",
-                                     "Personal Finance", "Entrepreneurship", "Productivity", "Mindfulness", "Fitness", "Nutrition",
-                                     "Creative Writing", "Video Editing", "Animation", "UI/UX Design", "Data Science", "Machine Learning",
-                                     "Copywriting", "Email Marketing", "Affiliate Marketing", "Dropshipping", "Real Estate", "Investing" };
-                
                 var products = new List<Product>();
+                var mainCategories = categories.Where(c => !c.ParentCategoryId.HasValue).ToList();
                 
                 for (int i = 0; i < 1600; i++)
                 {
-                    var template = faker.PickRandom(productTemplates);
-                    var subject = faker.PickRandom(subjects);
                     var creator = faker.PickRandom(creators);
                     
-                    // Match category more precisely based on template
-                    var relevantCategories = categories.Where(c => template.CategoryTypes.Contains(c.Name)).ToList();
-                    var category = relevantCategories.Any() ? faker.PickRandom(relevantCategories) : faker.PickRandom(categories);
+                    // Pick a main category that has products defined
+                    var availableCategoryNames = categoryBasedProducts.Keys.ToList();
+                    var selectedCategoryName = faker.PickRandom(availableCategoryNames);
                     
-                    var productName = string.Format(faker.PickRandom(template.Names), subject);
-                    var description = string.Format(faker.PickRandom(template.Descriptions), subject);
-                    var price = Math.Round(faker.Random.Decimal(template.PriceRange.Min, template.PriceRange.Max), 2);
+                    // Find the category in the database
+                    var mainCategory = categories.FirstOrDefault(c => c.Name == selectedCategoryName);
+                    if (mainCategory == null)
+                    {
+                        // Fallback to random category
+                        mainCategory = faker.PickRandom(mainCategories);
+                        selectedCategoryName = mainCategory.Name;
+                    }
+                    
+                    // Get subcategories or use main category
+                    var subcategories = categories.Where(c => c.ParentCategoryId == mainCategory.Id).ToList();
+                    var selectedCategory = subcategories.Any() && faker.Random.Bool(0.6f) 
+                        ? faker.PickRandom(subcategories) 
+                        : mainCategory;
+                    
+                    // Get the template for this category
+                    if (!categoryBasedProducts.ContainsKey(selectedCategoryName))
+                    {
+                        continue; // Skip if no template found
+                    }
+                    
+                    var template = (dynamic)categoryBasedProducts[selectedCategoryName][0];
+                    var subject = faker.PickRandom((string[])template.Subjects);
+                    
+                    var productName = string.Format(faker.PickRandom((string[])template.Names), subject);
+                    var description = string.Format(faker.PickRandom((string[])template.Descriptions), subject);
+                    var price = Math.Round(faker.Random.Decimal((decimal)template.PriceRange.Min, (decimal)template.PriceRange.Max), 2);
                     
                     var baseSlug = productName.ToLowerInvariant()
                         .Replace(" ", "-")
@@ -644,7 +717,7 @@ namespace Raqmiya.Infrastructure.Data
                         Price = price,
                         Currency = "USD",
                         CreatorId = creator.Id,
-                        CategoryId = category.Id,
+                        CategoryId = selectedCategory.Id, // Use the correctly matched category
                         IsPublic = true,
                         Status = "published",
                         PublishedAt = faker.Date.Past(2),
@@ -656,12 +729,14 @@ namespace Raqmiya.Infrastructure.Data
                         ProductTags = new List<ProductTag>()
                     };
                     
-                    // Add 3-5 relevant tags per product based on category
+                    // Add 3-5 relevant tags per product based on category and subject
                     var categoryRelatedTags = tags.Where(t => 
-                        t.Name.ToLower().Contains(category.Name.ToLower().Split(' ')[0]) ||
-                        category.Name.ToLower().Contains(t.Name.ToLower()) ||
-                        (category.ParentCategoryId.HasValue && 
-                         categories.FirstOrDefault(c => c.Id == category.ParentCategoryId)?.Name.ToLower().Contains(t.Name.ToLower()) == true)
+                        t.Name.ToLower().Contains(selectedCategory.Name.ToLower().Split(' ')[0]) ||
+                        t.Name.ToLower().Contains(mainCategory.Name.ToLower().Split(' ')[0]) ||
+                        t.Name.ToLower().Contains(subject.ToLower().Split(' ')[0]) ||
+                        subject.ToLower().Contains(t.Name.ToLower()) ||
+                        selectedCategory.Name.ToLower().Contains(t.Name.ToLower()) ||
+                        mainCategory.Name.ToLower().Contains(t.Name.ToLower())
                     ).ToList();
                     
                     var selectedTags = categoryRelatedTags.Any() 
@@ -919,6 +994,168 @@ namespace Raqmiya.Infrastructure.Data
                 }
 
                 context.Reviews.AddRange(reviews);
+                context.SaveChanges();
+            }
+
+            // --- User Profiles (Personalization) ---
+            if (!context.UserProfiles.Any())
+            {
+                var allUsers = context.Users.ToList();
+                var faker = new Faker("en_US");
+                var userProfiles = new List<UserProfile>();
+
+                foreach (var user in allUsers)
+                {
+                    // Skip admin users
+                    if (user.Role == "Admin") continue;
+
+                    var profile = new UserProfile
+                    {
+                        UserId = user.Id,
+                        Profession = user.Role == "Creator" 
+                            ? faker.PickRandom(new[] { "Graphic Designer", "Web Developer", "Software Engineer", "Artist", "Musician", "Photographer", "Writer", "Video Editor", "UI/UX Designer", "Game Developer" })
+                            : faker.PickRandom(new[] { "Marketing Manager", "Business Owner", "Student", "Freelancer", "Consultant", "Teacher", "Entrepreneur", "Designer", "Developer", "Content Creator" }),
+                        Industry = faker.PickRandom(new[] { "Technology", "Creative Services", "Education", "Healthcare", "Finance", "E-commerce", "Gaming", "Marketing", "Media", "Consulting" }),
+                        ExperienceLevel = faker.PickRandom(new[] { ExperienceLevel.Beginner, ExperienceLevel.Intermediate, ExperienceLevel.Advanced, ExperienceLevel.Expert }),
+                        PreferredPriceRangeMin = faker.Random.Decimal(5, 30),
+                        PreferredPriceRangeMax = faker.Random.Decimal(50, 200),
+                        PreferredStyle = faker.PickRandom(new[] { "Modern", "Minimalist", "Creative", "Professional", "Artistic", "Technical", "Colorful", "Clean" }),
+                        PreferredFormats = $"[\"{faker.PickRandom(new[] { "PDF", "Video", "Audio", "Images", "Code", "Templates" })}\", \"{faker.PickRandom(new[] { "ZIP", "PSD", "AI", "MP4", "MP3", "DOCX" })}\"]",
+                        CreatedAt = user.CreatedAt,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    userProfiles.Add(profile);
+                }
+
+                context.UserProfiles.AddRange(userProfiles);
+                context.SaveChanges();
+            }
+
+            // --- User Interactions (Personalization) ---
+            if (!context.UserInteractions.Any())
+            {
+                var customerIds = context.Users.Where(u => u.Role == "Customer").Select(u => u.Id).ToList();
+                var productIds = context.Products.Select(p => p.Id).ToList();
+                var faker = new Faker("en_US");
+                var interactions = new List<UserInteraction>();
+
+                // Generate realistic user interactions
+                foreach (var customerId in customerIds.Take(100)) // Limit to first 100 customers for performance
+                {
+                    var numberOfInteractions = faker.Random.Number(5, 25);
+                    var userProducts = faker.PickRandom(productIds, numberOfInteractions).ToList();
+
+                    foreach (var productId in userProducts)
+                    {
+                        // Each product gets multiple interaction types
+                        var interactionTypes = new List<InteractionType> { InteractionType.View };
+                        
+                        // 40% chance of wishlist
+                        if (faker.Random.Bool(0.4f))
+                            interactionTypes.Add(InteractionType.Wishlist);
+                        
+                        // 15% chance of purchase
+                        if (faker.Random.Bool(0.15f))
+                            interactionTypes.Add(InteractionType.Purchase);
+                        
+                        // 30% chance of review (only if purchased)
+                        if (interactionTypes.Contains(InteractionType.Purchase) && faker.Random.Bool(0.3f))
+                            interactionTypes.Add(InteractionType.Review);
+
+                        foreach (var interactionType in interactionTypes)
+                        {
+                            var interaction = new UserInteraction
+                            {
+                                UserId = customerId,
+                                ProductId = productId,
+                                Type = interactionType,
+                                Weight = GetInteractionWeight(interactionType),
+                                CreatedAt = faker.Date.Past(90), // Within last 90 days
+                                Metadata = interactionType == InteractionType.View 
+                                    ? $"{{\"duration\": {faker.Random.Number(30, 300)}, \"source\": \"discover\"}}"
+                                    : null
+                            };
+
+                            interactions.Add(interaction);
+                        }
+                    }
+                }
+
+                context.UserInteractions.AddRange(interactions);
+                context.SaveChanges();
+            }
+
+            // --- User Preferences (Auto-calculated from interactions) ---
+            if (!context.UserPreferences.Any())
+            {
+                var usersWithInteractions = context.UserInteractions
+                    .Include(ui => ui.Product)
+                    .ThenInclude(p => p.Category)
+                    .Include(ui => ui.Product)
+                    .ThenInclude(p => p.ProductTags)
+                    .ThenInclude(pt => pt.Tag)
+                    .GroupBy(ui => ui.UserId)
+                    .ToList();
+
+                var preferences = new List<UserPreference>();
+
+                foreach (var userGroup in usersWithInteractions.Take(50)) // Limit for performance
+                {
+                    var userId = userGroup.Key;
+                    var userInteractions = userGroup.ToList();
+
+                    // Calculate category preferences
+                    var categoryPreferences = userInteractions
+                        .Where(i => i.Product.Category != null)
+                        .GroupBy(i => i.Product.CategoryId)
+                        .Select(g => new
+                        {
+                            CategoryId = g.Key,
+                            Score = g.Sum(i => i.Weight) / userInteractions.Sum(i => i.Weight)
+                        })
+                        .Where(cp => cp.Score > 0.1m) // Only significant preferences
+                        .ToList();
+
+                    foreach (var categoryPref in categoryPreferences)
+                    {
+                        preferences.Add(new UserPreference
+                        {
+                            UserId = userId,
+                            CategoryId = categoryPref.CategoryId,
+                            PreferenceScore = Math.Min(1.0m, categoryPref.Score),
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        });
+                    }
+
+                    // Calculate tag preferences
+                    var tagPreferences = userInteractions
+                        .SelectMany(i => i.Product.ProductTags.Select(pt => new { TagId = pt.TagId, Weight = i.Weight }))
+                        .GroupBy(t => t.TagId)
+                        .Select(g => new
+                        {
+                            TagId = g.Key,
+                            Score = g.Sum(t => t.Weight) / userInteractions.Sum(i => i.Weight)
+                        })
+                        .Where(tp => tp.Score > 0.1m) // Only significant preferences
+                        .Take(5) // Top 5 tag preferences per user
+                        .ToList();
+
+                    foreach (var tagPref in tagPreferences)
+                    {
+                        preferences.Add(new UserPreference
+                        {
+                            UserId = userId,
+                            TagId = tagPref.TagId,
+                            PreferenceScore = Math.Min(1.0m, tagPref.Score),
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                context.UserPreferences.AddRange(preferences);
                 context.SaveChanges();
             }
 

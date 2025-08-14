@@ -761,26 +761,90 @@ namespace API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetDiscoverFeed([FromQuery] int countPerSection = 12)
         {
-            var userId = GetCurrentUserIdOrNull();
-
-            var mostWishedTask = _productService.GetMostWishedProductsAsync(countPerSection);
-            var recommendedTask = _productService.GetRecommendedProductsAsync(userId, countPerSection);
-            var bestSellersTask = _productService.GetBestSellerProductsAsync(countPerSection);
-            var topRatedTask = _productService.GetTopRatedProductsAsync(countPerSection);
-            var newArrivalsTask = _productService.GetNewArrivalsAsync(countPerSection);
-            var trendingTask = _productService.GetTrendingProductsAsync(countPerSection);
-
-            await Task.WhenAll(mostWishedTask, recommendedTask, bestSellersTask, topRatedTask, newArrivalsTask, trendingTask);
-
-            return Ok(new
+            try
             {
-                mostWished = mostWishedTask.Result,
-                recommended = recommendedTask.Result,
-                bestSellers = bestSellersTask.Result,
-                topRated = topRatedTask.Result,
-                newArrivals = newArrivalsTask.Result,
-                trending = trendingTask.Result
-            });
+                var userId = GetCurrentUserIdOrNull();
+                _logger.LogInformation("Getting discover feed for user {UserId}, count per section: {Count}", userId, countPerSection);
+
+                // Call each method individually with error handling
+                var mostWished = await GetSectionSafely(() => _productService.GetMostWishedProductsAsync(countPerSection), "MostWished");
+                var recommended = await GetSectionSafely(() => _productService.GetRecommendedProductsAsync(userId, countPerSection), "Recommended");
+                var bestSellers = await GetSectionSafely(() => _productService.GetBestSellerProductsAsync(countPerSection), "BestSellers");
+                var topRated = await GetSectionSafely(() => _productService.GetTopRatedProductsAsync(countPerSection), "TopRated");
+                var newArrivals = await GetSectionSafely(() => _productService.GetNewArrivalsAsync(countPerSection), "NewArrivals");
+                var trending = await GetSectionSafely(() => _productService.GetTrendingProductsAsync(countPerSection), "Trending");
+
+                _logger.LogInformation("Discover feed results - MostWished: {MW}, Recommended: {R}, BestSellers: {BS}, TopRated: {TR}, NewArrivals: {NA}, Trending: {T}", 
+                    mostWished.Count(), recommended.Count(), bestSellers.Count(), topRated.Count(), newArrivals.Count(), trending.Count());
+
+                return Ok(new
+                {
+                    mostWished = mostWished,
+                    recommended = recommended,
+                    bestSellers = bestSellers,
+                    topRated = topRated,
+                    newArrivals = newArrivals,
+                    trending = trending
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting discover feed");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        private async Task<IEnumerable<ProductListItemDTO>> GetSectionSafely(Func<Task<IEnumerable<ProductListItemDTO>>> sectionCall, string sectionName)
+        {
+            try
+            {
+                var result = await sectionCall();
+                _logger.LogInformation("{SectionName} returned {Count} products", sectionName, result.Count());
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting {SectionName} products", sectionName);
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        /// <summary>
+        /// Debug endpoint to test individual methods
+        /// </summary>
+        [HttpGet("debug-sections")]
+        [AllowAnonymous]
+        public async Task<IActionResult> DebugSections([FromQuery] int count = 12)
+        {
+            try
+            {
+                var userId = GetCurrentUserIdOrNull();
+                
+                // Test each method individually
+                var bestSellers = await _productService.GetBestSellerProductsAsync(count);
+                var topRated = await _productService.GetTopRatedProductsAsync(count);
+                var newArrivals = await _productService.GetNewArrivalsAsync(count);
+                var trending = await _productService.GetTrendingProductsAsync(count);
+                var recommended = await _productService.GetRecommendedProductsAsync(userId, count);
+                
+                return Ok(new
+                {
+                    bestSellersCount = bestSellers.Count(),
+                    topRatedCount = topRated.Count(),
+                    newArrivalsCount = newArrivals.Count(),
+                    trendingCount = trending.Count(),
+                    recommendedCount = recommended.Count(),
+                    bestSellers = bestSellers.Take(2),
+                    topRated = topRated.Take(2),
+                    newArrivals = newArrivals.Take(2),
+                    trending = trending.Take(2),
+                    recommended = recommended.Take(2)
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { error = ex.Message, stackTrace = ex.StackTrace });
+            }
         }
 
         /// <summary>
