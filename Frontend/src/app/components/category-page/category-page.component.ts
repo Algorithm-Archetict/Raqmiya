@@ -251,16 +251,10 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
     try {
       let result;
       
-      console.log('loadCategoryProducts - Starting with filters:', this.filters);
-      console.log('loadCategoryProducts - Current page:', this.currentPage);
-      console.log('loadCategoryProducts - Page size:', this.pageSize);
-      
       // Apply special filters first
       if (this.filters.showOnly !== 'all') {
-        console.log('loadCategoryProducts - Using special filter:', this.filters.showOnly);
         result = await this.loadSpecialFilteredProducts();
       } else {
-        console.log('loadCategoryProducts - Using regular category products');
         // Use multiple categories endpoint for hierarchical search
         result = await this.productService.getProductsByMultipleCategories(
           this.allCategoryIds, 
@@ -268,8 +262,6 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
           this.pageSize
         ).toPromise();
       }
-      
-      console.log('loadCategoryProducts - Result received:', result);
       
       if (result) {
         this.updateProductsFromResult(result);
@@ -361,11 +353,6 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
   private updateProductsFromResult(result: any) {
     const products = result.items || [];
     
-    console.log('updateProductsFromResult - Raw result:', result);
-    console.log('updateProductsFromResult - Products count:', products.length);
-    console.log('updateProductsFromResult - Total count:', result.totalCount);
-    console.log('updateProductsFromResult - Total pages:', result.totalPages);
-    
     this.allProducts = products.map((product: ProductListItemDTO) => ({
       id: product.id,
       title: product.name || 'Untitled Product',
@@ -387,24 +374,14 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
       wishlistCount: 0 // Not available in ProductListItemDTO
     }));
 
-    this.totalProducts = result.totalCount || this.allProducts.length;
+    // Set pagination data from backend response
+    this.totalProducts = result.totalCount || 0;
     this.totalPages = result.totalPages || 1;
     
-    // TEMPORARY: Force pagination to show for testing
-    if (this.totalProducts === 0 && this.allProducts.length > 0) {
-      this.totalProducts = this.allProducts.length;
-      this.totalPages = Math.ceil(this.totalProducts / this.pageSize);
-      console.log('updateProductsFromResult - TEMPORARY: Forced pagination values:', {
-        totalProducts: this.totalProducts,
-        totalPages: this.totalPages
-      });
+    // Ensure we have at least 1 page
+    if (this.totalPages < 1) {
+      this.totalPages = 1;
     }
-    
-    console.log('updateProductsFromResult - After mapping:');
-    console.log('  - allProducts length:', this.allProducts.length);
-    console.log('  - totalProducts:', this.totalProducts);
-    console.log('  - totalPages:', this.totalPages);
-    console.log('  - pageSize:', this.pageSize);
     
     this.applyFilters();
     this.loadWishlistStatus();
@@ -717,8 +694,6 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
     const totalPages = this.totalPages;
     const currentPage = this.currentPage;
     
-    console.log('getVisiblePages - Input:', { totalPages, currentPage, pageSize: this.pageSize });
-    
     if (totalPages <= 7) {
       // Show all pages if total is 7 or less
       for (let i = 1; i <= totalPages; i++) {
@@ -752,7 +727,6 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
       }
     }
     
-    console.log('getVisiblePages - Output:', pages);
     return pages;
   }
 

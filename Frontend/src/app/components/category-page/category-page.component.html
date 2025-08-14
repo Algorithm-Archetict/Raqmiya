@@ -339,18 +339,6 @@
                 Total: {{ totalProducts }} products
               </span>
             </div>
-            
-            <!-- Debug Info (remove in production) -->
-            <div class="debug-info" style="margin-top: 1rem; padding: 1rem; background: #f0f4ff; border-radius: 8px; font-size: 0.9rem; color: #374151;">
-              <strong>Debug Info:</strong><br>
-              Current Page: {{ currentPage }}<br>
-              Page Size: {{ pageSize }}<br>
-              Total Products: {{ totalProducts }}<br>
-              Total Pages: {{ totalPages }}<br>
-              Filtered Products Count: {{ getFilteredProductsCount() }}<br>
-              Show Only Filter: {{ filters.showOnly }}<br>
-              Pagination Should Show: {{ totalPages > 1 || totalProducts > pageSize }}
-            </div>
           </div>
         </main>
       </div>
