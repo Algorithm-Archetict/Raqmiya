@@ -162,6 +162,27 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
         }
+
+        public async Task<int> GetProductsCountByMultipleCategoryIdsAsync(List<int> categoryIds)
+        {
+            return await _context.Products
+                .Where(p => categoryIds.Contains(p.CategoryId))
+                .CountAsync();
+        }
+
+        public async Task<int> GetProductsCountByTagIdAsync(int tagId)
+        {
+            return await _context.Products
+                .Where(p => p.ProductTags.Any(pt => pt.TagId == tagId))
+                .CountAsync();
+        }
+
+        public async Task<int> GetProductsCountBySearchAsync(string searchTerm)
+        {
+            return await _context.Products
+                .Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm))
+                .CountAsync();
+        }
         public async Task<List<Product>> GetProductsByTagIdAsync(int tagId, int? pageNumber = 1, int? pageSize = 10)
         {
             var query = _context.Products

@@ -549,46 +549,61 @@ namespace Core.Services
 
         public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByMultipleCategoriesAsync(List<int> categoryIds, int pageNumber, int pageSize)
         {
+            // Get the total count first (without pagination)
+            var totalCount = await _productRepository.GetProductsCountByMultipleCategoryIdsAsync(categoryIds);
+            
+            // Get the paginated products
             var products = await _productRepository.GetProductsByMultipleCategoryIdsAsync(categoryIds, pageNumber, pageSize);
-            var totalProducts = products.Count(); // For now, use returned count; for large sets, use a count query
-            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            
             return new PagedResultDTO<ProductListItemDTO>
             {
                 Items = products.Select(MapToProductListItemDTO).ToList(),
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalPages = totalPages,
-                TotalCount = totalProducts
+                TotalCount = totalCount
             };
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByTagAsync(int tagId, int pageNumber, int pageSize)
         {
+            // Get the total count first (without pagination)
+            var totalCount = await _productRepository.GetProductsCountByTagIdAsync(tagId);
+            
+            // Get the paginated products
             var products = await _productRepository.GetProductsByTagIdAsync(tagId, pageNumber, pageSize);
-            var totalProducts = products.Count();
-            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            
             return new PagedResultDTO<ProductListItemDTO>
             {
                 Items = products.Select(MapToProductListItemDTO).ToList(),
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalPages = totalPages,
-                TotalCount = totalProducts
+                TotalCount = totalCount
             };
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> SearchProductsAsync(string search, int pageNumber, int pageSize)
         {
+            // Get the total count first (without pagination)
+            var totalCount = await _productRepository.GetProductsCountBySearchAsync(search);
+            
+            // Get the paginated products
             var products = await _productRepository.SearchProductsAsync(search, pageNumber, pageSize);
-            var totalProducts = products.Count();
-            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            
             return new PagedResultDTO<ProductListItemDTO>
             {
                 Items = products.Select(MapToProductListItemDTO).ToList(),
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalPages = totalPages,
-                TotalCount = totalProducts
+                TotalCount = totalCount
             };
         }
 
