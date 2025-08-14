@@ -38,8 +38,8 @@ namespace Core.Services
 
                 if (!userInteractions.Any())
                 {
-                    _logger.LogInformation("No user interactions found for user {UserId}, returning generic recommendations", userId);
-                    return await GetGenericRecommendationsAsync(count);
+                    _logger.LogInformation("No user interactions found for user {UserId}, using profile-based recommendations with user diversity", userId);
+                    return await GetProfileBasedRecommendationsAsync(userId, userProfile, count);
                 }
 
                 // Hybrid recommendation approach
@@ -110,32 +110,92 @@ namespace Core.Services
         {
             try
             {
-                // For anonymous users or when personalization fails
-                var products = await _context.Products
+                _logger.LogInformation("Generating generic recommendations for anonymous user");
+                
+                // Create a more diverse mix of products for anonymous users
+                var recommendations = new List<ProductListItemDTO>();
+                
+                // 1. Top rated products (with reviews) - 40%
+                var topRatedCount = Math.Max(1, (int)(count * 0.4));
+                var topRated = await _context.Products
                     .Include(p => p.Creator)
                     .Include(p => p.Category)
                     .Include(p => p.Reviews)
-                    .Include(p => p.WishlistItems)
                     .Include(p => p.OrderItems)
-                    .Where(p => p.IsPublic)
-                    .Where(p => p.Reviews.Any()) // Has reviews
-                    .Select(p => new
-                    {
-                        Product = p,
-                        PopularityScore = (decimal)(p.Reviews.Average(r => r.Rating) * 0.3) +
-                                        (p.WishlistItems.Count * 0.4m) +
-                                        (p.OrderItems.Count * 0.3m)
-                    })
-                    .OrderByDescending(x => x.PopularityScore)
-                    .Take(count)
+                    .Include(p => p.WishlistItems)
+                    .Where(p => p.IsPublic && p.Reviews.Any())
+                    .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
+                    .ThenByDescending(p => p.Reviews.Count())
+                    .Take(topRatedCount)
                     .ToListAsync();
-
-                return products.Select(x => MapToProductListItemDTO(x.Product));
+                
+                recommendations.AddRange(topRated.Select(MapToProductListItemDTO));
+                
+                // 2. Best sellers - 30%
+                var bestSellersCount = Math.Max(1, (int)(count * 0.3));
+                var bestSellers = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.WishlistItems)
+                    .Where(p => p.IsPublic && p.OrderItems.Any())
+                    .Where(p => !recommendations.Any(r => r.Id == p.Id)) // Avoid duplicates
+                    .OrderByDescending(p => p.OrderItems.Count())
+                    .Take(bestSellersCount)
+                    .ToListAsync();
+                
+                recommendations.AddRange(bestSellers.Select(MapToProductListItemDTO));
+                
+                // 3. Recent popular products - 30%
+                var remainingCount = count - recommendations.Count;
+                if (remainingCount > 0)
+                {
+                    var recentPopular = await _context.Products
+                        .Include(p => p.Creator)
+                        .Include(p => p.Category)
+                        .Include(p => p.Reviews)
+                        .Include(p => p.OrderItems)
+                        .Include(p => p.WishlistItems)
+                        .Where(p => p.IsPublic)
+                        .Where(p => !recommendations.Any(r => r.Id == p.Id)) // Avoid duplicates
+                        .OrderByDescending(p => p.PublishedAt) // Most recent
+                        .ThenByDescending(p => p.WishlistItems.Count()) // Then by popularity
+                        .Take(remainingCount)
+                        .ToListAsync();
+                    
+                    recommendations.AddRange(recentPopular.Select(MapToProductListItemDTO));
+                }
+                
+                _logger.LogInformation("Generated {Count} generic recommendations: {TopRated} top-rated, {BestSellers} best-sellers, {Recent} recent", 
+                    recommendations.Count, topRated.Count, bestSellers.Count, Math.Max(0, remainingCount));
+                
+                return recommendations.Take(count);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating generic recommendations");
-                return new List<ProductListItemDTO>();
+                
+                // Fallback: just get the most recent products
+                try
+                {
+                    var fallback = await _context.Products
+                        .Include(p => p.Creator)
+                        .Include(p => p.Category)
+                        .Include(p => p.Reviews)
+                        .Include(p => p.OrderItems)
+                        .Include(p => p.WishlistItems)
+                        .Where(p => p.IsPublic)
+                        .OrderByDescending(p => p.PublishedAt)
+                        .Take(count)
+                        .ToListAsync();
+                    
+                    return fallback.Select(MapToProductListItemDTO);
+                }
+                catch
+                {
+                    return new List<ProductListItemDTO>();
+                }
             }
         }
 
@@ -384,6 +444,163 @@ namespace Core.Services
         }
 
         #region Private Helper Methods
+
+        /// <summary>
+        /// Generate recommendations based on user profile when no interaction history exists
+        /// </summary>
+        private async Task<IEnumerable<ProductListItemDTO>> GetProfileBasedRecommendationsAsync(int userId, UserProfile userProfile, int count = 12)
+        {
+            try
+            {
+                _logger.LogInformation("Generating profile-based recommendations for user {UserId}", userId);
+                
+                // Create personalized query based on user profile
+                var query = _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.WishlistItems)
+                    .Where(p => p.IsPublic)
+                    .Where(p => !_context.OrderItems.Any(oi => oi.ProductId == p.Id && oi.Order.BuyerId == userId)) // Exclude purchased
+                    .AsQueryable();
+
+                var recommendations = new List<ProductListItemDTO>();
+
+                // Use user ID for consistent but personalized randomization
+                var random = new Random(userId * 1337);
+                
+                // 1. User's preferred categories (if available)
+                if (!string.IsNullOrEmpty(userProfile.Industry) || !string.IsNullOrEmpty(userProfile.Profession))
+                {
+                    var industryKeywords = GetIndustryKeywords(userProfile.Industry, userProfile.Profession);
+                    var allCategoryProducts = await query
+                        .Where(p => industryKeywords.Any(keyword => 
+                            p.Category.Name.Contains(keyword) || 
+                            p.Name.Contains(keyword) ||
+                            p.Description.Contains(keyword)))
+                        .OrderByDescending(p => p.Reviews.Any() ? p.Reviews.Average(r => r.Rating) : 0)
+                        .Take(Math.Max(3, count)) // Get more candidates
+                        .ToListAsync();
+                    
+                    // Personalize the selection based on user ID
+                    var categoryProducts = allCategoryProducts
+                        .OrderBy(p => random.Next())
+                        .Take(Math.Max(1, count / 3))
+                        .ToList();
+                        
+                    recommendations.AddRange(categoryProducts.Select(MapToProductListItemDTO));
+                    _logger.LogInformation("Added {Count} personalized industry-specific products for user {UserId} (from {Total} candidates)", categoryProducts.Count, userId, allCategoryProducts.Count);
+                }
+
+                // 2. Price range preferences
+                if (userProfile.PreferredPriceRangeMin.HasValue && userProfile.PreferredPriceRangeMax.HasValue)
+                {
+                    var priceProducts = await query
+                        .Where(p => p.Price >= userProfile.PreferredPriceRangeMin && p.Price <= userProfile.PreferredPriceRangeMax)
+                        .Where(p => !recommendations.Any(r => r.Id == p.Id)) // Avoid duplicates
+                        .OrderByDescending(p => p.OrderItems.Count)
+                        .Take(Math.Max(1, count / 3))
+                        .ToListAsync();
+                        
+                    recommendations.AddRange(priceProducts.Select(MapToProductListItemDTO));
+                    _logger.LogInformation("Added {Count} price-appropriate products for user {UserId}", priceProducts.Count, userId);
+                }
+
+                // 3. Experience level appropriate content
+                if (userProfile.ExperienceLevel.HasValue)
+                {
+                    var experienceKeywords = GetExperienceKeywords(userProfile.ExperienceLevel.Value);
+                    var experienceProducts = await query
+                        .Where(p => experienceKeywords.Any(keyword => 
+                            p.Name.Contains(keyword) || 
+                            p.Description.Contains(keyword)))
+                        .Where(p => !recommendations.Any(r => r.Id == p.Id)) // Avoid duplicates
+                        .OrderByDescending(p => p.PublishedAt)
+                        .Take(Math.Max(1, count / 3))
+                        .ToListAsync();
+                        
+                    recommendations.AddRange(experienceProducts.Select(MapToProductListItemDTO));
+                    _logger.LogInformation("Added {Count} experience-appropriate products for user {UserId}", experienceProducts.Count, userId);
+                }
+
+                // 4. Fill remaining slots with diverse popular products (personalized by user ID)
+                var remainingCount = count - recommendations.Count;
+                if (remainingCount > 0)
+                {
+                    var allPopularProducts = await query
+                        .Where(p => !recommendations.Any(r => r.Id == p.Id)) // Avoid duplicates
+                        .OrderByDescending(p => ((decimal)p.Reviews.Average(r => r.Rating) * 0.4m + 
+                                               p.OrderItems.Count * 0.3m + 
+                                               p.WishlistItems.Count * 0.3m))
+                        .Take(remainingCount * 3) // Get more products to randomize from
+                        .ToListAsync();
+                    
+                    // Randomize the selection based on user ID for personalization
+                    var personalizedProducts = allPopularProducts
+                        .OrderBy(p => random.Next()) // Use the existing random instance
+                        .Take(remainingCount)
+                        .ToList();
+                        
+                    recommendations.AddRange(personalizedProducts.Select(MapToProductListItemDTO));
+                    _logger.LogInformation("Added {Count} personalized popular products for user {UserId} (from {Total} candidates)", personalizedProducts.Count, userId, allPopularProducts.Count);
+                }
+
+                _logger.LogInformation("Generated {Count} profile-based recommendations for user {UserId}", recommendations.Count, userId);
+                return recommendations.Take(count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating profile-based recommendations for user {UserId}", userId);
+                return await GetGenericRecommendationsAsync(count);
+            }
+        }
+
+        private List<string> GetIndustryKeywords(string industry, string profession)
+        {
+            var keywords = new List<string>();
+            
+            if (!string.IsNullOrEmpty(industry))
+            {
+                keywords.AddRange(industry.ToLower() switch
+                {
+                    "technology" => new[] { "Tech", "Software", "Development", "Programming", "Code", "Digital", "Web", "App" },
+                    "design" => new[] { "Design", "Creative", "Art", "Visual", "Graphics", "UI", "UX", "Branding" },
+                    "education" => new[] { "Education", "Learning", "Course", "Tutorial", "Training", "Academic", "Study" },
+                    "business" => new[] { "Business", "Marketing", "Sales", "Strategy", "Management", "Finance", "Analytics" },
+                    "health" => new[] { "Health", "Fitness", "Wellness", "Medical", "Nutrition", "Exercise", "Yoga" },
+                    "creative" => new[] { "Creative", "Art", "Music", "Photography", "Video", "Audio", "Animation" },
+                    _ => new[] { industry }
+                });
+            }
+            
+            if (!string.IsNullOrEmpty(profession))
+            {
+                keywords.AddRange(profession.ToLower() switch
+                {
+                    "developer" => new[] { "Development", "Programming", "Code", "Software", "Web", "App", "React", "Node" },
+                    "designer" => new[] { "Design", "Creative", "UI", "UX", "Graphics", "Visual", "Branding", "Logo" },
+                    "marketer" => new[] { "Marketing", "Social", "Campaign", "Strategy", "Analytics", "SEO", "Content" },
+                    "photographer" => new[] { "Photography", "Photo", "Camera", "Portrait", "Event", "Wedding", "Studio" },
+                    "teacher" => new[] { "Education", "Teaching", "Course", "Tutorial", "Learning", "Curriculum", "Lesson" },
+                    _ => new[] { profession }
+                });
+            }
+            
+            return keywords.Distinct().ToList();
+        }
+
+        private List<string> GetExperienceKeywords(ExperienceLevel experienceLevel)
+        {
+            return experienceLevel switch
+            {
+                ExperienceLevel.Beginner => new[] { "Beginner", "Basic", "Introduction", "Fundamentals", "Getting Started", "Basics", "Learn", "Tutorial" }.ToList(),
+                ExperienceLevel.Intermediate => new[] { "Intermediate", "Advanced", "Professional", "Complete", "Mastery", "Course", "Guide", "System" }.ToList(),
+                ExperienceLevel.Advanced => new[] { "Advanced", "Professional", "Complete", "Mastery", "Course", "Guide", "System" }.ToList(),
+                ExperienceLevel.Expert => new[] { "Expert", "Advanced", "Professional", "Masterclass", "Premium", "Pro", "Elite", "Specialist" }.ToList(),
+                _ => new List<string>()
+            };
+        }
 
         private async Task<UserProfile> GetOrCreateUserProfileAsync(int userId)
         {
