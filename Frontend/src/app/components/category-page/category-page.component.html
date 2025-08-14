@@ -1,13 +1,13 @@
 <div class="category-page">
   <!-- Navbar -->
-  <app-navbar></app-navbar>
+  <!-- <app-navbar></app-navbar> -->
 
   <!-- Category Navigation -->
-  <div class="category-nav-container">
+  <!-- <div class="category-nav-container">
     <app-hierarchical-category-nav 
       (categorySelected)="onCategorySelected($event)">
     </app-hierarchical-category-nav>
-  </div>
+  </div> -->
 
   <!-- Main Content -->
   <div class="main-content">
@@ -26,7 +26,7 @@
           <div class="search-box">
             <input 
               type="text" 
-              [(ngModel)]="searchQuery" 
+              [(ngModel)]="filters.searchQuery" 
               (input)="onSearch()"
               placeholder="Search products..."
               class="search-input">
@@ -34,29 +34,60 @@
           </div>
           
           <div class="sort-dropdown">
-            <select [(ngModel)]="sortBy" (change)="onSortChange()" class="sort-select">
+            <select [(ngModel)]="filters.sortBy" (change)="onSortChange()" class="sort-select">
               <option *ngFor="let option of sortOptions" [value]="option.value">
-                {{ option.label }}
+                {{ option.icon }} {{ option.label }}
               </option>
             </select>
           </div>
         </div>
       </div>
 
-      <!-- Filters Section -->
-      <div class="filters-section">
-        <div class="filters-row">
+      <!-- Advanced Filters Section -->
+      <div class="advanced-filters-section">
+        <div class="filters-header">
+          <h3>Advanced Filters</h3>
+          <button 
+            *ngIf="hasActiveFilters()" 
+            (click)="clearAllFilters()" 
+            class="clear-filters-btn">
+            <i class="fas fa-times"></i>
+            Clear All Filters
+          </button>
+        </div>
+
+        <div class="filters-grid">
+          <!-- Show Only Filter -->
+          <div class="filter-group">
+            <label class="filter-label">Show Only</label>
+            <div class="show-only-options">
+              <button 
+                *ngFor="let option of showOnlyOptions" 
+                (click)="onShowOnlyChange()"
+                [class.active]="filters.showOnly === option.value"
+                class="show-only-btn">
+                <span class="option-icon">{{ option.icon }}</span>
+                <span class="option-label">{{ option.label }}</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Price Range -->
           <div class="filter-group">
-            <label class="filter-label">Max Price: ${{ priceRange }}</label>
+            <label class="filter-label">Max Price: ${{ filters.priceRange }}</label>
             <input 
               type="range" 
-              [(ngModel)]="priceRange" 
+              [(ngModel)]="filters.priceRange" 
               (input)="onPriceRangeChange()"
               min="0" 
               max="1000" 
               step="10"
               class="price-slider">
+            <div class="price-labels">
+              <span>$0</span>
+              <span>$500</span>
+              <span>$1000</span>
+            </div>
           </div>
 
           <!-- Rating Filter -->
@@ -66,7 +97,7 @@
               <button 
                 *ngFor="let rating of [0, 1, 2, 3, 4, 5]"
                 (click)="filterByRating(rating)"
-                [class.active]="selectedRating === rating"
+                [class.active]="filters.selectedRating === rating"
                 class="rating-btn">
                 <span *ngIf="rating === 0">All</span>
                 <span *ngIf="rating > 0">{{ rating }}+ ⭐</span>
@@ -81,7 +112,7 @@
               <button 
                 *ngFor="let tag of availableTags"
                 (click)="toggleTag(tag)"
-                [class.active]="selectedTags.includes(tag)"
+                [class.active]="filters.selectedTags.includes(tag)"
                 class="tag-btn">
                 {{ tag }}
               </button>
@@ -92,9 +123,38 @@
 
       <!-- Results Info -->
       <div class="results-info">
-        <p class="results-count">
-          Showing {{ filteredProducts.length }} of {{ totalProducts }} products
-        </p>
+        <div class="results-stats">
+          <p class="results-count">
+            Showing {{ getFilteredProductsCount() }} of {{ totalProducts }} products
+          </p>
+          <p class="results-page">
+            Page {{ currentPage }} of {{ totalPages }}
+          </p>
+        </div>
+        
+        <div class="active-filters" *ngIf="hasActiveFilters()">
+          <span class="active-filters-label">Active Filters:</span>
+          <span *ngIf="filters.searchQuery" class="filter-chip">
+            Search: "{{ filters.searchQuery }}"
+            <button (click)="filters.searchQuery = ''; onSearch()" class="remove-filter">×</button>
+          </span>
+          <span *ngIf="filters.selectedRating > 0" class="filter-chip">
+            Rating: {{ filters.selectedRating }}+ ⭐
+            <button (click)="filterByRating(0)" class="remove-filter">×</button>
+          </span>
+          <span *ngIf="filters.priceRange < 1000" class="filter-chip">
+            Max Price: ${{ filters.priceRange }}
+            <button (click)="filters.priceRange = 1000; onPriceRangeChange()" class="remove-filter">×</button>
+          </span>
+          <span *ngFor="let tag of filters.selectedTags" class="filter-chip">
+            Tag: {{ tag }}
+            <button (click)="toggleTag(tag)" class="remove-filter">×</button>
+          </span>
+          <span *ngIf="filters.showOnly !== 'all'" class="filter-chip">
+            Show: {{ getShowOnlyLabel(filters.showOnly) }}
+            <button (click)="filters.showOnly = 'all'; onShowOnlyChange()" class="remove-filter">×</button>
+          </span>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -138,6 +198,18 @@
                 <i class="fas fa-check-circle"></i>
                 <span>Owned</span>
               </div>
+
+              <!-- Product Stats Overlay -->
+              <div class="product-stats-overlay">
+                <div class="stat-item" *ngIf="product.salesCount > 0">
+                  <i class="fas fa-shopping-cart"></i>
+                  <span>{{ product.salesCount }}</span>
+                </div>
+                <div class="stat-item" *ngIf="product.rating > 0">
+                  <i class="fas fa-star"></i>
+                  <span>{{ (product.rating || 0).toFixed(1) }}</span>
+                </div>
+              </div>
             </div>
 
             <!-- Product Info -->
@@ -147,13 +219,13 @@
               
               <div class="product-rating">
                 <div class="stars">
-                  <span class="star" [class.filled]="product.rating >= 1">⭐</span>
-                  <span class="star" [class.filled]="product.rating >= 2">⭐</span>
-                  <span class="star" [class.filled]="product.rating >= 3">⭐</span>
-                  <span class="star" [class.filled]="product.rating >= 4">⭐</span>
-                  <span class="star" [class.filled]="product.rating >= 5">⭐</span>
+                  <span class="star" [class.filled]="(product.rating || 0) >= 1">⭐</span>
+                  <span class="star" [class.filled]="(product.rating || 0) >= 2">⭐</span>
+                  <span class="star" [class.filled]="(product.rating || 0) >= 3">⭐</span>
+                  <span class="star" [class.filled]="(product.rating || 0) >= 4">⭐</span>
+                  <span class="star" [class.filled]="(product.rating || 0) >= 5">⭐</span>
                 </div>
-                <span class="rating-text">{{ product.rating.toFixed(1) }}</span>
+                <span class="rating-text">{{ (product.rating || 0).toFixed(1) }}</span>
               </div>
 
               <div class="product-price">
@@ -189,32 +261,72 @@
           </div>
           <h3>No products found</h3>
           <p>Try adjusting your filters or search terms</p>
-          <button class="action-btn" (click)="searchQuery = ''; selectedTags = []; selectedRating = 0; applyFilters()">
+          <button class="action-btn" (click)="clearAllFilters()">
             Clear All Filters
           </button>
         </div>
       </div>
 
-      <!-- Pagination -->
+      <!-- Enhanced Pagination -->
       <div *ngIf="totalPages > 1" class="pagination-container">
         <div class="pagination">
+          <!-- First Page -->
           <button 
             class="page-btn"
             [disabled]="currentPage <= 1"
-            (click)="onPageChange(currentPage - 1)">
-            <i class="fas fa-chevron-left"></i>
+            (click)="onPageChange(1)"
+            title="First Page">
+            <i class="fas fa-angle-double-left"></i>
           </button>
           
-          <span class="page-info">
-            Page {{ currentPage }} of {{ totalPages }}
-          </span>
+          <!-- Previous Page -->
+          <button 
+            class="page-btn"
+            [disabled]="currentPage <= 1"
+            (click)="onPageChange(currentPage - 1)"
+            title="Previous Page">
+            <i class="fas fa-angle-left"></i>
+          </button>
           
+          <!-- Page Numbers -->
+          <div class="page-numbers">
+            <button 
+              *ngFor="let page of getVisiblePages()"
+              class="page-btn"
+              [class.active]="page === currentPage"
+              [class.ellipsis]="page === '...'"
+              [disabled]="page === '...'"
+              (click)="onPageClick(page)">
+              {{ page }}
+            </button>
+          </div>
+          
+          <!-- Next Page -->
           <button 
             class="page-btn"
             [disabled]="currentPage >= totalPages"
-            (click)="onPageChange(currentPage + 1)">
-            <i class="fas fa-chevron-right"></i>
+            (click)="onPageChange(currentPage + 1)"
+            title="Next Page">
+            <i class="fas fa-angle-right"></i>
           </button>
+          
+          <!-- Last Page -->
+          <button 
+            class="page-btn"
+            [disabled]="currentPage >= totalPages"
+            (click)="onPageChange(totalPages)"
+            title="Last Page">
+            <i class="fas fa-angle-double-right"></i>
+          </button>
+        </div>
+        
+        <div class="pagination-info">
+          <span class="page-info">
+            Page {{ currentPage }} of {{ totalPages }}
+          </span>
+          <span class="total-info">
+            Total: {{ totalProducts }} products
+          </span>
         </div>
       </div>
     </div>
