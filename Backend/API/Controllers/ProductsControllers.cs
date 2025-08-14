@@ -848,6 +848,40 @@ namespace API.Controllers
         }
 
         /// <summary>
+        /// Test endpoint to demonstrate personalization with different user IDs
+        /// </summary>
+        [HttpGet("analytics/test-personalization")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestPersonalization([FromQuery] int? testUserId = null, [FromQuery] int count = 5)
+        {
+            try
+            {
+                var userId = testUserId ?? GetCurrentUserIdOrNull();
+                _logger.LogInformation("Testing personalization for user ID: {UserId}", userId);
+                
+                var recommended = await _productService.GetRecommendedProductsAsync(userId, count);
+                
+                return Ok(new
+                {
+                    testUserId = userId,
+                    isAuthenticated = userId.HasValue,
+                    recommendedCount = recommended.Count(),
+                    recommended = recommended.Select(p => new { 
+                        id = p.Id, 
+                        name = p.Name, 
+                        category = p.Category?.Name,
+                        price = p.Price,
+                        rating = p.AverageRating
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { error = ex.Message, stackTrace = ex.StackTrace });
+            }
+        }
+
+        /// <summary>
         /// Get all available tags.
         /// </summary>
         [HttpGet("tags")]
