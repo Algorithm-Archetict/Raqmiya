@@ -251,10 +251,16 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
     try {
       let result;
       
+      console.log('loadCategoryProducts - Starting with filters:', this.filters);
+      console.log('loadCategoryProducts - Current page:', this.currentPage);
+      console.log('loadCategoryProducts - Page size:', this.pageSize);
+      
       // Apply special filters first
       if (this.filters.showOnly !== 'all') {
+        console.log('loadCategoryProducts - Using special filter:', this.filters.showOnly);
         result = await this.loadSpecialFilteredProducts();
       } else {
+        console.log('loadCategoryProducts - Using regular category products');
         // Use multiple categories endpoint for hierarchical search
         result = await this.productService.getProductsByMultipleCategories(
           this.allCategoryIds, 
@@ -262,6 +268,8 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
           this.pageSize
         ).toPromise();
       }
+      
+      console.log('loadCategoryProducts - Result received:', result);
       
       if (result) {
         this.updateProductsFromResult(result);
@@ -282,19 +290,56 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
       switch (this.filters.showOnly) {
         case 'top-rated':
           const topRated = await this.analyticsService.getTopRatedProducts(count).toPromise();
-          return { items: topRated, totalCount: topRated?.length || 0, totalPages: 1 };
+          // For special filters, we'll get all products and paginate locally
+          const allTopRated = await this.analyticsService.getTopRatedProducts(1000).toPromise();
+          const startIndex = (this.currentPage - 1) * this.pageSize;
+          const endIndex = startIndex + this.pageSize;
+          const paginatedTopRated = allTopRated?.slice(startIndex, endIndex) || [];
+          return { 
+            items: paginatedTopRated, 
+            totalCount: allTopRated?.length || 0, 
+            totalPages: Math.ceil((allTopRated?.length || 0) / this.pageSize)
+          };
         case 'most-wished':
-          const mostWished = await this.analyticsService.getMostWishedProducts(count).toPromise();
-          return { items: mostWished, totalCount: mostWished?.length || 0, totalPages: 1 };
+          const allMostWished = await this.analyticsService.getMostWishedProducts(1000).toPromise();
+          const startIndexWished = (this.currentPage - 1) * this.pageSize;
+          const endIndexWished = startIndexWished + this.pageSize;
+          const paginatedMostWished = allMostWished?.slice(startIndexWished, endIndexWished) || [];
+          return { 
+            items: paginatedMostWished, 
+            totalCount: allMostWished?.length || 0, 
+            totalPages: Math.ceil((allMostWished?.length || 0) / this.pageSize)
+          };
         case 'best-selling':
-          const bestSelling = await this.analyticsService.getBestSellerProducts(count).toPromise();
-          return { items: bestSelling, totalCount: bestSelling?.length || 0, totalPages: 1 };
+          const allBestSelling = await this.analyticsService.getBestSellerProducts(1000).toPromise();
+          const startIndexBest = (this.currentPage - 1) * this.pageSize;
+          const endIndexBest = startIndexBest + this.pageSize;
+          const paginatedBestSelling = allBestSelling?.slice(startIndexBest, endIndexBest) || [];
+          return { 
+            items: paginatedBestSelling, 
+            totalCount: allBestSelling?.length || 0, 
+            totalPages: Math.ceil((allBestSelling?.length || 0) / this.pageSize)
+          };
         case 'new-arrivals':
-          const newArrivals = await this.analyticsService.getNewArrivals(count).toPromise();
-          return { items: newArrivals, totalCount: newArrivals?.length || 0, totalPages: 1 };
+          const allNewArrivals = await this.analyticsService.getNewArrivals(1000).toPromise();
+          const startIndexNew = (this.currentPage - 1) * this.pageSize;
+          const endIndexNew = startIndexNew + this.pageSize;
+          const paginatedNewArrivals = allNewArrivals?.slice(startIndexNew, endIndexNew) || [];
+          return { 
+            items: paginatedNewArrivals, 
+            totalCount: allNewArrivals?.length || 0, 
+            totalPages: Math.ceil((allNewArrivals?.length || 0) / this.pageSize)
+          };
         case 'trending':
-          const trending = await this.analyticsService.getTrendingProducts(count).toPromise();
-          return { items: trending, totalCount: trending?.length || 0, totalPages: 1 };
+          const allTrending = await this.analyticsService.getTrendingProducts(1000).toPromise();
+          const startIndexTrend = (this.currentPage - 1) * this.pageSize;
+          const endIndexTrend = startIndexTrend + this.pageSize;
+          const paginatedTrending = allTrending?.slice(startIndexTrend, endIndexTrend) || [];
+          return { 
+            items: paginatedTrending, 
+            totalCount: allTrending?.length || 0, 
+            totalPages: Math.ceil((allTrending?.length || 0) / this.pageSize)
+          };
         default:
           return await this.productService.getProductsByMultipleCategories(
             this.allCategoryIds, 
@@ -315,6 +360,11 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
 
   private updateProductsFromResult(result: any) {
     const products = result.items || [];
+    
+    console.log('updateProductsFromResult - Raw result:', result);
+    console.log('updateProductsFromResult - Products count:', products.length);
+    console.log('updateProductsFromResult - Total count:', result.totalCount);
+    console.log('updateProductsFromResult - Total pages:', result.totalPages);
     
     this.allProducts = products.map((product: ProductListItemDTO) => ({
       id: product.id,
@@ -339,6 +389,22 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
 
     this.totalProducts = result.totalCount || this.allProducts.length;
     this.totalPages = result.totalPages || 1;
+    
+    // TEMPORARY: Force pagination to show for testing
+    if (this.totalProducts === 0 && this.allProducts.length > 0) {
+      this.totalProducts = this.allProducts.length;
+      this.totalPages = Math.ceil(this.totalProducts / this.pageSize);
+      console.log('updateProductsFromResult - TEMPORARY: Forced pagination values:', {
+        totalProducts: this.totalProducts,
+        totalPages: this.totalPages
+      });
+    }
+    
+    console.log('updateProductsFromResult - After mapping:');
+    console.log('  - allProducts length:', this.allProducts.length);
+    console.log('  - totalProducts:', this.totalProducts);
+    console.log('  - totalPages:', this.totalPages);
+    console.log('  - pageSize:', this.pageSize);
     
     this.applyFilters();
     this.loadWishlistStatus();
@@ -651,6 +717,8 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
     const totalPages = this.totalPages;
     const currentPage = this.currentPage;
     
+    console.log('getVisiblePages - Input:', { totalPages, currentPage, pageSize: this.pageSize });
+    
     if (totalPages <= 7) {
       // Show all pages if total is 7 or less
       for (let i = 1; i <= totalPages; i++) {
@@ -684,6 +752,7 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
       }
     }
     
+    console.log('getVisiblePages - Output:', pages);
     return pages;
   }
 
