@@ -90,7 +90,7 @@ namespace Core.Services
                         Score = g.Sum(r => r.Score),
                         Reason = string.Join(", ", g.Select(r => r.Reason).Distinct())
                     })
-                    .Where(r => !await HasUserPurchasedProductAsync(userId, r.Product.Id)) // Exclude purchased products
+                    .Where(r => !HasUserPurchasedProductAsync(userId, r.Product.Id).Result) // Exclude purchased products
                     .OrderByDescending(r => r.Score)
                     .Take(count)
                     .ToList();
@@ -122,7 +122,7 @@ namespace Core.Services
                     .Select(p => new
                     {
                         Product = p,
-                        PopularityScore = (p.Reviews.Average(r => r.Rating) * 0.3m) +
+                        PopularityScore = (decimal)(p.Reviews.Average(r => r.Rating) * 0.3) +
                                         (p.WishlistItems.Count * 0.4m) +
                                         (p.OrderItems.Count * 0.3m)
                     })
@@ -571,8 +571,7 @@ namespace Core.Services
                 SalesCount = product.OrderItems?.Count ?? 0,
                 Currency = "USD",
                 Permalink = product.Permalink,
-                Status = product.IsPublic ? "Published" : "Draft",
-                PublishedAt = product.PublishedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") ?? ""
+                Status = product.IsPublic ? "Published" : "Draft"
             };
         }
 

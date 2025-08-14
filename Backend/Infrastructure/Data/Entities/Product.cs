@@ -57,5 +57,8 @@ namespace Raqmiya.Infrastructure
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
         public ICollection<License> Licenses { get; set; } = new List<License>();
+        
+        // Navigation property for user interactions (personalization)
+        public ICollection<UserInteraction> UserInteractions { get; set; } = new List<UserInteraction>();
     }
 }

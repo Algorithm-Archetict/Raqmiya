@@ -218,7 +218,7 @@ namespace Raqmiya.Infrastructure
             // UserPreference configuration
             modelBuilder.Entity<UserPreference>()
                 .HasOne(up => up.User)
-                .WithMany()
+                .WithMany(u => u.UserPreferences)
                 .HasForeignKey(up => up.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -241,13 +241,13 @@ namespace Raqmiya.Infrastructure
             // UserInteraction configuration
             modelBuilder.Entity<UserInteraction>()
                 .HasOne(ui => ui.User)
-                .WithMany()
+                .WithMany(u => u.UserInteractions)
                 .HasForeignKey(ui => ui.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<UserInteraction>()
                 .HasOne(ui => ui.Product)
-                .WithMany()
+                .WithMany(p => p.UserInteractions)
                 .HasForeignKey(ui => ui.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 

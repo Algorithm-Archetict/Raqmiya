@@ -1,4 +1,5 @@
 using Shared.DTOs.ProductDTOs;
+using Raqmiya.Infrastructure;
 
 namespace Core.Interfaces
 {
