@@ -10,6 +10,7 @@ namespace Core.Interfaces
         Task<List<License>> GetActiveLicensesByUserIdAsync(int userId);
         Task<List<License>> GetLicensesByUserIdAsync(int userId);
         Task<License?> GetLicenseByUserAndProductAsync(int userId, int productId);
+        Task<License?> GetByLicenseKeyAsync(string licenseKey);
         Task AddAsync(License license);
         Task UpdateAsync(License license);
         Task DeleteAsync(License license);

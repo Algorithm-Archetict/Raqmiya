@@ -25,6 +25,8 @@ namespace API.Controllers
         private readonly ILogger<OrderController> _logger;
         private readonly IEmailService _emailService; // Added email service
         private readonly IPaymentMethodBalanceRepository _paymentMethodBalanceRepository; // Added payment method balance repository
+        private readonly IProductService _productService; // Added product service for license creation
+        private readonly ILicenseRepository _licenseRepository; // Added license repository
 
         public OrderController(
             IOrderService orderService, 
@@ -35,7 +37,9 @@ namespace API.Controllers
             IUserRepository userRepository,
             ILogger<OrderController> logger,
             IEmailService emailService,
-            IPaymentMethodBalanceRepository paymentMethodBalanceRepository) // Added payment method balance repository to constructor
+            IPaymentMethodBalanceRepository paymentMethodBalanceRepository, // Added payment method balance repository to constructor
+            IProductService productService, // Added product service to constructor
+            ILicenseRepository licenseRepository) // Added license repository to constructor
         {
             _orderService = orderService;
             _purchaseValidationService = purchaseValidationService;
@@ -46,6 +50,8 @@ namespace API.Controllers
             _logger = logger;
             _emailService = emailService; // Initialize email service
             _paymentMethodBalanceRepository = paymentMethodBalanceRepository; // Initialize payment method balance repository
+            _productService = productService; // Initialize product service
+            _licenseRepository = licenseRepository; // Initialize license repository
         }
 
         [HttpPost]
@@ -126,6 +132,9 @@ namespace API.Controllers
                 {
                     return BadRequest(new { success = false, message = "Order not found after creation" });
                 }
+
+                // Licenses are automatically created by OrderService.CreateOrderAsync
+                // No need to create them again here
                 
                 // Get product details for each item
                 var orderItems = new List<object>();
@@ -187,6 +196,10 @@ namespace API.Controllers
                     var updatedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(userId);
                     var remainingBalance = updatedBalance?.Balance ?? 0m;
                     
+                    // Get license information for the email
+                    var licenses = await _licenseRepository.GetActiveLicensesByUserIdAsync(userId);
+                    var orderLicenses = licenses.Where(l => l.OrderId == orderEntity.Id).ToList();
+                    
                     var emailSubject = "Purchase Confirmation - Raqmiya";
                     var emailBody = $@"
                         <h2>Purchase Confirmation</h2>
@@ -207,8 +220,11 @@ namespace API.Controllers
                         // Use reflection to access anonymous object properties
                         var nameProperty = item.GetType().GetProperty("name");
                         var priceProperty = item.GetType().GetProperty("price");
+                        var productIdProperty = item.GetType().GetProperty("productId");
                         var name = nameProperty?.GetValue(item)?.ToString() ?? "Unknown Product";
                         var price = priceProperty?.GetValue(item);
+                        var productId = productIdProperty?.GetValue(item);
+                        
                         if (price is decimal priceValue)
                         {
                             emailBody += $"<li>{name} - ${priceValue:F2}</li>";
@@ -219,8 +235,23 @@ namespace API.Controllers
                         }
                     }
                     
+                    emailBody += $@"</ul>";
+                    
+                    // Add license keys section
+                    if (orderLicenses.Any())
+                    {
+                        emailBody += @"<p><strong>License Keys:</strong></p><ul>";
+                        foreach (var license in orderLicenses)
+                        {
+                            var product = await _productRepository.GetByIdAsync(license.ProductId);
+                            var productName = product?.Name ?? "Unknown Product";
+                            emailBody += $"<li><strong>{productName}:</strong> {license.LicenseKey}</li>";
+                        }
+                        emailBody += "</ul>";
+                    }
+                    
                     emailBody += $@"
-                        </ul>
+                        <p><strong>Important:</strong> Keep your license keys safe for future reference.</p>
                         <p>Thank you for your purchase!</p>
                         <p>Best regards,<br>The Raqmiya Team</p>";
 
@@ -231,6 +262,65 @@ namespace API.Controllers
                 {
                     _logger.LogError($"Failed to send purchase confirmation email: {emailEx.Message}");
                     // Don't fail the order creation if email fails
+                }
+
+                // Send creator sale notifications
+                try
+                {
+                    _logger.LogInformation($"Starting creator sale notifications for order {orderEntity.Id}");
+                    foreach (var item in orderEntity.OrderItems)
+                    {
+                        _logger.LogInformation($"Processing order item: ProductId={item.ProductId}, UnitPrice={item.UnitPrice}");
+                        
+                        var product = await _productRepository.GetProductWithAllDetailsAsync(item.ProductId);
+                        if (product != null)
+                        {
+                            _logger.LogInformation($"Product found: {product.Name}, CreatorId={product.CreatorId}");
+                            
+                            if (product.Creator != null)
+                            {
+                                _logger.LogInformation($"Creator found: {product.Creator.Username}, Email={product.Creator.Email}");
+                                
+                                if (!string.IsNullOrEmpty(product.Creator.Email))
+                                {
+                                    var creatorEmailSent = await _emailService.SendCreatorSaleNotificationAsync(
+                                        product.Creator.Email,
+                                        product.Creator.Username,
+                                        product.Name,
+                                        user.Username,
+                                        item.UnitPrice
+                                    );
+
+                                    if (creatorEmailSent)
+                                    {
+                                        _logger.LogInformation($"Creator sale notification sent to {product.Creator.Email} for product {product.Name}");
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning($"Failed to send creator sale notification to {product.Creator.Email} for product {product.Name}");
+                                    }
+                                }
+                                else
+                                {
+                                    _logger.LogWarning($"Creator {product.Creator.Username} has no email address for product {product.Name}");
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogWarning($"Product {product.Name} has no creator information");
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Product with ID {item.ProductId} not found");
+                        }
+                    }
+                }
+                catch (Exception creatorEmailEx)
+                {
+                    _logger.LogError($"Failed to send creator sale notifications: {creatorEmailEx.Message}");
+                    _logger.LogError($"Stack trace: {creatorEmailEx.StackTrace}");
+                    // Don't fail the order creation if creator email fails
                 }
 
                 return CreatedAtAction(nameof(GetOrderById), new { id = orderEntity.Id }, response);

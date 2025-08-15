@@ -57,8 +57,51 @@ export class AuthService {
           // If fetch fails, clear token and redirect to login
           this.logout();
         }
-      });
-    }
+            });
+  }
+
+  }
+
+  // Forgot Password
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/forgot-password`, { email });
+  }
+
+  // Reset Password
+  resetPassword(resetData: { token: string; newPassword: string; confirmPassword: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/reset-password`, resetData);
+  }
+
+  // Verify Reset Token
+  verifyResetToken(token: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/auth/verify-reset-token`, { params: { token } });
+  }
+
+  // Verify Email
+  verifyEmail(verificationData: { token: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/verify-email`, verificationData);
+  }
+
+  // Resend Verification Email
+  resendVerification(resendData: { email: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/resend-verification`, resendData);
+  }
+
+  // Account Deletion Methods
+  requestAccountDeletion(deletionData: { password: string; deletionReason: string; confirmDeletion: boolean }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/request-account-deletion`, deletionData);
+  }
+
+  confirmAccountDeletion(confirmationData: { token: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/confirm-account-deletion`, confirmationData);
+  }
+
+  restoreAccount(restoreData: { token: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/restore-account`, restoreData);
+  }
+
+  cancelAccountDeletion(cancelData: { token: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/cancel-account-deletion`, cancelData);
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
@@ -127,8 +170,13 @@ export class AuthService {
 
   // Clear all user-related data
   private clearUserData(): void {
+    // Clear localStorage
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
+    
+    // Clear sessionStorage as well for better isolation
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('userData');
 
     // Clear chatbot data
     this.clearChatbotData();
@@ -149,7 +197,18 @@ export class AuthService {
 
   // Public method to clear all cached data (useful for user switching)
   public clearAllCachedData(): void {
-    this.clearUserData();
+    // Clear localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    
+    // Clear sessionStorage as well for better isolation
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('userData');
+    
+    // Clear chatbot data
+    this.clearChatbotData();
+    
+    // Update authentication status
     this._currentUser.next(null);
     this._isLoggedIn.next(false);
   }
@@ -241,18 +300,31 @@ export class AuthService {
       return of(false);
     }
 
-    return this.http.get<User>(`${this.apiUrl}/users/me`).pipe(
-      tap(user => {
-        if (user) {
-          user.roles = user.role ? [user.role] : [];
-          localStorage.setItem('userData', JSON.stringify(user));
-          this._currentUser.next(user);
-          this._isLoggedIn.next(true);
+    // First validate the token
+    return this.http.get<boolean>(`${this.apiUrl}/auth/validate-token`).pipe(
+      map(isValid => {
+        if (isValid) {
+          // Token is valid, now fetch user data
+          this.fetchUserProfile().subscribe({
+            next: (user) => {
+              if (user) {
+                this._currentUser.next(user);
+                this._isLoggedIn.next(true);
+              } else {
+                this.logout();
+              }
+            },
+            error: (error) => {
+              console.error('Error fetching user profile after token validation:', error);
+              this.logout();
+            }
+          });
+          return true;
         } else {
           this.logout();
+          return false;
         }
       }),
-      map(() => true),
       catchError(error => {
         console.error('Token validation failed:', error);
         this.logout();

@@ -9,6 +9,13 @@ import { PurchasedProducts } from './components/purchased-products/purchased-pro
 import { Library } from './components/library/library';
 import { Login } from './components/account/login/login';
 import { Register } from './components/account/register/register';
+import { ForgotPassword } from './components/account/forgot-password/forgot-password';
+import { ResetPassword } from './components/account/reset-password/reset-password';
+import { EmailVerification } from './components/account/email-verification/email-verification';
+import { ResendVerification } from './components/account/resend-verification/resend-verification';
+import { ConfirmAccountDeletion } from './components/account/confirm-account-deletion/confirm-account-deletion';
+import { CancelAccountDeletion } from './components/account/cancel-account-deletion/cancel-account-deletion';
+import { RestoreAccount } from './components/account/restore-account/restore-account';
 import { Dashboard } from './components/creator/dashboard/dashboard';
 import { Settings } from './components/settings/settings';
 import { Profile } from './components/settings/profile/profile';
@@ -23,6 +30,8 @@ import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
 import { AllReviews } from './components/products/all-reviews/all-reviews';
 import { WishList } from './components/wish-list/wish-list';
+import { ReceiptComponent } from './components/receipt/receipt';
+import { CreatorProfileComponent } from './components/creator/creator-profile/creator-profile';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -31,14 +40,23 @@ export const routes: Routes = [
     // Public routes
     {path:"discover",component:Discover},
     {path:"discover/:id",component:ProductDetails},
+    {path:"creator/:id",component:CreatorProfileComponent},
     {path:"login", redirectTo:"auth/login", pathMatch:"full"}, // Redirect /login to /auth/login
     {path:"auth/login", component:Login},
     {path:"auth/register", component:Register},
+    {path:"forgot-password", component:ForgotPassword},
+    {path:"reset-password", component:ResetPassword},
+    {path:"verify-email", component:EmailVerification},
+    {path:"resend-verification", component:ResendVerification},
+    {path:"confirm-account-deletion", component:ConfirmAccountDeletion},
+    {path:"cancel-account-deletion", component:CancelAccountDeletion},
+    {path:"restore-account", component:RestoreAccount},
     { path: "products/:id/reviews", component: AllReviews },
 
     // Protected routes - require authentication
     {path:"cart-checkout",component:CartCheckout, canActivate: [AuthGuard]},
     {path:"package/:id",component:PurchasedPackage, canActivate: [AuthGuard]},
+    {path:"receipt/:orderId",component:ReceiptComponent, canActivate: [AuthGuard]},
     // {path:"purchased-products",component:PurchasedProducts, canActivate: [AuthGuard]}, // Commented out - now under library
     {path:"library", redirectTo:"library/purchased-products", pathMatch:"full"},
     {path:"library/:tab",component:Library, canActivate: [AuthGuard]},

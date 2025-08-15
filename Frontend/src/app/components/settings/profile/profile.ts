@@ -269,7 +269,16 @@ export class Profile implements OnInit, OnDestroy {
   showRemoveButton(): boolean {
     return !!(this.profileData.profileImageUrl || this.currentUser?.profileImageUrl);
   }
-  
+
+  getUserRole(): string {
+    // Get role from current user data
+    if (this.currentUser?.role) {
+      return this.currentUser.role;
+    }
+    
+    // Fallback to auth service
+    return this.authService.getUserRole() || 'Unknown';
+  }
 
   private clearMessagesAfterDelay() {
     setTimeout(() => {

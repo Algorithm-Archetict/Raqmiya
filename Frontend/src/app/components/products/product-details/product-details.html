@@ -32,11 +32,18 @@
               Share
             </button>
             <button 
-              *ngIf="!hasPurchased"
+              *ngIf="!hasPurchased && isLoggedIn() && !isCreator()"
               class="btn btn-outline btn-sm" 
               (click)="toggleWishlist()">
               <i class="fas fa-heart" [class.text-danger]="isInWishlist"></i>
               {{ isInWishlist ? 'In Wishlist' : 'Add to Wishlist' }}
+            </button>
+            <button 
+              *ngIf="!hasPurchased && !isLoggedIn()"
+              class="btn btn-outline btn-sm" 
+              (click)="showLoginPrompt('add this item to your wishlist')">
+              <i class="fas fa-heart"></i>
+              Add to Wishlist
             </button>
           </div>
         </div>
@@ -51,7 +58,9 @@
         <div class="col-lg-8">
           <div class="product-info">
                          <h1 class="product-title">{{ product?.name }}</h1>
-                         <p class="product-creator">by {{ product?.creatorUsername }}</p>
+                         <p class="product-creator">
+              by <a class="creator-link" (click)="viewCreatorProfile(product?.creatorId)">{{ product?.creatorUsername }}</a>
+            </p>
             <div class="product-meta">
               <div class="product-rating">
                 <div class="stars">
@@ -168,22 +177,36 @@
                 <span class="product-price">{{ product?.price | currency:product?.currency:'symbol' }}</span>
               </div>
               <div class="purchase-actions">
+                <!-- Creator's own product - Show "View My Products" button -->
                 <button 
+                  *ngIf="isCreator()"
+                  class="btn btn-lg w-100 mb-3 btn-success text-dark text-center" 
+                  (click)="viewMyProducts()">
+                  <i class="fas fa-box"></i>
+                  View My Products
+                </button>
+                
+                <!-- Cart Button - Show for logged-in users or anonymous users (with login prompt) -->
+                <button 
+                  *ngIf="!isCreator()"
                   class="btn btn-lg w-100 mb-3" 
                   [class.btn-primary]="!hasPurchased && !isInCart"
                   [class.btn-info]="!hasPurchased && isInCart"
                   [class.btn-success]="hasPurchased"
+                  [class.btn-outline]="!isLoggedIn()"
                   (click)="hasPurchased ? goToLibrary() : addToCart()"
                   [disabled]="loadingPurchaseStatus || checkingCartStatus">
                   <i class="fas" 
                      [class.fa-shopping-cart]="!hasPurchased && !isInCart" 
                      [class.fa-eye]="!hasPurchased && isInCart"
-                     [class.fa-book]="hasPurchased"></i>
-                  {{ hasPurchased ? 'In Library' : getCartButtonText() }}
+                     [class.fa-book]="hasPurchased"
+                     [class.fa-sign-in-alt]="!isLoggedIn()"></i>
+                  {{ hasPurchased ? 'In Library' : (!isLoggedIn() ? 'Add to Cart' : getCartButtonText()) }}
                 </button>
-                <!-- Wishlist Toggle Button (Only for logged-in users who haven't purchased) -->
+                
+                <!-- Wishlist Toggle Button (Only for logged-in users who haven't purchased and are not the creator) -->
                 <button 
-                  *ngIf="isLoggedIn() && !hasPurchased" 
+                  *ngIf="isLoggedIn() && !hasPurchased && !isCreator()" 
                   class="btn btn-lg w-100 wishlist-btn"
                   [class.btn-outline]="!isInWishlist"
                   [class.btn-success]="isInWishlist"
@@ -209,12 +232,12 @@
 
                 <!-- Login Required Message for Anonymous Users -->
                 <button 
-                  *ngIf="!isLoggedIn()" 
+                  *ngIf="!isLoggedIn() && !hasPurchased" 
                   class="btn btn-outline btn-lg w-100"
-                  (click)="navigateToLogin()"
+                  (click)="showLoginPrompt('add this item to your wishlist')"
                 >
-                  <i class="fas fa-sign-in-alt"></i>
-                  Login to Add to Wishlist
+                  <i class="fas fa-heart"></i>
+                  Add to Wishlist
                 </button>
               </div>
             </div>
@@ -478,7 +501,9 @@
               </div>
               <div class="product-info">
                                  <h6>{{ relatedProduct.name }}</h6>
-                                 <div class="creator">by {{ relatedProduct.creatorUsername }}</div>
+                                 <div class="creator">
+                      by <a class="creator-link" (click)="viewCreatorProfile(relatedProduct.creatorId)">{{ relatedProduct.creatorUsername }}</a>
+                    </div>
                 <div class="product-meta">
                                      <div class="price">{{ relatedProduct.price | currency:relatedProduct.currency:'symbol' }}</div>
                   <div class="rating">
@@ -502,7 +527,7 @@
       <span class="visually-hidden">Loading...</span>
     </div>
     <h4 class="mt-3">Loading product details...</h4>
-    <p class="text-muted">Please wait while we fetch the product information.</p>
+    <p class="text-white">Please wait while we fetch the product information.</p>
   </div>
 </div>
 

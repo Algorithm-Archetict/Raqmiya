@@ -47,7 +47,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: var(--primary-color);
+  background: var(--danger-color);
   color: white;
   border: none;
   border-radius: var(--radius-md);
@@ -58,9 +58,10 @@
 }
 
 .update-settings-btn:hover {
-  background: var(--primary-dark);
+  background: var(--warning-color);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+  color: black;
 }
 
 .update-settings-btn i {

@@ -33,6 +33,20 @@
   margin-bottom: 24px;
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
 .form-label {
   display: block;
   font-weight: 600;
