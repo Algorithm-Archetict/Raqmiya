@@ -588,6 +588,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
     });
   }
 
+  
   editReview(): void {
     if (this.existingReview) {
       this.userRating = this.existingReview.rating;
@@ -714,6 +715,12 @@ export class ProductDetails implements OnInit, AfterViewInit {
   addToCart() {
     if (!this.product) return;
     
+    // Check if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      this.showLoginPrompt('add this item to your cart');
+      return;
+    }
+    
     // If already in cart, just go to cart page
     if (this.isInCart) {
       this.router.navigate(['/cart-checkout']);
@@ -780,7 +787,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
 
     // Check if user is logged in
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login']);
+      this.showLoginPrompt('add this item to your wishlist');
       return;
     }
 
@@ -867,9 +874,58 @@ export class ProductDetails implements OnInit, AfterViewInit {
     return this.authService.isLoggedIn();
   }
 
+  // Check if current user is the creator of this product
+  isCreator(): boolean {
+    if (!this.authService.isLoggedIn() || !this.product) {
+      return false;
+    }
+    const currentUser = this.authService.getCurrentUser();
+    return !!(currentUser && this.product.creatorId === currentUser.id);
+  }
+
+  // Navigate to creator dashboard
+  viewMyProducts() {
+    this.router.navigate(['/products']);
+  }
+
+  // Navigate to creator profile
+  viewCreatorProfile(creatorId?: number) {
+    if (creatorId) {
+      this.router.navigate(['/creator', creatorId]);
+    }
+  }
+
   // Navigate to login page
   navigateToLogin() {
     this.router.navigate(['/login']);
+  }
+
+  // Show login prompt for anonymous users
+  showLoginPrompt(action: string) {
+    Swal.fire({
+      title: 'Login Required',
+      html: `
+        <div class="login-prompt">
+          <i class="fas fa-sign-in-alt" style="font-size: 3rem; color: #667eea; margin-bottom: 1rem;"></i>
+          <p>You need to be logged in to ${action}.</p>
+          <p>Please sign in to continue.</p>
+        </div>
+      `,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Sign In',
+      cancelButtonText: 'Continue Browsing',
+      confirmButtonColor: '#667eea',
+      cancelButtonColor: '#6c757d',
+      customClass: {
+        confirmButton: 'btn btn-primary',
+        cancelButton: 'btn btn-secondary'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/login']);
+      }
+    });
   }
 
   // Show wishlist success popup (similar to discover page)

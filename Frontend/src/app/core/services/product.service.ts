@@ -10,6 +10,7 @@ import { ProductListItemDTOPagedResultDTO } from '../models/product/product-list
 import { ProductModerationRequestDTO } from '../models/product/product-moderation-request.dto';
 import { FileDTO } from '../models/product/file.dto';
 import { ReviewDTO } from '../models/product/review.dto';
+import { Receipt } from '../interfaces/receipt.interface';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
@@ -75,8 +76,8 @@ export class ProductService {
   }
 
   // ======= DELETE =======
-  deleteProduct(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  deleteProduct(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
 
   // ======= WISHLIST =======
@@ -192,5 +193,18 @@ export class ProductService {
   // Delete user's review
   deleteReview(productId: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/${productId}/reviews/my-review`);
+  }
+
+  // ======= RECEIPTS =======
+  getReceipt(orderId: number): Observable<Receipt> {
+    return this.http.get<Receipt>(`${this.apiUrl}/receipt/${orderId}`);
+  }
+
+  resendReceipt(orderId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/receipt/${orderId}/resend`, {});
+  }
+
+  getProductsByCreator(creatorId: number): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/creator/${creatorId}/products`);
   }
 }

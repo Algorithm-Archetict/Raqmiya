@@ -136,17 +136,17 @@ namespace Core.Services
             return _publishableKey;
         }
 
-        public async Task<TestPaymentResult> CreateTestPaymentIntentForBalanceAsync(decimal amount, string currency, string description, CancellationToken cancellationToken = default)
+        public Task<TestPaymentResult> CreateTestPaymentIntentForBalanceAsync(decimal amount, string currency, string description, CancellationToken cancellationToken = default)
         {
             // Simulate a successful payment for balance-based system
             var paymentIntentId = $"pi_test_{Guid.NewGuid():N}";
             
-            return new TestPaymentResult
+            return Task.FromResult(new TestPaymentResult
             {
                 Success = true,
                 PaymentIntentId = paymentIntentId,
                 ErrorMessage = null
-            };
+            });
         }
     }
 }

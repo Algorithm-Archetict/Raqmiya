@@ -193,5 +193,305 @@ namespace API.Controllers
                 return Problem("An error occurred while fetching debug user info.");
             }
         }
+
+        /// <summary>
+        /// Request a password reset for the specified email address.
+        /// </summary>
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ForgotPasswordResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Forgot password request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            _logger.LogInformation("Forgot password request for email: {Email}", request.Email);
+
+            try
+            {
+                var response = await _authService.ForgotPasswordAsync(request);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing forgot password request");
+                return Problem("An error occurred while processing your request.");
+            }
+        }
+
+        /// <summary>
+        /// Reset password using a valid reset token.
+        /// </summary>
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(PasswordResetResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Reset password request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            _logger.LogInformation("Reset password request with token");
+
+            try
+            {
+                var response = await _authService.ResetPasswordAsync(request);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing reset password request");
+                return Problem("An error occurred while processing your request.");
+            }
+        }
+
+        /// <summary>
+        /// Verify if a reset token is valid and not expired.
+        /// </summary>
+        [HttpGet("verify-reset-token")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(VerifyTokenResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> VerifyResetToken([FromQuery] string token)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                _logger.LogWarning("Verify reset token request with empty token");
+                return BadRequest("Token is required");
+            }
+
+            _logger.LogInformation("Verifying reset token");
+
+            try
+            {
+                var response = await _authService.VerifyResetTokenAsync(token);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying reset token");
+                return Problem("An error occurred while verifying the token.");
+            }
+        }
+
+        /// <summary>
+        /// Verify email address using a verification token.
+        /// </summary>
+        [HttpPost("verify-email")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(AuthResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> VerifyEmail([FromBody] EmailVerificationDTO request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Email verification request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            _logger.LogInformation("Email verification request with token");
+
+            try
+            {
+                var response = await _authService.VerifyEmailAsync(request);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing email verification request");
+                return Problem("An error occurred while verifying your email.");
+            }
+        }
+
+        /// <summary>
+        /// Resend verification email for pending registration.
+        /// </summary>
+        [HttpPost("resend-verification")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ResendVerificationResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationDTO request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Resend verification request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            _logger.LogInformation("Resend verification request for email: {Email}", request.Email);
+
+            try
+            {
+                var response = await _authService.ResendVerificationAsync(request);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing resend verification request");
+                return Problem("An error occurred while sending the verification email.");
+            }
+        }
+
+        /// <summary>
+        /// Request account deletion with email confirmation.
+        /// </summary>
+        [HttpPost("request-account-deletion")]
+        [Authorize]
+        [ProducesResponseType(typeof(RequestAccountDeletionResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> RequestAccountDeletion([FromBody] RequestAccountDeletionDTO request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Account deletion request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (userId == 0)
+            {
+                return Unauthorized("User not authenticated");
+            }
+
+            _logger.LogInformation("Account deletion request for user: {UserId}", userId);
+
+            try
+            {
+                var response = await _authService.RequestAccountDeletionAsync(request, userId);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing account deletion request");
+                return Problem("An error occurred while processing your request.");
+            }
+        }
+
+        /// <summary>
+        /// Confirm account deletion using email token.
+        /// </summary>
+        [HttpPost("confirm-account-deletion")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ConfirmAccountDeletionResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> ConfirmAccountDeletion([FromBody] ConfirmAccountDeletionDTO request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Confirm account deletion request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            _logger.LogInformation("Confirm account deletion request with token");
+
+            try
+            {
+                var response = await _authService.ConfirmAccountDeletionAsync(request);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming account deletion");
+                return Problem("An error occurred while confirming account deletion.");
+            }
+        }
+
+        /// <summary>
+        /// Restore a soft-deleted account.
+        /// </summary>
+        [HttpPost("restore-account")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(RestoreAccountResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> RestoreAccount([FromBody] RestoreAccountDTO request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Restore account request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            _logger.LogInformation("Restore account request with token");
+
+            try
+            {
+                var response = await _authService.RestoreAccountAsync(request);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error restoring account");
+                return Problem("An error occurred while restoring the account.");
+            }
+        }
+
+        /// <summary>
+        /// Cancel account deletion request.
+        /// </summary>
+        [HttpPost("cancel-account-deletion")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(CancelAccountDeletionResponseDTO), 200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> CancelAccountDeletion([FromBody] CancelAccountDeletionDTO request)
+        {
+            if (request == null)
+            {
+                _logger.LogWarning("Cancel account deletion request is null");
+                return BadRequest("Invalid request data");
+            }
+
+            _logger.LogInformation("Cancel account deletion request with token");
+
+            try
+            {
+                var response = await _authService.CancelAccountDeletionAsync(request);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling account deletion");
+                return Problem("An error occurred while cancelling account deletion.");
+            }
+        }
     }
 }

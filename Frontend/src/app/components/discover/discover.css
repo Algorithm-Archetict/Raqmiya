@@ -302,6 +302,19 @@
   margin: 0 0 var(--spacing-md) 0;
 }
 
+.creator-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-weight: 600;
+}
+
+.creator-link:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
 .product-meta {
   display: flex;
   justify-content: space-between;
@@ -525,6 +538,71 @@
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Creator Toggle Button */
+.creator-toggle {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  z-index: 10;
+  opacity: 0;
+  transform: scale(0.8);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.product-card:hover .creator-toggle {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.creator-toggle:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+.creator-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: white;
+  font-size: 1rem;
+}
+
+.creator-tooltip {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--spacing-sm);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all var(--transition-normal);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.creator-toggle:hover .creator-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Wishlist Toggle Button */

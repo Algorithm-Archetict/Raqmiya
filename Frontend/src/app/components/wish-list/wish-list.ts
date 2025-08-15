@@ -10,6 +10,7 @@ interface WishlistProduct {
   id: number;
   title: string;
   creator: string;
+  creatorId?: number; // Add creator ID for navigation
   price: number;
   rating: number;
   ratingCount: number;
@@ -51,6 +52,7 @@ export class WishList implements OnInit {
           id: product.id,
           title: product.name || 'Untitled Product',
           creator: product.creatorUsername && product.creatorUsername.trim() !== '' ? product.creatorUsername : 'Unknown Creator',
+          creatorId: product.creatorId, // Add creator ID for navigation
           price: product.price,
           rating: product.averageRating,
           ratingCount: product.salesCount,
@@ -140,9 +142,19 @@ export class WishList implements OnInit {
     });
   }
 
-  viewProduct(productId: number) {
+  viewProduct(productId: number, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
     // Navigate to product details
     this.router.navigate(['/discover', productId]);
+  }
+
+  // Navigate to creator profile
+  viewCreatorProfile(creatorId?: number) {
+    if (creatorId) {
+      this.router.navigate(['/creator', creatorId]);
+    }
   }
 
   // Show toast notification

@@ -23,7 +23,8 @@ namespace Raqmiya.Infrastructure
 
         public async Task<bool> RegisterAsync(string email, string username, string password, string role)
         {
-            if (await _db.Users.AnyAsync(u => u.Email == email))
+            // Exclude soft-deleted users for registration purposes
+            if (await _db.Users.AnyAsync(u => u.Email == email && !u.IsDeleted))
                 return false;
 
             var salt = GenerateSalt();
@@ -74,22 +75,42 @@ namespace Raqmiya.Infrastructure
 
         public async Task<bool> UserExistsByEmailAsync(string email)
         {
-            return await _db.Users.AnyAsync(u => u.Email == email);
+            // Exclude soft-deleted users for registration purposes
+            return await _db.Users.AnyAsync(u => u.Email == email && !u.IsDeleted);
         }
 
         public async Task<bool> UserExistsByUsernameAsync(string username)
         {
-            return await _db.Users.AnyAsync(u => u.Username == username);
+            // Exclude soft-deleted users for registration purposes
+            return await _db.Users.AnyAsync(u => u.Username == username && !u.IsDeleted);
         }
 
         public async Task<User> GetUserByEmailOrUsernameAsync(string emailOrUsername)
         {
-            return await _db.Users.FirstOrDefaultAsync(u => u.Email == emailOrUsername || u.Username == emailOrUsername);
+            // Include soft-deleted users for login attempts to provide proper restoration guidance
+            return await _db.Users.FirstOrDefaultAsync(u => 
+                (u.Email == emailOrUsername || u.Username == emailOrUsername));
         }
 
         public async Task AddAsync(User newUser)
         {
             _db.Users.Add(newUser);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            return await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task<User?> GetByIdAsync(int id)
+        {
+            return await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public async Task UpdateAsync(User user)
+        {
+            _db.Users.Update(user);
             await _db.SaveChangesAsync();
         }
     }

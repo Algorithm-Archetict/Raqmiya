@@ -21,7 +21,7 @@ namespace Core.Services
             _logger = logger;
         }
 
-        public async Task<CartResponseDTO> GetUserCartAsync(int userId)
+        public Task<CartResponseDTO> GetUserCartAsync(int userId)
         {
             try
             {
@@ -45,21 +45,21 @@ namespace Core.Services
                 var cart = _userCarts[userId];
                 CalculateCartTotals(cart);
 
-                return new CartResponseDTO
+                return Task.FromResult(new CartResponseDTO
                 {
                     Success = true,
                     Cart = cart,
                     Message = "Cart retrieved successfully"
-                };
+                });
             }
             catch (System.Exception ex)
             {
                 _logger.LogError(ex, "Error getting cart for user {UserId}", userId);
-                return new CartResponseDTO
+                return Task.FromResult(new CartResponseDTO
                 {
                     Success = false,
                     Message = "Failed to retrieve cart"
-                };
+                });
             }
         }
 

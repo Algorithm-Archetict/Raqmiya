@@ -154,6 +154,12 @@ export class CartCheckout implements OnInit {
       return;
     }
 
+    // Prevent duplicate submissions
+    if (this.isLoading) {
+      console.log('Checkout already in progress, ignoring duplicate request');
+      return;
+    }
+
     // Validate payment method before proceeding
     const hasPaymentMethod = await firstValueFrom(this.paymentService.hasPaymentMethods());
     if (!hasPaymentMethod) {

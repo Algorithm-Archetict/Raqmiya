@@ -38,7 +38,7 @@ namespace Raqmiya.Infrastructure
         public ICollection<Variant> Variants { get; set; } = new List<Variant>();
         public ICollection<OfferCode> OfferCodes { get; set; } = new List<OfferCode>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
-        public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+
 
         public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
 
@@ -56,5 +56,11 @@ namespace Raqmiya.Infrastructure
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
         public ICollection<License> Licenses { get; set; } = new List<License>();
+
+        // Soft Delete Properties
+        public bool IsDeleted { get; set; } = false; // Indicates if the product is soft deleted
+        public DateTime? DeletedAt { get; set; } // When the product was soft deleted
+        public string? DeletionReason { get; set; } // Reason for deletion (optional)
+        public DateTime? DeletionScheduledAt { get; set; } // When the product will be permanently deleted (30 days after soft delete)
     }
 }

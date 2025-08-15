@@ -29,7 +29,7 @@ namespace Core.MappingProfiles
                 .ForMember(dest => dest.Products, opt => opt.Ignore())
                 .ForMember(dest => dest.Orders, opt => opt.Ignore())
                 .ForMember(dest => dest.Reviews, opt => opt.Ignore())
-                .ForMember(dest => dest.Subscriptions, opt => opt.Ignore())
+
                 .ForMember(dest => dest.Posts, opt => opt.Ignore())
                 .ForMember(dest => dest.WishlistItems, opt => opt.Ignore())
                 .ForMember(dest => dest.ProductViews, opt => opt.Ignore())

@@ -1,0 +1,68 @@
+<div class="receipt-container">
+  <div class="receipt-card">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Loading receipt...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="error">
+      <i class="fas fa-exclamation-triangle"></i>
+      <h3>Error Loading Receipt</h3>
+      <p>Unable to load the receipt. Please try again later.</p>
+    </div>
+
+    <!-- Receipt Content -->
+    <div *ngIf="receipt && !loading" class="receipt-content">
+      <!-- Header -->
+      <div class="receipt-header">
+        <h2>Purchase Receipt</h2>
+        <div class="receipt-date">
+          {{ formatDate(receipt.purchaseDate) }}
+        </div>
+      </div>
+
+      <!-- Product Info -->
+      <div class="product-info">
+        <div class="product-image">
+          <img [src]="receipt.productThumbnail" [alt]="receipt.productTitle" 
+               (error)="$event.target.style.display='none'">
+        </div>
+        <div class="product-details">
+          <h3>{{ receipt.productTitle }}</h3>
+          <p class="creator">by {{ receipt.creatorName }}</p>
+        </div>
+      </div>
+
+      <!-- Price -->
+      <div class="price-section">
+        <div class="price">
+          {{ formatPrice(receipt.price, receipt.currency) }}
+        </div>
+      </div>
+
+      <!-- License Key -->
+      <div class="license-section">
+        <h4>License Key</h4>
+        <div class="license-key">
+          {{ receipt.licenseKey }}
+        </div>
+        <p class="license-note">Keep this key safe for future reference</p>
+      </div>
+
+      <!-- Action Button -->
+      <div class="action-section">
+        <button class="view-content-btn" (click)="viewContent()">
+          <i class="fas fa-download"></i>
+          View Content
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <div class="receipt-footer">
+        <p>Powered by Raqmiya</p>
+      </div>
+    </div>
+  </div>
+</div>

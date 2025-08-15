@@ -98,6 +98,7 @@ namespace Core.Services
                 CoverImageUrl = product.CoverImageUrl,
                 ThumbnailImageUrl = product.ThumbnailImageUrl,
                 CreatorUsername = product.Creator?.Username ?? "N/A",
+                CreatorId = product.CreatorId,
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
                 SalesCount = product.OrderItems.Count(),
                 Status = product.Status,
@@ -126,7 +127,7 @@ namespace Core.Services
         public async Task<ProductDetailDTO?> GetProductDetailsByPermalinkAsync(string permalink, int? userId = null)
         {
             var product = await _productRepository.GetProductWithAllDetailsByPermalinkAsync(permalink); // You'll need to add this to IProductRepository
-            if (product == null || product.Status != "published" || !product.IsPublic)
+            if (product == null || product.Status != "published" || !product.IsPublic || product.IsDeleted || !product.Creator.IsActive)
             {
                 return null;
             }
@@ -338,9 +339,9 @@ namespace Core.Services
             return MapToProductDetailDTO(updatedProduct);
         }
 
-        public async Task DeleteProductAsync(int productId, int creatorId)
+        public async Task DeleteProductAsync(int productId, int creatorId, string? deletionReason = null)
         {
-            var product = await _productRepository.GetByIdAsync(productId);
+            var product = await _productRepository.GetByIdIncludingDeletedAsync(productId);
             if (product == null)
             {
                 throw new KeyNotFoundException($"Product with ID {productId} not found.");
@@ -351,10 +352,21 @@ namespace Core.Services
                 throw new UnauthorizedAccessException("You are not authorized to delete this product.");
             }
 
-            // Add any business rules before deletion (e.g., cannot delete if active sales)
-            // if (product.OrderItems.Any(oi => oi.Order.Status == "active")) { ... throw new InvalidOperationException }
-
-            await _productRepository.DeleteAsync(productId);
+            // Check if product has any purchases - if so, we must use soft delete
+            var hasPurchases = await _productRepository.HasProductPurchasesAsync(productId);
+            
+            if (hasPurchases)
+            {
+                // Soft delete - preserve product for customers who purchased it
+                await _productRepository.SoftDeleteProductAsync(productId, deletionReason ?? "Product deleted by creator");
+                _logger.LogInformation("Product {ProductId} soft deleted by creator {CreatorId} due to existing purchases", productId, creatorId);
+            }
+            else
+            {
+                // Hard delete - no purchases, safe to permanently remove
+                await _productRepository.DeleteAsync(productId);
+                _logger.LogInformation("Product {ProductId} permanently deleted by creator {CreatorId} - no purchases found", productId, creatorId);
+            }
         }
 
         // --- Wishlist operations ---
@@ -622,6 +634,19 @@ namespace Core.Services
             return license != null && license.IsActive;
         }
 
+        public async Task<bool> CanPurchaseProductAsync(int productId)
+        {
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null)
+                return false;
+
+            // Check if product is available for purchase
+            return product.Status == "published" && 
+                   product.IsPublic && 
+                   !product.IsDeleted && 
+                   product.Creator.IsActive;
+        }
+
         public async Task<Review?> GetUserReviewAsync(int productId, int userId)
         {
             return await _context.Reviews
@@ -707,6 +732,139 @@ namespace Core.Services
             // Update the DTO with the actual username for immediate display
             reviewDto.userName = user.Username;
             reviewDto.UserAvatar = user.ProfileImageUrl;
+        }
+
+        // --- License Key Generation ---
+        public string GenerateLicenseKey(int orderId, int buyerId, int productId)
+        {
+            // Create a unique string combining the three IDs
+            var combinedString = $"{orderId}-{buyerId}-{productId}-{DateTime.UtcNow.Ticks}";
+            
+            // Generate SHA256 hash
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(combinedString));
+            
+            // Convert to hex string and take first 16 characters for a shorter key
+            var licenseKey = Convert.ToHexString(hashBytes).Substring(0, 16).ToUpper();
+            
+            // Format as XXXX-XXXX-XXXX-XXXX for better readability
+            return $"{licenseKey.Substring(0, 4)}-{licenseKey.Substring(4, 4)}-{licenseKey.Substring(8, 4)}-{licenseKey.Substring(12, 4)}";
+        }
+
+        public async Task<License> CreateLicenseAsync(int orderId, int productId, int buyerId)
+        {
+            // Generate unique license key
+            var licenseKey = GenerateLicenseKey(orderId, buyerId, productId);
+            
+            // Ensure uniqueness (very unlikely collision, but safety check)
+            while (await _context.Licenses.AnyAsync(l => l.LicenseKey == licenseKey))
+            {
+                licenseKey = GenerateLicenseKey(orderId, buyerId, productId);
+            }
+
+            var license = new License
+            {
+                OrderId = orderId,
+                ProductId = productId,
+                BuyerId = buyerId,
+                LicenseKey = licenseKey,
+                AccessGrantedAt = DateTime.UtcNow,
+                Status = "active"
+            };
+
+            _context.Licenses.Add(license);
+            await _context.SaveChangesAsync();
+
+            return license;
+        }
+
+        public async Task<ReceiptDTO?> GetReceiptAsync(int orderId, int userId)
+        {
+            var license = await _context.Licenses
+                .Include(l => l.Order)
+                .Include(l => l.Order.OrderItems)
+                .Include(l => l.Product)
+                .Include(l => l.Product.Creator)
+                .FirstOrDefaultAsync(l => l.OrderId == orderId && l.BuyerId == userId);
+
+            if (license == null)
+                return null;
+
+            // Get the first order item for currency information
+            var orderItem = license.Order.OrderItems.FirstOrDefault();
+            var currency = orderItem?.CurrencySnapshot ?? "USD"; // Default to USD if not found
+
+            return new ReceiptDTO
+            {
+                OrderId = license.OrderId,
+                PurchaseDate = license.AccessGrantedAt,
+                Price = license.Order.TotalAmount,
+                Currency = currency,
+                ProductTitle = license.Product.Name,
+                ProductThumbnail = license.Product.ThumbnailImageUrl ?? license.Product.CoverImageUrl ?? "",
+                CreatorName = license.Product.Creator.Username,
+                LicenseKey = license.LicenseKey ?? "",
+                ProductId = license.ProductId
+            };
+        }
+
+        public async Task<List<ProductListItemDTO>> GetProductsByCreatorAsync(int creatorId, int? currentUserId = null)
+        {
+            // Get all products for this creator (including soft-deleted ones)
+            var allProducts = await _context.Products
+                .Include(p => p.Creator)
+                .Include(p => p.Reviews)
+                .Include(p => p.OrderItems)
+                .Where(p => p.CreatorId == creatorId && 
+                           p.Status == "Published" && 
+                           !p.IsDeleted) // Don't filter by creator.IsDeleted here
+                .OrderByDescending(p => p.PublishedAt ?? DateTime.MinValue)
+                .ToListAsync();
+
+            var result = new List<ProductListItemDTO>();
+
+            foreach (var product in allProducts)
+            {
+                // Check if current user has purchased this product
+                bool userHasPurchased = false;
+                if (currentUserId.HasValue)
+                {
+                    userHasPurchased = await _context.Licenses
+                        .AnyAsync(l => l.ProductId == product.Id && 
+                                      l.BuyerId == currentUserId.Value && 
+                                      l.Status == "active");
+                }
+
+                // Show product if:
+                // 1. Creator is not deleted, OR
+                // 2. Creator is deleted but user has purchased this product
+                bool shouldShowProduct = !product.Creator.IsDeleted || userHasPurchased;
+
+                if (shouldShowProduct)
+                {
+                    result.Add(new ProductListItemDTO
+                    {
+                        Id = product.Id,
+                        Name = product.Name,
+                        Price = product.Price,
+                        Currency = product.Currency,
+                        CoverImageUrl = product.CoverImageUrl,
+                        ThumbnailImageUrl = product.ThumbnailImageUrl,
+                        Permalink = product.Permalink,
+                        CreatorUsername = product.Creator.Username,
+                        CreatorId = product.CreatorId,
+                        AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
+                        SalesCount = product.OrderItems.Count,
+                        Status = product.Status,
+                        IsPublic = product.IsPublic,
+                        PublishedAt = product.PublishedAt,
+                        IsCreatorDeleted = product.Creator.IsDeleted, // Add this flag
+                        UserHasPurchased = userHasPurchased // Add this flag
+                    });
+                }
+            }
+
+            return result;
         }
     }
 }
