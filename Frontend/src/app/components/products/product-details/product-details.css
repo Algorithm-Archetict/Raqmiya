@@ -264,6 +264,19 @@
   margin-bottom: var(--spacing-lg);
 }
 
+.creator-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-weight: 600;
+}
+
+.creator-link:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
 .product-meta {
   display: flex;
   align-items: center;

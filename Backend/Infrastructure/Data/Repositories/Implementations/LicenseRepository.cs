@@ -54,6 +54,15 @@ namespace Raqmiya.Infrastructure
                 .FirstOrDefaultAsync(l => l.BuyerId == userId && l.ProductId == productId);
         }
 
+        public async Task<License?> GetByLicenseKeyAsync(string licenseKey)
+        {
+            return await _context.Licenses
+                .Include(l => l.Product)
+                .Include(l => l.Order)
+                .Include(l => l.Buyer)
+                .FirstOrDefaultAsync(l => l.LicenseKey == licenseKey);
+        }
+
         public async Task AddAsync(License license)
         {
             await _context.Licenses.AddAsync(license);

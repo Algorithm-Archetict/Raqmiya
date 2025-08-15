@@ -17,6 +17,9 @@ namespace Raqmiya.Infrastructure
         public async Task<Product?> GetByIdAsync(int id)
             => await _context.Products.FindAsync(id);
 
+        public async Task<Product?> GetByIdIncludingDeletedAsync(int id)
+            => await _context.Products.FindAsync(id);
+
         public async Task<List<Product>> GetAllAsync()
             => await _context.Products.ToListAsync();
 
@@ -90,7 +93,7 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.Variants)
                 .Include(p => p.OfferCodes)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Include(p => p.Subscriptions)
+
                 .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                 .Include(p => p.WishlistItems)
@@ -134,13 +137,13 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId));
+                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
         public async Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId))
+                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -156,13 +159,13 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Where(p => p.ProductTags.Any(pt => pt.TagId == tagId));
+                .Where(p => p.ProductTags.Any(pt => pt.TagId == tagId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
         public async Task<IEnumerable<Product>> GetProductsByTagIdAsync(int tagId, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.ProductTags.Any(pt => pt.TagId == tagId))
+                .Where(p => p.ProductTags.Any(pt => pt.TagId == tagId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -177,13 +180,13 @@ namespace Raqmiya.Infrastructure
                 .AsNoTracking()
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm));
+                .Where(p => (p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm)) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
         public async Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm))
+                .Where(p => (p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm)) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -198,13 +201,13 @@ namespace Raqmiya.Infrastructure
                 .AsNoTracking()
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Where(p => p.CreatorId == creatorId);
+                .Where(p => p.CreatorId == creatorId && !p.IsDeleted && p.Creator.IsActive);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
         public async Task<IEnumerable<Product>> GetProductsByCreatorIdAsync(int creatorId, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.CreatorId == creatorId)
+                .Where(p => p.CreatorId == creatorId && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -220,14 +223,14 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.Creator)
                 .Include(p => p.Files)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Where(p => p.Status == "published" && p.IsPublic);
+                .Where(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
         public async Task<IEnumerable<Product>> GetPublishedProductsAsync(int pageNumber, int pageSize)
         {
             // Fix: Remove .Include() after .Select() - not allowed in EF Core
             return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic)
+                .Where(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -333,6 +336,10 @@ namespace Raqmiya.Infrastructure
         {
             return await _context.WishlistItems
                 .Where(wi => wi.UserId == userId)
+                .Include(wi => wi.Product)
+                    .ThenInclude(p => p.Creator) // Include creator information
+                .Include(wi => wi.Product)
+                    .ThenInclude(p => p.Reviews) // Include reviews for rating calculation
                 .OrderByDescending(wi => wi.Product.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -362,6 +369,7 @@ namespace Raqmiya.Infrastructure
             return await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Creator) // Include relevant details
+                .Where(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.WishlistItems.Count())
                 .Take(count)
                 .ToListAsync();
@@ -372,7 +380,7 @@ namespace Raqmiya.Infrastructure
             return await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Creator)
-                .Where(p => p.Reviews.Any()) // Only products with reviews
+                .Where(p => p.Reviews.Any() && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive) // Only products with reviews
                 .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
                 .Take(count)
                 .ToListAsync();
@@ -383,6 +391,7 @@ namespace Raqmiya.Infrastructure
             return await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Where(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.OrderItems.Count()) // Assuming one order item per product
                 .Take(count)
                 .ToListAsync();
@@ -398,6 +407,7 @@ namespace Raqmiya.Infrastructure
             return await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Where(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .Select(p => new
                 {
                     Product = p,
@@ -420,12 +430,12 @@ namespace Raqmiya.Infrastructure
         // --- Derived Metrics Queries ---
         public async Task<int> GetPublishedProductsCountAsync()
         {
-            return await _context.Products.CountAsync(p => p.Status == "published" && p.IsPublic);
+            return await _context.Products.CountAsync(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive);
         }
 
         public async Task<int> GetProductsByCreatorCountAsync(int creatorId)
         {
-            return await _context.Products.CountAsync(p => p.CreatorId == creatorId);
+            return await _context.Products.CountAsync(p => p.CreatorId == creatorId && !p.IsDeleted && p.Creator.IsActive);
         }
 
         public async Task<int> GetUserWishlistCountAsync(int userId)
@@ -437,7 +447,7 @@ namespace Raqmiya.Infrastructure
         {
             // Only include what is needed for analytics display
             return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic)
+                .Where(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.WishlistItems.Count())
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -459,7 +469,7 @@ namespace Raqmiya.Infrastructure
         public async Task<IEnumerable<Product>> GetTopRatedProductsAsync(int count, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic && p.Reviews.Any())
+                .Where(p => p.Status == "published" && p.IsPublic && p.Reviews.Any() && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -481,7 +491,7 @@ namespace Raqmiya.Infrastructure
         public async Task<IEnumerable<Product>> GetBestSellingProductsAsync(int count, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic)
+                .Where(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.OrderItems.Count())
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -504,7 +514,7 @@ namespace Raqmiya.Infrastructure
         {
             var cutoffDate = DateTime.UtcNow.AddDays(-daysBack);
             return await _context.Products
-                .Where(p => p.Status == "published" && p.IsPublic)
+                .Where(p => p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.ProductViews.Count(pv => pv.ViewedAt >= cutoffDate) +
                                          p.WishlistItems.Count(wi => wi.AddedAt >= cutoffDate) +
                                          p.OrderItems.Count(o => o.CreatedAt >= cutoffDate))
@@ -615,6 +625,63 @@ namespace Raqmiya.Infrastructure
             _context.Files.Remove(file);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        // --- Soft Delete Operations ---
+        public async Task<bool> HasProductPurchasesAsync(int productId)
+        {
+            // Check if product has any order items (purchases)
+            return await _context.OrderItems
+                .AnyAsync(oi => oi.ProductId == productId);
+        }
+
+        public async Task SoftDeleteProductAsync(int productId, string deletionReason)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if (product != null)
+            {
+                product.IsDeleted = true;
+                product.DeletedAt = DateTime.UtcNow;
+                product.DeletionReason = deletionReason;
+                product.DeletionScheduledAt = DateTime.UtcNow.AddDays(30); // 30 days retention period
+                product.Status = "deleted"; // Hide from public listings
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task RestoreProductAsync(int productId)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if (product != null)
+            {
+                product.IsDeleted = false;
+                product.DeletedAt = null;
+                product.DeletionReason = null;
+                product.DeletionScheduledAt = null;
+                product.Status = "draft"; // Restore to draft status
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<List<Product>> GetSoftDeletedProductsAsync()
+        {
+            return await _context.Products
+                .Where(p => p.IsDeleted)
+                .Include(p => p.Creator)
+                .OrderByDescending(p => p.DeletedAt)
+                .ToListAsync();
+        }
+
+        public async Task PermanentlyDeleteProductAsync(int productId)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if (product != null)
+            {
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

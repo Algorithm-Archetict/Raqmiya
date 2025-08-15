@@ -1,0 +1,71 @@
+<div class="auth-container">
+    <section class="hero-section">
+        <div class="hero-background">
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+                <div class="shape shape-4"></div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row justify-content-center align-items-center min-vh-70">
+                <div class="col-lg-4 col-md-6 col-sm-8">
+                    <div class="auth-card animate-fade-in-up">
+                        <!-- Header -->
+                        <div class="auth-header">
+                            <div class="auth-logo">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <h1 class="auth-title">Restore Account</h1>
+                            <p class="auth-subtitle">Restoring your account access</p>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div *ngIf="isLoading" class="text-center">
+                            <app-loading-spinner></app-loading-spinner>
+                            <p class="mt-3">Restoring your account...</p>
+                        </div>
+
+                        <!-- Success State -->
+                        <div *ngIf="restorationComplete && !isLoading" class="text-center">
+                            <div class="success-icon mb-3">
+                                <i class="fas fa-check-circle text-success"></i>
+                            </div>
+                            <h3 class="text-success mb-3">Account Restored Successfully</h3>
+                            <p class="text-muted mb-3">{{ successMessage }}</p>
+                            
+                            <div class="mt-4">
+                                <p class="text-muted small">
+                                    You will be redirected to the home page in a few seconds...
+                                </p>
+                                <button class="btn btn-primary" (click)="goToHome()">
+                                    Go to Home Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Error State -->
+                        <div *ngIf="errorMessage && !isLoading && !restorationComplete" class="text-center">
+                            <div class="error-icon mb-3">
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                            </div>
+                            <h3 class="text-danger mb-3">Restoration Failed</h3>
+                            <p class="text-muted mb-3">{{ errorMessage }}</p>
+                            
+                            <div class="mt-4">
+                                <button class="btn btn-primary me-2" (click)="goToLogin()">
+                                    Go to Login
+                                </button>
+                                <button class="btn btn-secondary" (click)="goToHome()">
+                                    Go to Home
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

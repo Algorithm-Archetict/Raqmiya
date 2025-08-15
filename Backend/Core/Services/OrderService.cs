@@ -60,7 +60,15 @@ namespace Core.Services
 
         public async Task<OrderDTO> CreateOrderAsync(int userId, OrderCreateDTO dto)
         {
-            // Skip validation for now - proceed directly to order creation
+            // Check for existing purchases to prevent duplicates
+            foreach (var item in dto.items)
+            {
+                var hasExistingPurchase = await _purchaseValidationService.HasActivePurchaseAsync(userId, item.productId);
+                if (hasExistingPurchase)
+                {
+                    throw new InvalidOperationException($"User already has an active purchase for product {item.productId}");
+                }
+            }
             
             // Create order (quantity always 1 for digital products)
             var order = new Order
@@ -177,11 +185,21 @@ namespace Core.Services
                 var product = await _productRepository.GetByIdAsync(item.ProductId);
                 if (product == null) continue;
                 
+                // Generate unique license key
+                var licenseKey = GenerateLicenseKey(order.Id, order.BuyerId, item.ProductId);
+                
+                // Ensure uniqueness (very unlikely collision, but safety check)
+                while (await _licenseRepository.GetByLicenseKeyAsync(licenseKey) != null)
+                {
+                    licenseKey = GenerateLicenseKey(order.Id, order.BuyerId, item.ProductId);
+                }
+                
                 var license = new License
                 {
                     OrderId = order.Id,
                     ProductId = item.ProductId,
                     BuyerId = order.BuyerId,
+                    LicenseKey = licenseKey,
                     AccessGrantedAt = DateTime.UtcNow,
                     Status = "active",
                     // Set ExpiresAt based on product type (subscription vs one-time)
@@ -189,9 +207,25 @@ namespace Core.Services
                 };
                 
                 await _licenseRepository.AddAsync(license);
-                _logger.LogInformation("License {LicenseId} generated for product {ProductId} and user {UserId}", 
-                    license.Id, item.ProductId, order.BuyerId);
+                _logger.LogInformation("License {LicenseId} with key {LicenseKey} generated for product {ProductId} and user {UserId}", 
+                    license.Id, licenseKey, item.ProductId, order.BuyerId);
             }
+        }
+
+        private string GenerateLicenseKey(int orderId, int buyerId, int productId)
+        {
+            // Create a unique string combining the three IDs
+            var combinedString = $"{orderId}-{buyerId}-{productId}-{DateTime.UtcNow.Ticks}";
+            
+            // Generate SHA256 hash
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(combinedString));
+            
+            // Convert to hex string and take first 16 characters for a shorter key
+            var licenseKey = Convert.ToHexString(hashBytes).Substring(0, 16).ToUpper();
+            
+            // Format as XXXX-XXXX-XXXX-XXXX for better readability
+            return $"{licenseKey.Substring(0, 4)}-{licenseKey.Substring(4, 4)}-{licenseKey.Substring(8, 4)}-{licenseKey.Substring(12, 4)}";
         }
 
         private DateTime? GetProductExpiration(Product product)
@@ -235,6 +269,7 @@ namespace Core.Services
                     CoverImageUrl = product.CoverImageUrl,
                     ThumbnailImageUrl = product.ThumbnailImageUrl,
                     CreatorUsername = product.Creator?.Username ?? "Unknown",
+                    CreatorId = product.CreatorId,
                     PurchasePrice = orderItem.UnitPrice,
                     PurchaseDate = order.OrderedAt,
                     OrderId = order.Id.ToString(),
@@ -283,6 +318,7 @@ namespace Core.Services
                 CoverImageUrl = product.CoverImageUrl,
                 ThumbnailImageUrl = product.ThumbnailImageUrl,
                 CreatorUsername = product.Creator?.Username ?? "Unknown",
+                CreatorId = product.CreatorId,
                 PurchasePrice = orderItem.UnitPrice,
                 PurchaseDate = order.OrderedAt,
                 OrderId = order.Id.ToString(),

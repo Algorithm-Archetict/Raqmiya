@@ -1,0 +1,80 @@
+<div class="auth-container">
+  <section class="hero-section">
+    <div class="hero-background">
+      <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="row justify-content-center align-items-center min-vh-70">
+        <div class="col-lg-4 col-md-6 col-sm-8">
+          <div class="auth-card animate-fade-in-up">
+            <!-- Header -->
+            <div class="auth-header">
+              <div class="auth-logo">
+                <i class="fas fa-undo"></i>
+              </div>
+              <h1 class="auth-title">Cancel Account Deletion</h1>
+              <p class="auth-subtitle">Cancelling your account deletion request</p>
+            </div>
+
+            <!-- Cancellation Content -->
+            <div class="auth-form">
+              <!-- Loading State -->
+              <div *ngIf="isLoading" class="loading-container text-center">
+                <app-loading-spinner></app-loading-spinner>
+                <p class="mt-3">Cancelling account deletion...</p>
+              </div>
+
+              <!-- Success State -->
+              <div *ngIf="!isLoading && cancellationComplete" class="success-container text-center">
+                <div class="success-icon mb-3">
+                  <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                </div>
+                <h3 class="text-success mb-3">Deletion Cancelled!</h3>
+                <p class="mb-2">{{ successMessage }}</p>
+                <p class="text-muted">Redirecting you to settings...</p>
+              </div>
+
+              <!-- Error State -->
+              <div *ngIf="!isLoading && !cancellationComplete && errorMessage" class="error-container text-center">
+                <div class="error-icon mb-3">
+                  <i class="fas fa-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h3 class="text-danger mb-3">Cancellation Failed</h3>
+                <p class="mb-4">{{ errorMessage }}</p>
+                
+                <div class="form-actions">
+                  <button class="btn btn-primary btn-sm w-100 mb-2" (click)="goToSettings()">
+                    <i class="fas fa-cog me-2"></i>Go to Settings
+                  </button>
+                  <button class="btn btn-outline btn-sm w-100" (click)="goToHome()">
+                    <i class="fas fa-home me-2"></i>Go to Home
+                  </button>
+                </div>
+              </div>
+
+              <!-- Initial Cancelling State -->
+              <div *ngIf="!isLoading && !cancellationComplete && !errorMessage" class="cancelling-container text-center">
+                <div class="cancelling-icon mb-3">
+                  <i class="fas fa-spinner fa-spin text-primary" style="font-size: 3rem;"></i>
+                </div>
+                <h3 class="mb-3">Cancelling Account Deletion</h3>
+                <p class="text-muted">Please wait while we process your request...</p>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="auth-footer">
+              <p>Need help? <a href="#" class="text-gradient" (click)="goToHome()">Contact Support</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
