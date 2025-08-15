@@ -255,14 +255,21 @@ export class AllProducts implements OnInit {
   confirmDelete() {
     if (this.productToDelete) {
       this.productService.deleteProduct(this.productToDelete.id).subscribe({
-        next: () => {
+        next: (response: any) => {
           // Remove product from the array
           this.products = this.products.filter(p => p.id !== this.productToDelete!.id);
           this.closeDeleteModal();
+          
+          // Show appropriate message based on deletion type
+          if (response && response.message) {
+            // You can show a success message here if needed
+            console.log('Product deletion response:', response.message);
+          }
         },
         error: (error: any) => {
           console.error('Error deleting product:', error);
-          // You might want to show an error message to the user
+          // Show error message to the user
+          // You might want to add a toast notification here
         }
       });
     }

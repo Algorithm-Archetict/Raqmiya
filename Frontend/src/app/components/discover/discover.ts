@@ -7,11 +7,13 @@ import { ProductListItemDTO } from '../../core/models/product/product-list-item.
 import { Navbar } from '../navbar/navbar';
 import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
+import Swal from 'sweetalert2';
 
 interface Product {
   id: number;
   title: string;
   creator: string;
+  creatorId?: number; // Add creator ID for comparison
   price: number;
   rating: number;
   ratingCount: number;
@@ -74,16 +76,12 @@ export class Discover implements OnInit, AfterViewInit {
     // Refresh wishlist status when returning to discover page
     // This handles cases where user navigated from product details
     setTimeout(() => {
-      if (this.authService.isLoggedIn()) {
-        this.loadWishlistStatus();
-      }
+      this.loadWishlistStatus(); // This now handles anonymous users properly
     }, 200);
 
     // Listen for focus events to refresh wishlist when user returns to tab
     window.addEventListener('focus', () => {
-      if (this.authService.isLoggedIn()) {
-        this.loadWishlistStatus();
-      }
+      this.loadWishlistStatus(); // This now handles anonymous users properly
     });
   }
 
@@ -114,6 +112,7 @@ export class Discover implements OnInit, AfterViewInit {
           id: product.id,
           title: product.name || 'Untitled Product',
           creator: product.creatorUsername || 'Unknown Creator',
+          creatorId: product.creatorId, // Add creator ID
           price: product.price,
           rating: product.averageRating,
           ratingCount: 0, // Will be populated with actual review count
@@ -130,18 +129,18 @@ export class Discover implements OnInit, AfterViewInit {
           loadingPurchase: false
         }));
         
-        this.recommendedProducts = this.allProducts.slice(0, 6);
-        this.filteredProducts = [...this.allProducts];
-        this.loading = false;
-        
-        // Load wishlist status for all products
-        this.loadWishlistStatus();
-        
-        // Load actual review counts for all products
-        this.loadReviewCounts();
-        
-        // Load purchase status for all products
-        this.loadPurchaseStatus();
+                 this.recommendedProducts = this.allProducts.slice(0, 6);
+         this.filteredProducts = [...this.allProducts];
+         this.loading = false;
+         
+         // Load wishlist status for all products (handles anonymous users properly)
+         this.loadWishlistStatus();
+         
+         // Load actual review counts for all products
+         this.loadReviewCounts();
+         
+         // Load purchase status for all products (handles anonymous users properly)
+         this.loadPurchaseStatus();
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
@@ -162,6 +161,16 @@ export class Discover implements OnInit, AfterViewInit {
 
   // Load wishlist status for all products
   loadWishlistStatus() {
+    // Only load wishlist status if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      // For anonymous users, set all products as not in wishlist
+      this.allProducts.forEach(product => {
+        product.inWishlist = false;
+      });
+      this.applyFilters();
+      return;
+    }
+
     this.productService.getWishlist().subscribe({
       next: (wishlistProducts: ProductListItemDTO[]) => {
         const wishlistIds = wishlistProducts.map(p => p.id);
@@ -251,6 +260,12 @@ export class Discover implements OnInit, AfterViewInit {
     // Prevent event bubbling to avoid triggering product view
     event.stopPropagation();
     
+    // Check if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      this.showLoginPrompt('add this item to your wishlist');
+      return;
+    }
+    
     if (product.loadingWishlist) {
       return; // Prevent multiple clicks while loading
     }
@@ -328,6 +343,60 @@ export class Discover implements OnInit, AfterViewInit {
         this.showToast(`"${productTitle}" removed from wishlist`, 'success');
       }
     }
+  }
+
+  // Check if user is logged in
+  isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  // Check if current user is the creator of a product
+  isCreator(product: Product): boolean {
+    if (!this.authService.isLoggedIn()) {
+      return false;
+    }
+    const currentUser = this.authService.getCurrentUser();
+    return !!(currentUser && product.creatorId === currentUser.id);
+  }
+
+  // Navigate to creator dashboard
+  viewMyProducts() {
+    this.router.navigate(['/products']);
+  }
+
+  // Navigate to creator profile
+  viewCreatorProfile(creatorId?: number) {
+    if (creatorId) {
+      this.router.navigate(['/creator', creatorId]);
+    }
+  }
+
+  // Show login prompt for anonymous users
+  showLoginPrompt(action: string) {
+    Swal.fire({
+      title: 'Login Required',
+      html: `
+        <div class="login-prompt">
+          <i class="fas fa-sign-in-alt" style="font-size: 3rem; color: #667eea; margin-bottom: 1rem;"></i>
+          <p>You need to be logged in to ${action}.</p>
+          <p>Please sign in to continue.</p>
+        </div>
+      `,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Sign In',
+      cancelButtonText: 'Continue Browsing',
+      confirmButtonColor: '#667eea',
+      cancelButtonColor: '#6c757d',
+      customClass: {
+        confirmButton: 'btn btn-primary',
+        cancelButton: 'btn btn-secondary'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/login']);
+      }
+    });
   }
 
   // Show wishlist success popup with item count
@@ -606,11 +675,6 @@ export class Discover implements OnInit, AfterViewInit {
   onWishlistHover(product: Product, isHovered: boolean, event: Event) {
     event.stopPropagation();
     product.wishlistHovered = isHovered;
-  }
-
-  // Check if user is logged in
-  isLoggedIn(): boolean {
-    return this.authService.isLoggedIn();
   }
 
   // Search functionality

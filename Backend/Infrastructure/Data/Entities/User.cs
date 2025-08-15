@@ -32,11 +32,17 @@ namespace Raqmiya.Infrastructure
 
         public bool IsActive { get; set; } = true; // Indicates if the user account is active
 
+        // Soft Delete Properties
+        public bool IsDeleted { get; set; } = false; // Indicates if the user account is soft deleted
+        public DateTime? DeletedAt { get; set; } // When the account was soft deleted
+        public string? DeletionReason { get; set; } // Reason for deletion (optional)
+        public DateTime? DeletionScheduledAt { get; set; } // When the account will be permanently deleted (30 days after soft delete)
+
         // Navigation properties
         public ICollection<Product> Products { get; set; } = new List<Product>();
         public ICollection<Order> Orders { get; set; } = new List<Order>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
-        public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+
         public ICollection<Post> Posts { get; set; } = new List<Post>();
         public ICollection<WishlistItem> WishlistItems { get; set; } = new List<WishlistItem>();
         public ICollection<ProductView> ProductViews { get; set; } = new List<ProductView>();

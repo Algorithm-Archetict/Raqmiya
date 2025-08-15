@@ -21,7 +21,7 @@ namespace Core.Interfaces
         Task<PagedResultDTO<ProductListItemDTO>> GetCreatorProductsAsync(int creatorId, int pageNumber, int pageSize);
         Task<ProductDetailDTO> CreateProductAsync(int creatorId, ProductCreateRequestDTO productDto);
         Task<ProductDetailDTO> UpdateProductAsync(int productId, int creatorId, ProductUpdateRequestDTO productDto);
-        Task DeleteProductAsync(int productId, int creatorId);
+        Task DeleteProductAsync(int productId, int creatorId, string? deletionReason = null);
         
         // Entity-level operations for image uploads
         Task<Raqmiya.Infrastructure.Product?> GetByIdAsync(int productId);
@@ -56,9 +56,18 @@ namespace Core.Interfaces
         
         // --- Review Management ---
         Task<bool> HasUserPurchasedProductAsync(int productId, int userId);
+        Task<bool> CanPurchaseProductAsync(int productId);
         Task<Raqmiya.Infrastructure.Review?> GetUserReviewAsync(int productId, int userId);
         Task AddReviewAsync(int productId, int userId, Shared.DTOs.ProductDTOs.ReviewDTO reviewDto);
         Task UpdateUserReviewAsync(int productId, int userId, Shared.DTOs.ProductDTOs.ReviewDTO reviewDto);
         Task DeleteUserReviewAsync(int productId, int userId);
+
+        // --- License Management ---
+        string GenerateLicenseKey(int orderId, int buyerId, int productId);
+        Task<Raqmiya.Infrastructure.License> CreateLicenseAsync(int orderId, int productId, int buyerId);
+        Task<Shared.DTOs.ProductDTOs.ReceiptDTO?> GetReceiptAsync(int orderId, int userId);
+        
+        // --- Creator Profile ---
+        Task<List<ProductListItemDTO>> GetProductsByCreatorAsync(int creatorId, int? currentUserId = null);
     }
 }

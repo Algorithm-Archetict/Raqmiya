@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Raqmiya.Infrastructure;
+using Infrastructure.Data.Entities;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 
@@ -29,11 +30,14 @@ namespace Raqmiya.Infrastructure
 
         //i added
         public DbSet<License> Licenses { get; set; } = null!;
-        public DbSet<Subscription> Subscriptions { get; set; } = null!;
+        public DbSet<CreatorSubscription> CreatorSubscriptions { get; set; } = null!;
         public DbSet<Post> Posts { get; set; } = null!;
         // public DbSet<ProductCategory> ProductCategories { get; set; } = null!;
         public DbSet<CategoryTag> CategoryTags { get; set; } = null!;
         public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
+        public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; } = null!;
+        public DbSet<AccountDeletionToken> AccountDeletionTokens { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -212,6 +216,71 @@ namespace Raqmiya.Infrastructure
                 .WithMany()
                 .HasForeignKey(m => m.AdminId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure PasswordResetToken table
+            modelBuilder.Entity<PasswordResetToken>(entity =>
+            {
+                entity.Property(e => e.Token).IsRequired().HasMaxLength(255);
+                entity.HasIndex(e => e.Token).IsUnique();
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                entity.Property(e => e.IsUsed).IsRequired();
+                
+                // Relationship with User
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure EmailVerificationToken table
+            modelBuilder.Entity<EmailVerificationToken>(entity =>
+            {
+                entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.Token).IsRequired().HasMaxLength(255);
+                entity.HasIndex(e => e.Token).IsUnique();
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                entity.Property(e => e.IsUsed).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.PendingUserData).IsRequired();
+            });
+
+            // Configure AccountDeletionToken table
+            modelBuilder.Entity<AccountDeletionToken>(entity =>
+            {
+                entity.Property(e => e.Token).IsRequired().HasMaxLength(255);
+                entity.HasIndex(e => e.Token).IsUnique();
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                entity.Property(e => e.IsUsed).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.DeletionData).IsRequired();
+                
+                // Relationship with User
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure CreatorSubscription table
+            modelBuilder.Entity<CreatorSubscription>(entity =>
+            {
+                entity.HasIndex(e => new { e.FollowerId, e.CreatorId }).IsUnique(); // Prevent duplicate subscriptions
+                entity.HasIndex(e => e.CreatorId);
+                entity.HasIndex(e => e.FollowerId);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.IsDeleted);
+                
+                // Relationships
+                entity.HasOne(e => e.Follower)
+                    .WithMany()
+                    .HasForeignKey(e => e.FollowerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                    
+                entity.HasOne(e => e.Creator)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Ensure other entity configurations (e.g., string lengths) are present.
         }

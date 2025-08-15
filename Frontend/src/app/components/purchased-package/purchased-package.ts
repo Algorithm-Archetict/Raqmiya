@@ -17,6 +17,7 @@ interface PurchasedProduct {
   coverImageUrl?: string;
   thumbnailImageUrl?: string;
   creatorUsername: string;
+  creatorId?: number;
   purchasePrice: number;
   purchaseDate: Date;
   orderId: string;
@@ -314,33 +315,64 @@ export class PurchasedPackage implements OnInit {
 
   viewReceipt() {
     if (this.product) {
-      // Show receipt details in a nice modal
-      Swal.fire({
-        title: 'Receipt Details',
-        html: `
-          <div class="text-left">
-            <p><strong>Order ID:</strong> ${this.product.orderId}</p>
-            <p><strong>Date:</strong> ${this.product.purchaseDate.toLocaleDateString()}</p>
-            <p><strong>Amount:</strong> $${this.product.purchasePrice}</p>
-            <p><strong>Product:</strong> ${this.product.productName}</p>
-          </div>
-        `,
-        icon: 'info',
-        confirmButtonText: 'Close'
-      });
+      // Navigate to the receipt component
+      this.router.navigate(['/receipt', this.product.orderId]);
     }
   }
 
   resendReceipt() {
-    // In real app, this would trigger email resend
-    // Resend receipt to user's email
+    if (!this.product) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Product information not available.',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+
+    // Show loading state
     Swal.fire({
-      icon: 'success',
-      title: 'Receipt Sent!',
-      text: 'Receipt has been resent to your email address.',
-      confirmButtonText: 'OK',
-      timer: 3000,
-      timerProgressBar: true
+      title: 'Sending Receipt...',
+      text: 'Please wait while we send the receipt to your email.',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // Call the backend API to resend receipt
+    this.productService.resendReceipt(parseInt(this.product.orderId)).subscribe({
+      next: (response: any) => {
+        Swal.close();
+        if (response.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Receipt Sent!',
+            text: 'Receipt has been resent to your email address.',
+            confirmButtonText: 'OK',
+            timer: 3000,
+            timerProgressBar: true
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Failed to Send Receipt',
+            text: response.message || 'Failed to send receipt. Please try again later.',
+            confirmButtonText: 'OK'
+          });
+        }
+      },
+      error: (error: any) => {
+        console.error('Error resending receipt:', error);
+        Swal.close();
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed to Send Receipt',
+          text: 'An error occurred while sending the receipt. Please try again later.',
+          confirmButtonText: 'OK'
+        });
+      }
     });
   }
 
@@ -459,20 +491,8 @@ export class PurchasedPackage implements OnInit {
   }
 
   viewCreator() {
-    if (this.product?.creatorUsername) {
-      // Show creator profile in a nice modal
-      Swal.fire({
-        title: 'Creator Profile',
-        html: `
-          <div class="text-center">
-            <h4>${this.getCreatorName()}</h4>
-            <p>This would navigate to the creator's profile page.</p>
-            <p><small>In a real application, this would show the creator's full profile, products, and contact information.</small></p>
-          </div>
-        `,
-        icon: 'info',
-        confirmButtonText: 'OK'
-      });
+    if (this.product?.creatorId && this.product.creatorId > 0) {
+      this.router.navigate(['/creator', this.product.creatorId]);
     }
   }
 
@@ -557,4 +577,6 @@ export class PurchasedPackage implements OnInit {
     }
     return 'Unknown Creator';
   }
+
+
 }
