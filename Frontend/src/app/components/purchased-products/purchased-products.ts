@@ -12,7 +12,9 @@ interface PurchasedProductDTO {
   productName: string;
   productPermalink: string;
   coverImageUrl?: string;
+  thumbnailImageUrl?: string;
   creatorUsername: string;
+  creatorId?: number;
   purchasePrice: number;
   purchaseDate: Date;
   orderId: string;
@@ -171,5 +173,12 @@ export class PurchasedProducts implements OnInit {
       return product.creatorUsername;
     }
     return 'Unknown Creator';
+  }
+
+  // Navigate to creator profile
+  viewCreator(product: PurchasedProductDTO) {
+    if (product.creatorId && product.creatorId > 0) {
+      this.router.navigate(['/creator', product.creatorId]);
+    }
   }
 } 

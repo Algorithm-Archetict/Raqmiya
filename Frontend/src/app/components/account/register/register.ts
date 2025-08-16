@@ -69,12 +69,13 @@ export class Register implements OnInit {
       this.authService.register(registerPayload).subscribe({
         next: (response) => {
           this.isLoading = false;
-          this.successMessage = response.message || 'Registration successful! You can now log in.';
-          this.registerForm.reset(); // Clear form
-          // Optionally redirect to login after a short delay
-          setTimeout(() => {
-            this.router.navigate(['/auth/login']);
-          }, 2000);
+          if (response.success) {
+            this.successMessage = response.message || 'Check your email to verify your account.';
+            this.registerForm.reset(); // Clear form
+            // Don't redirect immediately - let user see the success message
+          } else {
+            this.errorMessage = response.message || 'Registration failed. Please try again.';
+          }
         },
         error: (err) => {
           this.isLoading = false;

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using System;
 
 
 namespace Core.Services
@@ -17,6 +18,7 @@ namespace Core.Services
         private readonly ILicenseRepository _licenseRepository;
         private readonly IProductRepository _productRepository;
         private readonly IPurchaseValidationService _purchaseValidationService;
+        private readonly IPaymentMethodBalanceRepository _paymentMethodBalanceRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<OrderService> _logger;
 
@@ -25,6 +27,7 @@ namespace Core.Services
             ILicenseRepository licenseRepository,
             IProductRepository productRepository,
             IPurchaseValidationService purchaseValidationService,
+            IPaymentMethodBalanceRepository paymentMethodBalanceRepository,
             IMapper mapper,
             ILogger<OrderService> logger)
         {
@@ -32,6 +35,7 @@ namespace Core.Services
             _licenseRepository = licenseRepository;
             _productRepository = productRepository;
             _purchaseValidationService = purchaseValidationService;
+            _paymentMethodBalanceRepository = paymentMethodBalanceRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -56,14 +60,22 @@ namespace Core.Services
 
         public async Task<OrderDTO> CreateOrderAsync(int userId, OrderCreateDTO dto)
         {
-            // Skip validation for now - proceed directly to order creation
+            // Check for existing purchases to prevent duplicates
+            foreach (var item in dto.items)
+            {
+                var hasExistingPurchase = await _purchaseValidationService.HasActivePurchaseAsync(userId, item.productId);
+                if (hasExistingPurchase)
+                {
+                    throw new InvalidOperationException($"User already has an active purchase for product {item.productId}");
+                }
+            }
             
             // Create order (quantity always 1 for digital products)
             var order = new Order
             {
                 BuyerId = userId,
                 OrderedAt = DateTime.UtcNow,
-                Status = "Pending",
+                Status = "Completed", // Changed from "Pending" to "Completed"
                 OrderItems = new List<OrderItem>()
             };
             
@@ -89,6 +101,8 @@ namespace Core.Services
             order.TotalAmount = order.OrderItems.Sum(i => i.UnitPrice);
             await _orderRepository.AddAsync(order);
 
+            // Update balances: deduct from buyer, add to creator
+            await UpdateBalancesForOrder(order);
             
             // Generate licenses for each product
             await GenerateLicensesAsync(order);
@@ -96,27 +110,72 @@ namespace Core.Services
             _logger.LogInformation("Order {OrderId} created for user {UserId} with {ItemCount} items", 
                 order.Id, userId, order.OrderItems.Count);
             
-// =======
-
-//             // Generate a permanent license for each product in the order
-//             foreach (var item in order.OrderItems)
-//             {
-//                 var license = new License
-//                 {
-//                     OrderId = order.Id,
-//                     ProductId = item.ProductId,
-//                     BuyerId = userId,
-//                     LicenseKey = Guid.NewGuid().ToString(),
-//                     AccessGrantedAt = DateTime.UtcNow,
-//                     ExpiresAt = null, // Permanent license
-//                     Status = "active"
-//                 };
-//                 order.Licenses.Add(license);
-//             }
-//             await _orderRepository.UpdateAsync(order);
-
-// >>>>>>> main
             return _mapper.Map<OrderDTO>(order);
+        }
+
+        private async Task UpdateBalancesForOrder(Order order)
+        {
+            try
+            {
+                foreach (var item in order.OrderItems)
+                {
+                    var product = await _productRepository.GetByIdAsync(item.ProductId);
+                    if (product == null) continue;
+
+                    var totalItemCost = item.UnitPrice * item.Quantity;
+
+                    // Deduct from buyer's selected payment method
+                    var buyerSelectedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(order.BuyerId);
+                    if (buyerSelectedBalance != null)
+                    {
+                        // Convert currency if needed
+                        var buyerCurrency = buyerSelectedBalance.Currency;
+                        var convertedAmount = ConvertCurrencyForBalance(totalItemCost, product.Currency, buyerCurrency).Result;
+                        
+                        await _paymentMethodBalanceRepository.UpdateBalanceAsync(
+                            order.BuyerId, 
+                            buyerSelectedBalance.PaymentMethodId, 
+                            -convertedAmount, 
+                            buyerCurrency);
+                    }
+
+                    // Add to creator's selected payment method
+                    var creatorSelectedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(product.CreatorId);
+                    if (creatorSelectedBalance != null)
+                    {
+                        // Convert currency if needed
+                        var creatorCurrency = creatorSelectedBalance.Currency;
+                        var convertedAmount = ConvertCurrencyForBalance(totalItemCost, product.Currency, creatorCurrency).Result;
+                        
+                        await _paymentMethodBalanceRepository.UpdateBalanceAsync(
+                            product.CreatorId, 
+                            creatorSelectedBalance.PaymentMethodId, 
+                            convertedAmount, 
+                            creatorCurrency);
+                    }
+                }
+
+                _logger.LogInformation("Balances updated for order {OrderId}", order.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating balances for order {OrderId}", order.Id);
+                throw;
+            }
+        }
+
+        private Task<decimal> ConvertCurrencyForBalance(decimal amount, string fromCurrency, string toCurrency)
+        {
+            if (fromCurrency == toCurrency) return Task.FromResult(amount);
+
+            // Use the same conversion logic as the repository
+            decimal convertedAmount = amount;
+            if (fromCurrency == "USD" && toCurrency == "EGP")
+                convertedAmount = amount * 50; // 1 USD = 50 EGP
+            else if (fromCurrency == "EGP" && toCurrency == "USD")
+                convertedAmount = amount * 0.02m; // 1 EGP = 0.02 USD
+
+            return Task.FromResult(convertedAmount);
         }
 
         private async Task GenerateLicensesAsync(Order order)
@@ -126,11 +185,21 @@ namespace Core.Services
                 var product = await _productRepository.GetByIdAsync(item.ProductId);
                 if (product == null) continue;
                 
+                // Generate unique license key
+                var licenseKey = GenerateLicenseKey(order.Id, order.BuyerId, item.ProductId);
+                
+                // Ensure uniqueness (very unlikely collision, but safety check)
+                while (await _licenseRepository.GetByLicenseKeyAsync(licenseKey) != null)
+                {
+                    licenseKey = GenerateLicenseKey(order.Id, order.BuyerId, item.ProductId);
+                }
+                
                 var license = new License
                 {
                     OrderId = order.Id,
                     ProductId = item.ProductId,
                     BuyerId = order.BuyerId,
+                    LicenseKey = licenseKey,
                     AccessGrantedAt = DateTime.UtcNow,
                     Status = "active",
                     // Set ExpiresAt based on product type (subscription vs one-time)
@@ -138,9 +207,25 @@ namespace Core.Services
                 };
                 
                 await _licenseRepository.AddAsync(license);
-                _logger.LogInformation("License {LicenseId} generated for product {ProductId} and user {UserId}", 
-                    license.Id, item.ProductId, order.BuyerId);
+                _logger.LogInformation("License {LicenseId} with key {LicenseKey} generated for product {ProductId} and user {UserId}", 
+                    license.Id, licenseKey, item.ProductId, order.BuyerId);
             }
+        }
+
+        private string GenerateLicenseKey(int orderId, int buyerId, int productId)
+        {
+            // Create a unique string combining the three IDs
+            var combinedString = $"{orderId}-{buyerId}-{productId}-{DateTime.UtcNow.Ticks}";
+            
+            // Generate SHA256 hash
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(combinedString));
+            
+            // Convert to hex string and take first 16 characters for a shorter key
+            var licenseKey = Convert.ToHexString(hashBytes).Substring(0, 16).ToUpper();
+            
+            // Format as XXXX-XXXX-XXXX-XXXX for better readability
+            return $"{licenseKey.Substring(0, 4)}-{licenseKey.Substring(4, 4)}-{licenseKey.Substring(8, 4)}-{licenseKey.Substring(12, 4)}";
         }
 
         private DateTime? GetProductExpiration(Product product)
@@ -157,7 +242,7 @@ namespace Core.Services
             var purchasedProducts = new List<PurchasedProductDTO>();
             foreach (var license in licenses)
             {
-                var product = await _productRepository.GetByIdAsync(license.ProductId);
+                var product = await _productRepository.GetProductWithAllDetailsAsync(license.ProductId);
                 if (product == null) continue;
                 
                 var order = await _orderRepository.GetByIdAsync(license.OrderId);
@@ -166,14 +251,15 @@ namespace Core.Services
                 var orderItem = order.OrderItems.FirstOrDefault(oi => oi.ProductId == license.ProductId);
                 if (orderItem == null) continue;
                 
-                // Get product files
-                var files = await _productRepository.GetProductFilesAsync(product.Id);
-                var fileDtos = files.Select(f => new FileDTO 
-                { 
-                    Id = f.Id, 
-                    Name = f.Name, 
-                    FileUrl = f.FileUrl 
-                }).ToList();
+                            // Get product files
+            var files = await _productRepository.GetProductFilesAsync(product.Id);
+            var fileDtos = files.Select(f => new FileDTO 
+            { 
+                Id = f.Id, 
+                Name = f.Name, 
+                FileUrl = f.FileUrl,
+                Size = f.Size
+            }).ToList();
                 
                 purchasedProducts.Add(new PurchasedProductDTO
                 {
@@ -181,7 +267,9 @@ namespace Core.Services
                     ProductName = product.Name,
                     ProductPermalink = product.Permalink,
                     CoverImageUrl = product.CoverImageUrl,
+                    ThumbnailImageUrl = product.ThumbnailImageUrl,
                     CreatorUsername = product.Creator?.Username ?? "Unknown",
+                    CreatorId = product.CreatorId,
                     PurchasePrice = orderItem.UnitPrice,
                     PurchaseDate = order.OrderedAt,
                     OrderId = order.Id.ToString(),
@@ -203,7 +291,7 @@ namespace Core.Services
             
             if (license == null) return null;
             
-            var product = await _productRepository.GetByIdAsync(license.ProductId);
+            var product = await _productRepository.GetProductWithAllDetailsAsync(license.ProductId);
             if (product == null) return null;
             
             var order = await _orderRepository.GetByIdAsync(license.OrderId);
@@ -218,7 +306,8 @@ namespace Core.Services
             { 
                 Id = f.Id, 
                 Name = f.Name, 
-                FileUrl = f.FileUrl 
+                FileUrl = f.FileUrl,
+                Size = f.Size
             }).ToList();
             
             return new PurchasedProductDTO
@@ -227,7 +316,9 @@ namespace Core.Services
                 ProductName = product.Name,
                 ProductPermalink = product.Permalink,
                 CoverImageUrl = product.CoverImageUrl,
+                ThumbnailImageUrl = product.ThumbnailImageUrl,
                 CreatorUsername = product.Creator?.Username ?? "Unknown",
+                CreatorId = product.CreatorId,
                 PurchasePrice = orderItem.UnitPrice,
                 PurchaseDate = order.OrderedAt,
                 OrderId = order.Id.ToString(),

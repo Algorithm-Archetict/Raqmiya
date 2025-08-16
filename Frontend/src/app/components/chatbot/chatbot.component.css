@@ -109,10 +109,33 @@
   padding: 15px;
 }
 
+.admin-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
 .admin-panel-header h6 {
   color: #fff;
-  margin: 0 0 10px 0;
+  margin: 0;
   font-size: 14px;
+}
+
+.kb-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(255, 0, 0, 0.2);
+  color: #ff6b6b;
+}
+
+.kb-status.available {
+  background: rgba(0, 255, 0, 0.2);
+  color: #51cf66;
 }
 
 .admin-panel-content {
@@ -456,4 +479,85 @@
   border-radius: 3px;
   font-family: 'Courier New', monospace;
   font-size: 12px;
+}
+
+/* Document List Styles */
+.document-list {
+  margin-top: 15px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.document-list h6 {
+  color: #fff;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 8px;
+  margin-bottom: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.document-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.document-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.document-info i {
+  color: #6a11cb;
+  font-size: 14px;
+}
+
+.document-name {
+  color: #fff;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.document-size {
+  color: #aaa;
+  font-size: 11px;
+}
+
+.document-item .btn-danger {
+  background: #dc3545;
+  border: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 11px;
+}
+
+.document-item .btn-danger:hover {
+  background: #c82333;
+  transform: scale(1.05);
+}
+
+.no-documents {
+  margin-top: 15px;
+  padding: 20px;
+  text-align: center;
+}
+
+.no-documents p {
+  color: #888;
+  font-size: 14px;
+  margin: 0;
 }

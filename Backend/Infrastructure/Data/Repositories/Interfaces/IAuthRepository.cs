@@ -8,7 +8,10 @@
         string HashPassword(string password, string salt);
         Task<bool> UserExistsByEmailAsync(string email);
         Task<User> GetUserByEmailOrUsernameAsync(string emailOrUsername);
+        Task<User?> GetUserByEmailAsync(string email);
+        Task<User?> GetByIdAsync(int id);
         Task AddAsync(User newUser);
+        Task UpdateAsync(User user);
         Task<bool> UserExistsByUsernameAsync(string username);
     }
 

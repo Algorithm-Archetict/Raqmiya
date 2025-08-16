@@ -19,6 +19,12 @@
           </a>
         </li>
         <li class="nav-item" *ngIf="isCreator">
+          <a (click)="navigateToCreatorProfile()" class="nav-link" [class.active]="isActive('/creator')">
+            <i class="fa-regular fa-circle-user"></i>
+            <span>Creator Profile</span>
+          </a>
+        </li>
+        <li class="nav-item" *ngIf="isCreator">
           <a routerLink="/sales" class="nav-link" [class.active]="isActive('/sales')">
             <i class="fas fa-chart-line"></i>
             <span>Sales</span>
@@ -26,8 +32,8 @@
         </li>
         
         <!-- Customer-only menu items -->
-        <li class="nav-item" *ngIf="isCustomer">
-          <a routerLink="/checkout" class="nav-link" [class.active]="isActive('/checkout')">
+        <li class="nav-item">
+          <a routerLink="/cart-checkout" class="nav-link" [class.active]="isActive('/cart-checkout')">
             <i class="fas fa-shopping-cart"></i>
             <span>Checkout</span>
           </a>

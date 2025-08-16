@@ -105,6 +105,91 @@
         [loading]="loading">
       </app-product-carousel>
 
+      <div class="row">
+        <div class="col-12">
+          <div class="section-header">
+            <h2 class="section-title">
+              <i class="fas fa-star text-warning"></i>
+              Recommended for You
+            </h2>
+            <div class="carousel-controls">
+              <button class="btn btn-outline carousel-btn" (click)="scrollCarousel('left')">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="btn btn-outline carousel-btn" (click)="scrollCarousel('right')">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="products-carousel" #carouselContainer>
+            <div class="carousel-track">
+              <div 
+                class="product-card carousel-item" 
+                *ngFor="let product of recommendedProducts; let i = index"
+                (click)="viewProduct(product.id)"
+              >
+                <div class="product-image">
+                  <img [src]="product.image" [alt]="product.title">
+                  
+                                      <!-- Creator's own product - Show "View My Products" button -->
+                    <div *ngIf="isCreator(product)" class="creator-toggle"
+                         (click)="viewMyProducts()"
+                         title="View My Products">
+                      <div class="creator-icon">
+                        <i class="fas fa-tools"></i>
+                      </div>
+                      <!-- Tooltip -->
+                      <div class="creator-tooltip">
+                        View My Products
+                      </div>
+                    </div>
+                    
+                    <!-- Wishlist Toggle Button (Only for logged-in users who are not the creator) -->
+                    <div *ngIf="isLoggedIn() && !isCreator(product)" class="wishlist-toggle"
+                         (click)="toggleWishlist(product, $event)"
+                         (mouseenter)="onWishlistHover(product, true, $event)"
+                         (mouseleave)="onWishlistHover(product, false, $event)"
+                         [class.in-wishlist]="product.inWishlist"
+                         [class.loading]="product.loadingWishlist"
+                         [class.hovered]="product.wishlistHovered">
+                      <div class="wishlist-icon">
+                        <!-- Loading Spinner -->
+                        <i class="fas fa-spinner fa-spin" *ngIf="product.loadingWishlist"></i>
+                        <!-- Plus Icon (not in wishlist) -->
+                        <i class="fas fa-plus" *ngIf="!product.inWishlist && !product.loadingWishlist"></i>
+                        <!-- Checkmark Icon (in wishlist) -->
+                        <i class="fas fa-check" *ngIf="product.inWishlist && !product.loadingWishlist"></i>
+                      </div>
+                      <!-- Tooltip -->
+                      <div class="wishlist-tooltip" *ngIf="product.wishlistHovered && !product.loadingWishlist">
+                        {{ product.inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}
+                      </div>
+                    </div>
+                  
+                  <div class="product-overlay">
+                    <button class="btn btn-primary btn-sm">
+                      <i class="fas fa-eye"></i>
+                      View Details
+                    </button>
+                  </div>
+                </div>
+                <div class="product-info">
+                  <h5 class="product-title">{{ product.title }}</h5>
+                  <p class="product-creator">by {{ product.creator }}</p>
+                  <div class="product-meta">
+                    <span class="product-price">${{ product.price }}</span>
+                    <div class="product-rating">
+                      <i class="fas fa-star text-warning"></i>
+                      <span>{{ product.rating | number:'1.1-1' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -222,8 +307,21 @@
                   <div class="product-image">
                     <img [src]="product.image" [alt]="product.title">
                     
-                    <!-- Wishlist Toggle Button (Only for logged-in users who haven't purchased) -->
-                    <div *ngIf="isLoggedIn() && !product.isPurchased" class="wishlist-toggle"
+                    <!-- Creator's own product - Show "View My Products" button -->
+                    <div *ngIf="isCreator(product)" class="creator-toggle"
+                         (click)="viewMyProducts()"
+                         title="View My Products">
+                      <div class="creator-icon">
+                        <i class="fas fa-box"></i>
+                      </div>
+                      <!-- Tooltip -->
+                      <div class="creator-tooltip">
+                        View My Products
+                      </div>
+                    </div>
+                    
+                    <!-- Wishlist Toggle Button (Only for logged-in users who haven't purchased and are not the creator) -->
+                    <div *ngIf="isLoggedIn() && !product.isPurchased && !isCreator(product)" class="wishlist-toggle"
                          (click)="toggleWishlist(product, $event)"
                          (mouseenter)="onWishlistHover(product, true, $event)"
                          (mouseleave)="onWishlistHover(product, false, $event)"
@@ -260,7 +358,9 @@
                   </div>
                   <div class="product-info">
                     <h5 class="product-title">{{ product.title }}</h5>
-                    <p class="product-creator">by {{ product.creator }}</p>
+                    <p class="product-creator">
+                      by <a class="creator-link" (click)="viewCreatorProfile(product.creatorId)">{{ product.creator }}</a>
+                    </p>
                     <div class="product-meta">
                       <span class="product-price">${{ product.price }}</span>
                       <div class="product-rating">

@@ -1,50 +1,47 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Router } from '@angular/router';
 import { CartService } from '../../core/services/cart.service';
+import { PaymentService, BalanceResponse } from '../../core/services/payment.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Order } from '../../core/models/order/order.model';
+import Swal from 'sweetalert2';
+import { CartResponse, CartItem } from '../../core/models/cart/cart.model';
+import { firstValueFrom } from 'rxjs';
 
-interface CartItem {
+interface CartItemDisplay {
   productId: number;
   name: string;
   price: number;
+  quantity: number;
   currency: string;
   creator: string;
   image: string;
-  quantity: number;
 }
 
 @Component({
   selector: 'app-cart-checkout',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './cart-checkout.html',
   styleUrl: './cart-checkout.css'
 })
 export class CartCheckout implements OnInit {
-  cartItems: CartItem[] = [];
-  totalAmount: number = 0;
-  isLoading: boolean = false;
-  errorMessage: string = '';
-  
-  // Checkout form
+  cartItems: CartItemDisplay[] = [];
   checkoutForm: FormGroup;
-  
-  // Payment methods
-  paymentMethods = [
-    { id: 'card', name: 'Credit/Debit Card', icon: 'fas fa-credit-card' },
-    { id: 'paypal', name: 'PayPal', icon: 'fab fa-paypal' }
-  ];
-  
-  selectedPaymentMethod: string = 'card';
-  
+  isLoading = false;
+  errorMessage = '';
+  currentBalance: number = 0;
+  balanceLoading = false;
+  hasSufficientBalance = false;
+  total: number = 0;
+
   constructor(
     private cartService: CartService,
     private orderService: OrderService,
     private authService: AuthService,
+    private paymentService: PaymentService,
     private router: Router,
     private formBuilder: FormBuilder
   ) {
@@ -52,153 +49,228 @@ export class CartCheckout implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      cardNumber: ['', Validators.required],
-      expiryDate: ['', Validators.required],
-      cvv: ['', Validators.required],
       billingAddress: ['', Validators.required]
     });
   }
-  
+
   ngOnInit() {
-    // Check if user is authenticated
-    if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login'], { 
-        queryParams: { returnUrl: this.router.url } 
+    this.loadCartItems();
+    this.loadBalance();
+    this.validatePaymentMethod();
+    this.loadUserEmail(); // Load user email
+  }
+
+  private loadUserEmail() {
+    // Get user email from auth service or localStorage
+    const userEmail = this.authService.getCurrentUserEmail();
+    if (userEmail) {
+      this.checkoutForm.patchValue({
+        email: userEmail
       });
-      return;
     }
-    
-    this.loadCart();
   }
-  
-  loadCart() {
-    this.cartService.getCart().subscribe(cart => {
-      this.cartItems = cart.cart.items;
-      this.calculateTotal();
+
+  private loadCartItems() {
+    this.cartService.getCart().subscribe({
+      next: (response: CartResponse) => {
+        if (response.success && response.cart) {
+          this.cartItems = response.cart.items.map((item: CartItem) => ({
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            currency: item.currency,
+            creator: item.creator,
+            image: item.image
+          }));
+          this.calculateTotal();
+        }
+      },
+      error: (error: any) => {
+        console.error('Failed to load cart items:', error);
+        this.errorMessage = 'Failed to load cart items. Please try again.';
+      }
     });
   }
-  
-  removeFromCart(productId: number) {
-    this.cartService.removeFromCart(productId).subscribe(() => {
-      this.loadCart();
+
+  private loadBalance() {
+    this.balanceLoading = true;
+    this.paymentService.getBalance().subscribe({
+      next: (response: BalanceResponse) => {
+        this.currentBalance = response.currentBalance;
+        this.checkBalanceForPurchase();
+        this.balanceLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading balance:', error);
+        this.currentBalance = 0;
+        this.balanceLoading = false;
+      }
     });
   }
-  
-  calculateTotal() {
-    this.totalAmount = this.cartItems.reduce((total, item) => {
-      return total + (item.price * 1); // Always quantity 1
-    }, 0);
+
+  private validatePaymentMethod() {
+    this.paymentService.validatePaymentMethodForPurchase().subscribe({
+      next: (validation) => {
+        if (!validation.hasPaymentMethod) {
+          this.showPaymentMethodError(validation.message);
+        }
+      },
+      error: (error) => {
+        console.error('Error validating payment method:', error);
+      }
+    });
   }
-  
+
+  private showPaymentMethodError(message: string) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Payment Method Required',
+      text: message,
+      confirmButtonText: 'Add Payment Method',
+      showCancelButton: true,
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/settings/payment']);
+      }
+    });
+  }
+
+  private calculateTotal() {
+    this.total = this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    this.checkBalanceForPurchase();
+  }
+
+  private checkBalanceForPurchase() {
+    if (this.total > 0) {
+      this.hasSufficientBalance = this.currentBalance >= this.total;
+    }
+  }
+
   async processCheckout() {
     if (this.checkoutForm.invalid) {
       this.errorMessage = 'Please fill in all required fields.';
       return;
     }
-    
+
+    // Prevent duplicate submissions
+    if (this.isLoading) {
+      console.log('Checkout already in progress, ignoring duplicate request');
+      return;
+    }
+
+    // Validate payment method before proceeding
+    const hasPaymentMethod = await firstValueFrom(this.paymentService.hasPaymentMethods());
+    if (!hasPaymentMethod) {
+      this.showPaymentMethodError('No payment method added. Please add a payment method before making a purchase.');
+      return;
+    }
+
     this.isLoading = true;
     this.errorMessage = '';
-    
+
     try {
-      // Skip validation for now - proceed directly to payment processing
-      
-      // Step 1: Validate payment data (mock validation)
-      const paymentData = {
-        method: this.selectedPaymentMethod,
-        cardNumber: this.checkoutForm.value.cardNumber,
-        expiry: this.checkoutForm.value.expiryDate,
-        cvc: this.checkoutForm.value.cvv,
-        name: `${this.checkoutForm.value.firstName} ${this.checkoutForm.value.lastName}`,
-        email: this.checkoutForm.value.email
-      };
-      
-      const paymentValidation = this.orderService.validatePaymentData(paymentData);
-      if (!paymentValidation.isValid) {
-        this.errorMessage = paymentValidation.errors.join(', ');
-        this.isLoading = false;
-        return;
-      }
-      
-      // Step 2: Process mock payment
-      const mockOrder: Order = {
-        id: `temp_${Date.now()}`,
-        userId: this.authService.getCurrentUser()?.id?.toString() || '',
-        items: this.cartItems.map(item => ({
-          productId: item.productId,
-          name: item.name,
-          price: item.price,
-          currency: item.currency,
-          quantity: item.quantity
-        })),
-        subtotal: this.totalAmount,
-        discount: 0,
-        total: this.totalAmount,
-        currency: 'USD',
-        status: 'pending' as any,
-        paymentMethod: this.selectedPaymentMethod,
-        paymentStatus: 'pending' as any,
-        customerInfo: {
-          email: this.checkoutForm.value.email
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      try {
-        const paymentResult = await firstValueFrom(this.orderService.processMockPayment(mockOrder, paymentData));
-        if (!paymentResult.success) {
-          this.errorMessage = 'Payment processing failed. Please try again.';
-          this.isLoading = false;
-          return;
-        }
-        console.log('Mock payment processed successfully:', paymentResult);
-      } catch (error) {
-        console.error('Mock payment error:', error);
-        this.errorMessage = 'Payment processing failed. Please try again.';
-        this.isLoading = false;
-        return;
-      }
-      
-      // Step 3: Create real order in backend
+      // Create order data
       const orderData = {
         items: this.cartItems.map(item => ({
           productId: item.productId,
-          quantity: 1 // Always 1
+          quantity: item.quantity
         })),
-        paymentMethod: this.selectedPaymentMethod,
+        paymentMethod: 'direct',
         customerInfo: {
           email: this.checkoutForm.value.email,
           firstName: this.checkoutForm.value.firstName,
           lastName: this.checkoutForm.value.lastName,
-          cardNumber: this.checkoutForm.value.cardNumber,
-          expiryDate: this.checkoutForm.value.expiryDate,
-          cvv: this.checkoutForm.value.cvv,
           billingAddress: this.checkoutForm.value.billingAddress
         }
       };
-      
+
       const orderResponse = await firstValueFrom(this.orderService.createOrder(orderData));
-      
+
       if (orderResponse?.success) {
         // Clear cart
         this.cartService.clearCart().subscribe();
-        
+
+        // Remove purchased products from wishlist
+        await this.removePurchasedProductsFromWishlist();
+
+        // Refresh balance to reflect the purchase
+        this.loadBalance();
+
+        // Show success alert with SweetAlert2
+        await Swal.fire({
+          icon: 'success',
+          title: 'Purchase Successful!',
+          text: 'Your purchase has been completed successfully for products: ' + this.cartItems.map(item => item.name).join(', ') + '. Redirecting to your library...',
+          timer: 5000,
+          timerProgressBar: true,
+          showConfirmButton: false
+        });
+
         // Redirect to purchased products page
-        this.router.navigate(['/library/purchased-products'], { 
-          state: { orderId: orderResponse.order.id } 
+        this.router.navigate(['/library/purchased-products'], {
+          state: { orderId: orderResponse.order.id }
         });
       } else {
-        this.errorMessage = orderResponse?.message || 'Order creation failed.';
+        Swal.fire({
+          icon: 'error',
+          title: 'Purchase Failed',
+          text: orderResponse?.message || 'Order creation failed.',
+          confirmButtonColor: '#d33',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      if (error instanceof Error) {
-        this.errorMessage = error.message;
-      } else {
-        this.errorMessage = 'An unexpected error occurred during checkout. Please try again.';
-      }
+      this.errorMessage = 'An error occurred during checkout. Please try again.';
     } finally {
       this.isLoading = false;
     }
   }
-} 
+
+  private async removePurchasedProductsFromWishlist() {
+    // Implementation for removing purchased products from wishlist
+    // This would depend on your wishlist service implementation
+  }
+
+  updateQuantity(productId: number, quantity: number) {
+    if (quantity <= 0) {
+      this.removeItem(productId);
+    } else {
+      this.cartService.updateCartItem(productId, quantity).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadCartItems();
+          }
+        },
+        error: (error) => {
+          console.error('Error updating cart:', error);
+          this.errorMessage = 'Failed to update cart.';
+        }
+      });
+    }
+  }
+
+  removeItem(productId: number) {
+    this.cartService.removeFromCart(productId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.loadCartItems();
+        }
+      },
+      error: (error) => {
+        console.error('Error removing item:', error);
+        this.errorMessage = 'Failed to remove item from cart.';
+      }
+    });
+  }
+
+  continueShopping() {
+    this.router.navigate(['/discover']);
+  }
+
+  goToDiscover() {
+    this.router.navigate(['/discover']);
+  }
+}

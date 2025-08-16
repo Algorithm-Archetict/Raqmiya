@@ -152,7 +152,7 @@ namespace API.Controllers
 
         [HttpPost("setup-download-folder/{userId}")]
         [Authorize]
-        public async Task<IActionResult> SetupDownloadFolder(int userId)
+        public IActionResult SetupDownloadFolder(int userId)
         {
             try
             {

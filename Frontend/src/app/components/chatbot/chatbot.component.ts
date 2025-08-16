@@ -35,6 +35,10 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   isAdmin = false;
   isLoading = false;
   showAdminPanel = false;
+  knowledgeBaseDocuments: any[] = []; // Added for admin panel display
+  uploadSuccessMessage: string = '';
+  uploadErrorMessage: string = '';
+  showDocumentList = false; // Added for document list display
 
   constructor(
     private chatbotService: ChatbotService,
@@ -44,6 +48,17 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.checkAdminStatus();
     this.loadChatHistory();
+    
+    // Subscribe to auth state changes to update chatbot role
+    this.authService.isLoggedIn$.subscribe(isLoggedIn => {
+      if (isLoggedIn) {
+        this.updateChatbotRole();
+      } else {
+        this.clearChatbotRole();
+        // Clear chat messages when user logs out
+        this.clearChatMessages();
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -51,8 +66,21 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   }
 
   private checkAdminStatus() {
+    // Check chatbot's local role storage first
+    const chatbotRole = this.getChatbotRole();
+    if (chatbotRole) {
+      this.isAdmin = chatbotRole === 'Admin';
+      console.log('Chatbot role from local storage:', chatbotRole);
+      console.log('Is admin:', this.isAdmin);
+      return;
+    }
+    
+    // Fallback to auth service
     const currentUser = this.authService.getCurrentUser();
+    console.log('Current user:', currentUser);
+    console.log('User roles:', currentUser?.roles);
     this.isAdmin = currentUser?.roles?.includes('Admin') || false;
+    console.log('Is admin:', this.isAdmin);
   }
 
   private loadChatHistory() {
@@ -64,9 +92,14 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       }));
     } else {
       // Initialize with system message
+      const hasKnowledgeBase = this.chatbotService.isKnowledgeBaseAvailable();
+      const systemMessage = hasKnowledgeBase 
+        ? 'Hello! I\'m a specialized AI assistant with access to knowledge base documents. I can answer questions based on the loaded documents. I cannot answer general questions, programming questions, or any questions outside the scope of the loaded documents.'
+        : 'Hello! I\'m a specialized AI assistant that can only answer questions based on the knowledge base documents that have been loaded by an admin. I cannot answer general questions, programming questions, or any questions outside the scope of the loaded documents. Please ask an admin to upload relevant documents to the knowledge base if you need assistance.';
+      
       this.messages = [{
         role: 'system',
-        content: 'I am a helpful AI assistant for the Raqmiya platform. I can help with general questions, analyze images, and provide information from our knowledge base.',
+        content: systemMessage,
         timestamp: new Date()
       }];
     }
@@ -162,10 +195,15 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           await this.searchKnowledgeBaseDocuments(query);
         }
         break;
+      case 'reload':
+        if (parts[2] === 'knowledgebase') {
+          await this.reloadKnowledgeBase();
+        }
+        break;
       default:
         this.messages.push({
           role: 'assistant',
-          content: 'Unknown admin command. Available commands: admin: add document, admin: list documents, admin: delete document [name], admin: search documents [query]',
+          content: 'Unknown admin command. Available commands: admin: add document, admin: list documents, admin: delete document [name], admin: search documents [query], admin: reload knowledgebase (clears all documents)',
           timestamp: new Date()
         });
     }
@@ -182,33 +220,27 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   async listKnowledgeBaseDocuments() {
     try {
-      const documents = await this.chatbotService.getKnowledgeBaseDocuments();
-      if (documents.length === 0) {
-        this.messages.push({
-          role: 'assistant',
-          content: 'No documents in knowledge base.',
-          timestamp: new Date()
-        });
-      } else {
-        const docList = documents.map(doc => `- ${doc.name} (${doc.content.length} characters)`).join('\n');
-        this.messages.push({
-          role: 'assistant',
-          content: `📚 Knowledge Base Documents:\n${docList}`,
-          timestamp: new Date()
-        });
+      // Toggle document list display
+      if (this.knowledgeBaseDocuments.length > 0 && this.showDocumentList) {
+        this.showDocumentList = false;
+        return;
       }
+      
+      const documents = await this.chatbotService.getKnowledgeBaseDocuments();
+      // Store documents for display in admin panel instead of adding to chat
+      this.knowledgeBaseDocuments = documents;
+      this.showDocumentList = true;
     } catch (error) {
-      this.messages.push({
-        role: 'assistant',
-        content: `Error listing documents: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date()
-      });
+      console.error('Error listing documents:', error);
     }
   }
 
   private async deleteKnowledgeBaseDocument(docName: string) {
     try {
       await this.chatbotService.deleteKnowledgeBaseDocument(docName);
+      // Remove from local list and refresh
+      this.knowledgeBaseDocuments = this.knowledgeBaseDocuments.filter(doc => doc.name !== docName);
+      // Show success message in chat
       this.messages.push({
         role: 'assistant',
         content: `✅ Document "${docName}" deleted from knowledge base.`,
@@ -220,6 +252,17 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         content: `Error deleting document: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date()
       });
+    }
+  }
+
+  // New method for admin panel document deletion
+  async deleteDocumentFromAdminPanel(docName: string) {
+    try {
+      await this.chatbotService.deleteKnowledgeBaseDocument(docName);
+      // Remove from local list
+      this.knowledgeBaseDocuments = this.knowledgeBaseDocuments.filter(doc => doc.name !== docName);
+    } catch (error) {
+      console.error('Error deleting document:', error);
     }
   }
 
@@ -247,6 +290,47 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         timestamp: new Date()
       });
     }
+  }
+
+  async reloadKnowledgeBase() {
+    try {
+      await this.chatbotService.reloadKnowledgeBase();
+      this.messages.push({
+        role: 'assistant',
+        content: '✅ Knowledge base cleared successfully! All documents have been removed. Please upload new documents to the knowledge base.',
+        timestamp: new Date()
+      });
+    } catch (error) {
+      this.messages.push({
+        role: 'assistant',
+        content: `Error reloading knowledge base: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date()
+      });
+    }
+  }
+
+  async loadAssetFile(fileName: string) {
+    try {
+      await this.chatbotService.loadAssetFile(fileName);
+      this.messages.push({
+        role: 'assistant',
+        content: `✅ Successfully loaded ${fileName} to the knowledge base! All users can now access this information.`,
+        timestamp: new Date()
+      });
+      // Refresh document list
+      await this.listKnowledgeBaseDocuments();
+    } catch (error) {
+      this.messages.push({
+        role: 'assistant',
+        content: `Error loading ${fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date()
+      });
+    }
+  }
+
+  // Check if knowledge base is available for all users
+  isKnowledgeBaseAvailable(): boolean {
+    return this.chatbotService.isKnowledgeBaseAvailable();
   }
 
   onFileUpload(event: any) {
@@ -293,11 +377,6 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   async uploadToKnowledgeBase() {
     if (this.uploadedFiles.length === 0) {
-      this.messages.push({
-        role: 'assistant',
-        content: 'Please select files to upload first.',
-        timestamp: new Date()
-      });
       return;
     }
 
@@ -313,20 +392,24 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         }
       }
       
-      this.messages.push({
-        role: 'assistant',
-        content: `✅ Successfully uploaded ${this.uploadedFiles.length} document(s) to knowledge base.`,
-        timestamp: new Date()
-      });
+      // Refresh document list and show success message in admin panel
+      await this.listKnowledgeBaseDocuments();
+      this.uploadSuccessMessage = `✅ Successfully uploaded ${this.uploadedFiles.length} document(s) to knowledge base.`;
       
       this.uploadedFiles = [];
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        this.uploadSuccessMessage = '';
+      }, 3000);
     } catch (error) {
       console.error('Upload error:', error);
-      this.messages.push({
-        role: 'assistant',
-        content: `Error uploading to knowledge base: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date()
-      });
+      this.uploadErrorMessage = `Error uploading to knowledge base: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        this.uploadErrorMessage = '';
+      }, 5000);
     }
   }
 
@@ -350,5 +433,32 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   trackByMessage(index: number, message: ChatMessage): string {
     return `${message.role}-${message.timestamp.getTime()}`;
+  }
+
+  // Chatbot-specific role management methods
+  private updateChatbotRole(): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser?.roles && currentUser.roles.length > 0) {
+      const role = currentUser.roles[0]; // Get the primary role
+      localStorage.setItem('chatbot_user_role', role);
+      console.log('Chatbot role updated:', role);
+      this.checkAdminStatus(); // Re-check admin status
+    }
+  }
+
+  private clearChatbotRole(): void {
+    localStorage.removeItem('chatbot_user_role');
+    this.isAdmin = false;
+    console.log('Chatbot role cleared');
+  }
+
+  private getChatbotRole(): string | null {
+    return localStorage.getItem('chatbot_user_role');
+  }
+
+  private clearChatMessages(): void {
+    this.messages = [];
+    this.saveChatHistory();
+    console.log('Chat messages cleared due to logout.');
   }
 }

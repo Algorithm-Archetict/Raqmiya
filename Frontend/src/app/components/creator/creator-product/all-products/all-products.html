@@ -7,10 +7,24 @@
     <!-- Header Section -->
     <div class="products-header">
       <h1 class="products-title">Products</h1>
-      <button class="new-product-btn" routerLink="/products/new">
-        <i class="fas fa-plus"></i>
-        New Product
-      </button>
+      <div class="d-flex align-items-center" style="gap:12px;">
+        <div class="currency-selector">
+          <label for="currencySelect" class="form-label me-2">Currency:</label>
+          <select
+            id="currencySelect"
+            class="form-select form-select-sm"
+            [(ngModel)]="selectedCurrency"
+            (change)="onCurrencyChange()">
+            <option value="USD">USD ($)</option>
+            <option value="EGP">EGP (EGP)</option>
+          </select>
+        </div>
+        
+        <button class="new-product-btn" routerLink="/products/new">
+          <i class="fas fa-plus"></i>
+          New Product
+        </button>
+      </div>
     </div>
 
     <!-- Content Area -->
@@ -65,7 +79,7 @@
           </div>
           <div class="summary-cell">
             <span class="summary-label">Total Revenue:</span>
-            <span class="summary-value">${{ totalRevenue }}</span>
+            <span class="summary-value">{{ formatCurrency(totalRevenue) }}</span>
           </div>
         </div>
 
@@ -103,12 +117,12 @@
 
               <!-- Revenue -->
               <div class="table-cell revenue-cell">
-                <span class="revenue-value">${{ product.revenue }}</span>
+                <span class="revenue-value">{{ formatCurrency(product.revenue) }}</span>
               </div>
 
               <!-- Price -->
               <div class="table-cell price-cell">
-                <span class="price-value">${{ product.price }}</span>
+                <span class="price-value">{{ formatCurrency(product.price) }}</span>
               </div>
 
               <!-- Status -->
@@ -148,9 +162,7 @@
 <!-- Delete Confirmation Modal -->
 <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
-    <button class="modal-close" (click)="closeDeleteModal()">
-      <i class="fas fa-times"></i>
-    </button>
+
     
     <div class="modal-body">
       <h3 class="modal-title">Delete Product</h3>

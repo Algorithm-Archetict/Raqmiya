@@ -8,6 +8,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ProductDetailDTO } from '../../../core/models/product/product-detail.dto';
 import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
+import { environment } from '../../../../environments/environment';
 import Swal from 'sweetalert2';
 
 
@@ -195,6 +196,8 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.reviews = product.reviews;
           this.isInWishlist = product.isInWishlist || false;
           
+          // Initialize selected media with the first media item (cover image)
+          this.initializeSelectedMedia();
           
           this.checkPurchaseAndReviewStatus(); // Check if user can review
           this.checkCartStatus(); // Check if product is in cart
@@ -213,6 +216,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
           this.product = product;
           this.reviews = product.reviews;
           this.isInWishlist = product.isInWishlist || false;
+          
+          // Initialize selected media with the first media item (cover image)
+          this.initializeSelectedMedia();
           
           this.checkPurchaseAndReviewStatus(); // Check if user can review
           this.checkCartStatus(); // Check if product is in cart
@@ -240,7 +246,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
 
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
-      return `http://localhost:5255${url}`;
+      // Extract the base URL from the API URL (remove /api suffix)
+      const baseUrl = environment.apiUrl.replace('/api', '');
+      return `${baseUrl}${url}`;
     }
 
     // Unknown URL format, return as is
@@ -283,8 +291,25 @@ export class ProductDetails implements OnInit, AfterViewInit {
     `)}`;
   }
 
+  // Helper method to get user avatar with proper URL handling
+  getUserAvatar(userAvatar: string | null | undefined, userName: string | undefined): string {
+    if (userAvatar) {
+      return this.ensureFullUrl(userAvatar) || this.getPlaceholderAvatar(userName);
+    }
+    return this.getPlaceholderAvatar(userName);
+  }
+
+  // Handle image loading errors
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    const userName = img.alt;
+    img.src = this.getPlaceholderAvatar(userName);
+  }
+
   getMediaItems(): MediaItem[] {
     const items: MediaItem[] = [];
+    
+    // Always add cover image first if available
     if (this.product?.coverImageUrl) {
       items.push({
         type: 'image',
@@ -292,14 +317,35 @@ export class ProductDetails implements OnInit, AfterViewInit {
         thumbnail: this.ensureFullUrl(this.product.coverImageUrl)
       });
     }
+    
+    // Add preview video if available
     if (this.product?.previewVideoUrl) {
       items.push({
         type: 'video',
         url: this.ensureFullUrl(this.product.previewVideoUrl) || '',
-        thumbnail: this.ensureFullUrl(this.product.coverImageUrl)
+        thumbnail: this.ensureFullUrl(this.product.coverImageUrl) || this.ensureFullUrl(this.product.previewVideoUrl)
       });
     }
+    
+    // If no cover image or video, add a placeholder
+    if (items.length === 0) {
+      items.push({
+        type: 'image',
+        url: this.getPlaceholderImage('Product Image', '#2a2a2a'),
+        thumbnail: this.getPlaceholderImage('Product', '#2a2a2a')
+      });
+    }
+    
     return items;
+  }
+
+  // Initialize selected media with the first media item (cover image)
+  initializeSelectedMedia() {
+    const mediaItems = this.getMediaItems();
+    if (mediaItems.length > 0) {
+      this.selectedMedia = mediaItems[0];
+      this.selectedMediaIndex = 0;
+    }
   }
 
   createMediaFromProduct(backendProduct: ProductDetailDTO): MediaItem[] {
@@ -542,6 +588,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
     });
   }
 
+  
   editReview(): void {
     if (this.existingReview) {
       this.userRating = this.existingReview.rating;
@@ -633,11 +680,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
   // Media gallery methods
   selectMedia(index: number) {
     this.selectedMediaIndex = index;
-    if (this.product && this.product.files && this.product.files[index]) {
-      this.selectedMedia = {
-        type: 'image',
-        url: this.product.files[index].fileUrl
-      };
+    const mediaItems = this.getMediaItems();
+    if (mediaItems[index]) {
+      this.selectedMedia = mediaItems[index];
     }
   }
 
@@ -669,6 +714,12 @@ export class ProductDetails implements OnInit, AfterViewInit {
   // Purchase methods
   addToCart() {
     if (!this.product) return;
+    
+    // Check if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      this.showLoginPrompt('add this item to your cart');
+      return;
+    }
     
     // If already in cart, just go to cart page
     if (this.isInCart) {
@@ -718,7 +769,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
   buyNow() {
     // Buy now logic
     console.log('Buying now:', this.product?.name);
-    this.router.navigate(['/checkout']);
+    this.router.navigate(['/cart-checkout']);
   }
 
   // Navigate to library when product is already purchased
@@ -736,7 +787,7 @@ export class ProductDetails implements OnInit, AfterViewInit {
 
     // Check if user is logged in
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login']);
+      this.showLoginPrompt('add this item to your wishlist');
       return;
     }
 
@@ -823,9 +874,58 @@ export class ProductDetails implements OnInit, AfterViewInit {
     return this.authService.isLoggedIn();
   }
 
+  // Check if current user is the creator of this product
+  isCreator(): boolean {
+    if (!this.authService.isLoggedIn() || !this.product) {
+      return false;
+    }
+    const currentUser = this.authService.getCurrentUser();
+    return !!(currentUser && this.product.creatorId === currentUser.id);
+  }
+
+  // Navigate to creator dashboard
+  viewMyProducts() {
+    this.router.navigate(['/products']);
+  }
+
+  // Navigate to creator profile
+  viewCreatorProfile(creatorId?: number) {
+    if (creatorId) {
+      this.router.navigate(['/creator', creatorId]);
+    }
+  }
+
   // Navigate to login page
   navigateToLogin() {
     this.router.navigate(['/login']);
+  }
+
+  // Show login prompt for anonymous users
+  showLoginPrompt(action: string) {
+    Swal.fire({
+      title: 'Login Required',
+      html: `
+        <div class="login-prompt">
+          <i class="fas fa-sign-in-alt" style="font-size: 3rem; color: #667eea; margin-bottom: 1rem;"></i>
+          <p>You need to be logged in to ${action}.</p>
+          <p>Please sign in to continue.</p>
+        </div>
+      `,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Sign In',
+      cancelButtonText: 'Continue Browsing',
+      confirmButtonColor: '#667eea',
+      cancelButtonColor: '#6c757d',
+      customClass: {
+        confirmButton: 'btn btn-primary',
+        cancelButton: 'btn btn-secondary'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/login']);
+      }
+    });
   }
 
   // Show wishlist success popup (similar to discover page)

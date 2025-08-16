@@ -63,18 +63,37 @@
       </div>
     </div>
 
-    <!-- Username -->
-    <div class="form-group">
-      <label for="username" class="form-label">Username</label>
-      <input 
-        type="text" 
-        id="username" 
-        name="username"
-        [(ngModel)]="profileData.username"
-        class="form-input"
-        placeholder="Enter your username"
-        disabled
-        readonly>
+    <!-- Username and Role Row -->
+    <div class="form-row">
+      <!-- Username -->
+      <div class="form-group">
+        <label for="username" class="form-label">Username</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username"
+          [(ngModel)]="profileData.username"
+          class="form-input"
+          placeholder="Enter your username"
+          disabled
+          readonly>
+          <div class="form-help">Your username cannot be changed</div>
+      </div>
+
+      <!-- Role (Read-only) -->
+      <div class="form-group">
+        <label for="role" class="form-label">Role</label>
+        <input 
+          type="text" 
+          id="role" 
+          name="role"
+          [value]="getUserRole()"
+          class="form-input"
+          placeholder="User Role"
+          readonly
+          disabled>
+
+      </div>
     </div>
 
     <!-- Email (Read-only) -->
@@ -89,7 +108,7 @@
         placeholder="Enter your email address"
         readonly
         disabled>
-      <div class="form-help">Email address cannot be changed. Contact support if you need to update your email.</div>
+
     </div>
 
     <!-- Profile Description -->
@@ -108,7 +127,7 @@
 
     <!-- Save Button -->
     <div class="form-actions">
-      <button type="button" class="btn btn-primary" (click)="saveProfile()" [disabled]="isSaving || isRemoving || !profileData.username?.trim()">
+      <button type="button" class="btn btn-primary text-white" (click)="saveProfile()" [disabled]="isSaving || isRemoving || !profileData.username?.trim()">
         <i class="fas fa-save" *ngIf="!isSaving"></i>
         <i class="fas fa-spinner fa-spin" *ngIf="isSaving"></i>
         {{ isSaving ? 'Saving...' : 'Save Changes' }}
