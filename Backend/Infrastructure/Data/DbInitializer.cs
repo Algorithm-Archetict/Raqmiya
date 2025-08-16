@@ -132,31 +132,60 @@ namespace Raqmiya.Infrastructure.Data
                 context.Users.AddRange(customers);
                 context.SaveChanges();
 
-                // Create initial payment method balances for seeded users
-                var creatorBalance = new PaymentMethodBalance
-                {
-                    UserId = creator.Id,
-                    PaymentMethodId = "pm_seeded_creator",
-                    Balance = 1000m,
-                    Currency = "USD",
-                    IsSelected = true,
-                    CardBrand = "visa",
-                    CardLast4 = "1234"
-                };
+                // Create initial payment method balances for a few seeded users (admin, first creator, first customer)
+                var adminUserFromDb = context.Users.FirstOrDefault(u => u.Username == "admin" || u.Email == "admin@raqmiya.com");
+                var firstCreator = creators.FirstOrDefault();
+                var firstCustomer = customers.FirstOrDefault();
 
-                var customerBalance = new PaymentMethodBalance
-                {
-                    UserId = customer.Id,
-                    PaymentMethodId = "pm_seeded_customer",
-                    Balance = 1000m,
-                    Currency = "USD",
-                    IsSelected = true,
-                    CardBrand = "mastercard",
-                    CardLast4 = "5678"
-                };
+                var balances = new List<PaymentMethodBalance>();
 
-                context.PaymentMethodBalances.AddRange(creatorBalance, customerBalance);
-                context.SaveChanges();
+                if (adminUserFromDb != null)
+                {
+                    balances.Add(new PaymentMethodBalance
+                    {
+                        UserId = adminUserFromDb.Id,
+                        PaymentMethodId = "pm_seeded_admin",
+                        Balance = 1000m,
+                        Currency = "USD",
+                        IsSelected = true,
+                        CardBrand = "visa",
+                        CardLast4 = "0000"
+                    });
+                }
+
+                if (firstCreator != null)
+                {
+                    balances.Add(new PaymentMethodBalance
+                    {
+                        UserId = firstCreator.Id,
+                        PaymentMethodId = "pm_seeded_creator",
+                        Balance = 1000m,
+                        Currency = "USD",
+                        IsSelected = true,
+                        CardBrand = "visa",
+                        CardLast4 = "1234"
+                    });
+                }
+
+                if (firstCustomer != null)
+                {
+                    balances.Add(new PaymentMethodBalance
+                    {
+                        UserId = firstCustomer.Id,
+                        PaymentMethodId = "pm_seeded_customer",
+                        Balance = 1000m,
+                        Currency = "USD",
+                        IsSelected = true,
+                        CardBrand = "mastercard",
+                        CardLast4 = "5678"
+                    });
+                }
+
+                if (balances.Any())
+                {
+                    context.PaymentMethodBalances.AddRange(balances);
+                    context.SaveChanges();
+                }
             }
 
             // --- Categories ---
