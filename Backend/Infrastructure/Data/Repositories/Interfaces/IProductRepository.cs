@@ -12,6 +12,9 @@ namespace Raqmiya.Infrastructure
         /// <summary>Gets a product by its ID.</summary>
         Task<Product?> GetByIdAsync(int id);
 
+        /// <summary>Gets a product by its ID, including soft-deleted products.</summary>
+        Task<Product?> GetByIdIncludingDeletedAsync(int id);
+
         /// <summary>Gets a product with all related details by permalink.</summary>
         Task<Product?> GetProductWithAllDetailsByPermalinkAsync(string permalink);
 
@@ -121,5 +124,12 @@ namespace Raqmiya.Infrastructure
         Task<bool> ApproveProductAsync(int productId, int adminId);
         Task<bool> RejectProductAsync(int productId, int adminId, string reason);
         Task AddModerationLogAsync(ModerationLog log);
+
+        // --- Soft Delete Operations ---
+        Task<bool> HasProductPurchasesAsync(int productId);
+        Task SoftDeleteProductAsync(int productId, string deletionReason);
+        Task RestoreProductAsync(int productId);
+        Task<List<Product>> GetSoftDeletedProductsAsync();
+        Task PermanentlyDeleteProductAsync(int productId);
     }
 }

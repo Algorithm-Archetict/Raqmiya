@@ -6,6 +6,7 @@ using System.Security.Claims;
 using API.Constants;
 using Shared.Constants;
 using AutoMapper;
+using Raqmiya.Infrastructure;
 
 namespace API.Controllers
 {
@@ -19,12 +20,21 @@ namespace API.Controllers
         private readonly IProductService _productService;
         private readonly ILogger<ProductsController> _logger;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
+        private readonly IUserRepository _userRepository;
 
-        public ProductsController(IProductService productService, ILogger<ProductsController> logger, IMapper mapper)
+        public ProductsController(
+            IProductService productService, 
+            ILogger<ProductsController> logger, 
+            IMapper mapper,
+            IEmailService emailService,
+            IUserRepository userRepository)
         {
             _productService = productService;
             _logger = logger;
             _mapper = mapper;
+            _emailService = emailService;
+            _userRepository = userRepository;
         }
 
         /// <summary>
@@ -103,6 +113,29 @@ namespace API.Controllers
             {
                 _logger.LogError(ex, LogMessages.ProductGetByPermalinkError);
                 return Problem(ErrorMessages.ProductGetByPermalink);
+            }
+        }
+
+        /// <summary>
+        /// Get products created by the current authenticated creator.
+        /// </summary>
+        [HttpGet("my-products")]
+        [Authorize(Roles = RoleConstants.Creator)]
+        [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        public async Task<IActionResult> GetMyProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+        {
+            try
+            {
+                var creatorId = GetCurrentUserId();
+                var products = await _productService.GetCreatorProductsAsync(creatorId, pageNumber, pageSize);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting products for creator {CreatorId}", GetCurrentUserId());
+                return Problem("An error occurred while retrieving your products.");
             }
         }
 
@@ -925,6 +958,91 @@ namespace API.Controllers
             if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
                 return null; // Return null for anonymous users
             return userId;
+        }
+
+        /// <summary>
+        /// Get receipt for a specific order.
+        /// </summary>
+        [HttpGet("receipt/{orderId}")]
+        [Authorize]
+        [ProducesResponseType(typeof(ReceiptDTO), 200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> GetReceipt(int orderId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var receipt = await _productService.GetReceiptAsync(orderId, userId);
+                if (receipt == null) return NotFound();
+                return Ok(receipt);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting receipt for order {orderId}");
+                return Problem("An error occurred while retrieving the receipt.");
+            }
+        }
+
+        /// <summary>
+        /// Resend receipt email for a specific order.
+        /// </summary>
+        [HttpPost("receipt/{orderId}/resend")]
+        [Authorize]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> ResendReceipt(int orderId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var receipt = await _productService.GetReceiptAsync(orderId, userId);
+                if (receipt == null) return NotFound();
+
+                // Get user information for email
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null) return NotFound();
+
+                // Send receipt email
+                var emailSent = await _emailService.SendReceiptEmailAsync(user.Email, user.Username, receipt);
+                
+                if (emailSent)
+                {
+                    _logger.LogInformation($"Receipt email resent successfully for order {orderId} to user {userId}");
+                    return Ok(new { success = true, message = "Receipt email has been sent successfully." });
+                }
+                else
+                {
+                    _logger.LogWarning($"Failed to send receipt email for order {orderId} to user {userId}");
+                    return BadRequest(new { success = false, message = "Failed to send receipt email. Please try again later." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error resending receipt for order {orderId}");
+                return Problem("An error occurred while resending the receipt.");
+            }
+        }
+
+        /// <summary>
+        /// Get products by creator ID
+        /// </summary>
+        [HttpGet("creator/{creatorId}/products")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(List<ProductListItemDTO>), 200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> GetProductsByCreator(int creatorId)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserIdOrNull(); // Get current user ID (can be null for anonymous users)
+                var products = await _productService.GetProductsByCreatorAsync(creatorId, currentUserId);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting products for creator {CreatorId}", creatorId);
+                return StatusCode(500, new { success = false, message = "An error occurred while getting products" });
+            }
         }
     }
 }

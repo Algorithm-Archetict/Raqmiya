@@ -57,6 +57,20 @@ export class DashboardSidebar implements OnInit {
   }
 
   isActive(route: string): boolean {
+    if (route === '/creator') {
+      // Check if we're on the creator profile page for the current user
+      const currentUser = this.authService.getCurrentUser();
+      if (currentUser && currentUser.id) {
+        return this.currentRoute === `/creator/${currentUser.id}`;
+      }
+    }
     return this.currentRoute === route;
+  }
+
+  navigateToCreatorProfile() {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser && currentUser.id) {
+      this.router.navigate(['/creator', currentUser.id]);
+    }
   }
 }

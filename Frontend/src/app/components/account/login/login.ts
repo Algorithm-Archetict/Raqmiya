@@ -74,7 +74,14 @@ export class Login implements OnInit {
         error: (error) => {
           this.isLoading = false;
           console.error('Login error:', error);
-          this.errorMessage = error.error?.message || 'Login failed. Please check your credentials.';
+          const errorMessage = error.error?.message || 'Login failed. Please check your credentials.';
+          
+          // Check if it's an inactive account message and provide restoration guidance
+          if (errorMessage.includes('Account is inactive') || errorMessage.includes('deactivated')) {
+            this.errorMessage = errorMessage + ' If you recently deleted your account, you can restore it using the link sent to your email.';
+          } else {
+            this.errorMessage = errorMessage;
+          }
         }
       });
     } else {

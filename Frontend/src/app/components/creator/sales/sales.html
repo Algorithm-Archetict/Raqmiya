@@ -1,0 +1,180 @@
+<div class="sales-container">
+  <!-- Left Sidebar -->
+  <app-dashboard-sidebar></app-dashboard-sidebar>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Header Section -->
+    <div class="sales-header">
+      <h1 class="sales-title">Sales Analytics</h1>
+      <div class="header-actions">
+        <!-- Currency Selector -->
+        <div class="currency-selector me-3">
+          <label for="currencySelect" class="form-label me-2">Currency:</label>
+          <select
+            id="currencySelect"
+            class="form-select form-select-sm"
+            [(ngModel)]="selectedCurrency"
+            (change)="onCurrencyChange()">
+            <option value="USD">USD ($)</option>
+            <option value="EGP">EGP (EGP)</option>
+          </select>
+        </div>
+        <button class="btn btn-outline-primary">
+          <i class="fas fa-download me-2"></i>
+          Export Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="loading">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading sales data...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="error-state" *ngIf="error && !loading">
+        <div class="error-card">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Error Loading Sales Data</h3>
+          <p>{{ error }}</p>
+          <button class="retry-btn" (click)="loadSalesData()">
+            <i class="fas fa-redo"></i>
+            Try Again
+          </button>
+        </div>
+      </div>
+
+      <!-- Sales Data -->
+      <div class="sales-content" *ngIf="!loading && !error">
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="card-icon">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="card-content">
+              <h3 class="card-value">{{ salesData.totalSales }}</h3>
+              <p class="card-label">Total Sales</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="card-content">
+              <h3 class="card-value">{{ formatCurrency(salesData.totalRevenue) }}</h3>
+              <p class="card-label">Total Revenue</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+              <h3 class="card-value">{{ formatCurrency(salesData.monthlyRevenue) }}</h3>
+              <p class="card-label">Monthly Revenue</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon">
+              <i class="fas fa-calendar-week"></i>
+            </div>
+            <div class="card-content">
+              <h3 class="card-value">{{ formatCurrency(salesData.weeklyRevenue) }}</h3>
+              <p class="card-label">Weekly Revenue</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon">
+              <i class="fas fa-calculator"></i>
+            </div>
+            <div class="card-content">
+              <h3 class="card-value">{{ formatCurrency(salesData.averageOrderValue) }}</h3>
+              <p class="card-label">Average Order Value</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Balance Card -->
+        <div class="balance-section">
+          <div class="balance-card">
+            <div class="card-header">
+              <h5 class="card-title">
+                <i class="fas fa-wallet me-2"></i>
+                Current Account Balance
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="balance-amount">
+                <span class="currency">{{ getCurrencySymbol() }}</span>
+                <span class="amount">{{ currentBalance.toFixed(2) }}</span>
+              </div>
+              <small class="text-muted">
+                Available for withdrawal or future purchases
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="top-products-section">
+          <div class="section-header">
+            <h3>Top Performing Products</h3>
+            <p>Your best-selling products by revenue</p>
+          </div>
+
+          <div class="products-table">
+            <div class="table-header">
+              <div class="header-cell">Product</div>
+              <div class="header-cell">Sales</div>
+              <div class="header-cell">Revenue</div>
+            </div>
+
+            <div class="table-body">
+              <div class="table-row" *ngFor="let product of salesData.topProducts">
+                <div class="table-cell product-cell">
+                  <h6 class="product-name">{{ product.name }}</h6>
+                </div>
+                <div class="table-cell sales-cell">
+                  <span class="sales-value">{{ product.sales }}</span>
+                </div>
+                <div class="table-cell revenue-cell">
+                  <span class="revenue-value">{{ formatCurrency(product.revenue) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue Chart Placeholder -->
+        <div class="chart-section">
+          <div class="section-header">
+            <h3>Revenue Trends</h3>
+            <p>Monthly revenue performance</p>
+          </div>
+
+          <div class="chart-placeholder">
+            <div class="chart-content">
+              <i class="fas fa-chart-area fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">Revenue Chart</h5>
+              <p class="text-muted">
+                Interactive revenue chart will be displayed here.<br>
+                Shows monthly trends and performance metrics.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

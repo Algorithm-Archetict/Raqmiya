@@ -6,6 +6,8 @@ using FluentValidation.AspNetCore;
 using Microsoft.OpenApi.Models;
 using Raqmiya.Infrastructure;
 using Raqmiya.Infrastructure.Data;
+using Infrastructure.Data.Repositories.Interfaces;
+using Infrastructure.Data.Repositories.Implementations;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -35,14 +37,28 @@ namespace API
             builder.Services.AddScoped<IAuthRepository, AuthRepository>(); // Register AuthRepository for IAuthRepository
             builder.Services.AddScoped<IOrderRepository,OrderRepository>(); // Register OrderRepository
             builder.Services.AddScoped<ILicenseRepository, LicenseRepository>(); // NEW: License Repository
-            // --- 3. Configure Services (Core/Business Logic Layer) ---
+            builder.Services.AddScoped<IPaymentMethodBalanceRepository, PaymentMethodBalanceRepository>(); // NEW: Payment Method Balance Repository
+            builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>(); // NEW: Password Reset Repository
+            builder.Services.AddScoped<IEmailVerificationRepository, EmailVerificationRepository>(); // NEW: Email Verification Repository
+            builder.Services.AddScoped<IAccountDeletionRepository, AccountDeletionRepository>(); // NEW: Account Deletion Repository
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>(); // NEW: Subscription Repository
+            
+            // --- 3. Configure Background Services ---
+            builder.Services.AddHostedService<AccountCleanupService>(); // NEW: Account Cleanup Background Service
+            builder.Services.AddHostedService<ProductCleanupService>(); // NEW: Product Cleanup Background Service
+            
+            // --- 4. Configure Services (Core/Business Logic Layer) ---
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IAuthService, AuthService>(); // NEW: Auth Service
             builder.Services.AddScoped<IOrderService, Core.Services.OrderService>(); // Register OrderService
+builder.Services.AddScoped<ISubscriptionService, Core.Services.SubscriptionService>(); // NEW: Subscription Service
             builder.Services.AddScoped<IPurchaseValidationService, PurchaseValidationService>(); // NEW: Purchase Validation Service
             builder.Services.AddScoped<ICartService, Core.Services.CartService>(); // NEW: Cart Service
             builder.Services.AddScoped<IEmailService, Core.Services.EmailService>(); // NEW: Email Service
             builder.Services.AddScoped<IRecommendationService, RecommendationService>(); // NEW: Recommendation Service for Personalization
+            builder.Services.AddScoped<IStripeService, Core.Services.StripeService>(); // NEW: Stripe Service
+            builder.Services.AddScoped<IRevenueAnalyticsService, Core.Services.RevenueAnalyticsService>(); // NEW: Revenue Analytics Service
+            builder.Services.AddScoped<ICurrencyService, Core.Services.CurrencyService>(); // NEW: Currency Service
 
             // --- 4. Configure Logging ---
             builder.Logging.AddConsole();

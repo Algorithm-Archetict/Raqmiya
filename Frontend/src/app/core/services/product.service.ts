@@ -10,6 +10,7 @@ import { ProductListItemDTOPagedResultDTO } from '../models/product/product-list
 import { ProductModerationRequestDTO } from '../models/product/product-moderation-request.dto';
 import { FileDTO } from '../models/product/file.dto';
 import { ReviewDTO } from '../models/product/review.dto';
+import { Receipt } from '../interfaces/receipt.interface';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
@@ -38,7 +39,7 @@ export class ProductService {
   }
 
   // ======= PRODUCTS =======
-  getProductList(pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTO[]> {
+   getProductList(pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTO[]> {
     const key = `list:page=${pageNumber}:size=${pageSize}`;
     if (!this.cache.has(key)) {
       const req$ = this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
@@ -60,12 +61,22 @@ export class ProductService {
   }
 
   // Get products by current creator (authenticated user)
-  // TODO: Replace with proper backend endpoint when available
   getMyProducts(page = 1, size = 10): Observable<ProductListItemDTO[]> {
-    // For now, we'll use the main products endpoint and filter on frontend
-    // This is a temporary solution until the backend provides /my-products endpoint
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}`);
+    return this.http.get<any>(`${this.apiUrl}/my-products?pageNumber=${page}&pageSize=${size}`).pipe(
+      map(response => {
+        if (response && response.items && Array.isArray(response.items)) {
+          return response.items;
+        } else if (Array.isArray(response)) {
+          return response;
+        } else {
+          return [];
+        }
+      })
+    );
+    // return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}`);
   }
+
+  
 
   getById(id: number): Observable<ProductDetailDTO> {
     return this.http.get<ProductDetailDTO>(`${this.apiUrl}/${id}`);
@@ -81,8 +92,8 @@ export class ProductService {
   }
 
   // ======= DELETE =======
-  deleteProduct(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  deleteProduct(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
 
   // ======= WISHLIST =======
@@ -237,5 +248,18 @@ export class ProductService {
       this.cache.set(key, req$);
     }
     return this.cache.get(key) as Observable<ProductListItemDTOPagedResultDTO>;
+  }
+
+  // ======= RECEIPTS =======
+  getReceipt(orderId: number): Observable<Receipt> {
+    return this.http.get<Receipt>(`${this.apiUrl}/receipt/${orderId}`);
+  }
+
+  resendReceipt(orderId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/receipt/${orderId}/resend`, {});
+  }
+
+  getProductsByCreator(creatorId: number): Observable<ProductListItemDTO[]> {
+    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/creator/${creatorId}/products`);
   }
 }

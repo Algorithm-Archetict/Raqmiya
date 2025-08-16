@@ -1,0 +1,167 @@
+<app-navbar></app-navbar>
+<div class="creator-profile-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <app-loading-spinner></app-loading-spinner>
+    <p>Loading creator profile...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <div class="error-content">
+      <i class="fas fa-exclamation-triangle"></i>
+      <h2>Creator Not Found</h2>
+      <p>The creator you're looking for doesn't exist or has been removed.</p>
+      <button class="btn btn-primary" (click)="goToDiscover()">
+        <i class="fas fa-arrow-left"></i>
+        Back to Discover
+      </button>
+    </div>
+  </div>
+
+  <!-- Creator Profile Content -->
+  <div *ngIf="!loading && !error && creatorProfile" class="profile-content">
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="profile-info">
+        <div class="profile-avatar">
+          <!-- Show image if available -->
+          <img 
+            *ngIf="creatorProfile.profileImageUrl" 
+            [src]="creatorProfile.profileImageUrl" 
+            [alt]="creatorProfile.username + ' profile'"
+            class="avatar-image"
+          >
+          
+          <!-- Show initials fallback when no image -->
+          <div 
+            *ngIf="!creatorProfile.profileImageUrl" 
+            class="avatar-fallback"
+          >
+            {{ getCreatorInitials() }}
+          </div>
+        </div>
+        <div class="profile-details">
+          <h1 class="creator-name">{{ creatorProfile.username }}</h1>
+          <div class="profile-stats">
+            <div class="stat">
+              <span class="stat-number">{{ creatorProfile.followerCount }}</span>
+              <span class="stat-label">Followers</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number">{{ creatorProfile.productCount }}</span>
+              <span class="stat-label">Products</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      
+             <!-- Action Buttons -->
+       <div class="profile-actions">
+         <!-- Show account deleted notice if creator is soft-deleted -->
+         <div *ngIf="creatorProfile.isDeleted" class="account-deleted-notice">
+           <i class="fas fa-user-slash"></i>
+           <span>Account Deleted</span>
+         </div>
+         
+         <!-- Show buttons only if creator is not deleted and not viewing own profile -->
+         <div *ngIf="!creatorProfile.isDeleted && !isViewingOwnProfile()" class="action-buttons">
+           <button 
+             [class]="'btn ' + getSubscriptionButtonClass()"
+             (click)="toggleSubscription()"
+             [disabled]="isSubscribing"
+             class="subscribe-btn"
+           >
+             <i *ngIf="!isSubscribing" [class]="creatorProfile.isSubscribed ? 'fas fa-user-minus' : 'fas fa-user-plus'"></i>
+             <i *ngIf="isSubscribing" class="fas fa-spinner fa-spin"></i>
+             {{ getSubscriptionButtonText() }}
+           </button>
+           
+           <button 
+             class="btn chat-btn"
+             (click)="startChat()"
+           >
+             <i class="fas fa-comments"></i>
+             Chat
+           </button>
+         </div>
+         
+         <!-- Show own profile message when viewing own profile -->
+         <div *ngIf="!creatorProfile.isDeleted && isViewingOwnProfile()" class="own-profile-notice">
+           <i class="fas fa-user-check"></i>
+           <span>This is your creator profile</span>
+         </div>
+       </div>
+    </div>
+
+    <!-- Profile Description -->
+    <div *ngIf="creatorProfile.profileDescription" class="profile-description">
+      <h3>About</h3>
+      <p>{{ creatorProfile.profileDescription }}</p>
+    </div>
+
+    <!-- Creator's Products -->
+    <div class="products-section">
+      <h3>Products by {{ creatorProfile.username }}</h3>
+      
+      <!-- Products Loading -->
+      <div *ngIf="productsLoading" class="products-loading">
+        <app-loading-spinner></app-loading-spinner>
+        <p>Loading products...</p>
+      </div>
+
+             <!-- No Products -->
+       <div *ngIf="!productsLoading && creatorProducts.length === 0" class="no-products">
+         <i class="fas fa-box-open"></i>
+         <h4>No Products Available</h4>
+         <p *ngIf="!creatorProfile?.isDeleted">This creator hasn't published any products yet.</p>
+         <p *ngIf="creatorProfile?.isDeleted">This creator's products are no longer available since their account has been deleted.</p>
+       </div>
+
+       <!-- Products Available but Creator Deleted -->
+       <div *ngIf="!productsLoading && creatorProducts.length > 0 && creatorProfile?.isDeleted" class="creator-deleted-notice">
+         <i class="fas fa-info-circle"></i>
+         <p>Showing only products you have purchased. This creator's account has been deleted.</p>
+       </div>
+
+      <!-- Products Grid -->
+      <div *ngIf="!productsLoading && creatorProducts.length > 0" class="products-grid">
+                 <div 
+           *ngFor="let product of creatorProducts" 
+           class="product-card"
+           [class.purchased-product]="product.userHasPurchased && product.isCreatorDeleted"
+           (click)="viewProduct(product.id)"
+         >
+          <div class="product-image">
+            <img 
+              [src]="product.thumbnailImageUrl || product.coverImageUrl || 'assets/images/default-product.png'" 
+              [alt]="product.name"
+            >
+            <div class="product-overlay">
+              <div class="product-actions">
+                <button class="btn btn-primary btn-sm">
+                  <i class="fas fa-eye"></i>
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="product-info">
+            <h4 class="product-title">{{ product.name }}</h4>
+            <p class="product-price">{{ product.price | currency:product.currency:'symbol' }}</p>
+            <div class="product-meta">
+              <span class="product-rating" *ngIf="product.averageRating">
+                <i class="fas fa-star"></i>
+                {{ product.averageRating | number:'1.1-1' }}
+              </span>
+              <span class="product-reviews" *ngIf="product.salesCount">
+                ({{ product.salesCount }} sales)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
