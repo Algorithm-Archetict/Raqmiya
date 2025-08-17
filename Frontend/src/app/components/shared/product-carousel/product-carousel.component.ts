@@ -88,9 +88,7 @@ export class ProductCarouselComponent implements OnChanges {
     this.router.navigate(['/discover', productId]);
   }
 
-  onViewAllClick() {
-    this.viewAllClick.emit();
-  }
+
 
   toggleWishlist(product: CarouselProduct, event: Event) {
     event.stopPropagation();

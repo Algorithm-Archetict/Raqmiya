@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatbotService } from '../../core/services/chatbot.service';
 import { AuthService } from '../../core/services/auth.service';
+import { LoggingService } from '../../core/services/logging.service';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -42,7 +43,8 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   constructor(
     private chatbotService: ChatbotService,
-    private authService: AuthService
+    private authService: AuthService,
+    private loggingService: LoggingService
   ) {}
 
   ngOnInit() {
@@ -70,17 +72,17 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     const chatbotRole = this.getChatbotRole();
     if (chatbotRole) {
       this.isAdmin = chatbotRole === 'Admin';
-      console.log('Chatbot role from local storage:', chatbotRole);
-      console.log('Is admin:', this.isAdmin);
+      this.loggingService.debug('Chatbot role from local storage:', chatbotRole);
+      this.loggingService.debug('Is admin:', this.isAdmin);
       return;
     }
     
     // Fallback to auth service
     const currentUser = this.authService.getCurrentUser();
-    console.log('Current user:', currentUser);
-    console.log('User roles:', currentUser?.roles);
+    this.loggingService.debug('Current user:', currentUser);
+    this.loggingService.debug('User roles:', currentUser?.roles);
     this.isAdmin = currentUser?.roles?.includes('Admin') || false;
-    console.log('Is admin:', this.isAdmin);
+    this.loggingService.debug('Is admin:', this.isAdmin);
   }
 
   private loadChatHistory() {
@@ -231,7 +233,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       this.knowledgeBaseDocuments = documents;
       this.showDocumentList = true;
     } catch (error) {
-      console.error('Error listing documents:', error);
+      this.loggingService.error('Error listing documents:', error);
     }
   }
 
@@ -262,7 +264,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       // Remove from local list
       this.knowledgeBaseDocuments = this.knowledgeBaseDocuments.filter(doc => doc.name !== docName);
     } catch (error) {
-      console.error('Error deleting document:', error);
+      this.loggingService.error('Error deleting document:', error);
     }
   }
 
@@ -381,14 +383,14 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     }
 
     try {
-      console.log('Starting upload to knowledge base...');
-      console.log('Files to upload:', this.uploadedFiles);
+      this.loggingService.debug('Starting upload to knowledge base...');
+      this.loggingService.debug('Files to upload:', this.uploadedFiles);
       
       for (const file of this.uploadedFiles) {
         if (file.type === 'text' && file.content) {
-          console.log('Uploading file:', file.name);
+          this.loggingService.debug('Uploading file:', file.name);
           await this.chatbotService.addToKnowledgeBase(file.name, file.content);
-          console.log('Successfully uploaded:', file.name);
+          this.loggingService.debug('Successfully uploaded:', file.name);
         }
       }
       
@@ -403,7 +405,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         this.uploadSuccessMessage = '';
       }, 3000);
     } catch (error) {
-      console.error('Upload error:', error);
+      this.loggingService.error('Upload error:', error);
       this.uploadErrorMessage = `Error uploading to knowledge base: ${error instanceof Error ? error.message : 'Unknown error'}`;
       
       // Clear error message after 5 seconds
@@ -441,7 +443,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     if (currentUser?.roles && currentUser.roles.length > 0) {
       const role = currentUser.roles[0]; // Get the primary role
       localStorage.setItem('chatbot_user_role', role);
-      console.log('Chatbot role updated:', role);
+      this.loggingService.debug('Chatbot role updated:', role);
       this.checkAdminStatus(); // Re-check admin status
     }
   }
@@ -449,7 +451,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   private clearChatbotRole(): void {
     localStorage.removeItem('chatbot_user_role');
     this.isAdmin = false;
-    console.log('Chatbot role cleared');
+    this.loggingService.debug('Chatbot role cleared');
   }
 
   private getChatbotRole(): string | null {
@@ -459,6 +461,6 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   private clearChatMessages(): void {
     this.messages = [];
     this.saveChatHistory();
-    console.log('Chat messages cleared due to logout.');
+    this.loggingService.debug('Chat messages cleared due to logout.');
   }
 }
