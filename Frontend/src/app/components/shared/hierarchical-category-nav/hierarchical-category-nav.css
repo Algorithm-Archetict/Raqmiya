@@ -77,6 +77,41 @@
   transform: rotate(180deg);
 }
 
+/* Accordion indicator animations */
+.subcategory-item .subcategory-indicator {
+  transition: all 0.4s ease;
+}
+
+.subcategory-item:hover .subcategory-indicator {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Accordion-style subcategory display */
+.sub-subcategories {
+  margin-left: 1rem;
+  border-left: 2px solid #374151;
+  padding-left: 0.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.sub-sub-subcategories {
+  margin-left: 1rem;
+  border-left: 2px solid #4b5563;
+  padding-left: 0.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.sub-subcategory .subcategory-indicator {
+  transform: rotate(90deg);
+}
+
+.sub-subcategory:hover .subcategory-indicator {
+  transform: rotate(90deg) scale(1.1);
+}
+
 /* Elegant Category-Specific Colors - Extended to cover all categories */
 .category-wrapper:nth-of-type(1) .filter-btn,
 .category-wrapper:nth-of-type(46) .filter-btn,
@@ -314,7 +349,7 @@
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 9999;
+  z-index: 99999; /* Increased z-index to ensure it's above everything */
   margin-top: 0.75rem;
   opacity: 0;
   visibility: hidden;
@@ -354,6 +389,16 @@
   transition-delay: 0.1s;
 }
 
+/* Specific positioning for first category (Fitness & Health) to ensure proper alignment */
+.category-wrapper:nth-of-type(1) .subcategory-dropdown {
+  position: fixed !important;
+  left: 0;
+  transform: none;
+  top: auto;
+  margin-top: 0;
+
+}
+
 .dropdown-content {
   background: rgba(31, 41, 55, 0.95);
   backdrop-filter: blur(20px);
@@ -380,7 +425,7 @@
   color: #d1d5db;
   font-size: 0.95rem;
   text-align: left;
-  transition: all 0.15s ease;
+  transition: all 0.4s ease;
   cursor: pointer;
   margin-bottom: 0.25rem;
 }
@@ -465,6 +510,21 @@
   margin-top: 0.5rem;
   padding-left: 1rem;
   border-left: 2px solid #374151;
+  animation: slideDown 0.4s ease-out;
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    transform: translateY(0);
+  }
 }
 
 .sub-subcategory {

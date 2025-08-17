@@ -105,7 +105,16 @@ namespace Core.Services
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
                 SalesCount = product.OrderItems.Count(),
                 Status = product.Status,
-                IsPublic = product.IsPublic
+                IsPublic = product.IsPublic,
+                PublishedAt = product.PublishedAt,
+                Category = product.Category != null ? new CategoryDTO
+                {
+                    Id = product.Category.Id,
+                    Name = product.Category.Name,
+                    ParentCategoryId = product.Category.ParentCategoryId
+                } : null,
+                IsCreatorDeleted = product.Creator?.IsDeleted ?? false,
+                UserHasPurchased = false // This will be set by the calling method if needed
             };
         }
 
@@ -820,7 +829,9 @@ namespace Core.Services
                     .Include(p => p.Reviews)
                     .Include(p => p.OrderItems)
                     .Where(p => p.IsPublic)
+                    .Where(p => p.WishlistItems.Count >= 1) // Minimum 1 wishlist item
                     .OrderByDescending(p => p.WishlistItems.Count)
+                    .ThenByDescending(p => p.PublishedAt)
                     .Take(count)
                     .ToListAsync();
 
@@ -887,6 +898,7 @@ namespace Core.Services
                     .Include(p => p.Reviews)
                     .Include(p => p.WishlistItems)
                     .Where(p => p.IsPublic)
+                    .Where(p => p.OrderItems.Count >= 1) // Minimum 1 sale
                     .OrderByDescending(p => p.OrderItems.Count)
                     .ThenByDescending(p => p.PublishedAt)
                     .Take(count)

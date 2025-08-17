@@ -2,6 +2,8 @@
 .discover-container {
   min-height: 100vh;
   background: var(--bg-primary);
+  /* Ensure dropdowns are not clipped */
+  overflow: visible;
 }
 
 /* Hero Search Section */
@@ -9,7 +11,7 @@
   background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   padding: var(--spacing-3xl) 0 var(--spacing-2xl);
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to visible to allow dropdowns to show */
   margin-top: 0; /* Remove any top margin since navbar is sticky */
 }
 
@@ -96,6 +98,9 @@
 /* Category Filters */
 .category-filters {
   margin-top: var(--spacing-xl);
+  /* Ensure dropdowns are not clipped */
+  overflow: visible;
+  position: relative;
 }
 
 /* Analytics Carousels Section */

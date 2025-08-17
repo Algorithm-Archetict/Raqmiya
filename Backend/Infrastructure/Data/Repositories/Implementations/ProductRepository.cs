@@ -156,13 +156,13 @@ namespace Raqmiya.Infrastructure
         public async Task<IEnumerable<Product>> GetProductsByMultipleCategoryIdsAsync(List<int> categoryIds, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => categoryIds.Contains(p.CategoryId))
-                // .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
+                .Where(p => categoryIds.Contains(p.CategoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Category)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
         }
@@ -170,7 +170,7 @@ namespace Raqmiya.Infrastructure
         public async Task<int> GetProductsCountByMultipleCategoryIdsAsync(List<int> categoryIds)
         {
             return await _context.Products
-                .Where(p => categoryIds.Contains(p.CategoryId))
+                .Where(p => categoryIds.Contains(p.CategoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
                 .CountAsync();
         }
 

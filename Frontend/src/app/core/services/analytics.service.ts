@@ -80,4 +80,30 @@ export class AnalyticsService {
     const headers = this.createAuthHeaders();
     return this.http.get<ProductListItemDTO[]>(`${this.baseUrl}/carousel/trending?count=${count}`, { headers });
   }
+
+  // Paginated analytics methods for category filtering
+  getPaginatedTopRatedProducts(pageNumber: number = 1, pageSize: number = 12): Observable<any> {
+    const headers = this.createAuthHeaders();
+    return this.http.get<any>(`${this.baseUrl}/analytics/top-rated?pageNumber=${pageNumber}&pageSize=${pageSize}`, { headers });
+  }
+
+  getPaginatedMostWishedProducts(pageNumber: number = 1, pageSize: number = 12): Observable<any> {
+    const headers = this.createAuthHeaders();
+    return this.http.get<any>(`${this.baseUrl}/analytics/most-wished?pageNumber=${pageNumber}&pageSize=${pageSize}`, { headers });
+  }
+
+  getPaginatedBestSellingProducts(pageNumber: number = 1, pageSize: number = 12): Observable<any> {
+    const headers = this.createAuthHeaders();
+    return this.http.get<any>(`${this.baseUrl}/analytics/best-selling?pageNumber=${pageNumber}&pageSize=${pageSize}`, { headers });
+  }
+
+  getPaginatedNewArrivals(pageNumber: number = 1, pageSize: number = 12): Observable<any> {
+    const headers = this.createAuthHeaders();
+    return this.http.get<any>(`${this.baseUrl}/analytics/new-arrivals?pageNumber=${pageNumber}&pageSize=${pageSize}`, { headers });
+  }
+
+  getPaginatedTrendingProducts(pageNumber: number = 1, pageSize: number = 12): Observable<any> {
+    const headers = this.createAuthHeaders();
+    return this.http.get<any>(`${this.baseUrl}/analytics/trending?pageNumber=${pageNumber}&pageSize=${pageSize}`, { headers });
+  }
 }

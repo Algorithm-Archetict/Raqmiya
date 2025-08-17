@@ -8,7 +8,7 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class TagService {
-  private apiUrl = `${environment.apiUrl}/api/products`;
+  private apiUrl = `${environment.apiUrl}/Products`;
 
   constructor(private http: HttpClient) {}
 

@@ -963,7 +963,7 @@ export class Discover implements OnInit, AfterViewInit {
   loadProductsByMultipleCategories(categoryIds: number[]) {
     console.log('=== Loading Products by Multiple Categories ===');
     console.log('Category IDs:', categoryIds);
-    console.log('API URL will be:', `http://localhost:5255/api/products/by-categories?${categoryIds.map(id => `categoryIds=${id}`).join('&')}`);
+    console.log('API URL will be:', `http://localhost:5255/api/Products/by-categories?${categoryIds.map(id => `categoryIds=${id}`).join('&')}`);
     
     this.loading = true;
     
@@ -994,7 +994,7 @@ export class Discover implements OnInit, AfterViewInit {
     console.log('=== Loading Products by Category ===');
     console.log('Category ID:', categoryId);
     console.log('Include nested:', includeNested);
-    console.log('API URL will be:', `http://localhost:5255/api/products${categoryId !== 'all' ? '?categoryId=' + categoryId : ''}`);
+    console.log('API URL will be:', `http://localhost:5255/api/Products${categoryId !== 'all' ? '?categoryId=' + categoryId : ''}`);
     
     this.loading = true;
     

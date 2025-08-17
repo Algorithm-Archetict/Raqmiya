@@ -2,14 +2,14 @@
   <div class="category-filters">
     <div class="filter-buttons">
       <!-- All Categories Button -->
-      <button 
+      <!-- <button 
         class="filter-btn" 
         [class.active]="selectedCategoryId === 'all'"
         (click)="onCategoryClick('all')"
       >
         <i class="fas fa-th-large"></i>
         All
-      </button>
+      </button> -->
 
       <!-- Visible Category Buttons -->
       <div 
@@ -62,14 +62,18 @@
                   class="subcategory-item"
                   [class.active]="selectedCategoryId === subcategory.id"
                   (click)="onSubcategoryClick($event, subcategory.id, false)"
+                  (mouseenter)="onSubcategoryHover($event, subcategory.id, subcategory.subcategories && subcategory.subcategories.length > 0)"
                 >
                   <i class="fas fa-folder"></i>
                   <span class="subcategory-text">{{ subcategory.name }}</span>
+                  <!-- Accordion indicator for sub-subcategories -->
+                  <i *ngIf="subcategory.subcategories && subcategory.subcategories.length > 0" 
+                     [class]="isSubcategoryExpanded(subcategory.id) ? 'fas fa-chevron-down subcategory-indicator' : 'fas fa-chevron-right subcategory-indicator'"></i>
                 </button>
 
-                <!-- Sub-subcategories -->
+                <!-- Sub-subcategories (accordion) -->
                 <div 
-                  *ngIf="subcategory.subcategories && subcategory.subcategories.length > 0"
+                  *ngIf="subcategory.subcategories && subcategory.subcategories.length > 0 && isSubcategoryExpanded(subcategory.id)"
                   class="sub-subcategories"
                 >
                   <button 
@@ -77,10 +81,34 @@
                     class="subcategory-item sub-subcategory"
                     [class.active]="selectedCategoryId === subSubcategory.id"
                     (click)="onSubcategoryClick($event, subSubcategory.id, false)"
+                    (mouseenter)="onSubcategoryHover($event, subSubcategory.id, subSubcategory.subcategories && subSubcategory.subcategories.length > 0)"
                   >
                     <i class="fas fa-file"></i>
                     <span class="subcategory-text">{{ subSubcategory.name }}</span>
+                    <!-- Accordion indicator for sub-sub-subcategories -->
+                    <i *ngIf="subSubcategory.subcategories && subSubcategory.subcategories.length > 0" 
+                       [class]="isSubcategoryExpanded(subSubcategory.id) ? 'fas fa-chevron-down subcategory-indicator' : 'fas fa-chevron-right subcategory-indicator'"></i>
                   </button>
+
+                  <!-- Sub-sub-subcategories (accordion) -->
+                  <div 
+                    *ngFor="let subSubcategory of subcategory.subcategories"
+                    class="sub-sub-subcategories"
+                  >
+                    <div 
+                      *ngIf="subSubcategory.subcategories && subSubcategory.subcategories.length > 0 && isSubcategoryExpanded(subSubcategory.id)"
+                    >
+                      <button 
+                        *ngFor="let subSubSubcategory of subSubcategory.subcategories"
+                        class="subcategory-item sub-sub-subcategory"
+                        [class.active]="selectedCategoryId === subSubSubcategory.id"
+                        (click)="onSubcategoryClick($event, subSubSubcategory.id, false)"
+                      >
+                        <i class="fas fa-file-alt"></i>
+                        <span class="subcategory-text">{{ subSubSubcategory.name }}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

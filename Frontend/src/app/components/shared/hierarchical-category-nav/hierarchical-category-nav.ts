@@ -22,6 +22,9 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   hoveredCategory: Category | null = null;
   showMoreDropdown = false;
   
+  // Accordion functionality - track expanded subcategories
+  expandedSubcategories: Set<number> = new Set();
+  
   // Track if mouse is over category button or dropdown
   private isOverCategoryButton = false;
   private isOverCategoryDropdown = false;
@@ -46,24 +49,21 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
   }
 
   loadCategories() {
-    // // Try to load from API first, fallback to static data
-    // this.categoryService.getCategoriesHierarchy().subscribe({
-    //   next: (apiCategories: CategoryDTO[]) => {
-    //     this.categories = apiCategories.map((cat: CategoryDTO) => this.categoryService.convertToCategory(cat));
-    //     this.organizeCategories();
-    //     this.debugCategories();
-    //   },
-    //   error: (error: any) => {
-    //     console.warn('Failed to load categories from API, using static data:', error);
-    //     // Fallback to static hierarchical categories
-    //     this.categories = HIERARCHICAL_CATEGORIES;
-    //     this.organizeCategories();
-    //     this.debugCategories();
-    //   }
-    // });
+    // Use static data by default to ensure consistency with frontend
+    console.log('Using static category data for consistency');
     this.categories = HIERARCHICAL_CATEGORIES;
     this.organizeCategories();
     this.debugCategories();
+    
+    // Optionally try to load from API for comparison (but don't use it)
+    this.categoryService.getCategoriesHierarchy().subscribe({
+      next: (apiCategories: CategoryDTO[]) => {
+        console.log('API categories loaded (for comparison):', apiCategories);
+      },
+      error: (error: any) => {
+        console.warn('Failed to load categories from API:', error);
+      }
+    });
   }
 
   organizeCategories() {
@@ -194,8 +194,96 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     this.showMoreDropdown = false;
   }
 
+  // New method for hover-only accordion behavior
+  onSubcategoryHover(event: Event, categoryId: number, includeNested: boolean = false) {
+    event.stopPropagation();
+    console.log('=== Category Nav: Subcategory Hover ===');
+    console.log('Subcategory ID hovered:', categoryId);
+    console.log('Include nested:', includeNested);
+    
+    // Only handle accordion behavior on hover, no navigation
+    if (includeNested) {
+      // Add delay for smooth transition
+      setTimeout(() => {
+        this.toggleSubcategoryAccordion(categoryId);
+      }, 400); // 0.4s delay
+    }
+  }
+
+  // Accordion functionality for subcategories
+  toggleSubcategoryAccordion(subcategoryId: number) {
+    console.log('=== Toggle Accordion ===');
+    console.log('Subcategory ID:', subcategoryId);
+    console.log('Currently expanded:', Array.from(this.expandedSubcategories));
+    
+    if (this.expandedSubcategories.has(subcategoryId)) {
+      // Close this subcategory
+      this.expandedSubcategories.delete(subcategoryId);
+      console.log('Closed subcategory:', subcategoryId);
+    } else {
+      // Close other subcategories in the same parent category first
+      this.closeOtherSubcategoriesInSameParent(subcategoryId);
+      // Open this subcategory
+      this.expandedSubcategories.add(subcategoryId);
+      console.log('Opened subcategory:', subcategoryId);
+    }
+    
+    console.log('Updated expanded subcategories:', Array.from(this.expandedSubcategories));
+  }
+
+  // Close other subcategories in the same parent category
+  private closeOtherSubcategoriesInSameParent(subcategoryId: number) {
+    const subcategory = this.findCategoryById(subcategoryId);
+    if (!subcategory) return;
+    
+    // Find the parent category
+    const parentCategory = this.findParentCategory(subcategoryId);
+    if (!parentCategory || !parentCategory.subcategories) return;
+    
+    // Close all other subcategories in the same parent
+    parentCategory.subcategories.forEach(sub => {
+      if (sub.id !== subcategoryId) {
+        this.expandedSubcategories.delete(sub.id);
+      }
+    });
+  }
+
+  // Find parent category of a subcategory
+  private findParentCategory(subcategoryId: number): Category | null {
+    for (const category of this.categories) {
+      if (category.subcategories) {
+        for (const subcategory of category.subcategories) {
+          if (subcategory.id === subcategoryId) {
+            return category;
+          }
+          // Check sub-subcategories
+          if (subcategory.subcategories) {
+            for (const subSubcategory of subcategory.subcategories) {
+              if (subSubcategory.id === subcategoryId) {
+                return subcategory;
+              }
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  // Check if a subcategory is expanded
+  isSubcategoryExpanded(subcategoryId: number): boolean {
+    return this.expandedSubcategories.has(subcategoryId);
+  }
+
   // Helper method to get category slug by ID
   private getCategorySlugById(categoryId: number): string | null {
+    // First try to find the category in our loaded categories
+    const category = this.findCategoryById(categoryId);
+    if (category) {
+      return this.generateSlug(category.name);
+    }
+    
+    // Fallback to static mapping for main categories
     const slugMap: { [key: number]: string } = {
       1: 'fitness-health',
       2: 'self-improvement',
@@ -217,6 +305,16 @@ export class HierarchicalCategoryNav implements OnInit, AfterViewInit {
     };
     
     return slugMap[categoryId] || null;
+  }
+
+  // Helper method to generate slug from category name
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .trim();
   }
 
   // Helper method to find category by ID in the hierarchy

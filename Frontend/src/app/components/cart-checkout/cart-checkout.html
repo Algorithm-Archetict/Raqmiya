@@ -26,26 +26,8 @@
               <p class="item-price">{{ item.price | currency:item.currency }}</p>
             </div>
 
-            <div class="item-quantity">
-              <label>Quantity:</label>
-              <div class="quantity-controls">
-                <button
-                  class="btn btn-sm btn-outline-secondary"
-                  (click)="updateQuantity(item.productId, item.quantity - 1)"
-                  [disabled]="item.quantity <= 1">
-                  <i class="fas fa-minus"></i>
-                </button>
-                <span class="quantity-value">{{ item.quantity }}</span>
-                <button
-                  class="btn btn-sm btn-outline-secondary"
-                  (click)="updateQuantity(item.productId, item.quantity + 1)">
-                  <i class="fas fa-plus"></i>
-                </button>
-              </div>
-            </div>
-
             <div class="item-total">
-              <strong>{{ (item.price * item.quantity) | currency:item.currency }}</strong>
+              <strong>{{ item.price | currency:item.currency }}</strong>
             </div>
 
             <div class="item-actions">
@@ -60,12 +42,18 @@
 
         <!-- Empty Cart -->
         <div class="empty-cart" *ngIf="cartItems.length === 0">
-          <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-          <h4>Your cart is empty</h4>
-          <p>Add some products to get started!</p>
-          <button class="btn btn-primary" (click)="continueShopping()">
-            Continue Shopping
-          </button>
+          <div class="empty-cart-content">
+            <div class="empty-cart-icon">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <h2>Your cart is empty</h2>
+            <p>Looks like you haven't added any products to your cart yet.</p>
+            <p>Start exploring our digital products and add them to your cart!</p>
+            <button class="btn btn-primary btn-lg" (click)="continueShopping()">
+              <i class="fas fa-shopping-bag me-2"></i>
+              Start Shopping
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -80,53 +80,127 @@ namespace Raqmiya.Infrastructure.Data
                     Role = "Admin", CreatedAt = DateTime.UtcNow, IsActive = true
                 });
 
-                // Generate 150 creators from US and Europe
-                var creators = new List<User>();
-                var locales = new[] { "en_US", "en_GB", "de", "fr", "es", "it", "nl" };
-                
-                foreach (var locale in locales)
-                {
-                    var localCreators = new Faker<User>(locale)
-                        .CustomInstantiator(f => {
-                            var salt = GenerateSalt();
-                            var firstName = f.Name.FirstName();
-                            var lastName = f.Name.LastName();
-                            return new User {
-                                Username = f.Internet.UserName(firstName, lastName),
-                                Email = f.Internet.Email(firstName, lastName),
-                                Salt = salt,
-                                HashedPassword = HashPassword("Pass12345", salt),
-                                Role = "Creator",
-                                CreatedAt = f.Date.Past(2),
-                                IsActive = true
-                            };
-                        })
-                        .Generate(150 / locales.Length);
-                    creators.AddRange(localCreators);
-                }
+                                 // Generate 150 creators from US and Europe
+                 var creators = new List<User>();
+                 var locales = new[] { "en_US", "en_GB", "de", "fr", "es", "it", "nl" };
+                 var usedUsernames = new HashSet<string>();
+                 var usedEmails = new HashSet<string>();
+                 
+                 foreach (var locale in locales)
+                 {
+                     var localCreators = new List<User>();
+                     var targetCount = 150 / locales.Length;
+                     
+                     while (localCreators.Count < targetCount)
+                     {
+                         var localeFaker = new Faker(locale);
+                         var salt = GenerateSalt();
+                         var firstName = localeFaker.Name.FirstName();
+                         var lastName = localeFaker.Name.LastName();
+                         
+                         // Generate unique username
+                         string username;
+                         int attempt = 0;
+                         do
+                         {
+                             username = attempt == 0 
+                                 ? localeFaker.Internet.UserName(firstName, lastName)
+                                 : $"{localeFaker.Internet.UserName(firstName, lastName)}{localeFaker.Random.Number(100, 999)}";
+                             attempt++;
+                         } while (usedUsernames.Contains(username) && attempt < 10);
+                         
+                         // Generate unique email
+                         string email;
+                         attempt = 0;
+                         do
+                         {
+                             email = attempt == 0 
+                                 ? localeFaker.Internet.Email(firstName, lastName)
+                                 : localeFaker.Internet.Email($"{firstName}{localeFaker.Random.Number(100, 999)}", lastName);
+                             attempt++;
+                         } while (usedEmails.Contains(email) && attempt < 10);
+                         
+                         // Skip if we couldn't generate unique values
+                         if (usedUsernames.Contains(username) || usedEmails.Contains(email))
+                             continue;
+                         
+                         usedUsernames.Add(username);
+                         usedEmails.Add(email);
+                         
+                         var creator = new User {
+                             Username = username,
+                             Email = email,
+                             Salt = salt,
+                             HashedPassword = HashPassword("Pass12345", salt),
+                             Role = "Creator",
+                             CreatedAt = localeFaker.Date.Past(2),
+                             IsActive = true
+                         };
+                         
+                         localCreators.Add(creator);
+                     }
+                     
+                     creators.AddRange(localCreators);
+                 }
 
-                // Generate 250 customers from US and Europe
-                var customers = new List<User>();
-                foreach (var locale in locales)
-                {
-                    var localCustomers = new Faker<User>(locale)
-                        .CustomInstantiator(f => {
-                            var salt = GenerateSalt();
-                            var firstName = f.Name.FirstName();
-                            var lastName = f.Name.LastName();
-                            return new User {
-                                Username = f.Internet.UserName(firstName, lastName),
-                                Email = f.Internet.Email(firstName, lastName),
-                                Salt = salt,
-                                HashedPassword = HashPassword("Pass12345", salt),
-                                Role = "Customer",
-                                CreatedAt = f.Date.Past(2),
-                                IsActive = true
-                            };
-                        })
-                        .Generate(250 / locales.Length);
-                    customers.AddRange(localCustomers);
-                }
+                                 // Generate 250 customers from US and Europe
+                 var customers = new List<User>();
+                 foreach (var locale in locales)
+                 {
+                     var localCustomers = new List<User>();
+                     var targetCount = 250 / locales.Length;
+                     
+                     while (localCustomers.Count < targetCount)
+                     {
+                         var customerFaker = new Faker(locale);
+                         var salt = GenerateSalt();
+                         var firstName = customerFaker.Name.FirstName();
+                         var lastName = customerFaker.Name.LastName();
+                         
+                         // Generate unique username
+                         string username;
+                         int attempt = 0;
+                         do
+                         {
+                             username = attempt == 0 
+                                 ? customerFaker.Internet.UserName(firstName, lastName)
+                                 : $"{customerFaker.Internet.UserName(firstName, lastName)}{customerFaker.Random.Number(100, 999)}";
+                             attempt++;
+                         } while (usedUsernames.Contains(username) && attempt < 10);
+                         
+                         // Generate unique email
+                         string email;
+                         attempt = 0;
+                         do
+                         {
+                             email = attempt == 0 
+                                 ? customerFaker.Internet.Email(firstName, lastName)
+                                 : customerFaker.Internet.Email($"{firstName}{customerFaker.Random.Number(100, 999)}", lastName);
+                             attempt++;
+                         } while (usedEmails.Contains(email) && attempt < 10);
+                         
+                         // Skip if we couldn't generate unique values
+                         if (usedUsernames.Contains(username) || usedEmails.Contains(email))
+                             continue;
+                         
+                         usedUsernames.Add(username);
+                         usedEmails.Add(email);
+                         
+                         var customer = new User {
+                             Username = username,
+                             Email = email,
+                             Salt = salt,
+                             HashedPassword = HashPassword("Pass12345", salt),
+                             Role = "Customer",
+                             CreatedAt = customerFaker.Date.Past(2),
+                             IsActive = true
+                         };
+                         
+                         localCustomers.Add(customer);
+                     }
+                     
+                     customers.AddRange(localCustomers);
+                 }
 
                 context.Users.AddRange(creators);
                 context.Users.AddRange(customers);
@@ -231,7 +305,7 @@ namespace Raqmiya.Infrastructure.Data
                     // Subcategoriation (ParentId: 3)
                     new Category { Name = "Classroom", ParentCategoryId = 3 },
                     new Category { Name = "English", ParentCategoryId = 3 },
-                    new Category { Name = "History", ParentCategoryId = 3 },
+                    //new Category { Name = "History", ParentCategoryId = 3 },
                     new Category { Name = "Math", ParentCategoryId = 3 },
                     new Category { Name = "Science", ParentCategoryId = 3 },
                     new Category { Name = "Social Studies", ParentCategoryId = 3 },
@@ -336,91 +410,91 @@ namespace Raqmiya.Infrastructure.Data
                     new Category { Name = "Magic", ParentCategoryId = 28 },
                     new Category { Name = "Meditation", ParentCategoryId = 28 },
                     // Sub-subcategories - Science - Education
-                    new Category { Name = "Medicine", ParentCategoryId = 36 },
-                    new Category { Name = "Physics", ParentCategoryId = 36 },
-                    new Category { Name = "Computer Science", ParentCategoryId = 39 },
-                    // Sub-subcategories - Social Studies - Education (37)
-                    new Category { Name = "History", ParentCategoryId = 37 },
-                    new Category { Name = "Law", ParentCategoryId = 37 },
-                    new Category { Name = "Politics", ParentCategoryId = 37 },
-                    new Category { Name = "Economics", ParentCategoryId = 37 },
-                    new Category { Name = "Psychology", ParentCategoryId = 37 },
-                    new Category { Name = "Anthropology", ParentCategoryId = 37 },
-                    new Category { Name = "Sociology", ParentCategoryId = 37 },
-                    // Sub-subcategories - Entrepreneurship - Business & Money (43)
-                    new Category { Name = "Courses", ParentCategoryId = 43 },
-                    new Category { Name = "Podcasts", ParentCategoryId = 43 },
-                    new Category { Name = "Resourses", ParentCategoryId = 43 },
-                    // Sub-subcategories - Movie - Films (80)
-                    new Category { Name = "Action & Adventure", ParentCategoryId = 80 },
-                    new Category { Name = "Animation", ParentCategoryId = 80 },
-                    new Category { Name = "Anime", ParentCategoryId = 80 },
-                    new Category { Name = "Black Voices", ParentCategoryId = 80 },
-                    new Category { Name = "Classics", ParentCategoryId = 80 },
-                    new Category { Name = "Drama", ParentCategoryId = 80 },
-                    new Category { Name = "Faith & Spirituality", ParentCategoryId = 80 },
-                    new Category { Name = "Foreign Language & International", ParentCategoryId = 80 },
-                    new Category { Name = "Horror", ParentCategoryId = 80 },
-                    new Category { Name = "Thriller", ParentCategoryId = 80 },
-                    new Category { Name = "Indian Cinema & Bollywood", ParentCategoryId = 80 },
-                    new Category { Name = "Indie & Art House", ParentCategoryId = 80 },
-                    new Category { Name = "Kids & Family", ParentCategoryId = 80 },
-                    new Category { Name = "Music Videos & Concerts", ParentCategoryId = 80 },
-                    new Category { Name = "Romance", ParentCategoryId = 80 },
-                    new Category { Name = "Science Fiction", ParentCategoryId = 80 },
-                    // Sub-subcategories - App Development - Software Development (87)
-                    new Category { Name = "React Native", ParentCategoryId = 87 },
-                    new Category { Name = "Swift", ParentCategoryId = 87 },
-                    // Sub-subcategories - Programming - Software Development (89)
-                    new Category { Name = "C#", ParentCategoryId = 89 },
-                    new Category { Name = "Java", ParentCategoryId = 89 },
-                    new Category { Name = "Rust", ParentCategoryId = 89 },
-                    new Category { Name = "GoLang", ParentCategoryId = 89 },
-                    new Category { Name = "Zig", ParentCategoryId = 89 },
-                    new Category { Name = "Python", ParentCategoryId = 89 },
-                    new Category { Name = "JavaScript", ParentCategoryId = 89 },
-                    new Category { Name = "PHP", ParentCategoryId = 89 },
-                    new Category { Name = "Ruby", ParentCategoryId = 89 },
-                    // Sub-subcategories - Software & Plugins - Software Development (90)
-                    new Category { Name = "VS Code", ParentCategoryId = 90 },
-                    new Category { Name = "Wordpress", ParentCategoryId = 90 },
-                    // Sub-subcategories - Web Development - Software Development (91)
-                    new Category { Name = "AWS", ParentCategoryId = 91 },
-                    new Category { Name = "Frontend", ParentCategoryId = 91 },
-                    new Category { Name = "Backend", ParentCategoryId = 91 },
-                    // Sub-Subcategories  Singles - Recorded Music (110)
-                    new Category { Name = "Children Music", ParentCategoryId = 110 },
-                    new Category { Name = "Christian", ParentCategoryId = 110 },
-                    new Category { Name = "Classic Rock", ParentCategoryId = 110 },
-                    new Category { Name = "Classical", ParentCategoryId = 110 },
-                    new Category { Name = "Country", ParentCategoryId = 110 },
-                    new Category { Name = "Dance & Electronic", ParentCategoryId = 110 },
-                    new Category { Name = "Folk", ParentCategoryId = 110 },
-                    new Category { Name = "Gospel", ParentCategoryId = 110 },
-                    new Category { Name = "Hard Rock & Metal", ParentCategoryId = 110 },
-                    new Category { Name = "Holiday Music", ParentCategoryId = 110 },
-                    new Category { Name = "Jazz", ParentCategoryId = 110 },
-                    new Category { Name = "Latin Music", ParentCategoryId = 110 },
-                    new Category { Name = "New Age", ParentCategoryId = 110 },
-                    new Category { Name = "Opera & Vocal", ParentCategoryId = 110 },
-                    new Category { Name = "Pop", ParentCategoryId = 110 },
-                    new Category { Name = "Rap & Hip-Hop", ParentCategoryId = 110 },
-                    new Category { Name = "R&B", ParentCategoryId = 110 },
-                    new Category { Name = "Rock", ParentCategoryId = 110 },
-                    new Category { Name = "Soundtracks", ParentCategoryId = 110 },
-                    new Category { Name = "World Music", ParentCategoryId = 110 },
-                    // Sub - Sub-Subcategories  -  Frontend  -  Web Development - Software Development (163)
-                    new Category { Name = "React JS", ParentCategoryId = 163 },
-                    new Category { Name = "Next JS", ParentCategoryId = 163 },
-                    new Category { Name = "Angular", ParentCategoryId = 163 },
-                    // Sub - Sub-Subcategories  -  Backend  -  Web Development - Software Development (164)
-                    new Category { Name = ".NET", ParentCategoryId = 164 },
-                    new Category { Name = "Spring Boot", ParentCategoryId = 164 },
-                    new Category { Name = "Node.Js", ParentCategoryId = 164 },
-                    new Category { Name = "NestJs", ParentCategoryId = 164 },
-                    new Category { Name = "Django", ParentCategoryId = 164 },
-                    new Category { Name = "Flask", ParentCategoryId = 164 },
-                    new Category { Name = "Laravel", ParentCategoryId = 164 }
+                    new Category { Name = "Medicine", ParentCategoryId = 35 },
+                    new Category { Name = "Physics", ParentCategoryId = 35 },
+                    new Category { Name = "Computer Science", ParentCategoryId = 38 },
+                    // Sub-subcategories - Social Studies - Education (36)
+                    new Category { Name = "History", ParentCategoryId = 36 },
+                    new Category { Name = "Law", ParentCategoryId = 36 },
+                    new Category { Name = "Politics", ParentCategoryId = 36 },
+                    new Category { Name = "Economics", ParentCategoryId = 36 },
+                    new Category { Name = "Psychology", ParentCategoryId = 36 },
+                    new Category { Name = "Anthropology", ParentCategoryId = 36 },
+                    new Category { Name = "Sociology", ParentCategoryId = 36 },
+                    // Sub-subcategories - Entrepreneurship - Business & Money (42)
+                    new Category { Name = "Courses", ParentCategoryId = 42 },
+                    new Category { Name = "Podcasts", ParentCategoryId = 42 },
+                    new Category { Name = "Resources", ParentCategoryId = 42 },
+                    // Sub-subcategories - Movie - Films (79)
+                    new Category { Name = "Action & Adventure", ParentCategoryId = 79 },
+                    new Category { Name = "Animation", ParentCategoryId = 79 },
+                    new Category { Name = "Anime", ParentCategoryId = 79 },
+                    new Category { Name = "Black Voices", ParentCategoryId = 79 },
+                    new Category { Name = "Classics", ParentCategoryId = 79 },
+                    new Category { Name = "Drama", ParentCategoryId = 79 },
+                    new Category { Name = "Faith & Spirituality", ParentCategoryId = 79 },
+                    new Category { Name = "Foreign Language & International", ParentCategoryId = 79 },
+                    new Category { Name = "Horror", ParentCategoryId = 79 },
+                    new Category { Name = "Thriller", ParentCategoryId = 79 },
+                    new Category { Name = "Indian Cinema & Bollywood", ParentCategoryId = 79 },
+                    new Category { Name = "Indie & Art House", ParentCategoryId = 79 },
+                    new Category { Name = "Kids & Family", ParentCategoryId = 79 },
+                    new Category { Name = "Music Videos & Concerts", ParentCategoryId = 79 },
+                    new Category { Name = "Romance", ParentCategoryId = 79 },
+                    new Category { Name = "Science Fiction", ParentCategoryId = 79 },
+                    // Sub-subcategories - App Development - Software Development (86)
+                    new Category { Name = "React Native", ParentCategoryId = 86 },
+                    new Category { Name = "Swift", ParentCategoryId = 86 },
+                    // Sub-subcategories - Programming - Software Development (88)
+                    new Category { Name = "C#", ParentCategoryId = 88 },
+                    new Category { Name = "Java", ParentCategoryId = 88 },
+                    new Category { Name = "Rust", ParentCategoryId = 88 },
+                    new Category { Name = "GoLang", ParentCategoryId = 88 },
+                    new Category { Name = "Zig", ParentCategoryId = 88 },
+                    new Category { Name = "Python", ParentCategoryId = 88 },
+                    new Category { Name = "JavaScript", ParentCategoryId = 88 },
+                    new Category { Name = "PHP", ParentCategoryId = 88 },
+                    new Category { Name = "Ruby", ParentCategoryId = 88 },
+                    // Sub-subcategories - Software & Plugins - Software Development (89)
+                    new Category { Name = "VS Code", ParentCategoryId = 89 },
+                    new Category { Name = "Wordpress", ParentCategoryId = 89 },
+                    // Sub-subcategories - Web Development - Software Development (90)
+                    new Category { Name = "AWS", ParentCategoryId = 90 },
+                    new Category { Name = "Frontend", ParentCategoryId = 90 },
+                    new Category { Name = "Backend", ParentCategoryId = 90 },
+                    // Sub-Subcategories  Singles - Recorded Music (109)
+                    new Category { Name = "Children Music", ParentCategoryId = 109 },
+                    new Category { Name = "Christian", ParentCategoryId = 109 },
+                    new Category { Name = "Classic Rock", ParentCategoryId = 109 },
+                    new Category { Name = "Classical", ParentCategoryId = 109 },
+                    new Category { Name = "Country", ParentCategoryId = 109 },
+                    new Category { Name = "Dance & Electronic", ParentCategoryId = 109 },
+                    new Category { Name = "Folk", ParentCategoryId = 109 },
+                    new Category { Name = "Gospel", ParentCategoryId = 109 },
+                    new Category { Name = "Hard Rock & Metal", ParentCategoryId = 109 },
+                    new Category { Name = "Holiday Music", ParentCategoryId = 109 },
+                    new Category { Name = "Jazz", ParentCategoryId = 109 },
+                    new Category { Name = "Latin Music", ParentCategoryId = 109 },
+                    new Category { Name = "New Age", ParentCategoryId = 109 },
+                    new Category { Name = "Opera & Vocal", ParentCategoryId = 109 },
+                    new Category { Name = "Pop", ParentCategoryId = 109 },
+                    new Category { Name = "Rap & Hip-Hop", ParentCategoryId = 109 },
+                    new Category { Name = "R&B", ParentCategoryId = 109 },
+                    new Category { Name = "Rock", ParentCategoryId = 109 },
+                    new Category { Name = "Soundtracks", ParentCategoryId = 109 },
+                    new Category { Name = "World Music", ParentCategoryId = 109 },
+                    // Sub - Sub-Subcategories  -  Frontend  -  Web Development - Software Development (153)
+                    new Category { Name = "React JS", ParentCategoryId = 153 },
+                    new Category { Name = "Next JS", ParentCategoryId = 153 },
+                    new Category { Name = "Angular", ParentCategoryId = 153 },
+                    // Sub - Sub-Subcategories  -  Backend  -  Web Development - Software Development (154)
+                    new Category { Name = ".NET", ParentCategoryId = 154 },
+                    new Category { Name = "Spring Boot", ParentCategoryId = 154 },
+                    new Category { Name = "Node.Js", ParentCategoryId = 154 },
+                    new Category { Name = "NestJs", ParentCategoryId = 154 },
+                    new Category { Name = "Django", ParentCategoryId = 154 },
+                    new Category { Name = "Flask", ParentCategoryId = 154 },
+                    new Category { Name = "Laravel", ParentCategoryId = 154 }
                 };
                 context.Categories.AddRange(categories);
                 context.SaveChanges();
@@ -642,17 +716,199 @@ namespace Raqmiya.Infrastructure.Data
                 
                 var faker = new Faker("en_US");
                 
-                // Define category-specific product templates for realistic matching
-                var categoryBasedProducts = new Dictionary<string, object[]>
-                {
-                    ["Software Development"] = new object[]
-                    {
-                        new { Names = new[] { "Complete {0} Bootcamp", "Master {0} Programming", "{0} Developer Course", "Learn {0} from Scratch", "Professional {0} Training" },
-                              Descriptions = new[] { "Master {0} with hands-on projects and real-world examples.", "From beginner to professional {0} developer.", "Industry-standard {0} training with lifetime access.", "Learn {0} the right way with expert instruction.", "Complete {0} development course with practical projects." },
-                              Subjects = new[] { "Python", "JavaScript", "React", "Node.js", "C#", "Java", "Web Development", "Mobile App Development", "API Development", "Full Stack Development" },
-                              PriceRange = new { Min = 39.99m, Max = 199.99m } }
-                    },
-                    ["Design"] = new object[]
+                                 // Define category-specific product templates for realistic matching
+                 var categoryBasedProducts = new Dictionary<string, object[]>
+                 {
+                     // Main Categories
+                     ["Software Development"] = new object[]
+                     {
+                         new { Names = new[] { "Complete {0} Bootcamp", "Master {0} Programming", "{0} Developer Course", "Learn {0} from Scratch", "Professional {0} Training" },
+                               Descriptions = new[] { "Master {0} with hands-on projects and real-world examples.", "From beginner to professional {0} developer.", "Industry-standard {0} training with lifetime access.", "Learn {0} the right way with expert instruction.", "Complete {0} development course with practical projects." },
+                               Subjects = new[] { "Python", "JavaScript", "React", "Node.js", "C#", "Java", "Web Development", "Mobile App Development", "API Development", "Full Stack Development" },
+                               PriceRange = new { Min = 39.99m, Max = 199.99m } }
+                     },
+                     ["Fitness & Health"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Workout Plan", "Complete {0} Guide", "{0} Training Program", "Professional {0} Course", "{0} Health System" },
+                               Descriptions = new[] { "Comprehensive {0} program for optimal results.", "Professional {0} training with meal plans.", "Complete {0} system for lasting transformation.", "Expert {0} guidance for all fitness levels.", "Proven {0} methods for sustainable health." },
+                               Subjects = new[] { "Weight Loss", "Muscle Building", "Yoga", "Running", "CrossFit", "Nutrition", "Meal Planning", "Home Workouts", "Strength Training", "Cardio Training" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["Education"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Study Guide", "Complete {0} Course", "{0} Learning Materials", "Master {0} Concepts", "{0} Educational Resources" },
+                               Descriptions = new[] { "Comprehensive {0} materials for effective learning.", "Master {0} concepts with structured lessons.", "Complete {0} curriculum with practice exercises.", "Professional {0} education resources.", "Learn {0} step-by-step with expert guidance." },
+                               Subjects = new[] { "Mathematics", "Science", "History", "English", "Test Prep", "Study Skills", "Online Learning", "Language Learning", "Academic Writing", "Research Methods" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["Self Improvement"] = new object[]
+                     {
+                         new { Names = new[] { "The Complete Guide to {0}", "{0} for Success", "Master {0} in 30 Days", "{0} Transformation", "Ultimate {0} System" },
+                               Descriptions = new[] { "Transform your life with proven {0} methods.", "Achieve success through effective {0} practices.", "Complete {0} system for personal growth.", "Master {0} and unlock your potential.", "Professional {0} strategies for lasting change." },
+                               Subjects = new[] { "Productivity", "Time Management", "Goal Setting", "Habit Building", "Mindfulness", "Stress Management", "Confidence Building", "Communication Skills", "Leadership", "Personal Finance" },
+                               PriceRange = new { Min = 14.99m, Max = 69.99m } }
+                     },
+                     ["Business & Money"] = new object[]
+                     {
+                         new { Names = new[] { "The Complete Guide to {0}", "{0} Mastery Course", "Advanced {0} Strategies", "{0} Business Blueprint", "Professional {0} Toolkit" },
+                               Descriptions = new[] { "Transform your business with proven {0} strategies.", "Learn advanced {0} techniques from industry experts.", "Complete {0} system for sustainable growth.", "Professional {0} methods that deliver results.", "Master {0} and scale your business effectively." },
+                               Subjects = new[] { "Digital Marketing", "Entrepreneurship", "Personal Finance", "E-commerce", "Affiliate Marketing", "Dropshipping", "Real Estate Investing", "Stock Trading", "Business Planning", "Sales Strategies" },
+                               PriceRange = new { Min = 29.99m, Max = 149.99m } }
+                     },
+                     ["Design"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Design Pack", "Premium {0} Templates", "{0} Asset Collection", "Professional {0} Kit", "{0} Creative Bundle" },
+                               Descriptions = new[] { "Stunning {0} designs ready for commercial use.", "High-quality {0} templates that save you time.", "Complete {0} asset pack for your projects.", "Professional {0} resources for designers.", "Everything you need for amazing {0} designs." },
+                               Subjects = new[] { "UI/UX Design", "Logo Design", "Graphic Design", "Web Design", "Brand Identity", "Typography", "Icon Design", "Print Design", "Mobile Design", "Wireframe Templates" },
+                               PriceRange = new { Min = 14.99m, Max = 89.99m } }
+                     },
+                     ["3D"] = new object[]
+                     {
+                         new { Names = new[] { "{0} 3D Models", "Premium {0} Assets", "{0} Animation Pack", "Professional {0} Kit", "{0} 3D Collection" },
+                               Descriptions = new[] { "High-quality {0} 3D models for your projects.", "Professional {0} assets ready for production.", "Complete {0} 3D package with textures.", "Premium {0} models with commercial license.", "Detailed {0} 3D assets for game development." },
+                               Subjects = new[] { "Character Models", "Environment Assets", "Vehicles", "Architecture", "Props", "Weapons", "Animals", "Furniture", "Sci-Fi Assets", "Fantasy Models" },
+                               PriceRange = new { Min = 9.99m, Max = 129.99m } }
+                     },
+                     ["Music & Sound Design"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Sample Pack", "Premium {0} Beats", "{0} Production Kit", "Professional {0} Loops", "{0} Sound Library" },
+                               Descriptions = new[] { "High-quality {0} samples for your next hit.", "Professionally produced {0} beats ready to use.", "Complete {0} production toolkit with stems.", "Royalty-free {0} loops for commercial use.", "Exclusive {0} sounds you won't find anywhere else." },
+                               Subjects = new[] { "Hip Hop", "Electronic", "Pop", "Rock", "Jazz", "Classical", "Ambient", "Trap", "House Music", "Cinematic" },
+                               PriceRange = new { Min = 4.99m, Max = 79.99m } }
+                     },
+                     ["Films"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Film Course", "Professional {0} Guide", "{0} Production Kit", "Complete {0} Tutorial", "{0} Filmmaking Bundle" },
+                               Descriptions = new[] { "Master {0} filmmaking with expert guidance.", "Professional {0} techniques for filmmakers.", "Complete {0} production workflow.", "Learn {0} from industry professionals.", "Everything you need for {0} filmmaking." },
+                               Subjects = new[] { "Documentary", "Short Film", "Commercial", "Music Video", "Wedding Film", "Corporate Video", "Animation", "Cinematography", "Video Editing", "Sound Design" },
+                               PriceRange = new { Min = 24.99m, Max = 99.99m } }
+                     },
+                     ["Photography"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Presets Pack", "{0} Photography Course", "Professional {0} Guide", "{0} Editing Tutorial", "{0} Photo Collection" },
+                               Descriptions = new[] { "Professional {0} presets for stunning photos.", "Master {0} photography with expert guidance.", "Complete {0} guide with practical tips.", "Learn {0} editing techniques step-by-step.", "High-quality {0} photos for commercial use." },
+                               Subjects = new[] { "Portrait Photography", "Landscape Photography", "Wedding Photography", "Street Photography", "Nature Photography", "Product Photography", "Travel Photography", "Fashion Photography", "Real Estate Photography", "Event Photography" },
+                               PriceRange = new { Min = 12.99m, Max = 89.99m } }
+                     },
+                     ["Drawing & Painting"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Art Tutorial", "Learn {0} Techniques", "{0} Masterclass", "Digital {0} Course", "{0} Art Guide" },
+                               Descriptions = new[] { "Master {0} with step-by-step tutorials.", "Learn professional {0} techniques from experts.", "Complete {0} course for all skill levels.", "Improve your {0} skills with practical exercises.", "Professional {0} training for artists." },
+                               Subjects = new[] { "Portrait Drawing", "Digital Painting", "Character Design", "Concept Art", "Illustration", "Watercolor", "Oil Painting", "Sketching", "Comic Art", "Fantasy Art" },
+                               PriceRange = new { Min = 19.99m, Max = 99.99m } }
+                     },
+                     ["Writings & Publishing"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Writing Guide", "Complete {0} Course", "Professional {0} Toolkit", "{0} Publishing Guide", "{0} Writing Bundle" },
+                               Descriptions = new[] { "Master {0} writing techniques.", "Complete {0} course for writers.", "Professional {0} tools and resources.", "Learn {0} publishing process.", "Everything you need for {0} writing." },
+                               Subjects = new[] { "Creative Writing", "Copywriting", "Content Writing", "Blogging", "Journalism", "Academic Writing", "Technical Writing", "Screenwriting", "Poetry", "Novel Writing" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["Gaming"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Game Development", "Complete {0} Course", "{0} Game Design", "Professional {0} Guide", "{0} Gaming Bundle" },
+                               Descriptions = new[] { "Master {0} game development.", "Complete {0} course for game developers.", "Professional {0} game design techniques.", "Learn {0} from industry experts.", "Everything you need for {0} gaming." },
+                               Subjects = new[] { "Unity", "Unreal Engine", "Game Design", "3D Modeling", "Animation", "Programming", "Level Design", "Character Design", "Sound Design", "Game Art" },
+                               PriceRange = new { Min = 29.99m, Max = 149.99m } }
+                     },
+                     ["Comics & Graphic Novels"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Comic Creation", "Complete {0} Guide", "{0} Art Tutorial", "Professional {0} Course", "{0} Comic Bundle" },
+                               Descriptions = new[] { "Master {0} comic creation.", "Complete {0} guide for comic artists.", "Professional {0} art techniques.", "Learn {0} from industry professionals.", "Everything you need for {0} comics." },
+                               Subjects = new[] { "Character Design", "Storyboarding", "Inking", "Coloring", "Lettering", "Digital Art", "Traditional Art", "Manga", "Superhero", "Indie Comics" },
+                               PriceRange = new { Min = 19.99m, Max = 89.99m } }
+                     },
+                     ["Fiction Books"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Writing Course", "Complete {0} Guide", "{0} Novel Writing", "Professional {0} Toolkit", "{0} Fiction Bundle" },
+                               Descriptions = new[] { "Master {0} writing techniques.", "Complete {0} guide for authors.", "Professional {0} novel writing.", "Learn {0} from published authors.", "Everything you need for {0} fiction." },
+                               Subjects = new[] { "Fantasy", "Romance", "Mystery", "Science Fiction", "Thriller", "Historical Fiction", "Young Adult", "Children's Books", "Literary Fiction", "Horror" },
+                               PriceRange = new { Min = 24.99m, Max = 99.99m } }
+                     },
+                     ["Audio"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Audio Course", "Complete {0} Guide", "{0} Production Kit", "Professional {0} Tutorial", "{0} Audio Bundle" },
+                               Descriptions = new[] { "Master {0} audio production.", "Complete {0} guide for audio creators.", "Professional {0} production techniques.", "Learn {0} from industry experts.", "Everything you need for {0} audio." },
+                               Subjects = new[] { "ASMR", "Podcasting", "Voice Acting", "Sound Design", "Music Production", "Audio Editing", "Recording", "Mixing", "Mastering", "Audio Engineering" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["Recorded Music"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Music Album", "Complete {0} Collection", "{0} Music Pack", "Professional {0} Tracks", "{0} Music Bundle" },
+                               Descriptions = new[] { "High-quality {0} music album.", "Complete {0} music collection.", "Professional {0} music tracks.", "Exclusive {0} music content.", "Everything you need for {0} music." },
+                               Subjects = new[] { "Pop", "Rock", "Jazz", "Classical", "Electronic", "Hip Hop", "Country", "Folk", "R&B", "World Music" },
+                               PriceRange = new { Min = 9.99m, Max = 49.99m } }
+                     },
+                     
+                     // Subcategories - Fitness & Health
+                     ["Exercise & Workout"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Workout Plan", "Complete {0} Guide", "{0} Training Program", "Professional {0} Course", "{0} Fitness System" },
+                               Descriptions = new[] { "Comprehensive {0} program for optimal results.", "Professional {0} training with detailed plans.", "Complete {0} system for lasting transformation.", "Expert {0} guidance for all fitness levels.", "Proven {0} methods for sustainable fitness." },
+                               Subjects = new[] { "Strength Training", "Cardio Workouts", "HIIT", "Circuit Training", "Bodyweight Exercises", "Weight Training", "Functional Training", "Sports Conditioning", "Rehabilitation", "Flexibility" },
+                               PriceRange = new { Min = 14.99m, Max = 69.99m } }
+                     },
+                     ["Running"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Training Plan", "Complete {0} Guide", "{0} Program", "Professional {0} Course", "{0} Running System" },
+                               Descriptions = new[] { "Comprehensive {0} training for all levels.", "Professional {0} guidance with structured plans.", "Complete {0} program for improvement.", "Expert {0} coaching for runners.", "Proven {0} methods for better performance." },
+                               Subjects = new[] { "Marathon Training", "5K Training", "10K Training", "Half Marathon", "Sprint Training", "Endurance Running", "Speed Work", "Trail Running", "Track Running", "Cross Country" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["Yoga"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Practice Guide", "Complete {0} Course", "{0} Program", "Professional {0} Tutorial", "{0} Yoga System" },
+                               Descriptions = new[] { "Comprehensive {0} practice for all levels.", "Professional {0} instruction with detailed guidance.", "Complete {0} program for wellness.", "Expert {0} teaching for practitioners.", "Proven {0} methods for mindfulness." },
+                               Subjects = new[] { "Hatha Yoga", "Vinyasa", "Ashtanga", "Bikram", "Kundalini", "Restorative", "Power Yoga", "Yin Yoga", "Meditation", "Breathing Techniques" },
+                               PriceRange = new { Min = 14.99m, Max = 59.99m } }
+                     },
+                     
+                     // Subcategories - Education
+                     ["Science"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Study Guide", "Complete {0} Course", "{0} Learning Materials", "Master {0} Concepts", "{0} Educational Resources" },
+                               Descriptions = new[] { "Comprehensive {0} materials for effective learning.", "Master {0} concepts with structured lessons.", "Complete {0} curriculum with practice exercises.", "Professional {0} education resources.", "Learn {0} step-by-step with expert guidance." },
+                               Subjects = new[] { "Physics", "Chemistry", "Biology", "Astronomy", "Geology", "Environmental Science", "Psychology", "Neuroscience", "Genetics", "Ecology" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["History"] = new object[]
+                     {
+                         new { Names = new[] { "Complete {0} Course", "{0} Study Guide", "Master {0} Concepts", "{0} Learning Materials", "{0} Educational Resources" },
+                               Descriptions = new[] { "Comprehensive {0} materials for effective learning.", "Master {0} concepts with structured lessons.", "Complete {0} curriculum with practice exercises.", "Professional {0} education resources.", "Learn {0} step-by-step with expert guidance." },
+                               Subjects = new[] { "Ancient History", "Modern History", "World War I", "World War II", "American History", "European History", "Asian History", "African History", "Middle Eastern History", "Military History" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["Social Studies"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Study Guide", "Complete {0} Course", "{0} Learning Materials", "Master {0} Concepts", "{0} Educational Resources" },
+                               Descriptions = new[] { "Comprehensive {0} materials for effective learning.", "Master {0} concepts with structured lessons.", "Complete {0} curriculum with practice exercises.", "Professional {0} education resources.", "Learn {0} step-by-step with expert guidance." },
+                               Subjects = new[] { "Political Science", "Economics", "Sociology", "Anthropology", "Geography", "Civics", "Government", "International Relations", "Cultural Studies", "Social Psychology" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["Math"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Study Guide", "Complete {0} Course", "{0} Learning Materials", "Master {0} Concepts", "{0} Educational Resources" },
+                               Descriptions = new[] { "Comprehensive {0} materials for effective learning.", "Master {0} concepts with structured lessons.", "Complete {0} curriculum with practice exercises.", "Professional {0} education resources.", "Learn {0} step-by-step with expert guidance." },
+                               Subjects = new[] { "Algebra", "Calculus", "Geometry", "Statistics", "Trigonometry", "Linear Algebra", "Discrete Math", "Number Theory", "Probability", "Mathematical Analysis" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     
+                     // Subcategories - Self Improvement
+                     ["Cooking"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Recipe Guide", "Complete {0} Course", "{0} Cooking Program", "Professional {0} Tutorial", "{0} Culinary System" },
+                               Descriptions = new[] { "Master {0} cooking techniques.", "Complete {0} course for home chefs.", "Professional {0} cooking methods.", "Learn {0} from culinary experts.", "Everything you need for {0} cooking." },
+                               Subjects = new[] { "Italian Cuisine", "Asian Cooking", "Baking", "Grilling", "Vegetarian", "Vegan", "Mediterranean", "Mexican", "French", "Indian" },
+                               PriceRange = new { Min = 14.99m, Max = 69.99m } }
+                     },
+                     ["Productivity"] = new object[]
+                     {
+                         new { Names = new[] { "{0} Mastery Course", "Complete {0} Guide", "{0} System", "Professional {0} Toolkit", "{0} Productivity Method" },
+                               Descriptions = new[] { "Master {0} for maximum efficiency.", "Complete {0} system for success.", "Professional {0} techniques.", "Learn {0} from productivity experts.", "Transform your life with {0}." },
+                               Subjects = new[] { "Time Management", "Goal Setting", "Habit Building", "Task Management", "Focus Techniques", "Work-Life Balance", "Stress Management", "Energy Management", "Decision Making", "Planning" },
+                               PriceRange = new { Min = 19.99m, Max = 79.99m } }
+                     },
+                     ["Design"] = new object[]
                     {
                         new { Names = new[] { "{0} Design Pack", "Premium {0} Templates", "{0} Asset Collection", "Professional {0} Kit", "{0} Creative Bundle" },
                               Descriptions = new[] { "Stunning {0} designs ready for commercial use.", "High-quality {0} templates that save you time.", "Complete {0} asset pack for your projects.", "Professional {0} resources for designers.", "Everything you need for amazing {0} designs." },
@@ -720,100 +976,146 @@ namespace Raqmiya.Infrastructure.Data
                 var products = new List<Product>();
                 var mainCategories = categories.Where(c => !c.ParentCategoryId.HasValue).ToList();
                 
-                for (int i = 0; i < 1600; i++)
-                {
-                    var creator = faker.PickRandom(creators);
+                                 // Create a distribution strategy for more realistic product distribution
+                 var categoryDistribution = new Dictionary<string, int>
+                 {
+                     // Main categories get fewer products (they're more like containers)
+                     ["Fitness & Health"] = 20,
+                     ["Education"] = 25,
+                     ["Self Improvement"] = 30,
+                     ["Business & Money"] = 35,
+                     ["Software Development"] = 40,
+                     ["Design"] = 30,
+                     ["3D"] = 25,
+                     ["Music & Sound Design"] = 20,
+                     ["Films"] = 25,
+                     ["Photography"] = 30,
+                     ["Drawing & Painting"] = 25,
+                     ["Writings & Publishing"] = 0, // Main category gets 0, sub-categories get products
+                     ["Gaming"] = 15,
+                     ["Comics & Graphic Novels"] = 15,
+                     ["Fiction Books"] = 20,
+                     ["Audio"] = 15,
+                     ["Recorded Music"] = 15,
+                     
+                     // Subcategories get more products (they're the actual content)
+                     ["Exercise & Workout"] = 45,
+                     ["Running"] = 40,
+                     ["Yoga"] = 35,
+                     ["Science"] = 50,
+                     ["History"] = 45,
+                     ["Social Studies"] = 40,
+                     ["Math"] = 45,
+                     ["Cooking"] = 40,
+                     ["Productivity"] = 35,
+                     
+                     // Writings & Publishing sub-categories
+                     ["Courses"] = 12,
+                     ["Resourses"] = 8
+                 };
+                 
+                 // Generate products based on distribution
+                 foreach (var categoryName in categoryDistribution.Keys)
+                 {
+                     var productCount = categoryDistribution[categoryName];
+                     
+                     for (int i = 0; i < productCount; i++)
+                     {
+                         var creator = faker.PickRandom(creators);
+                         
+                         // Find the category in the database
+                         var selectedCategory = categories.FirstOrDefault(c => c.Name == categoryName);
+                         if (selectedCategory == null)
+                         {
+                             continue; // Skip if category not found
+                         }
                     
-                    // Pick a main category that has products defined
-                    var availableCategoryNames = categoryBasedProducts.Keys.ToList();
-                    var selectedCategoryName = faker.PickRandom(availableCategoryNames);
+                                             // If it's a subcategory, get its parent for reference
+                         var mainCategory = selectedCategory.ParentCategoryId.HasValue 
+                             ? categories.FirstOrDefault(c => c.Id == selectedCategory.ParentCategoryId.Value)
+                             : selectedCategory;
+                         
+                         // Get the template for this category
+                         string templateCategoryName = categoryName;
+                         if (!categoryBasedProducts.ContainsKey(categoryName))
+                         {
+                             // Try to find template for the parent category
+                             if (categoryBasedProducts.ContainsKey(mainCategory.Name))
+                             {
+                                 templateCategoryName = mainCategory.Name;
+                             }
+                             else
+                             {
+                                 continue; // Skip if no template found
+                             }
+                         }
                     
-                    // Find the category in the database
-                    var mainCategory = categories.FirstOrDefault(c => c.Name == selectedCategoryName);
-                    if (mainCategory == null)
-                    {
-                        // Fallback to random category
-                        mainCategory = faker.PickRandom(mainCategories);
-                        selectedCategoryName = mainCategory.Name;
-                    }
-                    
-                    // Get subcategories or use main category
-                    var subcategories = categories.Where(c => c.ParentCategoryId == mainCategory.Id).ToList();
-                    var selectedCategory = subcategories.Any() && faker.Random.Bool(0.6f) 
-                        ? faker.PickRandom(subcategories) 
-                        : mainCategory;
-                    
-                    // Get the template for this category
-                    if (!categoryBasedProducts.ContainsKey(selectedCategoryName))
-                    {
-                        continue; // Skip if no template found
-                    }
-                    
-                    var template = (dynamic)categoryBasedProducts[selectedCategoryName][0];
-                    var subject = faker.PickRandom((string[])template.Subjects);
-                    
-                    var productName = string.Format(faker.PickRandom((string[])template.Names), subject);
-                    var description = string.Format(faker.PickRandom((string[])template.Descriptions), subject);
-                    var price = Math.Round(faker.Random.Decimal((decimal)template.PriceRange.Min, (decimal)template.PriceRange.Max), 2);
-                    
-                    var baseSlug = productName.ToLowerInvariant()
-                        .Replace(" ", "-")
-                        .Replace(":", "")
-                        .Replace(".", "")
-                        .Replace(",", "")
-                        .Replace("'", "")
-                        .Replace("\"", "");
-                    var uniqueSlug = $"{baseSlug}-{faker.Random.AlphaNumeric(6)}";
-                    
-                    var product = new Product
-                    {
-                        Name = productName,
-                        Description = description,
-                        Price = price,
-                        Currency = "USD",
-                        CreatorId = creator.Id,
-                        CategoryId = selectedCategory.Id, // Use the correctly matched category
-                        IsPublic = true,
-                        Status = "published",
-                        PublishedAt = faker.Date.Past(2),
-                        Permalink = uniqueSlug,
-                        CoverImageUrl = faker.Image.PicsumUrl(800, 600),
-                        ThumbnailImageUrl = faker.Image.PicsumUrl(300, 300),
-                        Features = $"[\"{faker.Lorem.Words(3).Aggregate((a, b) => a + " " + b)}\", \"{faker.Lorem.Words(3).Aggregate((a, b) => a + " " + b)}\"]",
-                        License = faker.PickRandom(new[] { "Standard License", "Commercial License", "Extended License" }),
-                        ProductTags = new List<ProductTag>()
-                    };
-                    
-                    // Add 3-5 relevant tags per product based on category and subject
-                    var categoryRelatedTags = tags.Where(t => 
-                        t.Name.ToLower().Contains(selectedCategory.Name.ToLower().Split(' ')[0]) ||
-                        t.Name.ToLower().Contains(mainCategory.Name.ToLower().Split(' ')[0]) ||
-                        t.Name.ToLower().Contains(subject.ToLower().Split(' ')[0]) ||
-                        subject.ToLower().Contains(t.Name.ToLower()) ||
-                        selectedCategory.Name.ToLower().Contains(t.Name.ToLower()) ||
-                        mainCategory.Name.ToLower().Contains(t.Name.ToLower())
-                    ).ToList();
-                    
-                    var selectedTags = categoryRelatedTags.Any() 
-                        ? categoryRelatedTags.OrderBy(x => faker.Random.Number()).Take(faker.Random.Number(2, 3)).ToList()
-                        : new List<Tag>();
-                    
-                    // Add some general relevant tags
-                    var generalTags = tags.Where(t => !categoryRelatedTags.Contains(t))
-                        .OrderBy(x => faker.Random.Number())
-                        .Take(faker.Random.Number(1, 2))
-                        .ToList();
-                    
-                    selectedTags.AddRange(generalTags);
-                    selectedTags = selectedTags.Take(5).ToList(); // Max 5 tags
-                    
-                    foreach (var tag in selectedTags)
-                    {
-                        product.ProductTags.Add(new ProductTag { TagId = tag.Id });
-                    }
-                    
-                    products.Add(product);
-                }
+                                             var template = (dynamic)categoryBasedProducts[templateCategoryName][0];
+                         var subject = faker.PickRandom((string[])template.Subjects);
+                         
+                         var productName = string.Format(faker.PickRandom((string[])template.Names), subject);
+                         var description = string.Format(faker.PickRandom((string[])template.Descriptions), subject);
+                         var price = Math.Round(faker.Random.Decimal((decimal)template.PriceRange.Min, (decimal)template.PriceRange.Max), 2);
+                         
+                         var baseSlug = productName.ToLowerInvariant()
+                             .Replace(" ", "-")
+                             .Replace(":", "")
+                             .Replace(".", "")
+                             .Replace(",", "")
+                             .Replace("'", "")
+                             .Replace("\"", "");
+                         var uniqueSlug = $"{baseSlug}-{faker.Random.AlphaNumeric(6)}";
+                         
+                         var product = new Product
+                         {
+                             Name = productName,
+                             Description = description,
+                             Price = price,
+                             Currency = "USD",
+                             CreatorId = creator.Id,
+                             CategoryId = selectedCategory.Id, // Use the correctly matched category
+                             IsPublic = true,
+                             Status = "published",
+                             PublishedAt = faker.Date.Past(2),
+                             Permalink = uniqueSlug,
+                             CoverImageUrl = faker.Image.PicsumUrl(800, 600),
+                             ThumbnailImageUrl = faker.Image.PicsumUrl(300, 300),
+                             Features = $"[\"{faker.Lorem.Words(3).Aggregate((a, b) => a + " " + b)}\", \"{faker.Lorem.Words(3).Aggregate((a, b) => a + " " + b)}\"]",
+                             License = faker.PickRandom(new[] { "Standard License", "Commercial License", "Extended License" }),
+                             ProductTags = new List<ProductTag>()
+                         };
+                         
+                         // Add 3-5 relevant tags per product based on category and subject
+                         var categoryRelatedTags = tags.Where(t => 
+                             t.Name.ToLower().Contains(selectedCategory.Name.ToLower().Split(' ')[0]) ||
+                             t.Name.ToLower().Contains(mainCategory.Name.ToLower().Split(' ')[0]) ||
+                             t.Name.ToLower().Contains(subject.ToLower().Split(' ')[0]) ||
+                             subject.ToLower().Contains(t.Name.ToLower()) ||
+                             selectedCategory.Name.ToLower().Contains(t.Name.ToLower()) ||
+                             mainCategory.Name.ToLower().Contains(t.Name.ToLower())
+                         ).ToList();
+                         
+                         var selectedTags = categoryRelatedTags.Any() 
+                             ? categoryRelatedTags.OrderBy(x => faker.Random.Number()).Take(faker.Random.Number(2, 3)).ToList()
+                             : new List<Tag>();
+                         
+                         // Add some general relevant tags
+                         var generalTags = tags.Where(t => !categoryRelatedTags.Contains(t))
+                             .OrderBy(x => faker.Random.Number())
+                             .Take(faker.Random.Number(1, 2))
+                             .ToList();
+                         
+                         selectedTags.AddRange(generalTags);
+                         selectedTags = selectedTags.Take(5).ToList(); // Max 5 tags
+                         
+                         foreach (var tag in selectedTags)
+                         {
+                             product.ProductTags.Add(new ProductTag { TagId = tag.Id });
+                         }
+                         
+                         products.Add(product);
+                     }
+                 }
                 
                 context.Products.AddRange(products);
                 context.SaveChanges();

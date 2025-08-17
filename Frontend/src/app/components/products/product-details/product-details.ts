@@ -72,6 +72,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
     }, 100);
   }
 
+  goBack() {
+    window.history.back();
+  }
   // Delete a specific review
   deleteSpecificReview(review: ReviewDTO): void {
     Swal.fire({

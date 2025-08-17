@@ -365,18 +365,6 @@
               </div>
             </div>
             
-            <!-- Load More Button -->
-            <div class="load-more-section text-center mt-5">
-              <button 
-                class="btn btn-outline btn-lg load-more-btn"
-                (click)="loadMoreProducts()"
-                [disabled]="loading"
-              >
-                <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-                <i class="fas fa-plus" *ngIf="!loading"></i>
-                {{ loading ? 'Loading...' : 'Load More Products' }}
-              </button>
-            </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 <div class="category-page">
   <!-- Navbar -->
-  <!-- <app-navbar></app-navbar> -->
+  <app-navbar></app-navbar>
 
   <!-- Category Navigation -->
   <div class="category-nav-container">
@@ -33,13 +33,7 @@
             <i class="fas fa-search search-icon"></i>
           </div>
           
-          <div class="sort-dropdown">
-            <select [(ngModel)]="filters.sortBy" (change)="onSortChange()" class="sort-select">
-              <option *ngFor="let option of sortOptions" [value]="option.value">
-                {{ option.icon }} {{ option.label }}
-              </option>
-            </select>
-          </div>
+          <!-- Sort dropdown removed - functionality handled by "Show Only" filters -->
         </div>
       </div>
 
@@ -64,10 +58,10 @@
             <div class="show-only-options">
               <button 
                 *ngFor="let option of showOnlyOptions" 
-                (click)="onShowOnlyChange()"
+                (click)="onShowOnlyChange(option.value)"
                 [class.active]="filters.showOnly === option.value"
                 class="show-only-btn">
-                <span class="option-icon">{{ option.icon }}</span>
+                <i [class]="option.icon" class="option-icon"></i>
                 <span class="option-label">{{ option.label }}</span>
               </button>
             </div>
@@ -107,7 +101,8 @@
                 [class.active]="filters.selectedRating === rating"
                 class="rating-btn">
                 <span *ngIf="rating === 0">All</span>
-                <span *ngIf="rating > 0">{{ rating }}+ ⭐</span>
+                <span *ngIf="rating === 5">5 ⭐</span>
+                <span *ngIf="rating > 0 && rating < 5">{{ rating }}+ ⭐</span>
               </button>
             </div>
           </div>
@@ -135,7 +130,7 @@
                 <button (click)="filters.searchQuery = ''; onSearch()" class="remove-filter">×</button>
               </span>
               <span *ngIf="filters.selectedRating > 0" class="filter-chip">
-                Rating: {{ filters.selectedRating }}+ ⭐
+                Rating: {{ filters.selectedRating === 5 ? '5 ⭐' : filters.selectedRating + '+ ⭐' }}
                 <button (click)="filterByRating(0)" class="remove-filter">×</button>
               </span>
               <span *ngIf="filters.priceRange < 1000" class="filter-chip">
@@ -148,7 +143,7 @@
               </span>
               <span *ngIf="filters.showOnly !== 'all'" class="filter-chip">
                 Show: {{ getShowOnlyLabel(filters.showOnly) }}
-                <button (click)="filters.showOnly = 'all'; onShowOnlyChange()" class="remove-filter">×</button>
+                                 <button (click)="filters.showOnly = 'all'; onShowOnlyChange('all')" class="remove-filter">×</button>
               </span>
             </div>
           </div>
@@ -159,11 +154,14 @@
           <!-- Results Info -->
           <div class="results-info">
             <div class="results-stats">
-              <p class="results-count">
-                Showing {{ getFilteredProductsCount() }} of {{ totalProducts }} products
-              </p>
+                             <p class="results-count">
+                 Showing {{ getFilteredProductsCount() }} of {{ hasActiveFilters() ? filteredTotalProducts : totalProducts }} products
+                 <span *ngIf="currentFilterType !== 'all'" class="filter-type">
+                   ({{ currentFilterType.replace('-', ' ') }})
+                 </span>
+               </p>
               <p class="results-page">
-                Page {{ currentPage }} of {{ totalPages }}
+                Page {{ currentPage }} of {{ hasActiveFilters() ? filteredTotalPages : totalPages }}
               </p>
             </div>
           </div>
@@ -312,33 +310,33 @@
                 </button>
               </div>
               
-              <!-- Next Page -->
-              <button 
-                class="page-btn"
-                [disabled]="currentPage >= totalPages"
-                (click)="onPageChange(currentPage + 1)"
-                title="Next Page">
-                <i class="fas fa-angle-right"></i>
-              </button>
-              
-              <!-- Last Page -->
-              <button 
-                class="page-btn"
-                [disabled]="currentPage >= totalPages"
-                (click)="onPageChange(totalPages)"
-                title="Last Page">
-                <i class="fas fa-angle-double-right"></i>
-              </button>
+                             <!-- Next Page -->
+               <button 
+                 class="page-btn"
+                 [disabled]="currentPage >= (hasActiveFilters() ? filteredTotalPages : totalPages)"
+                 (click)="onPageChange(currentPage + 1)"
+                 title="Next Page">
+                 <i class="fas fa-angle-right"></i>
+               </button>
+               
+               <!-- Last Page -->
+               <button 
+                 class="page-btn"
+                 [disabled]="currentPage >= (hasActiveFilters() ? filteredTotalPages : totalPages)"
+                 (click)="onPageChange(hasActiveFilters() ? filteredTotalPages : totalPages)"
+                 title="Last Page">
+                 <i class="fas fa-angle-double-right"></i>
+               </button>
             </div>
             
-            <div class="pagination-info">
-              <span class="page-info">
-                Page {{ currentPage }} of {{ totalPages }}
-              </span>
-              <span class="total-info">
-                Total: {{ totalProducts }} products
-              </span>
-            </div>
+                         <div class="pagination-info">
+               <span class="page-info">
+                 Page {{ currentPage }} of {{ hasActiveFilters() ? filteredTotalPages : totalPages }}
+               </span>
+               <span class="total-info">
+                 Total: {{ hasActiveFilters() ? filteredTotalProducts : totalProducts }} products
+               </span>
+             </div>
           </div>
         </main>
       </div>
