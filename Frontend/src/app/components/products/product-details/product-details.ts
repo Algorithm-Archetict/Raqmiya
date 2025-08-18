@@ -1147,4 +1147,108 @@ export class ProductDetails implements OnInit, AfterViewInit {
       root.classList.remove('dark-theme');
     }
   }
+
+  // File-related methods
+  hasFiles(): boolean {
+    return !!(this.product?.files && this.product.files.length > 0);
+  }
+
+  getFileIcon(file: FileDTO): string {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf': return 'fas fa-file-pdf';
+      case 'doc':
+      case 'docx': return 'fas fa-file-word';
+      case 'xls':
+      case 'xlsx': return 'fas fa-file-excel';
+      case 'ppt':
+      case 'pptx': return 'fas fa-file-powerpoint';
+      case 'zip':
+      case 'rar':
+      case '7z': return 'fas fa-file-archive';
+      case 'mp3':
+      case 'wav':
+      case 'flac': return 'fas fa-file-audio';
+      case 'mp4':
+      case 'avi':
+      case 'mov': return 'fas fa-file-video';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif': return 'fas fa-file-image';
+      case 'txt': return 'fas fa-file-alt';
+      default: return 'fas fa-file';
+    }
+  }
+
+  getFileType(filename: string): string {
+    const extension = filename.split('.').pop()?.toLowerCase();
+    return extension ? extension.toUpperCase() : 'Unknown';
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  async downloadFile(file: FileDTO) {
+    if (!this.product) {
+      console.error('No product found');
+      return;
+    }
+    
+    // Set downloading state for this specific file
+    (file as any).isDownloading = true;
+
+    try {
+      // Create download URL using the correct API endpoint
+      const downloadUrl = `${environment.apiUrl}/download/file/${this.product.id}/${file.id}`;
+      
+      // Use HTTP client to download file with proper authentication
+      const response = await fetch(downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${this.authService.getToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Create blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up blob URL
+      window.URL.revokeObjectURL(url);
+      
+      // Download completed successfully
+      (file as any).isDownloading = false;
+      
+      this.showToast(`"${file.name}" downloaded successfully!`, 'success');
+    } catch (error) {
+      console.error('Download failed:', error);
+      (file as any).isDownloading = false;
+      
+      if (error instanceof Error && error.message.includes('401')) {
+        this.showToast('Please log in again to download files.', 'error');
+      } else if (error instanceof Error && error.message.includes('403')) {
+        this.showToast('You do not have access to this file.', 'error');
+      } else if (error instanceof Error && error.message.includes('404')) {
+        this.showToast('File not found.', 'error');
+      } else {
+        this.showToast('Download failed. Please try again.', 'error');
+      }
+    }
+  }
 }

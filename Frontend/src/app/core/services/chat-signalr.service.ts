@@ -86,12 +86,12 @@ export class ChatSignalRService {
 
   async typing(conversationId: string) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('Typing', conversationId).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('Typing', conversationId).catch((err: any) => { throw this.formatHubError(err); });
   }
 
   async markSeen(conversationId: string, messageId: string) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('MarkSeen', conversationId, messageId).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('MarkSeen', conversationId, messageId).catch((err: any) => { throw this.formatHubError(err); });
   }
 
   private init() {
@@ -185,39 +185,39 @@ export class ChatSignalRService {
   }
   async sendMessage(conversationId: string, text: string) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('SendMessage', conversationId, text).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('SendMessage', conversationId, text).catch((err: any) => { throw this.formatHubError(err); });
   }
   async createMessageRequest(creatorId: number, firstMessageText: string) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('CreateMessageRequest', String(creatorId), firstMessageText).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('CreateMessageRequest', String(creatorId), firstMessageText).catch((err: any) => { throw this.formatHubError(err); });
   }
   async respondToMessageRequest(conversationId: string, accept: boolean) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('RespondToMessageRequest', conversationId, accept).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('RespondToMessageRequest', conversationId, accept).catch((err: any) => { throw this.formatHubError(err); });
   }
   async createServiceRequest(conversationId: string, requirements: string, proposedBudget?: number | null) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('CreateServiceRequest', conversationId, requirements, proposedBudget ?? null).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('CreateServiceRequest', conversationId, requirements, proposedBudget ?? null).catch((err: any) => { throw this.formatHubError(err); });
   }
   async acceptServiceRequest(conversationId: string, serviceRequestId: string, deadlineUtc: string) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('AcceptServiceRequest', conversationId, serviceRequestId, deadlineUtc).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('AcceptServiceRequest', conversationId, serviceRequestId, deadlineUtc).catch((err: any) => { throw this.formatHubError(err); });
   }
   async updateServiceRequestDeadline(conversationId: string, serviceRequestId: string, newDeadlineUtc: string) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('UpdateServiceRequestDeadline', conversationId, serviceRequestId, newDeadlineUtc).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('UpdateServiceRequestDeadline', conversationId, serviceRequestId, newDeadlineUtc).catch((err: any) => { throw this.formatHubError(err); });
   }
   async confirmServiceRequest(conversationId: string, serviceRequestId: string) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('ConfirmServiceRequest', conversationId, serviceRequestId).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('ConfirmServiceRequest', conversationId, serviceRequestId).catch((err: any) => { throw this.formatHubError(err); });
   }
   async deliverProduct(conversationId: string, productId: number, price: number, serviceRequestId?: string | null) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('DeliverProduct', conversationId, serviceRequestId ?? null, String(productId), price).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('DeliverProduct', conversationId, serviceRequestId ?? null, String(productId), price).catch((err: any) => { throw this.formatHubError(err); });
   }
   async markDeliveryPurchased(conversationId: string, deliveryId: string) {
     await this.ensureConnected();
-    return this.ensureHub().invoke('MarkDeliveryPurchased', conversationId, deliveryId).catch(err => { throw this.formatHubError(err); });
+    return this.ensureHub().invoke('MarkDeliveryPurchased', conversationId, deliveryId).catch((err: any) => { throw this.formatHubError(err); });
   }
 
   private formatHubError(err: any): Error {

@@ -205,7 +205,7 @@ export class CartCheckout implements OnInit {
           icon: 'success',
           title: 'Purchase Successful!',
           text: 'Your purchase has been completed successfully for products: ' + this.cartItems.map(item => item.name).join(', ') + '. Redirecting to your library...',
-          timer: 5000,
+          timer: 3000,
           timerProgressBar: true,
           showConfirmButton: false
         });

@@ -255,7 +255,10 @@ export class Discover implements OnInit, AfterViewInit {
     this.router.navigate(['/discover', id]);
   }
 
-  viewCreatorProfile(creatorId?: number) {
+  viewCreatorProfile(creatorId?: number, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
     if (!creatorId) return;
     this.router.navigate(['/creator', creatorId]);
   }

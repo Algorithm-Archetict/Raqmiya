@@ -7,6 +7,8 @@ export interface Category {
   name: string;
   parentId?: number | null;
   subcategories?: Category[];
+  icon?: string;
+  description?: string;
 }
 
 // Helper function to build hierarchical structure from flat array
@@ -38,23 +40,108 @@ export function buildCategoryHierarchy(categories: Category[]): Category[] {
 
 export const CATEGORIES: Category[] = [
   // Parent Categories
-  { id: 1, name: 'Fitness & Health' },
-  { id: 2, name: 'Self Improvement' },
-  { id: 3, name: 'Education' },
-  { id: 4, name: 'Writings & Publishing' },
-  { id: 5, name: 'Business & Money' },
-  { id: 6, name: 'Drawing & Painting' },
-  { id: 7, name: 'Design' },
-  { id: 8, name: '3D' },
-  { id: 9, name: 'Music & Sound Design' },
-  { id: 10, name: 'Films' },
-  { id: 11, name: 'Software Development' },
-  { id: 12, name: 'Gaming' },
-  { id: 13, name: 'Photography' },
-  { id: 14, name: 'Comics & Graphic Novels' },
-  { id: 15, name: 'Fiction Books' },
-  { id: 16, name: 'Audio' },
-  { id: 17, name: 'Recorded Music' },
+  { 
+    id: 1, 
+    name: 'Fitness & Health',
+    icon: 'fas fa-dumbbell',
+    description: 'Workout plans, nutrition guides, and wellness content'
+  },
+  { 
+    id: 2, 
+    name: 'Self Improvement',
+    icon: 'fas fa-user-graduate',
+    description: 'Personal development, skills, and life enhancement'
+  },
+  { 
+    id: 3, 
+    name: 'Education',
+    icon: 'fas fa-graduation-cap',
+    description: 'Academic courses, tutorials, and learning materials'
+  },
+  { 
+    id: 4, 
+    name: 'Writings & Publishing',
+    icon: 'fas fa-pen-fancy',
+    description: 'Books, articles, and written content'
+  },
+  { 
+    id: 5, 
+    name: 'Business & Money',
+    icon: 'fas fa-chart-line',
+    description: 'Business strategies, financial advice, and entrepreneurship'
+  },
+  { 
+    id: 6, 
+    name: 'Drawing & Painting',
+    icon: 'fas fa-palette',
+    description: 'Art tutorials, digital painting, and creative guides'
+  },
+  { 
+    id: 7, 
+    name: 'Design',
+    icon: 'fas fa-paint-brush',
+    description: 'Graphic design, UI/UX, and visual content'
+  },
+  { 
+    id: 8, 
+    name: '3D',
+    icon: 'fas fa-cube',
+    description: '3D models, animations, and CGI content'
+  },
+  { 
+    id: 9, 
+    name: 'Music & Sound Design',
+    icon: 'fas fa-music',
+    description: 'Audio tracks, sound effects, and music production'
+  },
+  { 
+    id: 10, 
+    name: 'Films',
+    icon: 'fas fa-video',
+    description: 'Video content, filmmaking, and cinematography'
+  },
+  { 
+    id: 11, 
+    name: 'Software Development',
+    icon: 'fas fa-code',
+    description: 'Programming tutorials, code templates, and tech guides'
+  },
+  { 
+    id: 12, 
+    name: 'Gaming',
+    icon: 'fas fa-gamepad',
+    description: 'Game assets, tutorials, and gaming content'
+  },
+  { 
+    id: 13, 
+    name: 'Photography',
+    icon: 'fas fa-camera',
+    description: 'Photo guides, editing tutorials, and photography tips'
+  },
+  { 
+    id: 14, 
+    name: 'Comics & Graphic Novels',
+    icon: 'fas fa-comic',
+    description: 'Comic books, illustrations, and sequential art'
+  },
+  { 
+    id: 15, 
+    name: 'Fiction Books',
+    icon: 'fas fa-book-open',
+    description: 'Novels, short stories, and fictional literature'
+  },
+  { 
+    id: 16, 
+    name: 'Audio',
+    icon: 'fas fa-microphone',
+    description: 'Podcasts, voice-overs, and audio content'
+  },
+  { 
+    id: 17, 
+    name: 'Recorded Music',
+    icon: 'fas fa-compact-disc',
+    description: 'Music albums, singles, and recorded audio'
+  },
 
 
   
