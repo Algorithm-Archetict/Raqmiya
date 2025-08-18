@@ -194,6 +194,16 @@
   position: relative;
 }
 
+/* Ensure Fitness & Health (first category) dropdown behaves like others (not sticky) */
+.discover-container .hierarchical-category-nav .category-wrapper:nth-of-type(1) .subcategory-dropdown {
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  top: 100% !important;
+  bottom: auto !important;
+  margin-top: 0.75rem !important;
+}
+
 /* Analytics Carousels Section */
 .analytics-carousels-section {
   padding: var(--spacing-3xl) 0;
