@@ -83,7 +83,7 @@
         <!-- Product Info -->
         <div class="product-info">
           <h3 class="product-title">{{ product.title }}</h3>
-          <p class="product-creator">by {{ product.creator }}</p>
+          <p class="product-creator">by <a class="creator-link" (click)="viewCreatorProfile(product.creatorId, $event, product.id)">{{ product.creator }}</a></p>
           
           <div class="product-rating">
             <div class="stars">

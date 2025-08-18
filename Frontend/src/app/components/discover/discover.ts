@@ -331,6 +331,7 @@ export class Discover implements OnInit, AfterViewInit {
       coverImageUrl: p.image,
       averageRating: p.rating,
       creatorUsername: p.creator,
+      creatorId: p.creatorId,
       isPublic: true,
       // Fill minimal category to satisfy consumers if needed
       category: { id: 0, name: p.category, parentCategoryId: undefined },
@@ -347,6 +348,7 @@ export class Discover implements OnInit, AfterViewInit {
       id: dto.id,
       title: dto.name || 'Untitled Product',
       creator: dto.creatorUsername || 'Unknown Creator',
+      creatorId: dto.creatorId,
       price: dto.price,
       rating: dto.averageRating,
       ratingCount: 0, // Review count will be determined from analytics data
@@ -565,7 +567,10 @@ export class Discover implements OnInit, AfterViewInit {
   }
 
   // Navigate to creator profile
-  viewCreatorProfile(creatorId?: number) {
+  viewCreatorProfile(creatorId?: number, event?: Event) {
+    if (event) {
+      event.stopPropagation(); // Prevent triggering the product card click
+    }
     if (creatorId) {
       this.router.navigate(['/creator', creatorId]);
     }

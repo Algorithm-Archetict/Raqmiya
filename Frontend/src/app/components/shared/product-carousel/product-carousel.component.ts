@@ -9,6 +9,7 @@ interface CarouselProduct {
   id: number;
   title: string;
   creator: string;
+  creatorId?: number;
   price: number;
   rating: number;
   ratingCount: number;
@@ -52,6 +53,7 @@ export class ProductCarouselComponent implements OnChanges {
         id: product.id,
         title: product.name || 'Untitled Product',
         creator: product.creatorUsername || 'Unknown Creator',
+        creatorId: product.creatorId,
         price: product.price,
         rating: product.averageRating,
         ratingCount: 0,
@@ -88,7 +90,28 @@ export class ProductCarouselComponent implements OnChanges {
     this.router.navigate(['/discover', productId]);
   }
 
-
+  viewCreatorProfile(creatorId?: number, event?: Event, productId?: number) {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (creatorId) {
+      this.router.navigate(['/creator', creatorId]);
+      return;
+    }
+    if (productId) {
+      // Fallback: fetch product details to get creatorId
+      this.productService.getById(productId).subscribe({
+        next: (detail) => {
+          if (detail?.creatorId) {
+            this.router.navigate(['/creator', detail.creatorId]);
+          }
+        },
+        error: () => {
+          // Silently fail if we cannot fetch the details
+        }
+      });
+    }
+  }
 
   toggleWishlist(product: CarouselProduct, event: Event) {
     event.stopPropagation();

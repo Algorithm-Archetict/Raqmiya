@@ -25,6 +25,7 @@ export class CreatorProfileComponent implements OnInit {
   error = false;
   isSubscribing = false;
   currentUserId: number | null = null;
+  private profileLoaded = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -35,8 +36,21 @@ export class CreatorProfileComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.currentUserId = this.authService.getCurrentUser()?.id || null;
-    this.loadCreatorProfile();
+    // Wait for authentication to be ready before loading profile
+    this.waitForAuthAndLoadProfile();
+  }
+
+  private waitForAuthAndLoadProfile() {
+    // If user is already logged in, get current user ID
+    if (this.authService.isLoggedIn()) {
+      const currentUser = this.authService.getCurrentUser();
+      this.currentUserId = currentUser?.id || null;
+      this.loadCreatorProfile();
+    } else {
+      // If not logged in, still load profile but without subscription status
+      this.currentUserId = null;
+      this.loadCreatorProfile();
+    }
   }
 
   loadCreatorProfile() {
@@ -51,12 +65,47 @@ export class CreatorProfileComponent implements OnInit {
       next: (profile) => {
         this.creatorProfile = profile;
         this.loading = false;
+        this.profileLoaded = true;
         this.loadCreatorProducts(+creatorId);
+        
+        // Log the profile data for debugging
+        console.log('Creator Profile loaded:', {
+          creatorId: profile.id,
+          isSubscribed: profile.isSubscribed,
+          followerCount: profile.followerCount,
+          currentUserId: this.currentUserId,
+          isLoggedIn: this.authService.isLoggedIn()
+        });
+
+        // If user is logged in but subscription status is false, retry after a short delay
+        if (this.authService.isLoggedIn() && !profile.isSubscribed && this.currentUserId) {
+          setTimeout(() => {
+            this.retryLoadProfile(+creatorId);
+          }, 1000);
+        }
       },
       error: (error) => {
         console.error('Error loading creator profile:', error);
         this.error = true;
         this.loading = false;
+      }
+    });
+  }
+
+  private retryLoadProfile(creatorId: number) {
+    console.log('Retrying profile load for authenticated user...');
+    this.subscriptionService.getCreatorProfile(creatorId).subscribe({
+      next: (profile) => {
+        this.creatorProfile = profile;
+        console.log('Profile retry loaded:', {
+          creatorId: profile.id,
+          isSubscribed: profile.isSubscribed,
+          followerCount: profile.followerCount,
+          currentUserId: this.currentUserId
+        });
+      },
+      error: (error) => {
+        console.error('Error retrying profile load:', error);
       }
     });
   }
@@ -76,6 +125,16 @@ export class CreatorProfileComponent implements OnInit {
   }
 
   toggleSubscription() {
+    // Check if user is logged in
+    if (!this.authService.isLoggedIn()) {
+      this.showLoginPrompt();
+      return;
+    }
+
+    // Update current user ID in case it wasn't set before
+    const currentUser = this.authService.getCurrentUser();
+    this.currentUserId = currentUser?.id || null;
+
     if (!this.creatorProfile || !this.currentUserId) {
       this.showLoginPrompt();
       return;
@@ -120,12 +179,19 @@ export class CreatorProfileComponent implements OnInit {
     this.subscriptionService.subscribe(this.creatorProfile.id).subscribe({
       next: (response) => {
         this.isSubscribing = false;
-        if (response.success) {
+        
+        // Handle both success and "already subscribed" cases
+        if (response.success || response.isSubscribed) {
           this.creatorProfile!.isSubscribed = true;
-          this.creatorProfile!.followerCount++;
+          
+          // Only increment follower count if it's a new subscription
+          if (response.success) {
+            this.creatorProfile!.followerCount++;
+          }
+          
           Swal.fire({
             icon: 'success',
-            title: 'Subscribed!',
+            title: response.success ? 'Subscribed!' : 'Already Subscribed',
             text: response.message,
             timer: 2000,
             showConfirmButton: false
@@ -156,12 +222,19 @@ export class CreatorProfileComponent implements OnInit {
     this.subscriptionService.unsubscribe(this.creatorProfile.id).subscribe({
       next: (response) => {
         this.isSubscribing = false;
-        if (response.success) {
+        
+        // Handle both success and "not subscribed" cases
+        if (response.success || !response.isSubscribed) {
           this.creatorProfile!.isSubscribed = false;
-          this.creatorProfile!.followerCount--;
+          
+          // Only decrement follower count if it was an active subscription
+          if (response.success) {
+            this.creatorProfile!.followerCount--;
+          }
+          
           Swal.fire({
             icon: 'success',
-            title: 'Unsubscribed',
+            title: response.success ? 'Unsubscribed' : 'Not Subscribed',
             text: response.message,
             timer: 2000,
             showConfirmButton: false
@@ -232,7 +305,7 @@ export class CreatorProfileComponent implements OnInit {
   }
 
   startChat() {
-    if (!this.currentUserId) {
+    if (!this.authService.isLoggedIn()) {
       this.showLoginPrompt();
       return;
     }

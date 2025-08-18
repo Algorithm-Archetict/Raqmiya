@@ -25,21 +25,14 @@
 
 .icon-title i {
   font-size: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--epic-blue);
 }
 
 .carousel-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--epic-blue);
   margin: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .carousel-subtitle {
@@ -289,6 +282,16 @@
   color: #64748b;
   font-size: 0.85rem;
   margin: 0 0 0.75rem 0;
+}
+
+.product-creator .creator-link {
+  color: var(--epic-blue);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.product-creator .creator-link:hover {
+  text-decoration: underline;
 }
 
 .product-rating {

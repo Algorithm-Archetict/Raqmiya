@@ -80,21 +80,21 @@ namespace Raqmiya.Infrastructure.Data
                     Role = "Admin", CreatedAt = DateTime.UtcNow, IsActive = true
                 });
 
-                                 // Generate 150 creators from US and Europe
-                 var creators = new List<User>();
-                 var locales = new[] { "en_US", "en_GB", "de", "fr", "es", "it", "nl" };
+                // Generate 150 creators from US and Europe
+                var creators = new List<User>();
+                var locales = new[] { "en_US", "en_GB", "de", "fr", "es", "it", "nl" };
                  var usedUsernames = new HashSet<string>();
                  var usedEmails = new HashSet<string>();
-                 
-                 foreach (var locale in locales)
-                 {
+                
+                foreach (var locale in locales)
+                {
                      var localCreators = new List<User>();
                      var targetCount = 150 / locales.Length;
                      
                      while (localCreators.Count < targetCount)
                      {
                          var localeFaker = new Faker(locale);
-                         var salt = GenerateSalt();
+                            var salt = GenerateSalt();
                          var firstName = localeFaker.Name.FirstName();
                          var lastName = localeFaker.Name.LastName();
                          
@@ -130,30 +130,30 @@ namespace Raqmiya.Infrastructure.Data
                          var creator = new User {
                              Username = username,
                              Email = email,
-                             Salt = salt,
-                             HashedPassword = HashPassword("Pass12345", salt),
-                             Role = "Creator",
+                                Salt = salt,
+                                HashedPassword = HashPassword("Pass12345", salt),
+                                Role = "Creator",
                              CreatedAt = localeFaker.Date.Past(2),
-                             IsActive = true
-                         };
+                                IsActive = true
+                            };
                          
                          localCreators.Add(creator);
                      }
                      
-                     creators.AddRange(localCreators);
-                 }
+                    creators.AddRange(localCreators);
+                }
 
-                                 // Generate 250 customers from US and Europe
-                 var customers = new List<User>();
-                 foreach (var locale in locales)
-                 {
+                // Generate 250 customers from US and Europe
+                var customers = new List<User>();
+                foreach (var locale in locales)
+                {
                      var localCustomers = new List<User>();
                      var targetCount = 250 / locales.Length;
                      
                      while (localCustomers.Count < targetCount)
                      {
                          var customerFaker = new Faker(locale);
-                         var salt = GenerateSalt();
+                            var salt = GenerateSalt();
                          var firstName = customerFaker.Name.FirstName();
                          var lastName = customerFaker.Name.LastName();
                          
@@ -189,18 +189,18 @@ namespace Raqmiya.Infrastructure.Data
                          var customer = new User {
                              Username = username,
                              Email = email,
-                             Salt = salt,
-                             HashedPassword = HashPassword("Pass12345", salt),
-                             Role = "Customer",
+                                Salt = salt,
+                                HashedPassword = HashPassword("Pass12345", salt),
+                                Role = "Customer",
                              CreatedAt = customerFaker.Date.Past(2),
-                             IsActive = true
-                         };
+                                IsActive = true
+                            };
                          
                          localCustomers.Add(customer);
                      }
                      
-                     customers.AddRange(localCustomers);
-                 }
+                    customers.AddRange(localCustomers);
+                }
 
                 context.Users.AddRange(creators);
                 context.Users.AddRange(customers);
@@ -716,17 +716,17 @@ namespace Raqmiya.Infrastructure.Data
                 
                 var faker = new Faker("en_US");
                 
-                                 // Define category-specific product templates for realistic matching
-                 var categoryBasedProducts = new Dictionary<string, object[]>
-                 {
+                // Define category-specific product templates for realistic matching
+                var categoryBasedProducts = new Dictionary<string, object[]>
+                {
                      // Main Categories
-                     ["Software Development"] = new object[]
-                     {
-                         new { Names = new[] { "Complete {0} Bootcamp", "Master {0} Programming", "{0} Developer Course", "Learn {0} from Scratch", "Professional {0} Training" },
-                               Descriptions = new[] { "Master {0} with hands-on projects and real-world examples.", "From beginner to professional {0} developer.", "Industry-standard {0} training with lifetime access.", "Learn {0} the right way with expert instruction.", "Complete {0} development course with practical projects." },
-                               Subjects = new[] { "Python", "JavaScript", "React", "Node.js", "C#", "Java", "Web Development", "Mobile App Development", "API Development", "Full Stack Development" },
-                               PriceRange = new { Min = 39.99m, Max = 199.99m } }
-                     },
+                    ["Software Development"] = new object[]
+                    {
+                        new { Names = new[] { "Complete {0} Bootcamp", "Master {0} Programming", "{0} Developer Course", "Learn {0} from Scratch", "Professional {0} Training" },
+                              Descriptions = new[] { "Master {0} with hands-on projects and real-world examples.", "From beginner to professional {0} developer.", "Industry-standard {0} training with lifetime access.", "Learn {0} the right way with expert instruction.", "Complete {0} development course with practical projects." },
+                              Subjects = new[] { "Python", "JavaScript", "React", "Node.js", "C#", "Java", "Web Development", "Mobile App Development", "API Development", "Full Stack Development" },
+                              PriceRange = new { Min = 39.99m, Max = 199.99m } }
+                    },
                      ["Fitness & Health"] = new object[]
                      {
                          new { Names = new[] { "{0} Workout Plan", "Complete {0} Guide", "{0} Training Program", "Professional {0} Course", "{0} Health System" },
@@ -908,7 +908,7 @@ namespace Raqmiya.Infrastructure.Data
                                Subjects = new[] { "Time Management", "Goal Setting", "Habit Building", "Task Management", "Focus Techniques", "Work-Life Balance", "Stress Management", "Energy Management", "Decision Making", "Planning" },
                                PriceRange = new { Min = 19.99m, Max = 79.99m } }
                      },
-                     ["Design"] = new object[]
+                    ["Design"] = new object[]
                     {
                         new { Names = new[] { "{0} Design Pack", "Premium {0} Templates", "{0} Asset Collection", "Professional {0} Kit", "{0} Creative Bundle" },
                               Descriptions = new[] { "Stunning {0} designs ready for commercial use.", "High-quality {0} templates that save you time.", "Complete {0} asset pack for your projects.", "Professional {0} resources for designers.", "Everything you need for amazing {0} designs." },
@@ -1022,8 +1022,8 @@ namespace Raqmiya.Infrastructure.Data
                      for (int i = 0; i < productCount; i++)
                      {
                          var creator = faker.PickRandom(creators);
-                         
-                         // Find the category in the database
+                    
+                    // Find the category in the database
                          var selectedCategory = categories.FirstOrDefault(c => c.Name == categoryName);
                          if (selectedCategory == null)
                          {
@@ -1034,8 +1034,8 @@ namespace Raqmiya.Infrastructure.Data
                          var mainCategory = selectedCategory.ParentCategoryId.HasValue 
                              ? categories.FirstOrDefault(c => c.Id == selectedCategory.ParentCategoryId.Value)
                              : selectedCategory;
-                         
-                         // Get the template for this category
+                    
+                    // Get the template for this category
                          string templateCategoryName = categoryName;
                          if (!categoryBasedProducts.ContainsKey(categoryName))
                          {
@@ -1045,77 +1045,77 @@ namespace Raqmiya.Infrastructure.Data
                                  templateCategoryName = mainCategory.Name;
                              }
                              else
-                             {
-                                 continue; // Skip if no template found
+                    {
+                        continue; // Skip if no template found
                              }
-                         }
+                    }
                     
                                              var template = (dynamic)categoryBasedProducts[templateCategoryName][0];
-                         var subject = faker.PickRandom((string[])template.Subjects);
-                         
-                         var productName = string.Format(faker.PickRandom((string[])template.Names), subject);
-                         var description = string.Format(faker.PickRandom((string[])template.Descriptions), subject);
-                         var price = Math.Round(faker.Random.Decimal((decimal)template.PriceRange.Min, (decimal)template.PriceRange.Max), 2);
-                         
-                         var baseSlug = productName.ToLowerInvariant()
-                             .Replace(" ", "-")
-                             .Replace(":", "")
-                             .Replace(".", "")
-                             .Replace(",", "")
-                             .Replace("'", "")
-                             .Replace("\"", "");
-                         var uniqueSlug = $"{baseSlug}-{faker.Random.AlphaNumeric(6)}";
-                         
-                         var product = new Product
-                         {
-                             Name = productName,
-                             Description = description,
-                             Price = price,
-                             Currency = "USD",
-                             CreatorId = creator.Id,
-                             CategoryId = selectedCategory.Id, // Use the correctly matched category
-                             IsPublic = true,
-                             Status = "published",
-                             PublishedAt = faker.Date.Past(2),
-                             Permalink = uniqueSlug,
-                             CoverImageUrl = faker.Image.PicsumUrl(800, 600),
-                             ThumbnailImageUrl = faker.Image.PicsumUrl(300, 300),
-                             Features = $"[\"{faker.Lorem.Words(3).Aggregate((a, b) => a + " " + b)}\", \"{faker.Lorem.Words(3).Aggregate((a, b) => a + " " + b)}\"]",
-                             License = faker.PickRandom(new[] { "Standard License", "Commercial License", "Extended License" }),
-                             ProductTags = new List<ProductTag>()
-                         };
-                         
-                         // Add 3-5 relevant tags per product based on category and subject
-                         var categoryRelatedTags = tags.Where(t => 
-                             t.Name.ToLower().Contains(selectedCategory.Name.ToLower().Split(' ')[0]) ||
-                             t.Name.ToLower().Contains(mainCategory.Name.ToLower().Split(' ')[0]) ||
-                             t.Name.ToLower().Contains(subject.ToLower().Split(' ')[0]) ||
-                             subject.ToLower().Contains(t.Name.ToLower()) ||
-                             selectedCategory.Name.ToLower().Contains(t.Name.ToLower()) ||
-                             mainCategory.Name.ToLower().Contains(t.Name.ToLower())
-                         ).ToList();
-                         
-                         var selectedTags = categoryRelatedTags.Any() 
-                             ? categoryRelatedTags.OrderBy(x => faker.Random.Number()).Take(faker.Random.Number(2, 3)).ToList()
-                             : new List<Tag>();
-                         
-                         // Add some general relevant tags
-                         var generalTags = tags.Where(t => !categoryRelatedTags.Contains(t))
-                             .OrderBy(x => faker.Random.Number())
-                             .Take(faker.Random.Number(1, 2))
-                             .ToList();
-                         
-                         selectedTags.AddRange(generalTags);
-                         selectedTags = selectedTags.Take(5).ToList(); // Max 5 tags
-                         
-                         foreach (var tag in selectedTags)
-                         {
-                             product.ProductTags.Add(new ProductTag { TagId = tag.Id });
-                         }
-                         
-                         products.Add(product);
+                    var subject = faker.PickRandom((string[])template.Subjects);
+                    
+                    var productName = string.Format(faker.PickRandom((string[])template.Names), subject);
+                    var description = string.Format(faker.PickRandom((string[])template.Descriptions), subject);
+                    var price = Math.Round(faker.Random.Decimal((decimal)template.PriceRange.Min, (decimal)template.PriceRange.Max), 2);
+                    
+                    var baseSlug = productName.ToLowerInvariant()
+                        .Replace(" ", "-")
+                        .Replace(":", "")
+                        .Replace(".", "")
+                        .Replace(",", "")
+                        .Replace("'", "")
+                        .Replace("\"", "");
+                    var uniqueSlug = $"{baseSlug}-{faker.Random.AlphaNumeric(6)}";
+                    
+                    var product = new Product
+                    {
+                        Name = productName,
+                        Description = description,
+                        Price = price,
+                        Currency = "USD",
+                        CreatorId = creator.Id,
+                        CategoryId = selectedCategory.Id, // Use the correctly matched category
+                        IsPublic = true,
+                        Status = "published",
+                        PublishedAt = faker.Date.Past(2),
+                        Permalink = uniqueSlug,
+                        CoverImageUrl = faker.Image.PicsumUrl(800, 600),
+                        ThumbnailImageUrl = faker.Image.PicsumUrl(300, 300),
+                        Features = $"[\"{faker.Lorem.Words(3).Aggregate((a, b) => a + " " + b)}\", \"{faker.Lorem.Words(3).Aggregate((a, b) => a + " " + b)}\"]",
+                        License = faker.PickRandom(new[] { "Standard License", "Commercial License", "Extended License" }),
+                        ProductTags = new List<ProductTag>()
+                    };
+                    
+                    // Add 3-5 relevant tags per product based on category and subject
+                    var categoryRelatedTags = tags.Where(t => 
+                        t.Name.ToLower().Contains(selectedCategory.Name.ToLower().Split(' ')[0]) ||
+                        t.Name.ToLower().Contains(mainCategory.Name.ToLower().Split(' ')[0]) ||
+                        t.Name.ToLower().Contains(subject.ToLower().Split(' ')[0]) ||
+                        subject.ToLower().Contains(t.Name.ToLower()) ||
+                        selectedCategory.Name.ToLower().Contains(t.Name.ToLower()) ||
+                        mainCategory.Name.ToLower().Contains(t.Name.ToLower())
+                    ).ToList();
+                    
+                    var selectedTags = categoryRelatedTags.Any() 
+                        ? categoryRelatedTags.OrderBy(x => faker.Random.Number()).Take(faker.Random.Number(2, 3)).ToList()
+                        : new List<Tag>();
+                    
+                    // Add some general relevant tags
+                    var generalTags = tags.Where(t => !categoryRelatedTags.Contains(t))
+                        .OrderBy(x => faker.Random.Number())
+                        .Take(faker.Random.Number(1, 2))
+                        .ToList();
+                    
+                    selectedTags.AddRange(generalTags);
+                    selectedTags = selectedTags.Take(5).ToList(); // Max 5 tags
+                    
+                    foreach (var tag in selectedTags)
+                    {
+                        product.ProductTags.Add(new ProductTag { TagId = tag.Id });
+                    }
+                    
+                    products.Add(product);
                      }
-                 }
+                }
                 
                 context.Products.AddRange(products);
                 context.SaveChanges();
