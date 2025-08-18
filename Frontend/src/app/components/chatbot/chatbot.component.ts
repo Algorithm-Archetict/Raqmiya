@@ -197,15 +197,10 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           await this.searchKnowledgeBaseDocuments(query);
         }
         break;
-      case 'reload':
-        if (parts[2] === 'knowledgebase') {
-          await this.reloadKnowledgeBase();
-        }
-        break;
       default:
         this.messages.push({
           role: 'assistant',
-          content: 'Unknown admin command. Available commands: admin: add document, admin: list documents, admin: delete document [name], admin: search documents [query], admin: reload knowledgebase (clears all documents)',
+          content: 'Unknown admin command. Available commands: admin: add document, admin: list documents, admin: delete document [name], admin: search documents [query]',
           timestamp: new Date()
         });
     }
@@ -294,41 +289,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async reloadKnowledgeBase() {
-    try {
-      await this.chatbotService.reloadKnowledgeBase();
-      this.messages.push({
-        role: 'assistant',
-        content: '✅ Knowledge base cleared successfully! All documents have been removed. Please upload new documents to the knowledge base.',
-        timestamp: new Date()
-      });
-    } catch (error) {
-      this.messages.push({
-        role: 'assistant',
-        content: `Error reloading knowledge base: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date()
-      });
-    }
-  }
-
-  async loadAssetFile(fileName: string) {
-    try {
-      await this.chatbotService.loadAssetFile(fileName);
-      this.messages.push({
-        role: 'assistant',
-        content: `✅ Successfully loaded ${fileName} to the knowledge base! All users can now access this information.`,
-        timestamp: new Date()
-      });
-      // Refresh document list
-      await this.listKnowledgeBaseDocuments();
-    } catch (error) {
-      this.messages.push({
-        role: 'assistant',
-        content: `Error loading ${fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date()
-      });
-    }
-  }
+  
 
   // Check if knowledge base is available for all users
   isKnowledgeBaseAvailable(): boolean {
