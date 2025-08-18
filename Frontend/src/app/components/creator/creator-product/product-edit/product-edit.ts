@@ -10,7 +10,10 @@ import { ProductDetailDTO } from '../../../../core/models/product/product-detail
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { ProductCreateRequestDTO } from '../../../../core/models/product/product-create-request.dto';
 import { CategoryDTO } from '../../../../core/models/product/category.dto';
-import { CATEGORIES } from '../../../../core/data/categories';
+import { CATEGORIES, Category } from '../../../../core/data/categories';
+import { TagService } from '../../../../core/services/tag.service';
+import { TagDTO } from '../../../../core/models/product/tag.dto';
+import Swal from 'sweetalert2';
 
 
 interface ProductDetail {
@@ -56,21 +59,29 @@ export class ProductEdit implements OnInit {
   uploadedFiles: any[] = [];
   isUploading: boolean = false;
   uploadProgress: number = 0;
+  isDragOver: boolean = false;
 
-  productTypes = [
-    { id: 'digital', name: 'Digital', description: 'Downloadable files', icon: 'fas fa-file', selected: false },
-    { id: 'course', name: 'Course', description: 'Online video content', icon: 'fas fa-video', selected: false },
-    { id: 'membership', name: 'Membership', description: 'Recurring access to content', icon: 'fas fa-users', selected: false }
-  ];
+  // Category and tag properties
+  parentCategories: Category[] = [];
+  subcategories: Category[] = [];
+  selectedParentCategory: Category | null = null;
+  hoveredCategory: number | null = null;
+
+  // Tag-related properties
+  availableTags: TagDTO[] = [];
+  selectedTags: TagDTO[] = [];
+  newTagInput: string = '';
 
   constructor(
     private fb: FormBuilder, 
     private productService: ProductService,
+    private tagService: TagService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.parentCategories = CATEGORIES.filter(c => !c.parentId);
     this.initializeForm();
     this.loadProduct();
   }
@@ -80,20 +91,18 @@ export class ProductEdit implements OnInit {
       name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
       description: ['', [Validators.maxLength(5000)]],
       price: [0, [Validators.required, Validators.min(0.01), Validators.max(1000000)]],
-      currency: ['USD', [Validators.required, Validators.minLength(3), Validators.maxLength(3)]],
-      productType: ['', [Validators.required, Validators.maxLength(50)]],
+      currency: ['USD', [Validators.required, Validators.pattern(/^(USD|EGP)$/)]],
       coverImageUrl: [''],
       thumbnailImageUrl: [''],
       previewVideoUrl: [''],
-      isPublic: [false],
+      isPublic: [true], // Default to published
       permalink: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
       // Enhanced product details
       compatibility: [''],
       license: [''],
       updates: [''],
       categoryId: [null, [Validators.required]],
-      tagIds: [[]],
-      status: ['draft', [Validators.required]]
+      tagIds: [[]]
     });
   }
 
@@ -143,13 +152,11 @@ export class ProductEdit implements OnInit {
       description: this.product.description,
       price: this.product.price,
       currency: this.product.currency,
-      productType: this.product.productType,
       coverImageUrl: this.product.coverImageUrl,
       thumbnailImageUrl: this.product.thumbnailImageUrl,
       previewVideoUrl: this.product.previewVideoUrl,
       isPublic: this.product.isPublic,
       permalink: this.product.permalink,
-      status: this.product.status,
       compatibility: this.product.compatibility,
       license: this.product.license,
       updates: this.product.updates,
@@ -162,20 +169,42 @@ export class ProductEdit implements OnInit {
       this.productFeatures = this.product.features;
     }
 
-    // Populate images - only add to arrays if they are URLs (not base64)
-    if (this.product.coverImageUrl && !this.product.coverImageUrl.startsWith('data:')) {
-      this.coverImages = [this.product.coverImageUrl];
-    }
-    if (this.product.thumbnailImageUrl && !this.product.thumbnailImageUrl.startsWith('data:')) {
-      this.thumbnailImage = this.product.thumbnailImageUrl;
+    // Populate selected tags
+    if (this.product.tags) {
+      this.selectedTags = this.product.tags;
     }
 
-    // Update product type selection
-    this.productTypes.forEach(type => {
-      type.selected = type.id === this.product?.productType;
-    });
+         // Populate images - only add to arrays if they are URLs (not base64)
+     if (this.product.coverImageUrl && !this.product.coverImageUrl.startsWith('data:')) {
+       this.coverImages = [this.product.coverImageUrl];
+     }
+     if (this.product.thumbnailImageUrl && !this.product.thumbnailImageUrl.startsWith('data:')) {
+       this.thumbnailImage = this.product.thumbnailImageUrl;
+     }
 
-    this.updateFormValidity();
+     // Populate existing files
+     if (this.product.files && this.product.files.length > 0) {
+       this.uploadedFiles = this.product.files.map(file => ({
+         id: file.id,
+         name: file.name,
+         fileUrl: file.fileUrl,
+         size: file.size
+       }));
+     }
+
+         // Set selected parent category and subcategories
+     if (this.product.category) {
+       const parentCategory = CATEGORIES.find(c => c.id === this.product?.category.parentCategoryId);
+       if (parentCategory) {
+         this.selectedParentCategory = parentCategory;
+         this.subcategories = CATEGORIES.filter(c => c.parentId === parentCategory.id);
+       }
+     }
+
+    // Load available tags for the selected category
+    this.loadAvailableTags();
+
+    this.updateFormValidation();
   }
 
   onSaveClick(): void {
@@ -183,122 +212,295 @@ export class ProductEdit implements OnInit {
   }
 
   onNameChange(): void {
-    this.updateFormValidity();
-    
-    // Auto-generate permalink if it's empty or matches the old name
-    const nameControl = this.productForm.get('name');
-    const permalinkControl = this.productForm.get('permalink');
-    
-    if (nameControl && permalinkControl) {
-      const name = nameControl.value;
-      const currentPermalink = permalinkControl.value;
-      
-      // If permalink is empty or matches the old name pattern, generate new one
-      if (!currentPermalink || currentPermalink === this.generatePermalink(this.product?.name || '')) {
-        const newPermalink = this.generatePermalink(name);
-        permalinkControl.setValue(newPermalink);
-      }
+    const nameValue = this.productForm.get('name')?.value;
+    // Generate URL and permalink from name like the old frontend
+    if (nameValue) {
+      const permalink = nameValue.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      this.productForm.get('permalink')?.setValue(permalink);
+    } else {
+      this.productForm.get('permalink')?.setValue('');
+    }
+    // Trigger form validation update
+    this.updateFormValidation();
+  }
+
+  async cancel(): Promise<void> {
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Cancel Editing?',
+      text: 'Are you sure you want to cancel? All unsaved changes will be lost.',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Cancel',
+      cancelButtonText: 'Continue Editing'
+    });
+
+    if (result.isConfirmed) {
+      this.router.navigate(['/dashboard']);
     }
   }
 
-  cancel(): void {
-    this.router.navigate(['/products']);
-  }
-
-  saveAndContinue(): void {
-    if (this.productForm.valid) {
-      this.isSubmitting = true;
-      this.errorMessage = null;
-      this.successMessage = null;
-      
-      // First upload images to get proper URLs
-      this.uploadImages().then(() => {
-        const formValue = this.productForm.value;
-        
-        // Create the product update DTO
-        const productDto: ProductUpdateRequestDTO = {
-          id: this.productId!,
-          name: formValue.name,
-          description: formValue.description || '',
-          price: parseFloat(formValue.price),
-          currency: formValue.currency,
-          //productType: formValue.productType,
-          coverImageUrl: formValue.coverImageUrl,
-          thumbnailImageUrl: formValue.thumbnailImageUrl,
-          previewVideoUrl: formValue.previewVideoUrl,
-          isPublic: formValue.isPublic,
-          permalink: formValue.permalink,
-          status: formValue.status,
-          // Enhanced product details
-          features: this.productFeatures,
-          compatibility: formValue.compatibility,
-          license: formValue.license,
-          updates: formValue.updates,
-          categoryId: formValue.categoryId, // Changed to single categoryId
-          tagIds: formValue.tagIds || [],
-          productCategory: CATEGORIES[0]
-        };
-
-        // Log the request payload for debugging
-        console.log('Sending product update request:', productDto);
-
-        this.productService.updateProduct(this.productId!, productDto).subscribe({
-          next: (updatedProduct) => {
-            this.isSubmitting = false;
-            this.successMessage = 'Product updated successfully!';
-            this.product = updatedProduct;
-            
-            // Navigate to content editing
-            this.router.navigate(['/products', this.productId, 'edit', 'content']);
-          },
-          error: (error) => {
-            console.error('Product update error:', error);
-            console.error('Error response:', error.error);
-            
-            let errorMessage = 'Failed to update product';
-            
-            // Check for validation errors
-            if (error.error?.errors) {
-              const validationErrors = error.error.errors;
-              const errorDetails = Object.keys(validationErrors)
-                .map(key => `${key}: ${validationErrors[key].join(', ')}`)
-                .join('; ');
-              errorMessage += ': ' + errorDetails;
-            } else if (error.error?.message) {
-              errorMessage += ': ' + error.error.message;
-            } else if (error.error?.title) {
-              errorMessage += ': ' + error.error.title;
-            } else if (error.message) {
-              errorMessage += ': ' + error.message;
-            }
-            
-            this.errorMessage = errorMessage;
-            this.isSubmitting = false;
-          }
-        });
-      }).catch(error => {
-        console.error('Error uploading images:', error);
-        this.errorMessage = 'Failed to upload images: ' + (error.error?.message || error.message);
-        this.isSubmitting = false;
+  async saveAndContinue(): Promise<void> {
+    console.log('🚀 SaveAndContinue called!');
+    
+    // Mark all fields as touched to trigger validation display
+    this.productForm.markAllAsTouched();
+    
+    if (this.productForm.invalid) {
+      console.log('❌ Form is invalid, showing error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Please fill in all required fields correctly.',
+        confirmButtonColor: '#3b82f6'
       });
-    } else {
-      console.log('Form validation errors:', this.productForm.errors);
-      console.log('Form value:', this.productForm.value);
+      return;
+    }
+    
+    this.isSubmitting = true;
+    this.errorMessage = null;
+    
+    try {
+      // First upload images to get proper URLs
+      await this.uploadImages();
       
-      // Log individual field errors
-      Object.keys(this.productForm.controls).forEach(key => {
-        const control = this.productForm.get(key);
-        if (control && control.errors) {
-          console.log(`Field ${key} errors:`, control.errors);
+      const formValue = this.productForm.value;
+      
+             // Create the product update DTO
+       const productDto: ProductUpdateRequestDTO = {
+         id: this.productId!,
+         name: formValue.name,
+         description: formValue.description || '',
+         price: parseFloat(formValue.price),
+         currency: formValue.currency,
+         coverImageUrl: formValue.coverImageUrl,
+         thumbnailImageUrl: formValue.thumbnailImageUrl,
+         previewVideoUrl: formValue.previewVideoUrl && formValue.previewVideoUrl.trim() !== '' 
+           ? formValue.previewVideoUrl 
+           : null,
+         isPublic: formValue.isPublic,
+         permalink: formValue.permalink,
+         // Enhanced product details
+         features: this.productFeatures,
+         compatibility: formValue.compatibility,
+         license: formValue.license,
+         updates: formValue.updates,
+         categoryId: formValue.categoryId,
+         tagIds: this.selectedTags.map(tag => tag.id).filter(id => id > 0),
+         productCategory: this.product?.category || { id: 0, name: '', parentCategoryId: undefined },
+         status: 'published'
+       };
+
+      console.log('📤 Sending Product Update DTO:', JSON.stringify(productDto, null, 2));
+
+      this.productService.updateProduct(this.productId!, productDto).subscribe({
+        next: async (updatedProduct) => {
+          console.log('✅ Product updated successfully:', updatedProduct);
+          this.product = updatedProduct;
+          
+          // Upload files if any
+          if (this.productFiles.length > 0) {
+            try {
+              console.log(`📁 Uploading ${this.productFiles.length} files for product ${this.productId}`);
+              await this.uploadFiles(this.productFiles);
+              console.log('✅ All files uploaded successfully');
+            } catch (fileError) {
+              console.error('❌ File upload failed:', fileError);
+              // Show warning but continue
+              await Swal.fire({
+                icon: 'warning',
+                title: 'File Upload Failed',
+                text: 'Product updated successfully, but some files failed to upload. You can add files later in the product editor.',
+                confirmButtonColor: '#3b82f6'
+              });
+            }
+          }
+          
+          this.isSubmitting = false;
+          
+          // Show success message with SweetAlert
+          await Swal.fire({
+            icon: 'success',
+            title: 'Product Updated Successfully!',
+            text: this.productFiles.length > 0 
+              ? 'Your product has been updated with files and saved.'
+              : 'Your product has been updated and saved.',
+            confirmButtonColor: '#3b82f6',
+            confirmButtonText: 'Continue'
+          });
+          
+          // Navigate to content editing
+          this.router.navigate(['/products', this.productId, 'edit', 'content']);
+        },
+        error: (error) => {
+          console.log('❌ Product update failed:', error);
+          console.log('❌ Error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            error: error.error,
+            message: error.message,
+            url: error.url
+          });
+          this.isSubmitting = false;
+          Swal.fire({
+            icon: 'error',
+            title: 'Update Failed',
+            text: 'Failed to update product: ' + (error.error?.message || error.message),
+            confirmButtonColor: '#3b82f6'
+          });
         }
       });
-      
-      this.errorMessage = 'Please fix the form errors before saving.';
+    } catch (err) {
+      console.error('Error in saveAndContinue:', err);
+      this.isSubmitting = false;
+      Swal.fire({
+        icon: 'error',
+        title: 'Unexpected Error',
+        text: 'An unexpected error occurred while updating the product.',
+        confirmButtonColor: '#3b82f6'
+      });
     }
   }
 
-  private updateFormValidity(): void {
-    this.isFormValid = this.productForm.valid;
+  private updateFormValidation(): void {
+    const nameValid = this.productForm.get('name')?.value && this.productForm.get('name')?.valid;
+    const priceValid = this.productForm.get('price')?.value > 0 && this.productForm.get('price')?.valid;
+    const categoryValid = this.productForm.get('categoryId')?.value && this.productForm.get('categoryId')?.valid;
+    const currencyValid = this.productForm.get('currency')?.valid;
+    const permalinkValid = this.productForm.get('permalink')?.valid;
+         
+    this.isFormValid = nameValid && priceValid && categoryValid && currencyValid && permalinkValid;
+  }
+
+  // Tag management methods
+  loadAvailableTags(): void {
+    const categoryId = this.productForm.get('categoryId')?.value as number | null;
+    if (categoryId) {
+      this.tagService.getTagsForCategories([categoryId]).subscribe({
+        next: (tags: TagDTO[]) => {
+          this.availableTags = (tags || []).slice(0, 15);
+        },
+        error: (error: any) => {
+          console.error('Failed to load tags:', error);
+          this.availableTags = [];
+        }
+      });
+    } else {
+      this.availableTags = [];
+    }
+  }
+
+  getFilteredAvailableTags(): TagDTO[] {
+    return this.availableTags.filter(tag => 
+      !this.selectedTags.some(selected => selected.id === tag.id)
+    );
+  }
+
+  selectSuggestedTag(tag: TagDTO): void {
+    if (this.selectedTags.length < 5 && !this.selectedTags.some(selected => selected.id === tag.id)) {
+      this.selectedTags.push(tag);
+    }
+  }
+
+  addCustomTag(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    
+    const tagName = this.newTagInput.trim();
+    if (tagName && this.selectedTags.length < 5) {
+      // Check if tag already exists in available tags
+      const existingTag = this.availableTags.find(tag => 
+        tag.name && tag.name.toLowerCase() === tagName.toLowerCase()
+      );
+      
+      if (existingTag) {
+        // Use existing tag
+        this.selectSuggestedTag(existingTag);
+      } else {
+        // Create new tag (for now, just add it locally - backend will handle creation)
+        const newTag: TagDTO = {
+          id: 0, // Temporary ID, backend will assign real ID
+          name: tagName
+        };
+        this.selectedTags.push(newTag);
+      }
+      
+      this.newTagInput = '';
+    }
+  }
+
+  onTagInputChange(event: any): void {
+    this.newTagInput = event.target.value;
+  }
+
+  removeTag(index: number): void {
+    this.selectedTags.splice(index, 1);
+  }
+
+  // Category management methods
+  getCategoryIcon(categoryName: string): string {
+    // Return icon class based on category name
+    switch (categoryName.toLowerCase()) {
+      case 'art':
+        return 'fas fa-paint-brush';
+      case 'music':
+        return 'fas fa-music';
+      case 'photography':
+        return 'fas fa-camera';
+      case 'software':
+        return 'fas fa-code';
+      case 'education':
+        return 'fas fa-book';
+      default:
+        return 'fas fa-box-open';
+    }
+  }
+
+  getCategoryDescription(categoryName: string): string {
+    // Return a short description based on category name
+    switch (categoryName.toLowerCase()) {
+      case 'art':
+        return 'Creative artworks and designs';
+      case 'music':
+        return 'Audio tracks, beats, and compositions';
+      case 'photography':
+        return 'Photos and visual content';
+      case 'software':
+        return 'Apps, plugins, and software tools';
+      case 'education':
+        return 'Courses, tutorials, and learning materials';
+      default:
+        return 'Various digital products';
+    }
+  }
+
+  selectParentCategory(category: Category): void {
+    this.selectedParentCategory = category;
+    this.productForm.get('categoryId')?.setValue(category.id);
+    this.subcategories = CATEGORIES.filter(c => c.parentId === category.id);
+    // Refresh tags for selected category
+    this.loadAvailableTags();
+    // Trigger form validation update
+    this.updateFormValidation();
+  }
+
+  selectSubcategory(categoryId: string | number | Category): void {
+    let id: number;
+    if (typeof categoryId === 'object') {
+      id = categoryId.id;
+    } else {
+      id = typeof categoryId === 'string' ? parseInt(categoryId, 10) : categoryId;
+    }
+    this.productForm.get('categoryId')?.setValue(id);
+    this.loadAvailableTags();
+    // Trigger form validation update
+    this.updateFormValidation();
   }
 
   // Image upload methods
@@ -363,24 +565,25 @@ export class ProductEdit implements OnInit {
       return;
     }
 
-    console.log('Starting image upload for product ID:', this.productId);
-    console.log('Cover images available:', this.coverImages.length);
-    console.log('Thumbnail image available:', !!this.thumbnailImage);
+    console.log('🖼️ Starting image upload for product ID:', this.productId);
+    console.log('📸 Cover images available:', this.coverImages.length);
+    console.log('🖼️ Thumbnail image available:', !!this.thumbnailImage);
 
     try {
       // Upload cover image if available and it's a base64 (not already a URL)
       if (this.coverImages.length > 0) {
         const coverImage = this.coverImages[0];
         if (coverImage.startsWith('data:')) {
-          console.log('Uploading cover image...');
+          console.log('📤 Uploading cover image...');
           const coverImageFile = this.base64ToFile(coverImage, 'cover-image.jpg');
-          console.log('Cover image file created:', coverImageFile.name, 'Size:', coverImageFile.size);
+          console.log('📁 Cover image file created:', coverImageFile.name, 'Size:', coverImageFile.size);
           
           const result = await firstValueFrom(this.productService.uploadImage(this.productId!, coverImageFile, 'cover'));
-          console.log('Cover image upload result:', result);
+          console.log('✅ Cover image upload result:', result);
           
-          // Update the form with the new URL
+          // The backend automatically updates the product with the image URL
           if (result && result.url) {
+            console.log('✅ Product automatically updated with cover image URL:', result.url);
             this.productForm.patchValue({ coverImageUrl: result.url });
           }
         }
@@ -388,23 +591,24 @@ export class ProductEdit implements OnInit {
 
       // Upload thumbnail image if available and it's a base64
       if (this.thumbnailImage && this.thumbnailImage.startsWith('data:')) {
-        console.log('Uploading thumbnail image...');
+        console.log('📤 Uploading thumbnail image...');
         const thumbnailFile = this.base64ToFile(this.thumbnailImage, 'thumbnail-image.jpg');
-        console.log('Thumbnail file created:', thumbnailFile.name, 'Size:', thumbnailFile.size);
+        console.log('📁 Thumbnail file created:', thumbnailFile.name, 'Size:', thumbnailFile.size);
         
         const result = await firstValueFrom(this.productService.uploadImage(this.productId!, thumbnailFile, 'thumbnail'));
-        console.log('Thumbnail upload result:', result);
+        console.log('✅ Thumbnail upload result:', result);
         
-        // Update the form with the new URL
+        // The backend automatically updates the product with the image URL
         if (result && result.url) {
+          console.log('✅ Product automatically updated with thumbnail image URL:', result.url);
           this.productForm.patchValue({ thumbnailImageUrl: result.url });
         }
       }
 
-      console.log('Image uploads completed successfully');
+      console.log('✅ All images uploaded successfully');
     } catch (error) {
-      console.error('Failed to upload images:', error);
-      // Don't fail the entire process if image upload fails
+      console.error('❌ Error uploading images:', error);
+      throw error;
     }
   }
 
@@ -431,5 +635,113 @@ export class ProductEdit implements OnInit {
 
   removeFeature(index: number): void {
     this.productFeatures.splice(index, 1);
+  }
+
+  // File upload methods
+  triggerFileUpload(): void {
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = true;
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+    
+    const files = event.dataTransfer?.files;
+    if (files) {
+      this.handleFiles(Array.from(files));
+    }
+  }
+
+  onFileSelected(event: any): void {
+    const files = event.target.files;
+    if (files) {
+      this.handleFiles(Array.from(files));
+    }
+  }
+
+  private handleFiles(files: File[]): void {
+    // Add files to the product files array
+    this.productFiles.push(...files);
+    
+    // Convert files to FileDTO format for display (temporary)
+    files.forEach(file => {
+      this.uploadedFiles.push({
+        id: Date.now() + Math.random(), // Generate temporary ID
+        name: file.name,
+        fileUrl: URL.createObjectURL(file),
+        size: file.size
+      });
+    });
+  }
+
+  private async uploadFiles(files: File[]): Promise<void> {
+    if (!this.productId) {
+      console.error('❌ Cannot upload files: productId is not available');
+      return;
+    }
+
+    this.isUploading = true;
+    this.uploadProgress = 0;
+    
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        console.log(`📤 Uploading file ${i + 1}/${files.length}: ${file.name}`);
+        
+        // Upload file to server
+        const result = await firstValueFrom(this.productService.uploadFile(this.productId, file));
+        console.log(`✅ File uploaded successfully: ${file.name}`, result);
+        
+        // Update progress
+        this.uploadProgress = ((i + 1) / files.length) * 100;
+        
+        // Add uploaded file to the list
+        if (result && result.length > 0) {
+          this.uploadedFiles.push(...result);
+        }
+      }
+      
+      console.log('✅ All files uploaded successfully');
+    } catch (error) {
+      console.error('❌ Error uploading files:', error);
+      throw error;
+    } finally {
+      this.isUploading = false;
+      this.uploadProgress = 0;
+    }
+  }
+
+  removeFile(index: number): void {
+    // Remove from uploadedFiles array
+    this.uploadedFiles.splice(index, 1);
+    
+    // Also remove from productFiles array to keep them in sync
+    if (index < this.productFiles.length) {
+      this.productFiles.splice(index, 1);
+    }
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }

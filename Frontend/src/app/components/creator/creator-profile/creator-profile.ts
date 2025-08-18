@@ -128,12 +128,19 @@ export class CreatorProfileComponent implements OnInit {
     this.subscriptionService.subscribe(this.creatorProfile.id).subscribe({
       next: (response) => {
         this.isSubscribing = false;
-        if (response.success) {
+        
+        // Handle both success and "already subscribed" cases
+        if (response.success || response.isSubscribed) {
           this.creatorProfile!.isSubscribed = true;
-          this.creatorProfile!.followerCount++;
+          
+          // Only increment follower count if it's a new subscription
+          if (response.success) {
+            this.creatorProfile!.followerCount++;
+          }
+          
           Swal.fire({
             icon: 'success',
-            title: 'Subscribed!',
+            title: response.success ? 'Subscribed!' : 'Already Subscribed',
             text: response.message,
             timer: 2000,
             showConfirmButton: false
@@ -164,12 +171,19 @@ export class CreatorProfileComponent implements OnInit {
     this.subscriptionService.unsubscribe(this.creatorProfile.id).subscribe({
       next: (response) => {
         this.isSubscribing = false;
-        if (response.success) {
+        
+        // Handle both success and "not subscribed" cases
+        if (response.success || !response.isSubscribed) {
           this.creatorProfile!.isSubscribed = false;
-          this.creatorProfile!.followerCount--;
+          
+          // Only decrement follower count if it was an active subscription
+          if (response.success) {
+            this.creatorProfile!.followerCount--;
+          }
+          
           Swal.fire({
             icon: 'success',
-            title: 'Unsubscribed',
+            title: response.success ? 'Unsubscribed' : 'Not Subscribed',
             text: response.message,
             timer: 2000,
             showConfirmButton: false

@@ -197,6 +197,10 @@ namespace Core.Services
                 throw new InvalidOperationException("A product with this permalink already exists.");
             }
 
+            // Log the IsPublic value for debugging
+            _logger.LogInformation("Creating product with IsPublic: {IsPublic}, Status will be: {Status}", 
+                productDto.IsPublic, productDto.IsPublic ? "published" : "draft");
+
             var newProduct = new Product
             {
                 CreatorId = creatorId,
@@ -210,7 +214,7 @@ namespace Core.Services
                 PreviewVideoUrl = productDto.PreviewVideoUrl,
                 IsPublic = productDto.IsPublic,
                 Permalink = productDto.Permalink,
-                Status = "draft", // Default status for new products
+                Status = productDto.IsPublic ? "published" : "draft", // Set status based on IsPublic
                 PublishedAt = productDto.IsPublic ? DateTime.UtcNow : (DateTime?)null, // Use UTC
                 // NEW: Enhanced product details
                 Features = JsonSerializer.Serialize(productDto.Features),
@@ -236,6 +240,10 @@ namespace Core.Services
             }
 
             await _productRepository.AddAsync(newProduct);
+
+            // Log the created product status for debugging
+            _logger.LogInformation("Product created with ID: {ProductId}, Status: {Status}, IsPublic: {IsPublic}", 
+                newProduct.Id, newProduct.Status, newProduct.IsPublic);
 
             // Re-fetch to ensure all relationships are loaded for DTO mapping
             var createdProduct = await _productRepository.GetProductWithAllDetailsAsync(newProduct.Id);
