@@ -18,6 +18,7 @@ interface Product {
   id: number;
   title: string;
   creator: string;
+  creatorId?: number;
   price: number;
   rating: number;
   ratingCount: number;
@@ -504,6 +505,7 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
       id: product.id,
       title: product.name || 'Untitled Product',
       creator: product.creatorUsername || 'Unknown Creator',
+      creatorId: product.creatorId,
       price: product.price,
       rating: product.averageRating || 0,
       ratingCount: 0,
@@ -1010,6 +1012,16 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
   onPageClick(page: number | string): void {
     if (typeof page === 'number') {
       this.onPageChange(page);
+    }
+  }
+
+  // Navigate to creator profile
+  viewCreatorProfile(creatorId?: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation(); // Prevent triggering the product card click
+    }
+    if (creatorId) {
+      this.router.navigate(['/creator', creatorId]);
     }
   }
 }

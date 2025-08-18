@@ -11,8 +11,23 @@ export const AuthInterceptor: HttpInterceptorFn = (request, next) => {
   // Get token directly from localStorage to avoid circular dependency
   const token = localStorage.getItem('authToken');
   
-  // Only add auth token to YOUR backend requests, not external APIs
-  if (token && request.url.includes(environment.apiUrl)) {
+  // Define public endpoints that don't require authentication
+  const publicEndpoints = [
+    '/subscription/creator/', // Creator profile endpoint
+    '/products', // Product listing (public)
+    '/products/', // Individual product details (public)
+    '/categories', // Category listing (public)
+    '/auth/login', // Login endpoint
+    '/auth/register', // Register endpoint
+  ];
+  
+  // Check if this is a public endpoint
+  const isPublicEndpoint = publicEndpoints.some(endpoint => 
+    request.url.includes(environment.apiUrl + endpoint)
+  );
+  
+  // Only add auth token to YOUR backend requests that are NOT public endpoints
+  if (token && request.url.includes(environment.apiUrl) && !isPublicEndpoint) {
     request = request.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`

@@ -60,8 +60,9 @@
         [loading]="loading">
       </app-product-carousel>
 
-      <!-- Recommended Products -->
+      <!-- Recommended Products - Only show for logged-in users -->
       <app-product-carousel
+        *ngIf="isLoggedIn()"
         title="Recommended for You"
         subtitle="Handpicked products based on your interests"
         icon="fas fa-sparkles"
@@ -163,7 +164,9 @@
                 </div>
                 <div class="product-info">
                   <h5 class="product-title">{{ product.title }}</h5>
-                  <p class="product-creator">by {{ product.creator }}</p>
+                  <p class="product-creator">
+                    by <a class="creator-link" (click)="viewCreatorProfile(product.creatorId, $event)">{{ product.creator }}</a>
+                  </p>
                   <div class="product-meta">
                     <span class="product-price">${{ product.price }}</span>
                     <div class="product-rating">
