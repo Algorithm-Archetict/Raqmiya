@@ -9,6 +9,7 @@ import { ProductListItemDTO } from '../../../core/models/product/product-list-it
 import { LoadingSpinner } from '../../shared/loading-spinner/loading-spinner';
 import { Navbar } from '../../navbar/navbar';
 import Swal from 'sweetalert2';
+import { ChatSignalRService } from '../../../core/services/chat-signalr.service';
 
 @Component({
   selector: 'app-creator-profile',
@@ -25,32 +26,20 @@ export class CreatorProfileComponent implements OnInit {
   error = false;
   isSubscribing = false;
   currentUserId: number | null = null;
-  private profileLoaded = false;
+  publicProductCount: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private subscriptionService: SubscriptionService,
     private productService: ProductService,
-    private authService: AuthService
+    private authService: AuthService,
+    private chat: ChatSignalRService
   ) {}
 
   ngOnInit() {
-    // Wait for authentication to be ready before loading profile
-    this.waitForAuthAndLoadProfile();
-  }
-
-  private waitForAuthAndLoadProfile() {
-    // If user is already logged in, get current user ID
-    if (this.authService.isLoggedIn()) {
-      const currentUser = this.authService.getCurrentUser();
-      this.currentUserId = currentUser?.id || null;
-      this.loadCreatorProfile();
-    } else {
-      // If not logged in, still load profile but without subscription status
-      this.currentUserId = null;
-      this.loadCreatorProfile();
-    }
+    this.currentUserId = this.authService.getCurrentUser()?.id || null;
+    this.loadCreatorProfile();
   }
 
   loadCreatorProfile() {
@@ -65,47 +54,17 @@ export class CreatorProfileComponent implements OnInit {
       next: (profile) => {
         this.creatorProfile = profile;
         this.loading = false;
-        this.profileLoaded = true;
         this.loadCreatorProducts(+creatorId);
-        
-        // Log the profile data for debugging
-        console.log('Creator Profile loaded:', {
-          creatorId: profile.id,
-          isSubscribed: profile.isSubscribed,
-          followerCount: profile.followerCount,
-          currentUserId: this.currentUserId,
-          isLoggedIn: this.authService.isLoggedIn()
+        // Fetch public product count (excludes private/freelance)
+        this.productService.getPublicProductCountForCreator(+creatorId).subscribe({
+          next: (count) => { this.publicProductCount = count; },
+          error: (e) => { console.warn('Failed to load public product count', e); this.publicProductCount = null; }
         });
-
-        // If user is logged in but subscription status is false, retry after a short delay
-        if (this.authService.isLoggedIn() && !profile.isSubscribed && this.currentUserId) {
-          setTimeout(() => {
-            this.retryLoadProfile(+creatorId);
-          }, 1000);
-        }
       },
       error: (error) => {
         console.error('Error loading creator profile:', error);
         this.error = true;
         this.loading = false;
-      }
-    });
-  }
-
-  private retryLoadProfile(creatorId: number) {
-    console.log('Retrying profile load for authenticated user...');
-    this.subscriptionService.getCreatorProfile(creatorId).subscribe({
-      next: (profile) => {
-        this.creatorProfile = profile;
-        console.log('Profile retry loaded:', {
-          creatorId: profile.id,
-          isSubscribed: profile.isSubscribed,
-          followerCount: profile.followerCount,
-          currentUserId: this.currentUserId
-        });
-      },
-      error: (error) => {
-        console.error('Error retrying profile load:', error);
       }
     });
   }
@@ -125,16 +84,6 @@ export class CreatorProfileComponent implements OnInit {
   }
 
   toggleSubscription() {
-    // Check if user is logged in
-    if (!this.authService.isLoggedIn()) {
-      this.showLoginPrompt();
-      return;
-    }
-
-    // Update current user ID in case it wasn't set before
-    const currentUser = this.authService.getCurrentUser();
-    this.currentUserId = currentUser?.id || null;
-
     if (!this.creatorProfile || !this.currentUserId) {
       this.showLoginPrompt();
       return;
@@ -179,19 +128,12 @@ export class CreatorProfileComponent implements OnInit {
     this.subscriptionService.subscribe(this.creatorProfile.id).subscribe({
       next: (response) => {
         this.isSubscribing = false;
-        
-        // Handle both success and "already subscribed" cases
-        if (response.success || response.isSubscribed) {
+        if (response.success) {
           this.creatorProfile!.isSubscribed = true;
-          
-          // Only increment follower count if it's a new subscription
-          if (response.success) {
-            this.creatorProfile!.followerCount++;
-          }
-          
+          this.creatorProfile!.followerCount++;
           Swal.fire({
             icon: 'success',
-            title: response.success ? 'Subscribed!' : 'Already Subscribed',
+            title: 'Subscribed!',
             text: response.message,
             timer: 2000,
             showConfirmButton: false
@@ -222,19 +164,12 @@ export class CreatorProfileComponent implements OnInit {
     this.subscriptionService.unsubscribe(this.creatorProfile.id).subscribe({
       next: (response) => {
         this.isSubscribing = false;
-        
-        // Handle both success and "not subscribed" cases
-        if (response.success || !response.isSubscribed) {
+        if (response.success) {
           this.creatorProfile!.isSubscribed = false;
-          
-          // Only decrement follower count if it was an active subscription
-          if (response.success) {
-            this.creatorProfile!.followerCount--;
-          }
-          
+          this.creatorProfile!.followerCount--;
           Swal.fire({
             icon: 'success',
-            title: response.success ? 'Unsubscribed' : 'Not Subscribed',
+            title: 'Unsubscribed',
             text: response.message,
             timer: 2000,
             showConfirmButton: false
@@ -305,7 +240,7 @@ export class CreatorProfileComponent implements OnInit {
   }
 
   startChat() {
-    if (!this.authService.isLoggedIn()) {
+    if (!this.currentUserId) {
       this.showLoginPrompt();
       return;
     }
@@ -330,19 +265,49 @@ export class CreatorProfileComponent implements OnInit {
       return;
     }
 
-    // For now, show a placeholder message
-    // In the future, this would navigate to a chat interface
-    Swal.fire({
-      icon: 'info',
-      title: 'Chat Feature',
-      html: `
-        <div class="text-center">
-          <h4>Chat with ${this.creatorProfile.username}</h4>
-          <p>This feature will be implemented soon!</p>
-          <p><small>You'll be able to send messages and discuss products with the creator.</small></p>
-        </div>
-      `,
-      confirmButtonText: 'OK'
+    // Prompt for the first message text
+    Swal.fire<{ value: string } | undefined>({
+      title: `Message ${this.creatorProfile.username}`,
+      input: 'text',
+      inputPlaceholder: 'Type your first message... (required)',
+      showCancelButton: true,
+      confirmButtonText: 'Start Chat',
+      preConfirm: (value) => {
+        if (!value || !value.trim()) {
+          Swal.showValidationMessage('Please enter a message');
+          return undefined as any;
+        }
+        return { value: value.trim() } as any;
+      }
+    }).then(async (res) => {
+      if (!res.isConfirmed || !res.value?.value) return;
+      try {
+        const firstMessage = res.value.value.trim();
+        const result: any = await this.chat.createMessageRequest(this.creatorProfile!.id, firstMessage);
+        const conversationId: string = result?.conversation?.id || '';
+        if (conversationId) {
+          // Join the conversation group and navigate to messages page
+          await this.chat.joinConversationGroup(conversationId);
+        }
+        this.router.navigate(['/messages']);
+      } catch (err: any) {
+        console.error('Failed to create message request', err);
+        const msg: string = (err?.error?.message || err?.message || '').toString();
+        if (/pending or active conversation already exists/i.test(msg)) {
+          await Swal.fire({ icon: 'info', title: 'Conversation exists', text: 'You already have a conversation with this creator.' });
+          this.router.navigate(['/messages']);
+          return;
+        }
+        if (/cannot message yourself/i.test(msg)) {
+          await Swal.fire({ icon: 'warning', title: 'Action not allowed', text: 'You cannot message yourself.' });
+          return;
+        }
+        await Swal.fire({
+          icon: 'error',
+          title: 'Unable to start chat',
+          text: msg || 'Please try again later.'
+        });
+      }
     });
   }
 

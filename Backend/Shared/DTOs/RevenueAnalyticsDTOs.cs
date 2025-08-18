@@ -30,5 +30,13 @@ namespace Shared.DTOs
         public decimal ExchangeRate { get; set; }
         public DateTime LastUpdated { get; set; }
     }
+
+    public class MonthlyRevenuePointDTO
+    {
+        public int Year { get; set; }
+        public int Month { get; set; } // 1-12
+        public decimal Revenue { get; set; }
+        public string Currency { get; set; } = "USD";
+    }
 }
 

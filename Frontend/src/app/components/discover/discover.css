@@ -95,6 +95,97 @@
   z-index: 3;
 }
 
+/* Search Suggestions Dropdown */
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 10;
+  overflow: hidden;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+
+/* Elegant hover and focus states */
+.suggestion-item:hover,
+.suggestion-item:focus,
+.suggestion-item:focus-visible {
+  background: linear-gradient(0deg, rgba(255,255,255,0.04), rgba(255,255,255,0.04));
+  box-shadow: inset 2px 0 0 0 var(--epic-blue, #0074E4);
+}
+
+.suggestion-item:active {
+  background: linear-gradient(0deg, rgba(255,255,255,0.08), rgba(255,255,255,0.08));
+  transform: translateY(0.5px);
+}
+
+.search-suggestions .suggestion-item:first-child {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.search-suggestions .suggestion-item:last-child {
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+.suggestion-item i {
+  color: var(--text-muted);
+  width: 18px;
+}
+
+.suggestion-text .label {
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.suggestion-text .sublabel {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Full-page search results */
+.search-results .results-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.search-results .card-header {
+  background: var(--bg-secondary);
+  font-weight: 600;
+}
+
+.search-results .creator-result {
+  display: flex;
+  align-items: center;
+}
+
+.search-results .creator-result:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+.creator-link {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* Category Filters */
 .category-filters {
   margin-top: var(--spacing-xl);

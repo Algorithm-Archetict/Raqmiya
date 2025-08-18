@@ -28,6 +28,52 @@
   top: 0;
 }
 
+/* Currency selector - dark themed select */
+.currency-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.currency-selector .form-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin: 0;
+}
+
+.currency-selector .form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px 32px 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  position: relative;
+}
+
+.currency-selector .form-select:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+}
+
+.currency-selector .form-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(98, 0, 238, 0.25);
+}
+
+/* Custom chevron using background image (SVG) */
+.currency-selector .form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a8b3cf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px 14px;
+}
+
 .products-title {
   font-size: 56px;
   font-weight: 800;

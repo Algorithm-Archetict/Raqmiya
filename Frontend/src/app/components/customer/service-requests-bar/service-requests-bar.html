@@ -1,0 +1,31 @@
+<div class="sr-bar">
+  <div class="sr-header">
+    <h3>Your Ongoing Services</h3>
+    <button class="refresh-btn" (click)="fetch()" [disabled]="loading">
+      <span *ngIf="!loading">Refresh</span>
+      <span *ngIf="loading">Loading...</span>
+    </button>
+  </div>
+
+  <div *ngIf="error" class="sr-error">{{ error }}</div>
+
+  <div class="sr-empty" *ngIf="!loading && !error && items.length === 0">
+    No ongoing services yet.
+  </div>
+
+  <div class="sr-list" *ngIf="!loading && !error && items.length > 0">
+    <div class="sr-item" *ngFor="let it of items">
+      <div class="sr-meta">
+        <div class="sr-status" [class.confirmed]="it.status==='ConfirmedByCustomer'" [class.accepted]="it.status==='AcceptedByCreator'">{{ it.status }}</div>
+        <div class="sr-deadline" [class.overdue]="it.overdue">
+          <i class="far fa-clock"></i>
+          <span>{{ it.timeLeft }}</span>
+        </div>
+      </div>
+      <div class="sr-body">
+        <div class="sr-req">{{ it.requirements }}</div>
+        <div class="sr-budget" *ngIf="it.proposedBudget != null">Budget: {{ it.proposedBudget | number:'1.0-2' }} {{ it.currency || '' }}</div>
+      </div>
+    </div>
+  </div>
+</div>
