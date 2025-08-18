@@ -222,4 +222,18 @@ export class UserService {
       reader.readAsDataURL(file);
     });
   }
+
+  /**
+   * Public creators search (minimal fields)
+   */
+  searchCreators(query: string, take: number = 20, skip: number = 0): Observable<Array<{ id: number; username: string; profileImageUrl?: string }>> {
+    const q = encodeURIComponent(query || '');
+    const url = `${this.apiUrl}/users/creators?query=${q}&take=${take}&skip=${skip}`;
+    return this.http.get<Array<{ id: number; username: string; profileImageUrl?: string }>>(url).pipe(
+      catchError(err => {
+        console.error('Error searching creators:', err);
+        return of([]);
+      })
+    );
+  }
 }

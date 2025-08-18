@@ -14,6 +14,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
+using API.Hubs;
+using Raqmiya.Infrastructure.Data.Repositories.Interfaces;
+using Raqmiya.Infrastructure.Data.Repositories.Implementations;
+using Core.Interfaces;
+using Core.Services;
 
 namespace API
 {
@@ -59,6 +65,14 @@ builder.Services.AddScoped<ISubscriptionService, Core.Services.SubscriptionServi
             builder.Services.AddScoped<IStripeService, Core.Services.StripeService>(); // NEW: Stripe Service
             builder.Services.AddScoped<IRevenueAnalyticsService, Core.Services.RevenueAnalyticsService>(); // NEW: Revenue Analytics Service
             builder.Services.AddScoped<ICurrencyService, Core.Services.CurrencyService>(); // NEW: Currency Service
+            // Messaging
+            builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
+            builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+            builder.Services.AddScoped<IMessageRequestRepository, MessageRequestRepository>();
+            builder.Services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
+            builder.Services.AddScoped<IDeliveryRepository, DeliveryRepository>();
+            builder.Services.AddScoped<IServiceRequestDeadlineChangeRepository, ServiceRequestDeadlineChangeRepository>();
+            builder.Services.AddScoped<IMessagingService, MessagingService>();
 
             // --- 4. Configure Logging ---
             builder.Logging.AddConsole();
@@ -81,6 +95,21 @@ builder.Services.AddScoped<ISubscriptionService, Core.Services.SubscriptionServi
                     ValidAudience = builder.Configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
                 };
+
+                // Allow SignalR to read JWT from query string for WebSockets/SSE
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"].ToString();
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             // --- 5. Register AutoMapper and FluentValidation ---
@@ -97,6 +126,11 @@ builder.Services.AddScoped<ISubscriptionService, Core.Services.SubscriptionServi
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             
+            // --- SignalR ---
+            builder.Services.AddSignalR(o =>
+            {
+                o.EnableDetailedErrors = true;
+            });
 
 
             // --- 7. Configure Swagger/OpenAPI for JWT Authentication ---
@@ -156,11 +190,30 @@ builder.Services.AddScoped<ISubscriptionService, Core.Services.SubscriptionServi
             var app = builder.Build();
 
             // --- SEED DATABASE IN DEVELOPMENT ---
-            if (app.Environment.IsDevelopment())
+            using (var scope = app.Services.CreateScope())
             {
-                using (var scope = app.Services.CreateScope())
+                var db = scope.ServiceProvider.GetRequiredService<RaqmiyaDbContext>();
+                try
                 {
-                    var db = scope.ServiceProvider.GetRequiredService<RaqmiyaDbContext>();
+                    // If there are migrations, apply them; otherwise ensure database is created
+                    var pending = db.Database.GetPendingMigrations();
+                    if (pending != null && pending.Any())
+                    {
+                        db.Database.Migrate();
+                    }
+                    else
+                    {
+                        db.Database.EnsureCreated();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbMigration");
+                    logger.LogError(ex, "Database migration failed");
+                }
+
+                if (app.Environment.IsDevelopment())
+                {
                     DbInitializer.Seed(db);
                 }
             }
@@ -206,6 +259,9 @@ builder.Services.AddScoped<ISubscriptionService, Core.Services.SubscriptionServi
             });
 
             app.MapControllers();
+
+            // --- Map SignalR Hubs ---
+            app.MapHub<ChatHub>("/hubs/chat");
 
             app.Run();
         }

@@ -4,6 +4,8 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DashboardSidebar } from '../../dashboard-sidebar/dashboard-sidebar';
 import { PaymentService, BalanceResponse, RevenueAnalytics } from '../../../core/services/payment.service';
+import { ServiceRequestsBar } from '../service-requests-bar/service-requests-bar';
+import { CustomerServiceRequestsBar } from '../../customer/service-requests-bar/service-requests-bar';
 
 interface DashboardData {
   balance: number;
@@ -16,9 +18,9 @@ interface DashboardData {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, DashboardSidebar],
+  imports: [CommonModule, RouterModule, FormsModule, DashboardSidebar, ServiceRequestsBar, CustomerServiceRequestsBar],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css'
+  styleUrls: ['./dashboard.css']
 })
 export class Dashboard implements OnInit {
   dashboardData: DashboardData = {

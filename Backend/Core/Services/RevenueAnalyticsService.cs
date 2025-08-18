@@ -195,5 +195,55 @@ namespace Core.Services
         {
             return await _currencyService.ConvertCurrencyAsync(amount, fromCurrency, toCurrency);
         }
+
+        public async Task<List<MonthlyRevenuePointDTO>> GetCreatorMonthlySeriesAsync(int creatorId, string currency = "USD")
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                var start = new DateTime(now.Year, now.Month, 1).AddMonths(-11); // inclusive start 11 months ago
+
+                var raw = await _context.OrderItems
+                    .Include(oi => oi.Product)
+                    .Include(oi => oi.Order)
+                    .Where(oi => oi.Product.CreatorId == creatorId
+                                 && oi.Order.Status == "Completed"
+                                 && oi.Order.OrderedAt >= start)
+                    .GroupBy(oi => new { oi.Order.OrderedAt.Year, oi.Order.OrderedAt.Month })
+                    .Select(g => new { Year = g.Key.Year, Month = g.Key.Month, Revenue = g.Sum(oi => oi.UnitPrice * oi.Quantity) })
+                    .ToListAsync();
+
+                var series = new List<MonthlyRevenuePointDTO>();
+                for (int i = 0; i < 12; i++)
+                {
+                    var dt = start.AddMonths(i);
+                    var found = raw.FirstOrDefault(r => r.Year == dt.Year && r.Month == dt.Month);
+                    var revenue = found?.Revenue ?? 0m;
+                    series.Add(new MonthlyRevenuePointDTO
+                    {
+                        Year = dt.Year,
+                        Month = dt.Month,
+                        Revenue = revenue,
+                        Currency = "USD"
+                    });
+                }
+
+                if (currency != "USD")
+                {
+                    for (int i = 0; i < series.Count; i++)
+                    {
+                        series[i].Revenue = await _currencyService.ConvertCurrencyAsync(series[i].Revenue, "USD", currency);
+                        series[i].Currency = currency;
+                    }
+                }
+
+                return series;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting monthly series revenue for creator {CreatorId}", creatorId);
+                throw;
+            }
+        }
     }
 }

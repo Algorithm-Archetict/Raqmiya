@@ -160,7 +160,7 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="!isDeleting && closeDeleteModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
 
     
@@ -172,12 +172,19 @@
     </div>
     
     <div class="modal-actions">
-      <button class="btn btn-secondary" (click)="closeDeleteModal()">
+      <button class="btn btn-secondary" (click)="closeDeleteModal()" [disabled]="isDeleting">
         Cancel
       </button>
-      <button class="btn btn-danger" (click)="confirmDelete()">
-        Delete
+      <button class="btn btn-danger" (click)="confirmDelete()" [disabled]="isDeleting">
+        <i class="fas fa-spinner fa-spin me-2" *ngIf="isDeleting"></i>
+        {{ isDeleting ? 'Deleting...' : 'Delete' }}
       </button>
+    </div>
+
+    <!-- Error message -->
+    <div class="alert alert-danger mt-3" *ngIf="deletionError">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      {{ deletionError }}
     </div>
   </div>
 </div>

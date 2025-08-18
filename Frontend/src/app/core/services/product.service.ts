@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, shareReplay } from 'rxjs';
 
@@ -14,7 +15,7 @@ import { Receipt } from '../interfaces/receipt.interface';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private apiUrl = 'http://localhost:5255/api/Products';
+  private apiUrl = `${environment.apiUrl}/Products`;
   // Simple in-memory caches to avoid repeated network calls
   private allCacheKey = 'all:page=1:size=1000';
   private cache = new Map<string, Observable<any>>();
@@ -261,5 +262,12 @@ export class ProductService {
 
   getProductsByCreator(creatorId: number): Observable<ProductListItemDTO[]> {
     return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/creator/${creatorId}/products`);
+  }
+
+  // Get count of PUBLIC products for a creator (excludes private/freelance products)
+  getPublicProductCountForCreator(creatorId: number): Observable<number> {
+    return this.http.get<{ count: number }>(`${this.apiUrl}/creator/${creatorId}/public-count`).pipe(
+      map(res => res.count)
+    );
   }
 }

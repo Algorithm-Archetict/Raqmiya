@@ -1,0 +1,18 @@
+.sr-bar{background:#0f172a;color:#e2e8f0;border:1px solid #1f2937;border-radius:10px;padding:12px;margin-bottom:16px}
+.sr-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sr-header h3{font-size:16px;margin:0}
+.refresh-btn{background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:6px;padding:6px 10px;cursor:pointer}
+.refresh-btn[disabled]{opacity:.6;cursor:not-allowed}
+.sr-error{color:#fecaca;background:#7f1d1d;padding:8px;border-radius:6px;border:1px solid #991b1b}
+.sr-empty{color:#9ca3af;font-style:italic}
+.sr-list{display:flex;flex-direction:column;gap:8px}
+.sr-item{display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid #24324a;border-radius:8px;background:#0b1221}
+.sr-meta{display:flex;align-items:center;gap:12px}
+.sr-status{font-size:12px;padding:2px 8px;border-radius:9999px;border:1px solid #334155;background:#0b1221}
+.sr-status.accepted{border-color:#2563eb;color:#bfdbfe}
+.sr-status.confirmed{border-color:#16a34a;color:#bbf7d0}
+.sr-deadline{margin-left:auto;display:flex;align-items:center;gap:6px;color:#e5e7eb}
+.sr-deadline.overdue{color:#fecaca}
+.sr-body{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sr-req{color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%}
+.sr-budget{color:#cbd5e1;font-size:12px}

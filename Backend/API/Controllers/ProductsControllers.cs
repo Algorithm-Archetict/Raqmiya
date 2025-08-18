@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.DTOs.ProductDTOs;
@@ -7,6 +7,8 @@ using API.Constants;
 using Shared.Constants;
 using AutoMapper;
 using Raqmiya.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace API.Controllers
 {
@@ -1043,6 +1045,17 @@ namespace API.Controllers
                 _logger.LogError(ex, "Error getting products for creator {CreatorId}", creatorId);
                 return StatusCode(500, new { success = false, message = "An error occurred while getting products" });
             }
+        }
+
+        // Returns count of PUBLIC products for a creator (excludes soft-deleted and private)
+        [HttpGet("creator/{creatorId:int}/public-count")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicCountForCreator(int creatorId, [FromServices] RaqmiyaDbContext dbContext)
+        {
+            var count = await dbContext.Products
+                .Where(p => p.CreatorId == creatorId && p.IsPublic && !p.IsDeleted)
+                .CountAsync();
+            return Ok(new { count });
         }
     }
 }

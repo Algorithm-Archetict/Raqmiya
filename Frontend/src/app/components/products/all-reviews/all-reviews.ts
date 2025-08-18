@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ProductService } from '../../../core/services/product.service';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-all-reviews',
@@ -12,7 +13,7 @@ import { CommonModule } from '@angular/common';
   standalone: true
 })
 export class AllReviews implements OnInit {
-  private readonly backendUrl = 'http://localhost:5255';
+  private readonly backendUrl = environment.apiUrl.replace(/\/api$/, '');
 
   productId!: number;
   reviews: ReviewDTO[] = [];

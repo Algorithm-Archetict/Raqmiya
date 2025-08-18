@@ -11,7 +11,6 @@ import { AnalyticsService } from '../../core/services/analytics.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
 import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
-import { Navbar } from '../navbar/navbar';
 import { HierarchicalCategoryNav } from '../shared/hierarchical-category-nav/hierarchical-category-nav';
 
 interface Product {
@@ -47,7 +46,7 @@ interface FilterState {
 @Component({
   selector: 'app-category-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, Navbar, HierarchicalCategoryNav],
+  imports: [CommonModule, FormsModule, RouterModule, HierarchicalCategoryNav],
   templateUrl: './category-page.component.html',
   styleUrl: './category-page.component.css'
 })

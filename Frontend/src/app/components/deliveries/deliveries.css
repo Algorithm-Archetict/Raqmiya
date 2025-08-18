@@ -1,0 +1,7 @@
+.deliveries-page{padding:16px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.item{border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-start}
+.lbl{color:#6b7280;margin-right:6px}
+.val{font-weight:500}
+.actions .btn{padding:6px 10px}
+@media (max-width: 900px){.split{grid-template-columns:1fr}}
