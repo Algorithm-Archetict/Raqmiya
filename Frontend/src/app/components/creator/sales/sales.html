@@ -156,22 +156,15 @@
           </div>
         </div>
 
-        <!-- Revenue Chart Placeholder -->
+        <!-- Revenue Chart -->
         <div class="chart-section">
           <div class="section-header">
             <h3>Revenue Trends</h3>
             <p>Monthly revenue performance</p>
           </div>
 
-          <div class="chart-placeholder">
-            <div class="chart-content">
-              <i class="fas fa-chart-area fa-3x text-muted mb-3"></i>
-              <h5 class="text-muted">Revenue Chart</h5>
-              <p class="text-muted">
-                Interactive revenue chart will be displayed here.<br>
-                Shows monthly trends and performance metrics.
-              </p>
-            </div>
+          <div style="position: relative; height: 360px; width: 100%;">
+            <canvas #revenueChartCanvas id="revenueChart" height="360"></canvas>
           </div>
         </div>
       </div>

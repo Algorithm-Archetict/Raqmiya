@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Raqmiya.Infrastructure;
 using Infrastructure.Data.Entities;
 using System.Collections.Generic;
@@ -35,6 +35,14 @@ namespace Raqmiya.Infrastructure
         // public DbSet<ProductCategory> ProductCategories { get; set; } = null!;
         public DbSet<CategoryTag> CategoryTags { get; set; } = null!;
         public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
+        
+        // Messaging
+        public DbSet<Conversation> Conversations { get; set; } = null!;
+        public DbSet<Message> Messages { get; set; } = null!;
+        public DbSet<MessageRequest> MessageRequests { get; set; } = null!;
+        public DbSet<ServiceRequest> ServiceRequests { get; set; } = null!;
+        public DbSet<Delivery> Deliveries { get; set; } = null!;
+        public DbSet<ServiceRequestDeadlineChange> ServiceRequestDeadlineChanges { get; set; } = null!;
         
         // Personalization & Analytics Entities
         public DbSet<UserPreference> UserPreferences { get; set; } = null!;
@@ -339,7 +347,76 @@ namespace Raqmiya.Infrastructure
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Ensure other entity configurations (e.g., string lengths) are present.
+            // --- Messaging configuration ---
+            modelBuilder.Entity<Conversation>(entity =>
+            {
+                entity.HasIndex(e => new { e.CreatorId, e.CustomerId });
+                entity.HasOne(e => e.Creator)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Customer)
+                    .WithMany()
+                    .HasForeignKey(e => e.CustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Message>(entity =>
+            {
+                entity.HasIndex(e => new { e.ConversationId, e.CreatedAt });
+                entity.HasOne(e => e.Conversation)
+                    .WithMany(c => c.Messages)
+                    .HasForeignKey(e => e.ConversationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Sender)
+                    .WithMany()
+                    .HasForeignKey(e => e.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<MessageRequest>(entity =>
+            {
+                entity.HasIndex(e => e.ConversationId).IsUnique();
+                entity.HasOne(e => e.Conversation)
+                    .WithOne(c => c.MessageRequest)
+                    .HasForeignKey<MessageRequest>(e => e.ConversationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.RequestedByCustomer)
+                    .WithMany()
+                    .HasForeignKey(e => e.RequestedByCustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ServiceRequest>(entity =>
+            {
+                entity.HasIndex(e => new { e.ConversationId, e.CreatedAt });
+                entity.HasOne(e => e.Conversation)
+                    .WithMany(c => c.ServiceRequests)
+                    .HasForeignKey(e => e.ConversationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.RequestedByCustomer)
+                    .WithMany()
+                    .HasForeignKey(e => e.RequestedByCustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(e => e.Currency).HasMaxLength(3);
+            });
+
+            modelBuilder.Entity<Delivery>(entity =>
+            {
+                entity.HasIndex(e => new { e.ConversationId, e.CreatedAt });
+                entity.HasOne(e => e.Conversation)
+                    .WithMany(c => c.Deliveries)
+                    .HasForeignKey(e => e.ConversationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.ServiceRequest)
+                    .WithMany()
+                    .HasForeignKey(e => e.ServiceRequestId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(e => e.Product)
+                    .WithMany()
+                    .HasForeignKey(e => e.ProductId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
         }
     }
 }

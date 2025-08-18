@@ -245,6 +245,15 @@
   border: 1px solid #e9ecef;
 }
 
+/* Ensure the canvas takes available space and is visible */
+.chart-section canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  border: 1px solid rgba(0,0,0,0.05); /* subtle debug border; can remove later */
+  background: #fafafa; /* light background to make grid/line visible */
+}
+
 .chart-placeholder {
   border: 2px dashed #dee2e6;
   border-radius: 8px;

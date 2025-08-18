@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 
@@ -70,9 +70,42 @@ namespace Raqmiya.Infrastructure
 
         public async Task DeleteAsync(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            // Load product with dependents to ensure safe removal without FK violations
+            var product = await _context.Products
+                .Include(p => p.Files)
+                .Include(p => p.ProductTags)
+                .Include(p => p.WishlistItems)
+                .Include(p => p.Reviews)
+                .Include(p => p.OfferCodes)
+                .Include(p => p.Variants)
+                .Include(p => p.ProductViews)
+                .Include(p => p.Licenses)
+                .Include(p => p.UserInteractions)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (product != null)
             {
+                // Remove dependents first
+                if (product.Files?.Any() == true)
+                    _context.Files.RemoveRange(product.Files);
+                if (product.ProductTags?.Any() == true)
+                    _context.ProductTags.RemoveRange(product.ProductTags);
+                if (product.WishlistItems?.Any() == true)
+                    _context.WishlistItems.RemoveRange(product.WishlistItems);
+                if (product.Reviews?.Any() == true)
+                    _context.Reviews.RemoveRange(product.Reviews);
+                if (product.OfferCodes?.Any() == true)
+                    _context.OfferCodes.RemoveRange(product.OfferCodes);
+                if (product.Variants?.Any() == true)
+                    _context.Variants.RemoveRange(product.Variants);
+                if (product.ProductViews?.Any() == true)
+                    _context.ProductViews.RemoveRange(product.ProductViews);
+                if (product.Licenses?.Any() == true)
+                    _context.Licenses.RemoveRange(product.Licenses);
+                if (product.UserInteractions?.Any() == true)
+                    _context.UserInteractions.RemoveRange(product.UserInteractions);
+
+                // Finally remove the product
                 _context.Products.Remove(product);
                 await _context.SaveChangesAsync();
             }

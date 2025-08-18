@@ -82,6 +82,13 @@ export interface RevenueAnalytics {
   lastUpdated: Date;
 }
 
+export interface MonthlyRevenuePoint {
+  year: number;
+  month: number; // 1-12
+  revenue: number;
+  currency: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -153,6 +160,15 @@ export class PaymentService {
     return this.http.get<RevenueAnalytics>(`${this.baseUrl}/revenue-analytics/my-analytics?currency=${currency}`, {
       headers: this.getHeaders()
     });
+  }
+
+  // Get last 12 months revenue series for current creator
+  getMyMonthlySeries(currency: string = 'USD'): Observable<MonthlyRevenuePoint[]> {
+    return this.http
+      .get<{ series: MonthlyRevenuePoint[]; currency: string }>(`${this.baseUrl}/revenue-analytics/my-monthly-series?currency=${currency}`, {
+        headers: this.getHeaders(),
+      })
+      .pipe(map(res => res.series || []));
   }
 
   // Convert currency with proper EGP/USD conversion

@@ -1,0 +1,255 @@
+<div class="chat-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-logo">✉️</span>
+      <span>Raqmiya Messages</span>
+      <button class="btn ghost refresh" title="Refresh" (click)="refreshLists()">↻</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Pending Requests</div>
+      <div *ngIf="pendingRequests().length===0" class="muted">No pending requests</div>
+      <div class="request" *ngFor="let r of pendingRequests()">
+        <div class="req-top">
+          <div class="req-text">{{ r.firstMessageText }}</div>
+          <div class="req-time">{{ r.createdAt | date:'short' }}</div>
+        </div>
+        <div class="req-actions">
+          <button class="btn" (click)="declineRequest(r)">Decline</button>
+          <button class="btn primary" (click)="acceptRequest(r)">Accept</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Outgoing Requests</div>
+      <div *ngIf="outgoingRequests().length===0" class="muted">No outgoing requests</div>
+      <div class="request" *ngFor="let r of outgoingRequests()">
+        <div class="req-top">
+          <div class="req-text">{{ r.firstMessageText }}</div>
+          <div class="req-time">{{ r.createdAt | date:'short' }}</div>
+        </div>
+        <div class="muted small">Status: {{ formatStatus(r.status) }}</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Conversations</div>
+      <div *ngIf="displayConversations().length===0" class="muted">No conversations yet</div>
+      <div class="conv-item" *ngFor="let c of displayConversations(); trackBy: trackByConvId" [class.active]="c.id===currentConversationId()" (click)="selectConversation(c.id)">
+        <div class="conv-avatar" [style.background-image]="avatarUrlForConv(c) ? 'url(' + avatarUrlForConv(c) + ')' : ''" [class.has-img]="!!avatarUrlForConv(c)">
+          <span *ngIf="!avatarUrlForConv(c)" class="avatar-fallback">{{ initialsForConv(c) }}</span>
+        </div>
+        <div class="conv-main">
+          <div class="conv-top">
+            <div class="conv-name">
+              {{ c.status === 'Pending' ? 'Message Request' : convName(c) }}
+            </div>
+            <div class="conv-time">{{ (c.lastMessageAt || c.createdAt) | date:'shortTime' }}</div>
+          </div>
+          <div class="conv-bottom">
+            <div class="conv-preview">{{ convPreview(c) }}</div>
+            <div
+              class="conv-status-pill"
+              *ngIf="c.status==='Pending' || (c.status==='Active' && isOnline(c))"
+              [class.pending]="c.status==='Pending'"
+              [class.active]="c.status==='Active' && isOnline(c)"
+            >{{ c.status }}</div>
+          </div>
+        </div>
+        <div class="conv-dot" title="Online" *ngIf="isOnline(c)"></div>
+        <span class="badge" *ngIf="unreadCount(c) > 0">{{ unreadCount(c) }}</span>
+      </div>
+    </div>
+
+    <!-- Removed Join Conversation panel -->
+
+    <div class="panel">
+      <div class="panel-title">New Request</div>
+      <div class="panel-row">
+        <input type="text" placeholder="Creator username" [ngModel]="creatorUsernameForRequest()" (ngModelChange)="creatorUsernameForRequest.set($event)" />
+      </div>
+      <div class="panel-row">
+        <input type="text" placeholder="Say hello and describe your need" [ngModel]="firstMessageText()" (ngModelChange)="firstMessageText.set($event)" />
+      </div>
+      <div class="panel-row">
+        <button class="primary" (click)="createMessageRequest()">Send Request</button>
+      </div>
+    </div>
+
+    <div class="status" [class.connected]="connectionState()==='connected'" [class.connecting]="connectionState()==='connecting'">
+      <span class="dot"></span>
+      <span class="txt">{{ connectionState() }}</span>
+    </div>
+  </aside>
+
+  <main class="chat">
+    <header class="chat-header">
+      <div class="chat-peer">
+        <div class="peer-avatar" [style.background-image]="peerAvatarUrl() ? 'url(' + peerAvatarUrl() + ')' : ''" [class.has-img]="!!peerAvatarUrl()">
+          <span *ngIf="!peerAvatarUrl()" class="avatar-fallback">{{ peerInitials() }}</span>
+        </div>
+        <div class="peer-meta">
+          <div class="peer-name">{{ peerUsername() || (currentConversationId() ? 'Conversation' : 'No conversation selected') }}</div>
+          <div class="peer-status">
+            <span class="status-dot" [class.online]="isPeerOnline()" [class.offline]="!isPeerOnline()"></span>
+            <span>{{ isPeerOnline() ? 'Online' : 'Offline' }}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="message-list" #messageList id="messageList">
+      <div class="banner pending" *ngIf="isCurrentPending()">
+        <div class="icon">✉️</div>
+        <div class="content">
+          <div class="title">Message request</div>
+          <div class="msg-preview" *ngIf="currentPendingRequestText() as txt">
+            <div class="label">Preview</div>
+            <div class="bubble">{{ txt }}</div>
+          </div>
+          <ng-container *ngIf="isCreatorInCurrent(); else waitingNotice">
+            <div class="hint">Accept to start chatting, or decline to remove this request.</div>
+            <div class="actions">
+              <button class="btn" (click)="declineCurrentPending()">Decline</button>
+              <button class="btn primary" (click)="acceptCurrentPending()">Accept</button>
+            </div>
+          </ng-container>
+          <ng-template #waitingNotice>
+            <div class="hint">Waiting for the creator to accept your message request.</div>
+          </ng-template>
+        </div>
+      </div>
+      <button class="btn ghost small" *ngIf="hasMoreHistory" (click)="loadOlder()">Load older messages</button>
+      <ng-container *ngFor="let m of messages(); trackBy: trackByMessageId; let i = index">
+        <div *ngIf="!isCaptionOfPrevious(i)" class="message fade-in" [class.me]="isMine(m)">
+          <div class="bubble">
+            <ng-container *ngIf="isImageMessage(m); else textMessage">
+              <img class="chat-img" [src]="imageUrl(m)" alt="image" (load)="onImgLoad($event)" (error)="onImgError($event)" />
+              <!-- Prefer caption from same message body; fallback to legacy caption pairing -->
+              <div class="caption" *ngIf="m.body && m.body.trim()">{{ m.body }}</div>
+              <ng-container *ngIf="!(m.body && m.body.trim())">
+                <div class="caption" *ngIf="getCaptionFor(i) as cap">{{ cap }}</div>
+              </ng-container>
+            </ng-container>
+            <ng-template #textMessage>
+              <div class="body">{{ m.body }}</div>
+            </ng-template>
+            <div class="meta">
+              <span class="time">{{ m.createdAt | date:'shortTime' }}</span>
+              <span class="ticks" *ngIf="isMine(m)">
+                <span class="tick" [class.seen]="isSeen(m)"></span>
+                <span class="tick" [class.seen]="isSeen(m)"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+      <div *ngIf="typingFromOther()" class="typing-row">
+        <div class="bubble typing">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+      <div *ngIf="currentConversationId() && messages().length===0" class="empty">
+        <div>No messages yet. Start the conversation.</div>
+      </div>
+    </section>
+
+    <!-- Pending deadline proposal banner -->
+    <section *ngIf="pendingProposal() as prop" class="banner info">
+      <div class="icon">⏳</div>
+      <div class="content">
+        <div class="title">Pending deadline change</div>
+        <div class="msg-preview">
+          <div class="label">Proposed new deadline</div>
+          <div class="bubble">{{ prop.proposedDeadlineUtc | date:'medium' }}</div>
+        </div>
+        <div class="msg-preview" *ngIf="prop.reason">
+          <div class="label">Reason</div>
+          <div class="bubble">{{ prop.reason }}</div>
+        </div>
+        <div class="actions" *ngIf="!isCreatorInCurrent()">
+          <button class="btn" (click)="respondToProposal(false)">Decline</button>
+          <button class="btn primary" (click)="respondToProposal(true)">Accept</button>
+        </div>
+        <div class="hint" *ngIf="isCreatorInCurrent()">Waiting for customer to respond.</div>
+      </div>
+    </section>
+    
+    <!-- Inline Service Request Form (Customer only) -->
+    <section *ngIf="currentConversationId() && !isCreatorInCurrent()" class="service-form-section">
+      <button class="btn ghost small" (click)="toggleServiceForm()">{{ showServiceForm() ? 'Hide' : 'Request a service' }}</button>
+      <div *ngIf="showServiceForm()" class="service-form-wrapper">
+        <app-service-request-form [conversationId]="currentConversationId()" (submitted)="onServiceSubmitted($event)"></app-service-request-form>
+      </div>
+    </section>
+
+    <!-- Current conversation's service requests & actions -->
+    <section *ngIf="currentServiceRequests().length > 0" class="service-requests">
+      <div class="sr-item" *ngFor="let sr of currentServiceRequests()">
+        <div class="sr-main">
+          <div class="sr-row"><span class="lbl">Status:</span> <span class="val">{{ formatStatus(sr.status) }}</span></div>
+          <div class="sr-row" *ngIf="sr.proposedBudget != null">
+            <span class="lbl">Proposed budget:</span>
+            <span class="val">{{ (sr.currency || 'USD') }} {{ sr.proposedBudget | number:'1.0-2' }}</span>
+          </div>
+          <div class="sr-row" *ngIf="sr.deadlineUtc"><span class="lbl">Deadline:</span> <span class="val">{{ sr.deadlineUtc | date:'medium' }} <span class="muted small">(in {{ timeLeft(sr.deadlineUtc) }})</span></span></div>
+          <div class="sr-req">{{ sr.requirements }}</div>
+        </div>
+        <div class="sr-actions">
+          <!-- Creator can accept when status is Pending (initial) -->
+          <button class="btn primary" *ngIf="isCreatorInCurrent() && sr.status==='Pending'" (click)="acceptServiceRequest(sr)">Accept</button>
+          <!-- Customer can confirm when status is AcceptedByCreator -->
+          <button class="btn primary" *ngIf="!isCreatorInCurrent() && sr.status==='AcceptedByCreator'" (click)="confirmServiceRequest(sr)">Confirm</button>
+          <!-- Creator can update deadline only after customer confirms -->
+          <button class="btn" *ngIf="isCreatorInCurrent() && sr.status==='ConfirmedByCustomer'" (click)="updateServiceDeadline(sr)">Update deadline</button>
+        </div>
+      </div>
+    </section>
+    <section *ngIf="currentConversationId() && currentServiceRequests().length === 0" class="service-requests empty">
+      <div class="sr-empty">No service requests for this conversation yet.</div>
+    </section>
+
+
+    <footer class="composer" *ngIf="!isCurrentPending()">
+      <div class="left">
+        <button class="icon" title="Emoji" (click)="openEmojiPicker()">😊</button>
+        <button class="icon" title="Attach" (click)="toggleAttachMenu()">📎</button>
+        <input #fileInput type="file" accept="image/*" hidden (change)="onFileSelected($event)" />
+      </div>
+      <div class="composer-main">
+        <div class="attachment-preview" *ngIf="pendingAttachment as pa">
+          <div class="thumb" *ngIf="pa.isImage; else fileChip">
+            <img [src]="pa.previewUrl" alt="preview" />
+            <button class="remove" (click)="removePendingAttachment()" title="Remove">✕</button>
+          </div>
+          <ng-template #fileChip>
+            <div class="file-chip">
+              <span class="icon">📎</span>
+              <span class="name">{{ pa.file.name }}</span>
+              <button class="remove" (click)="removePendingAttachment()" title="Remove">✕</button>
+            </div>
+          </ng-template>
+          <div class="caption-hint" *ngIf="pa.isImage">Add a caption below</div>
+        </div>
+        <input class="input" type="text" [placeholder]="pendingAttachment ? 'Add a caption…' : 'Type a message'" [ngModel]="newMessage()" (ngModelChange)="newMessage.set($event)" (keyup.enter)="send()" (input)="onTyping()" />
+      </div>
+      <button class="send" (click)="send()" [disabled]="!currentConversationId() || (!newMessage().trim() && !pendingAttachment)">Send</button>
+
+      <!-- Emoji picker overlay -->
+      <div class="emoji-popover" *ngIf="showEmoji()">
+        <div class="emoji-grid">
+          <button class="emoji" *ngFor="let e of ['😀','😂','😉','😊','😍','😘','😎','🤔','😢','👏','🙌','👍','🔥','✨','🎉','❤️']" (click)="addEmoji(e)">{{ e }}</button>
+        </div>
+      </div>
+
+      <!-- Attachment options menu -->
+      <div class="attach-menu" *ngIf="showAttachMenu()">
+        <button (click)="triggerFile()">Upload image</button>
+        <button *ngIf="!isCreatorInCurrent()" (click)="requestService()">Request service</button>
+        <button *ngIf="isCreatorInCurrent()" (click)="sendProduct()">Send product</button>
+        <button *ngIf="isCreatorInCurrent() && hasConfirmedServiceRequest()" (click)="requestExtension()">Request deadline extension</button>
+      </div>
+    </footer>
+  </main>
+</div>

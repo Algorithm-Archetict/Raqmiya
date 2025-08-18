@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ProductListItemDTO } from '../models/product/product-list-item.dto';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 export interface DiscoverFeedResponse {
   mostWished: ProductListItemDTO[];
@@ -17,7 +18,7 @@ export interface DiscoverFeedResponse {
   providedIn: 'root'
 })
 export class AnalyticsService {
-  private readonly baseUrl = 'http://localhost:5255/api/products';
+  private readonly baseUrl = `${environment.apiUrl}/products`;
 
   constructor(
     private http: HttpClient,
