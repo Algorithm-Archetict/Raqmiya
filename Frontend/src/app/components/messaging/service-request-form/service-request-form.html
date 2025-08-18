@@ -1,0 +1,41 @@
+<div class="sr-form" role="form" aria-labelledby="sr-form-title">
+  <h4 id="sr-form-title">Request a Custom Service</h4>
+
+  <div class="form-group">
+    <label for="requirements">Requirements</label>
+    <textarea id="requirements" [(ngModel)]="requirements" rows="5"
+              placeholder="Describe what you need (scope, deliverables, references, deadlines)..."></textarea>
+    <small class="hint">Minimum 10 characters. Be specific to help the creator estimate accurately.</small>
+  </div>
+
+  <div class="grid-2">
+    <div class="form-group">
+      <label for="budget">Proposed Budget (optional)</label>
+      <div class="budget-row">
+        <select aria-label="Currency" [(ngModel)]="currency">
+          <option *ngFor="let c of currencies" [value]="c.code">{{ c.symbol }} {{ c.code }}</option>
+        </select>
+        <input id="budget" type="number" min="0" step="0.01" [(ngModel)]="proposedBudget" placeholder="e.g., 49.99" />
+      </div>
+      <small class="hint">You can leave the budget empty and discuss with the creator.</small>
+    </div>
+
+    <div class="form-group tips">
+      <label>Tips</label>
+      <ul>
+        <li>Attach references in chat after sending the request.</li>
+        <li>Agree on deadline after acceptance. Creator will propose a date.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button [disabled]="loading" (click)="submit()" class="btn-primary">
+      <span *ngIf="!loading">Send Request</span>
+      <span *ngIf="loading">Sending...</span>
+    </button>
+  </div>
+
+  <div *ngIf="error" class="alert error" role="alert">{{ error }}</div>
+  <div *ngIf="success" class="alert success" role="status">{{ success }}</div>
+</div>

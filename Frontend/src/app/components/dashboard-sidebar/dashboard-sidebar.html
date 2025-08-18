@@ -39,6 +39,21 @@
           </a>
         </li>
         <li class="nav-item">
+          <a routerLink="/messages" class="nav-link" [class.active]="isActive('/messages')">
+            <i class="fas fa-comments"></i>
+            <span>Messages</span>
+            <ng-container *ngIf="(messagesUnread$ | async) as msgCnt">
+              <span class="badge" *ngIf="msgCnt > 0">{{ msgCnt }}</span>
+            </ng-container>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/deliveries" class="nav-link" [class.active]="isActive('/deliveries')">
+            <i class="fas fa-box-open"></i>
+            <span>Deliveries</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a routerLink="/discover" class="nav-link" [class.active]="isActive('/discover')">
             <i class="fas fa-compass"></i>
             <span>Discover</span>

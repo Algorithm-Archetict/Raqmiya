@@ -27,6 +27,22 @@ namespace API.Controllers
             _context = context;
         }
 
+        [HttpGet("my-monthly-series")]
+        public async Task<IActionResult> GetMyMonthlySeries([FromQuery] string currency = "USD")
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var points = await _revenueAnalyticsService.GetCreatorMonthlySeriesAsync(userId, currency);
+                return Ok(new { series = points, currency });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting monthly revenue series for current user");
+                return StatusCode(500, new { error = "Failed to get monthly revenue series" });
+            }
+        }
+
         [HttpGet("creator/{creatorId}")]
         public async Task<IActionResult> GetCreatorRevenueAnalytics(int creatorId, [FromQuery] string currency = "USD")
         {
@@ -69,6 +85,21 @@ namespace API.Controllers
             {
                 _logger.LogError(ex, "Error getting monthly revenue for creator {CreatorId}", creatorId);
                 return StatusCode(500, new { error = "Failed to get monthly revenue" });
+            }
+        }
+
+        [HttpGet("creator/{creatorId}/monthly-series")]
+        public async Task<IActionResult> GetCreatorMonthlySeries(int creatorId, [FromQuery] string currency = "USD")
+        {
+            try
+            {
+                var points = await _revenueAnalyticsService.GetCreatorMonthlySeriesAsync(creatorId, currency);
+                return Ok(new { series = points, currency });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting monthly revenue series for creator {CreatorId}", creatorId);
+                return StatusCode(500, new { error = "Failed to get monthly revenue series" });
             }
         }
 

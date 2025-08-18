@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { DashboardSidebar } from '../../../dashboard-sidebar/dashboard-sidebar';
@@ -10,6 +11,7 @@ import { ProductService } from '../../../../core/services/product.service';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { FileDTO } from '../../../../core/models/product/file.dto';
 import { TagService } from '../../../../core/services/tag.service';
+import { MessagingHttpService } from '../../../../core/services/messaging-http.service';
 import { TagDTO } from '../../../../core/models/product/tag.dto';
 import { CATEGORIES, Category } from '../../../../core/data/categories';
 
@@ -28,7 +30,7 @@ interface ProductDetail {
             DashboardSidebar, 
           ],
   templateUrl: './add-new-product.html',
-  styleUrl: './add-new-product.css'
+  styleUrls: ['./add-new-product.css']
 })
 export class AddNewProduct implements OnInit {
   productForm!: FormGroup;
@@ -69,7 +71,19 @@ export class AddNewProduct implements OnInit {
   selectedTags: TagDTO[] = [];
   newTagInput: string = '';
 
-  constructor(private fb: FormBuilder, private productService: ProductService, private tagService: TagService) {}
+  // Private Delivery Mode state
+  privateDeliveryMode = false;
+  privateDeliveryConversationId: string | null = null;
+  privateDeliveryServiceRequestId: string | null = null;
+
+  constructor(
+    private fb: FormBuilder,
+    private productService: ProductService,
+    private tagService: TagService,
+    private route: ActivatedRoute,
+    private messaging: MessagingHttpService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.parentCategories = CATEGORIES.filter(c => !c.parentId);
@@ -89,20 +103,37 @@ export class AddNewProduct implements OnInit {
       updates: ['']
     });
     
-    // Load available tags
+    // Detect private delivery mode via query params
+    this.route.queryParamMap.subscribe(params => {
+      this.privateDeliveryMode = params.get('privateDelivery') === '1';
+      this.privateDeliveryConversationId = params.get('conversationId');
+      this.privateDeliveryServiceRequestId = params.get('serviceRequestId');
+      if (this.privateDeliveryMode) {
+        // Force private products for deliveries
+        this.productForm.get('isPublic')?.setValue(false);
+      }
+    });
+
+    // Load available tags only if category is pre-selected
     this.loadAvailableTags();
   }
 
   // Tag management methods
   loadAvailableTags(): void {
-    this.tagService.getAllTags().subscribe({
-      next: (tags) => {
-        this.availableTags = tags;
-      },
-      error: (error) => {
-        console.error('Failed to load tags:', error);
-      }
-    });
+    const categoryId = this.productForm.get('categoryId')?.value as number | null;
+    if (categoryId) {
+      this.tagService.getTagsForCategories([categoryId]).subscribe({
+        next: (tags: TagDTO[]) => {
+          this.availableTags = (tags || []).slice(0, 10);
+        },
+        error: (error: any) => {
+          console.error('Failed to load tags:', error);
+          this.availableTags = [];
+        }
+      });
+    } else {
+      this.availableTags = [];
+    }
   }
 
   getFilteredAvailableTags(): TagDTO[] {
@@ -203,11 +234,14 @@ export class AddNewProduct implements OnInit {
     this.selectedParentCategory = category;
     this.productForm.get('categoryId')?.setValue(category.id);
     this.subcategories = CATEGORIES.filter(c => c.parentId === category.id);
+    // Refresh tags for selected category
+    this.loadAvailableTags();
   }
 
   selectSubcategory(categoryId: string | number): void {
     const id = typeof categoryId === 'string' ? parseInt(categoryId, 10) : categoryId;
     this.productForm.get('categoryId')?.setValue(id);
+    this.loadAvailableTags();
   }
 
   onNameChange(): void {
@@ -260,7 +294,8 @@ export class AddNewProduct implements OnInit {
         coverImageUrl: undefined,
         thumbnailImageUrl: undefined,
         previewVideoUrl: formValue.previewVideoUrl,
-        isPublic: formValue.isPublic,
+        // Ensure private when in private delivery mode
+        isPublic: this.privateDeliveryMode ? false : formValue.isPublic,
         permalink: formValue.permalink,
         // NEW: Enhanced product details
         features: this.productFeatures,
@@ -272,13 +307,34 @@ export class AddNewProduct implements OnInit {
       };
 
       this.productService.createProduct(productDto).subscribe({
-        next: (createdProduct) => {
+        next: async (createdProduct) => {
           this.productId = createdProduct.id;
-          this.currentStep = 'customize';
+          // Navigate to Content step so creator can upload files immediately
+          this.currentStep = 'content';
           this.isSubmitting = false;
           this.successMessage = 'Product created successfully!';
-          
-          // Upload images after product creation
+
+          // If in private delivery mode, immediately deliver this product to the conversation
+          if (this.privateDeliveryMode && this.privateDeliveryConversationId) {
+            try {
+              const price = parseFloat(formValue.price);
+              const currency = formValue.currency;
+              await this.messaging.deliverProduct(this.privateDeliveryConversationId, {
+                serviceRequestId: this.privateDeliveryServiceRequestId || undefined,
+                productId: createdProduct.id,
+                price,
+                currency,
+              }).toPromise();
+              // Navigate to messages or deliveries after successful delivery
+              await this.router.navigate(['/messages'], { queryParams: { conversationId: this.privateDeliveryConversationId } });
+              return; // Skip image uploads for private delivery flow
+            } catch (err: any) {
+              this.errorMessage = 'Product created but failed to deliver: ' + (err?.message || 'Unknown error');
+            }
+          }
+
+          // Optional post-create image uploads can still be performed
+          // but do not block moving to Content step
           this.uploadImagesAfterCreation();
         },
         error: (error) => {

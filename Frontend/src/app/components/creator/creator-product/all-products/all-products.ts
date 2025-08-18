@@ -25,7 +25,7 @@ interface Product {
   selector: 'app-all-products',
   imports: [CommonModule, FormsModule, RouterModule, DashboardSidebar],
   templateUrl: './all-products.html',
-  styleUrl: './all-products.css'
+  styleUrls: ['./all-products.css']
 })
 export class AllProducts implements OnInit {
   products: Product[] = [];
@@ -45,6 +45,9 @@ export class AllProducts implements OnInit {
   productToDelete: Product | null = null;
   loading: boolean = false;
   error: string = '';
+  // Deletion UI state
+  isDeleting: boolean = false;
+  deletionError: string = '';
 
   selectedCurrency: string = 'USD';
   availableCurrencies = ['USD', 'EGP'];
@@ -250,14 +253,25 @@ export class AllProducts implements OnInit {
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.productToDelete = null;
+    this.isDeleting = false;
+    this.deletionError = '';
   }
 
   confirmDelete() {
     if (this.productToDelete) {
+      this.isDeleting = true;
+      this.deletionError = '';
       this.productService.deleteProduct(this.productToDelete.id).subscribe({
         next: (response: any) => {
           // Remove product from the array
           this.products = this.products.filter(p => p.id !== this.productToDelete!.id);
+          // Keep originals in sync so currency switching won't resurrect deleted items
+          this.originalProducts = this.originalProducts.filter(p => p.id !== this.productToDelete!.id);
+          // Refresh analytics-derived totals to reflect deletion in current view
+          this.totalSalesByCurrency[this.selectedCurrency] = this.products.reduce((t, p) => t + (p.sales || 0), 0);
+          // Re-apply currency mapping to ensure revenue/price stay consistent
+          this.applyCurrency();
+          this.isDeleting = false;
           this.closeDeleteModal();
           
           // Show appropriate message based on deletion type
@@ -268,8 +282,10 @@ export class AllProducts implements OnInit {
         },
         error: (error: any) => {
           console.error('Error deleting product:', error);
-          // Show error message to the user
-          // You might want to add a toast notification here
+          this.isDeleting = false;
+          // Surface error in the modal so the user knows what failed
+          const msg = (error?.error?.message || error?.message || 'Failed to delete product.');
+          this.deletionError = msg;
         }
       });
     }

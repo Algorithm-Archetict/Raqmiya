@@ -10,6 +10,7 @@ namespace Core.Interfaces
         Task<decimal> GetCreatorWeeklyRevenueAsync(int creatorId, string currency = "USD");
         Task<List<TopProductDTO>> GetCreatorTopProductsAsync(int creatorId, int count = 5, string currency = "USD");
         Task<decimal> ConvertCurrencyAsync(decimal amount, string fromCurrency, string toCurrency);
+        Task<List<MonthlyRevenuePointDTO>> GetCreatorMonthlySeriesAsync(int creatorId, string currency = "USD");
     }
 }
 

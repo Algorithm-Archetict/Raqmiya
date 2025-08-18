@@ -1,5 +1,5 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, ViewEncapsulation } from '@angular/core';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -14,7 +14,9 @@ import { OrderService } from '../../core/services/order.service';
 import { HierarchicalCategoryNav } from '../shared/hierarchical-category-nav/hierarchical-category-nav';
 import { AnalyticsService, DiscoverFeedResponse } from '../../core/services/analytics.service';
 import { ProductCarouselComponent } from '../shared/product-carousel/product-carousel.component';
-import Swal from 'sweetalert2';
+import { UserService } from '../../core/services/user.service';
+import Swal from 'sweetalert2/dist/sweetalert2.js';
+import { environment } from '../../../environments/environment';
 
 interface Product {
   id: number;
@@ -49,6 +51,14 @@ export class Discover implements OnInit, AfterViewInit {
 
   // Search and Filter Properties
   searchQuery: string = '';
+  private searchInput$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
+  showSuggestions = false;
+  suggestions: Array<{ type: 'creator'|'product'; id: number; label: string; sublabel?: string; image?: string }> = [];
+  // Full-page search results
+  searchResultsMode = false;
+  searchResultProducts: Product[] = [];
+  searchResultCreators: Array<{ id: number; username: string }> = [];
   selectedCategory: number | 'all' = 'all';
   priceRange: number = 1000; // Increased from 50 to 1000 to show all products
   selectedRating: number = 0;
@@ -91,7 +101,8 @@ export class Discover implements OnInit, AfterViewInit {
     private tagService: TagService,
     private authService: AuthService,
     private orderService: OrderService,
-    private analyticsService: AnalyticsService
+    private analyticsService: AnalyticsService,
+    private userService: UserService
   ) {}
 
   ngOnInit() {
@@ -116,6 +127,11 @@ export class Discover implements OnInit, AfterViewInit {
           this.loadProductsByCategory(event.id, event.includeNested);
         }
       });
+
+    // Debounced in-memory search suggestions (products + creators from loaded products)
+    this.searchInput$
+      .pipe(debounceTime(150), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe((q) => this.buildSuggestions(q));
   }
 
   ngAfterViewInit() {
@@ -131,6 +147,125 @@ export class Discover implements OnInit, AfterViewInit {
     });
   }
 
+  // ======= SEARCH SUGGESTIONS =======
+  onSearch() {
+    this.searchInput$.next(this.searchQuery || '');
+    this.showSuggestions = !!this.searchQuery?.trim();
+  }
+
+  onSearchFocus() {
+    if (this.suggestions.length > 0) this.showSuggestions = true;
+  }
+
+  onSearchBlur() {
+    // Delay to allow click on suggestion
+    setTimeout(() => (this.showSuggestions = false), 120);
+  }
+
+  private buildSuggestions(query: string) {
+    const q = (query || '').trim().toLowerCase();
+    if (!q) {
+      this.suggestions = [];
+      return;
+    }
+
+    // Products by title
+    const productMatches = this.allProducts
+      .filter(p => (p.title || '').toLowerCase().includes(q))
+      .slice(0, 10)
+      .map(p => ({
+        type: 'product' as const,
+        id: p.id,
+        label: p.title,
+        sublabel: `by ${p.creator}`,
+        image: p.image
+      }));
+
+    // Creators by username (unique)
+    const creatorMap = new Map<number, { id: number; username: string }>();
+    for (const p of this.allProducts) {
+      if (p.creatorId && p.creator && p.creator.toLowerCase().includes(q)) {
+        if (!creatorMap.has(p.creatorId)) creatorMap.set(p.creatorId, { id: p.creatorId, username: p.creator });
+      }
+    }
+    const localCreatorMatches = Array.from(creatorMap.values())
+      .map(c => ({ type: 'creator' as const, id: c.id, label: c.username }));
+
+    // Fetch additional creators from backend
+    this.userService.searchCreators(q, 20, 0).subscribe(apiCreators => {
+      const apiCreatorMatches = (apiCreators || []).map(c => ({ type: 'creator' as const, id: c.id, label: c.username }));
+      // Merge unique by id
+      const mergedCreatorsMap = new Map<number, { type: 'creator'; id: number; label: string }>();
+      [...localCreatorMatches, ...apiCreatorMatches].forEach(c => { if (!mergedCreatorsMap.has(c.id)) mergedCreatorsMap.set(c.id, c); });
+      const mergedCreators = Array.from(mergedCreatorsMap.values());
+      this.suggestions = [...mergedCreators, ...productMatches];
+    });
+  }
+
+  // Execute full search and show results page
+  executeSearch() {
+    const q = (this.searchQuery || '').trim().toLowerCase();
+    if (!q) {
+      this.searchResultsMode = false;
+      this.searchResultProducts = [];
+      this.searchResultCreators = [];
+      return;
+    }
+
+    // Products matching title or creator
+    this.searchResultProducts = this.allProducts.filter(p =>
+      (p.title || '').toLowerCase().includes(q) || (p.creator || '').toLowerCase().includes(q)
+    );
+
+    // Unique creators matching
+    const creatorMap = new Map<number, { id: number; username: string }>();
+    for (const p of this.allProducts) {
+      if (p.creatorId && p.creator && p.creator.toLowerCase().includes(q)) {
+        if (!creatorMap.has(p.creatorId)) creatorMap.set(p.creatorId, { id: p.creatorId, username: p.creator });
+      }
+    }
+    // Start with local creators
+    this.searchResultCreators = Array.from(creatorMap.values());
+
+    // Also query backend for global creators
+    this.userService.searchCreators(q, 100, 0).subscribe(apiCreators => {
+      const existing = new Set(this.searchResultCreators.map(c => c.id));
+      for (const c of apiCreators || []) {
+        if (!existing.has(c.id)) {
+          this.searchResultCreators.push({ id: c.id, username: c.username });
+        }
+      }
+    });
+
+    this.searchResultsMode = true;
+    this.showSuggestions = false;
+  }
+
+  selectSuggestion(item: { type: 'creator'|'product'; id: number }) {
+    if (item.type === 'creator') {
+      this.viewCreatorProfile(item.id);
+    } else {
+      this.viewProduct(item.id);
+    }
+    this.showSuggestions = false;
+  }
+
+  // ======= NAVIGATION HELPERS =======
+  viewProduct(id: number) {
+    this.router.navigate(['/discover', id]);
+  }
+
+  viewCreatorProfile(creatorId?: number) {
+    if (!creatorId) return;
+    this.router.navigate(['/creator', creatorId]);
+  }
+
+  // Tidy up streams
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   // Helper method to ensure image URLs are full URLs
   private ensureFullUrl(url: string | null | undefined): string {
     if (!url) return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&h=200&fit=crop';
@@ -142,7 +277,8 @@ export class Discover implements OnInit, AfterViewInit {
     
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
-      return `http://localhost:5255${url}`;
+      const baseHost = environment.apiUrl.replace(/\/api$/, '');
+      return `${baseHost}${url}`;
     }
     
     return url;
@@ -564,12 +700,7 @@ export class Discover implements OnInit, AfterViewInit {
     this.router.navigate(['/products']);
   }
 
-  // Navigate to creator profile
-  viewCreatorProfile(creatorId?: number) {
-    if (creatorId) {
-      this.router.navigate(['/creator', creatorId]);
-    }
-  }
+  
 
   // Show login prompt for anonymous users
   showLoginPrompt(action: string) {
@@ -877,10 +1008,8 @@ export class Discover implements OnInit, AfterViewInit {
     product.wishlistHovered = isHovered;
   }
 
-  // Search functionality
-  onSearch() {
-    this.applyFilters();
-  }
+  // Search functionality handled by debounced searchInput$ in ngOnInit and buildSuggestions()
+  // onSearch() is already defined earlier to push into searchInput$
 
   // Helper method to convert CategoryService ProductListItemDTO to the main ProductListItemDTO
   private convertCategoryProductToMain(product: import('../../core/services/category.service').ProductListItemDTO): ProductListItemDTO {
@@ -1238,10 +1367,7 @@ export class Discover implements OnInit, AfterViewInit {
     }, 1000);
   }
 
-  // Navigate to product details
-  viewProduct(productId: number) {
-    this.router.navigate(['/discover', productId]);
-  }
+  // viewProduct is defined earlier among navigation helpers
 
   // Navigate to library for purchased products
   goToLibrary(product: Product, event: Event) {

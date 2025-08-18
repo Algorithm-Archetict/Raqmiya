@@ -27,10 +27,28 @@
                   [(ngModel)]="searchQuery"
                   [ngModelOptions]="{standalone: true}"
                   (input)="onSearch()"
+                  (focus)="onSearchFocus()"
+                  (blur)="onSearchBlur()"
+                  (keyup.enter)="executeSearch()"
                 >
-                <button class="btn btn-primary search-btn">
+                <button class="btn btn-primary search-btn" (click)="executeSearch()">
                   <i class="fas fa-search"></i>
                 </button>
+                
+                <!-- Suggestions Dropdown -->
+                <div class="search-suggestions" *ngIf="showSuggestions && suggestions.length > 0">
+                  <div 
+                    class="suggestion-item"
+                    *ngFor="let s of suggestions"
+                    (mousedown)="selectSuggestion(s)"
+                  >
+                    <i class="fas" [ngClass]="s.type === 'creator' ? 'fa-user' : 'fa-box-open'"></i>
+                    <div class="suggestion-text">
+                      <div class="label">{{ s.label }}</div>
+                      <div class="sublabel" *ngIf="s.sublabel">{{ s.sublabel }}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -48,7 +66,7 @@
   </header>
 
   <!-- Analytics-Driven Carousels Section -->
-  <main class="analytics-carousels-section">
+  <main class="analytics-carousels-section" *ngIf="!searchResultsMode">
     <div class="container">
       
       <!-- Most Wished Products -->
@@ -179,6 +197,66 @@
       </div>
     </div>
   </main>
+
+  <!-- Full Search Results -->
+  <section class="search-results" *ngIf="searchResultsMode">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-12 d-flex align-items-center justify-content-between">
+          <h2 class="section-title m-0">Search results for "{{ searchQuery }}"</h2>
+          <button class="btn btn-outline" (click)="searchResultsMode = false">Clear search</button>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <!-- Creators Column -->
+        <div class="col-lg-4" *ngIf="searchResultCreators.length > 0">
+          <div class="card results-card">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="fas fa-user"></i>
+              <span>Creators</span>
+            </div>
+            <div class="list-group list-group-flush">
+              <a 
+                class="list-group-item list-group-item-action creator-result"
+                *ngFor="let c of searchResultCreators"
+                (click)="viewCreatorProfile(c.id)"
+              >
+                <i class="fas fa-user-circle me-2"></i>
+                {{ c.username }}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="col-lg-8">
+          <div class="row g-4">
+            <div class="col-md-6" *ngFor="let product of searchResultProducts">
+              <div class="product-card grid-item" (click)="viewProduct(product.id)">
+                <div class="product-image">
+                  <img [src]="product.image" [alt]="product.title">
+                </div>
+                <div class="product-info">
+                  <h5 class="product-title">{{ product.title }}</h5>
+                  <p class="product-creator">
+                    by <a class="creator-link" (click)="$event.stopPropagation(); viewCreatorProfile(product.creatorId)">{{ product.creator }}</a>
+                  </p>
+                  <div class="product-meta">
+                    <span class="product-price">${{ product.price }}</span>
+                    <div class="product-rating">
+                      <i class="fas fa-star text-warning"></i>
+                      <span>{{ product.rating | number:'1.1-1' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- Curated Products Section (Legacy) -->
   <section class="curated-section" *ngIf="selectedCategory !== 'all' || searchQuery.trim()">

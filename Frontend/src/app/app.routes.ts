@@ -33,6 +33,8 @@ import { WishList } from './components/wish-list/wish-list';
 import { CategoryPageComponent } from './components/category-page/category-page.component';
 import { ReceiptComponent } from './components/receipt/receipt';
 import { CreatorProfileComponent } from './components/creator/creator-profile/creator-profile';
+import { ChatPage } from './features/messaging/chat.page';
+import { DeliveriesComponent } from './components/deliveries/deliveries';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -74,10 +76,13 @@ export const routes: Routes = [
         ]
     },
     {path:"dashboard",component:Dashboard, canActivate: [AuthGuard]}, // Both creators and customers can access dashboard
+    {path:"messages", component: ChatPage, canActivate: [AuthGuard]},
+    {path:"deliveries", component: DeliveriesComponent, canActivate: [AuthGuard]},
 
     // Creator-only routes - require authentication and creator role
     {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
     {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
+    {path:"deliveries/new",component:AddNewProduct, canActivate: [CreatorGuard]},
     {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Sales, canActivate: [CreatorGuard]},

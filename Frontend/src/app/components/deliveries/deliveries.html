@@ -1,0 +1,42 @@
+<div class="deliveries-page">
+  <h2>Deliveries</h2>
+  <div *ngIf="loading" class="muted">Loading…</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div class="split">
+    <section *ngIf="creatorDeliveries.length > 0">
+      <h3>Deliveries You've Sent</h3>
+      <div class="item" *ngFor="let d of creatorDeliveries">
+        <div class="main">
+          <div class="row"><span class="lbl">Customer:</span> <span class="val">{{ getCounterpartyUsername(d) }}</span></div>
+          <div class="row"><span class="lbl">Product:</span> <a class="val" [routerLink]="['/discover', d.productId]">{{ d.productName || 'Delivered Product' }}</a></div>
+          <div class="row"><span class="lbl">Price:</span> <span class="val">{{ (d.currency || 'USD') + ' ' + (d.price | number:'1.0-2') }}</span></div>
+          <div class="row"><span class="lbl">Status:</span> <span class="val">{{ d.status }}</span></div>
+          <div class="row" *ngIf="d.createdAt"><span class="lbl">Delivered:</span> <span class="val">{{ d.createdAt | date:'medium' }}</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="customerDeliveries.length > 0">
+      <h3>Deliveries For You</h3>
+      <div class="item" *ngFor="let d of customerDeliveries">
+        <div class="main">
+          <div class="row"><span class="lbl">Creator:</span> <span class="val">{{ getCounterpartyUsername(d) }}</span></div>
+          <div class="row"><span class="lbl">Product:</span> <a class="val" [routerLink]="['/discover', d.productId]">{{ d.productName || 'Delivered Product' }}</a></div>
+          <div class="row"><span class="lbl">Price:</span> <span class="val">{{ (d.currency || 'USD') + ' ' + (d.price | number:'1.0-2') }}</span></div>
+          <div class="row"><span class="lbl">Status:</span> <span class="val">{{ d.status }}</span></div>
+          <div class="row" *ngIf="d.createdAt"><span class="lbl">Delivered:</span> <span class="val">{{ d.createdAt | date:'medium' }}</span></div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" *ngIf="d.status !== 'Purchased'" (click)="purchase(d)">Purchase</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div *ngIf="!loading && !error && deliveries.length === 0" class="empty-state">
+    <div class="icon">📦</div>
+    <div class="title">No deliveries yet</div>
+    <div class="subtitle">When deliveries are made, they will appear here.</div>
+  </div>
+</div>
