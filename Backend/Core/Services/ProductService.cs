@@ -554,12 +554,8 @@ namespace Core.Services
 
         public async Task<List<TagDTO>> GetTagsForCategoriesAsync(List<int> categoryIds)
         {
-            // This method would get tags specifically linked to the provided category IDs
-            // You might need a new repository method for this:
-            // IProductRepository.GetTagsByCategoriesAsync(IEnumerable<int> categoryIds)
-            // For now, returning all tags or a placeholder.
-            _logger.LogWarning("GetTagsForCategoriesAsync not fully implemented - returns all tags or placeholder.");
-            return await GetAllTagsAsync(); // Placeholder
+            var tags = await _tagRepository.GetTagsByCategoriesAsync(categoryIds);
+            return tags.Select(t => new TagDTO { Id = t.Id, Name = t.Name }).ToList();
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByCategoryAsync(int categoryId, int pageNumber, int pageSize)
