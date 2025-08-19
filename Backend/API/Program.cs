@@ -64,6 +64,7 @@ builder.Services.AddScoped<ISubscriptionService, Core.Services.SubscriptionServi
             builder.Services.AddScoped<IRecommendationService, RecommendationService>(); // NEW: Recommendation Service for Personalization
             builder.Services.AddScoped<IStripeService, Core.Services.StripeService>(); // NEW: Stripe Service
             builder.Services.AddScoped<IRevenueAnalyticsService, Core.Services.RevenueAnalyticsService>(); // NEW: Revenue Analytics Service
+            builder.Services.AddScoped<IPlatformAnalyticsService, Core.Services.PlatformAnalyticsService>(); // NEW: Platform Analytics Service
             builder.Services.AddScoped<ICurrencyService, Core.Services.CurrencyService>(); // NEW: Currency Service
             // Messaging
             builder.Services.AddScoped<IConversationRepository, ConversationRepository>();

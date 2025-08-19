@@ -26,6 +26,7 @@ namespace Raqmiya.Infrastructure
         public DbSet<OfferCode> OfferCodes { get; set; } = default!;
         public DbSet<Order> Orders { get; set; } = default!;
         public DbSet<OrderItem> OrderItems { get; set; } = default!;
+        public DbSet<PlatformCommission> PlatformCommissions { get; set; } = default!;
 
 
         //i added
@@ -54,6 +55,10 @@ namespace Raqmiya.Infrastructure
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<PlatformCommission>(entity =>
+            {
+                entity.HasIndex(e => new { e.OrderId, e.OrderItemId });
+            });
 
             // Configure composite primary keys for join tables
             

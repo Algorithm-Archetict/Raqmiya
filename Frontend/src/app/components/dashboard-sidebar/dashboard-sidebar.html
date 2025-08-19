@@ -44,6 +44,18 @@
             <span>Create User</span>
           </a>
         </li>
+        <li class="nav-item" *ngIf="isAdmin">
+          <a routerLink="/admin/products" class="nav-link" [class.active]="isActive('/admin/products')">
+            <i class="fas fa-boxes"></i>
+            <span>Manage Products</span>
+          </a>
+        </li>
+        <li class="nav-item" *ngIf="isAdmin">
+          <a routerLink="/admin/platform-profit" class="nav-link" [class.active]="isActive('/admin/platform-profit')">
+            <i class="fas fa-coins"></i>
+            <span>Platform Profit</span>
+          </a>
+        </li>
         
         <!-- Customer-only menu items -->
         <li class="nav-item">

@@ -1,0 +1,65 @@
+<div class="platform-profit">
+  <div class="header">
+    <h2>Platform Profit</h2>
+    <div class="currency">
+      <label>Currency</label>
+      <select #currencySelect [value]="currency" (change)="setCurrency(currencySelect.value)">
+        <option value="USD">USD</option>
+        <option value="EGP">EGP</option>
+        <option value="EUR">EUR</option>
+        <option value="GBP">GBP</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="cards" *ngIf="summary">
+    <div class="card">
+      <div class="title">Total Commission</div>
+      <div class="value">{{ summary.totalCommission | number:'1.0-2' }} {{ summary.currency }}</div>
+    </div>
+    <div class="card">
+      <div class="title">This Month</div>
+      <div class="value">{{ summary.monthlyCommission | number:'1.0-2' }} {{ summary.currency }}</div>
+    </div>
+    <div class="card">
+      <div class="title">This Week</div>
+      <div class="value">{{ summary.weeklyCommission | number:'1.0-2' }} {{ summary.currency }}</div>
+    </div>
+  </div>
+
+  <div class="series" *ngIf="series.length > 0">
+    <h3>Monthly Revenue</h3>
+    <div class="series-row" *ngFor="let point of series">
+      <div class="month">{{ point.month }}/{{ point.year }}</div>
+      <div class="bar">
+        <div class="bar-fill" [style.width.%]="(point.revenue / (series[series.length-1].revenue || 1)) * 100"></div>
+      </div>
+      <div class="amount">{{ point.revenue | number:'1.0-2' }} {{ point.currency }}</div>
+    </div>
+  </div>
+
+  <div class="top-lists" *ngIf="topCreators.length > 0 || topProducts.length > 0">
+    <div class="top-section" *ngIf="topCreators.length > 0">
+      <h3>Top Creators</h3>
+      <div class="top-item" *ngFor="let creator of topCreators">
+        <span class="name">{{ creator.name }}</span>
+        <span class="amount">{{ creator.amount | number:'1.0-2' }} {{ creator.currency }}</span>
+      </div>
+    </div>
+
+    <div class="top-section" *ngIf="topProducts.length > 0">
+      <h3>Top Products</h3>
+      <div class="top-item" *ngFor="let product of topProducts">
+        <span class="name">{{ product.name }}</span>
+        <span class="amount">{{ product.amount | number:'1.0-2' }} {{ product.currency }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading analytics...</p>
+  </div>
+</div>
+
+

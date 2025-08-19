@@ -40,6 +40,8 @@ import { Services } from './components/services/services';
 import { AdminUserList } from './components/Admin/admin-user-list/admin-user-list';
 import { AdminUserCreate } from './components/Admin/admin-user-create/admin-user-create';
 import { AdminUserDetail } from './components/Admin/admin-user-detail/admin-user-detail';
+import { AdminProductList } from './components/Admin/admin-product-list/admin-product-list';
+import { AdminPlatformProfit } from './components/Admin/platform-profit/admin-platform-profit';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -97,6 +99,8 @@ export const routes: Routes = [
     {path:"admin/users",component:AdminUserList, canActivate: [AdminGuard]},
     {path:"admin/users/create",component:AdminUserCreate, canActivate: [AdminGuard]},
     {path:"admin/users/:id",component:AdminUserDetail, canActivate: [AdminGuard]},
+    {path:"admin/products",component:AdminProductList, canActivate: [AdminGuard]},
+    {path:"admin/platform-profit",component:AdminPlatformProfit, canActivate: [AdminGuard]},
 
     // {path:"wishlist",component:WishList, canActivate: [AuthGuard]}, // Commented out - now under library
     {path:"**",component:NotFound},

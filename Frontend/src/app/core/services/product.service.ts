@@ -169,8 +169,8 @@ export class ProductService {
   }
 
   // ======= ADMIN / MODERATION =======
-  getByStatus(status: string): Observable<ProductListItemDTO[]> {
-    return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/admin/by-status?status=${status}`);
+  getByStatus(status: string, pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    return this.http.get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}/admin/by-status?status=${status}&pageNumber=${pageNumber}&pageSize=${pageSize}`);
   }
 
   approve(id: number): Observable<void> {
@@ -180,6 +180,27 @@ export class ProductService {
   reject(id: number, reason: string): Observable<void> {
     const payload: ProductModerationRequestDTO = { action: 'reject', reason };
     return this.http.post<void>(`${this.apiUrl}/admin/${id}/reject`, payload);
+  }
+
+  activate(id: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/admin/${id}/activate`, {});
+  }
+
+  deactivate(id: number): Observable<void> {
+    // Use soft delete by calling the delete endpoint which sets isDeleted = true
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  // Get admin statistics for all product statuses
+  getAdminStatistics(): Observable<{
+    totalProducts: number;
+    pendingProducts: number;
+    publishedProducts: number;
+    rejectedProducts: number;
+    activeProducts: number;
+    inactiveProducts: number;
+  }> {
+    return this.http.get<any>(`${this.apiUrl}/admin/statistics`);
   }
 
   // ======= REVIEWS =======

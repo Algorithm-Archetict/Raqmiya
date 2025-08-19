@@ -605,16 +605,19 @@ namespace Raqmiya.Infrastructure
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(p => new Product {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Creator = p.Creator,
-                    PublishedAt = p.PublishedAt,
-                    Status = p.Status
-                })
                 .AsNoTracking()
                 .Include(p => p.Creator)
+                .Include(p => p.Category)
+                .Include(p => p.Reviews)
+                .Include(p => p.OrderItems)
                 .ToListAsync();
+        }
+
+        public async Task<int> GetProductsCountByStatusAsync(string status)
+        {
+            return await _context.Products
+                .Where(p => p.Status == status)
+                .CountAsync();
         }
 
         public async Task<bool> ApproveProductAsync(int productId, int adminId)

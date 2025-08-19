@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Raqmiya.Infrastructure;
 using Shared.DTOs.ProductDTOs;
+using Shared.DTOs.CategoryDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -665,23 +666,34 @@ namespace Core.Services
         public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize)
         {
             var products = await _productRepository.GetProductsByStatusAsync(status, pageNumber, pageSize);
-            var total = products.Count;
+            var totalCount = await _productRepository.GetProductsCountByStatusAsync(status);
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            
             var items = products.Select(p => new ProductListItemDTO
             {
                 Id = p.Id,
                 Name = p.Name,
                 Status = p.Status,
-                CreatorUsername = p.Creator.Username,
-                //PublishedAt = p.PublishedAt,
+                CreatorUsername = p.Creator?.Username ?? "Unknown",
+                CreatorId = p.CreatorId,
+                PublishedAt = p.PublishedAt,
                 Price = p.Price,
-                Currency = p.Currency
+                Currency = p.Currency,
+                CoverImageUrl = p.CoverImageUrl,
+                ThumbnailImageUrl = p.ThumbnailImageUrl,
+                AverageRating = p.Reviews?.Any() == true ? p.Reviews.Average(r => r.Rating) : 0,
+                SalesCount = p.OrderItems?.Count() ?? 0,
+                IsPublic = p.IsPublic,
+                Category = p.Category != null ? new CategoryDTO { Id = p.CategoryId, Name = p.Category.Name } : new CategoryDTO { Id = 0, Name = "Uncategorized" }
             }).ToList();
+            
             return new PagedResultDTO<ProductListItemDTO>
             {
                 Items = items,
-                TotalCount = total,
+                TotalCount = totalCount,
                 PageNumber = pageNumber,
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalPages = totalPages
             };
         }
 

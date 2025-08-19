@@ -1,0 +1,43 @@
+.platform-profit { padding: var(--spacing-lg); }
+.header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+.header h2 { margin: 0; }
+.currency { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.currency label { font-weight: 500; color: var(--text-secondary); }
+.currency select { padding: 0.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-elevated); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+.card { padding: var(--spacing-lg); background: var(--bg-elevated); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.card .title { color: var(--text-secondary); margin-bottom: var(--spacing-xs); font-size: 0.9rem; }
+.card .value { font-size: 1.6rem; font-weight: 700; color: var(--primary-color); }
+
+.series { display: grid; gap: var(--spacing-xs); margin-bottom: var(--spacing-lg); }
+.series h3 { margin-bottom: var(--spacing-md); }
+.series-row { display: grid; grid-template-columns: 100px 1fr 140px; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm); }
+.series-row .month { font-weight: 500; }
+.series-row .bar { height: 20px; background: var(--bg-secondary); border-radius: var(--radius-sm); overflow: hidden; }
+.series-row .bar-fill { height: 100%; background: var(--primary-color); transition: width 0.3s ease; }
+.series-row .amount { text-align: right; font-weight: 500; }
+
+.top-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-lg); }
+.top-section h3 { margin-bottom: var(--spacing-md); }
+.top-item { display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-sm); background: var(--bg-elevated); border-radius: var(--radius-md); margin-bottom: var(--spacing-xs); }
+.top-item .name { font-weight: 500; }
+.top-item .amount { color: var(--primary-color); font-weight: 600; }
+
+.loading { text-align: center; padding: var(--spacing-xl); }
+.loading .spinner { width: 40px; height: 40px; border: 4px solid var(--bg-secondary); border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto var(--spacing-md); }
+.loading p { color: var(--text-secondary); }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .header { flex-direction: column; align-items: stretch; }
+  .cards { grid-template-columns: 1fr; }
+  .series-row { grid-template-columns: 80px 1fr 100px; font-size: 0.9rem; }
+  .top-lists { grid-template-columns: 1fr; }
+}
+
+

@@ -21,6 +21,7 @@ namespace Core.Services
         private readonly IPaymentMethodBalanceRepository _paymentMethodBalanceRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<OrderService> _logger;
+        private readonly RaqmiyaDbContext _context;
 
         public OrderService(
             IOrderRepository orderRepository, 
@@ -29,7 +30,8 @@ namespace Core.Services
             IPurchaseValidationService purchaseValidationService,
             IPaymentMethodBalanceRepository paymentMethodBalanceRepository,
             IMapper mapper,
-            ILogger<OrderService> logger)
+            ILogger<OrderService> logger,
+            RaqmiyaDbContext context)
         {
             _orderRepository = orderRepository;
             _licenseRepository = licenseRepository;
@@ -38,6 +40,7 @@ namespace Core.Services
             _paymentMethodBalanceRepository = paymentMethodBalanceRepository;
             _mapper = mapper;
             _logger = logger;
+            _context = context;
         }
 
         public async Task<OrderDTO?> GetOrderByIdAsync(int id)
@@ -123,6 +126,8 @@ namespace Core.Services
                     if (product == null) continue;
 
                     var totalItemCost = item.UnitPrice * item.Quantity;
+                    var commission = Math.Round(totalItemCost * 0.10m, 2, MidpointRounding.AwayFromZero);
+                    var creatorNet = totalItemCost - commission;
 
                     // Deduct from buyer's selected payment method
                     var buyerSelectedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(order.BuyerId);
@@ -139,13 +144,13 @@ namespace Core.Services
                             buyerCurrency);
                     }
 
-                    // Add to creator's selected payment method
+                    // Add to creator's selected payment method (after 10% commission)
                     var creatorSelectedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(product.CreatorId);
                     if (creatorSelectedBalance != null)
                     {
                         // Convert currency if needed
                         var creatorCurrency = creatorSelectedBalance.Currency;
-                        var convertedAmount = ConvertCurrencyForBalance(totalItemCost, product.Currency, creatorCurrency).Result;
+                        var convertedAmount = ConvertCurrencyForBalance(creatorNet, product.Currency, creatorCurrency).Result;
                         
                         await _paymentMethodBalanceRepository.UpdateBalanceAsync(
                             product.CreatorId, 
@@ -153,9 +158,26 @@ namespace Core.Services
                             convertedAmount, 
                             creatorCurrency);
                     }
+
+                    // Persist commission ledger entry in USD for analytics (also store original product currency)
+                    var commissionUsd = ConvertCurrencyForBalance(commission, product.Currency, "USD").Result;
+                    var commissionEntry = new PlatformCommission
+                    {
+                        OrderId = order.Id,
+                        OrderItemId = item.Id,
+                        ProductId = product.Id,
+                        CreatorId = product.CreatorId,
+                        CommissionAmount = commission,
+                        CommissionCurrency = product.Currency,
+                        CommissionUsd = commissionUsd,
+                        PercentageApplied = 0.10m,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.PlatformCommissions.Add(commissionEntry);
                 }
 
-                _logger.LogInformation("Balances updated for order {OrderId}", order.Id);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Balances and platform commission entries updated for order {OrderId}", order.Id);
             }
             catch (Exception ex)
             {

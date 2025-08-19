@@ -121,6 +121,7 @@ namespace Raqmiya.Infrastructure
 
         // --- Admin Moderation ---
         Task<List<Product>> GetProductsByStatusAsync(string status, int pageNumber, int pageSize);
+        Task<int> GetProductsCountByStatusAsync(string status);
         Task<bool> ApproveProductAsync(int productId, int adminId);
         Task<bool> RejectProductAsync(int productId, int adminId, string reason);
         Task AddModerationLogAsync(ModerationLog log);

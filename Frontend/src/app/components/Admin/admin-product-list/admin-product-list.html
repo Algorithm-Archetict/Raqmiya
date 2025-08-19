@@ -1,0 +1,305 @@
+<div class="admin-product-list">
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header-section">
+      <div class="header-content">
+        <h1 class="page-title">
+          <i class="fas fa-boxes"></i>
+          Product Management
+        </h1>
+        <p class="page-subtitle">Manage and approve products on the platform</p>
+      </div>
+      <div class="header-actions">
+        <button (click)="refreshProducts()" class="btn btn-primary">
+          <i class="fas fa-sync-alt"></i>
+          Refresh Products
+        </button>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ getTotalProductsCount() }}</h3>
+            <p class="stat-label">Total Products</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon pending">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ getPendingProductsCount() }}</h3>
+            <p class="stat-label">Pending Approval</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon published">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ getPublishedProductsCount() }}</h3>
+            <p class="stat-label">Published</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon rejected">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ getRejectedProductsCount() }}</h3>
+            <p class="stat-label">Rejected</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon active">
+            <i class="fas fa-star"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ getActiveProductsCount() }}</h3>
+            <p class="stat-label">Active</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon inactive">
+            <i class="fas fa-pause-circle"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ getInactiveProductsCount() }}</h3>
+            <p class="stat-label">Inactive</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filters-section">
+      <div class="filters-content">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm" 
+            placeholder="Search products by name, creator, or description..."
+            class="search-input"
+          >
+        </div>
+        <div class="filter-controls">
+          <select [(ngModel)]="status" (change)="onStatusChange()" class="filter-select">
+            <option value="pending">Pending Approval</option>
+            <option value="published">Published</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <button (click)="load()" class="btn btn-outline">
+            <i class="fas fa-sync-alt"></i>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="alert alert-danger">
+      <div class="alert-content">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div class="alert-message">
+          <h5>Error</h5>
+          <p>{{ error }}</p>
+        </div>
+      </div>
+      <button class="btn btn-outline-danger" (click)="retryLoad()">
+        <i class="fas fa-redo"></i> Retry
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-section">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading products...</p>
+      </div>
+    </div>
+
+    <!-- Products Table -->
+    <div *ngIf="!isLoading && !error" class="products-section">
+      <div class="table-container">
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Creator</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let product of getFilteredProducts()" class="product-row">
+              <!-- Product Info -->
+              <td class="product-info">
+                <div class="product-content">
+                  <div class="product-image">
+                    <img *ngIf="product.coverImageUrl" [src]="product.coverImageUrl" [alt]="product.name">
+                    <div *ngIf="!product.coverImageUrl" class="image-fallback">
+                      <i class="fas fa-image"></i>
+                    </div>
+                  </div>
+                  <div class="product-details">
+                    <h4 class="product-name">{{ product.name }}</h4>
+                    <div class="product-category">
+                      <span class="category-badge">{{ product.category && product.category.name ? product.category.name : 'Uncategorized' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Creator -->
+              <td class="product-creator">
+                <div class="creator-info">
+                  <div class="creator-avatar">
+                    <div class="avatar-fallback">
+                      {{ getCreatorInitials(product.creatorUsername || 'Unknown') }}
+                    </div>
+                  </div>
+                  <div class="creator-details">
+                    <span class="creator-name">{{ product.creatorUsername || 'Unknown' }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Price -->
+              <td class="product-price">
+                <span class="price-amount">
+                  {{ product.price | currency:product.currency:'symbol':'1.0-2' }}
+                </span>
+              </td>
+
+              <!-- Status -->
+              <td class="product-status">
+                <span class="status-badge" [class]="getStatusBadgeClass(product.status || '')">
+                  <i [class]="getStatusIcon(product.status || '')"></i>
+                  {{ getStatusText(product.status || '') }}
+                </span>
+              </td>
+
+              <!-- Created Date -->
+              <td class="product-created">
+                <span class="created-date">
+                  {{ product.publishedAt | date:'MMM dd, yyyy' }}
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="product-actions">
+                <div class="action-buttons">
+                  <button 
+                    *ngIf="product.status === 'pending'"
+                    (click)="approveProduct(product.id)" 
+                    class="btn btn-sm btn-success" 
+                    title="Approve Product"
+                  >
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button 
+                    *ngIf="product.status === 'pending'"
+                    (click)="rejectProduct(product.id)" 
+                    class="btn btn-sm btn-danger" 
+                    title="Reject Product"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                  <button 
+                    *ngIf="product.status === 'published'"
+                    (click)="deactivateProduct(product.id)" 
+                    class="btn btn-sm btn-warning" 
+                    title="Deactivate Product"
+                  >
+                    <i class="fas fa-pause"></i>
+                  </button>
+                  <button 
+                    *ngIf="product.status === 'inactive'"
+                    (click)="activateProduct(product.id)" 
+                    class="btn btn-sm btn-success" 
+                    title="Activate Product"
+                  >
+                    <i class="fas fa-play"></i>
+                  </button>
+                  <a 
+                    [routerLink]="['/discover', product.id]" 
+                    class="btn btn-sm btn-outline" 
+                    title="View Product"
+                    target="_blank"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Empty State -->
+        <div *ngIf="getFilteredProducts().length === 0" class="empty-state">
+          <div class="empty-content">
+            <i class="fas fa-box-open"></i>
+            <h3>No products found</h3>
+            <p>No products match your current filters. Try adjusting your search criteria.</p>
+            <button (click)="clearFilters()" class="btn btn-primary">
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div *ngIf="!isLoading && !error && totalPages > 1" class="pagination-section">
+        <div class="pagination-info">
+          <span class="pagination-text">
+            Showing {{ getStartIndex() }}-{{ getEndIndex() }} of {{ totalItems }} products
+          </span>
+        </div>
+        
+        <div class="pagination-controls">
+          <button 
+            (click)="previousPage()" 
+            [disabled]="!hasPreviousPage"
+            class="btn btn-outline pagination-btn"
+            title="Previous Page"
+          >
+            <i class="fas fa-chevron-left"></i>
+            Previous
+          </button>
+          
+          <div class="page-numbers">
+            <button 
+              *ngFor="let pageNum of getPageNumbers()" 
+              (click)="goToPage(pageNum)"
+              [class.active]="pageNum === page"
+              class="btn btn-outline page-btn"
+            >
+              {{ pageNum }}
+            </button>
+          </div>
+          
+          <button 
+            (click)="nextPage()" 
+            [disabled]="!hasNextPage"
+            class="btn btn-outline pagination-btn"
+            title="Next Page"
+          >
+            Next
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+

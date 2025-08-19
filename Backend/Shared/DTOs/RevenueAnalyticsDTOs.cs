@@ -38,5 +38,22 @@ namespace Shared.DTOs
         public decimal Revenue { get; set; }
         public string Currency { get; set; } = "USD";
     }
+
+    public class PlatformRevenueSummaryDTO
+    {
+        public decimal TotalCommission { get; set; }
+        public decimal MonthlyCommission { get; set; }
+        public decimal WeeklyCommission { get; set; }
+        public string Currency { get; set; } = "USD";
+        public DateTime LastUpdated { get; set; }
+    }
+
+    public class TopEntityDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string Currency { get; set; } = "USD";
+    }
 }
 
