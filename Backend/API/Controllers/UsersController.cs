@@ -1,12 +1,18 @@
-using API.Constants;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using AutoMapper;
+using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.DTOs.AuthDTOs;
-using System.Security.Claims;
-using System.Security.Cryptography;
+using Shared.DTOs.ProductDTOs;
+using API.Constants;
+using API.Services;
 using Raqmiya.Infrastructure;
-using AutoMapper;
-using Core.Interfaces;
+// ...existing code...
 
 namespace API.Controllers
 {
@@ -22,19 +28,55 @@ namespace API.Controllers
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
         private readonly IWebHostEnvironment _environment;
+        private readonly API.Services.FileModerationService _fileModerationService;
+
+
+        // Helper method to get current user ID from claims
+        protected int GetCurrentUserId()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+                throw new UnauthorizedAccessException("User ID claim missing or invalid.");
+            return userId;
+        }
+
+        // Helper method to generate salt
+        private static string GenerateSalt()
+        {
+            byte[] saltBytes = new byte[16];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(saltBytes);
+            }
+
+            return Convert.ToBase64String(saltBytes);
+        }
+
+        // Helper method to hash password
+        private static string HashPassword(string password, string salt)
+        {
+            var saltBytes = Convert.FromBase64String(salt);
+            using (var pbkdf2 = new Rfc2898DeriveBytes(password, saltBytes, 10000, HashAlgorithmName.SHA256))
+            {
+                byte[] hash = pbkdf2.GetBytes(32);
+                return Convert.ToBase64String(hash);
+            }
+        }
 
         public UsersController(
-            IUserRepository userRepository, 
-            ILogger<UsersController> logger, 
+            IUserRepository userRepository,
+            ILogger<UsersController> logger,
             IMapper mapper,
             IEmailService emailService,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            API.Services.FileModerationService fileModerationService)
         {
             _userRepository = userRepository;
             _logger = logger;
             _mapper = mapper;
             _emailService = emailService;
             _environment = environment;
+            _fileModerationService = fileModerationService;
         }
 
         /// <summary>
@@ -51,7 +93,8 @@ namespace API.Controllers
 
                 var request = HttpContext.Request;
                 var baseUrl = $"{request.Scheme}://{request.Host}";
-                var profileImageUrl = !string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.StartsWith("http")
+                var profileImageUrl = !string.IsNullOrEmpty(user.ProfileImageUrl) &&
+                                      !user.ProfileImageUrl.StartsWith("http")
                     ? baseUrl + user.ProfileImageUrl
                     : user.ProfileImageUrl;
 
@@ -72,7 +115,8 @@ namespace API.Controllers
         /// <param name="skip">Number of results to skip for paging</param>
         [HttpGet("creators")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<object>>> SearchCreators([FromQuery] string? query = null, [FromQuery] int take = 50, [FromQuery] int skip = 0)
+        public async Task<ActionResult<IEnumerable<object>>> SearchCreators([FromQuery] string? query = null,
+            [FromQuery] int take = 50, [FromQuery] int skip = 0)
         {
             try
             {
@@ -114,48 +158,51 @@ namespace API.Controllers
             {
                 var userId = GetCurrentUserId();
                 _logger.LogInformation("User {UserId} requesting their profile data", userId);
-                
+
                 // Debug: Log all claims for security monitoring
                 var claims = User.Claims.Select(c => $"{c.Type}: {c.Value}").ToList();
                 _logger.LogInformation("User claims: {Claims}", string.Join(", ", claims));
-                
+
                 // Additional security validation - ensure user exists and is active
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) 
+                if (user == null)
                 {
                     _logger.LogWarning("User {UserId} not found in database - potential security issue", userId);
                     return NotFound("User not found");
                 }
-                
+
                 // Validate user is active
                 if (!user.IsActive)
                 {
                     _logger.LogWarning("Inactive user {UserId} attempting to access profile", userId);
                     return Unauthorized("Account is inactive");
                 }
-                
+
                 // Validate that the JWT claims match the database user
                 var jwtUsername = User.FindFirstValue(ClaimTypes.Name);
                 var jwtEmail = User.FindFirstValue(ClaimTypes.Email);
-                
+
                 if (jwtUsername != user.Username || jwtEmail != user.Email)
                 {
-                    _logger.LogError("JWT claims mismatch for user {UserId}. JWT Username: {JwtUsername}, DB Username: {DbUsername}", 
+                    _logger.LogError(
+                        "JWT claims mismatch for user {UserId}. JWT Username: {JwtUsername}, DB Username: {DbUsername}",
                         userId, jwtUsername, user.Username);
                     return Unauthorized("Token validation failed");
                 }
-                
+
                 var userProfile = _mapper.Map<UserProfileDTO>(user);
-                
+
                 // Convert relative image URL to full URL if it exists
-                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) && !userProfile.ProfileImageUrl.StartsWith("http"))
+                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) &&
+                    !userProfile.ProfileImageUrl.StartsWith("http"))
                 {
                     var request = HttpContext.Request;
                     var baseUrl = $"{request.Scheme}://{request.Host}";
                     userProfile.ProfileImageUrl = $"{baseUrl}{userProfile.ProfileImageUrl}";
                 }
-                
-                _logger.LogInformation("Successfully retrieved profile data for user {UserId} ({Username})", userId, user.Username);
+
+                _logger.LogInformation("Successfully retrieved profile data for user {UserId} ({Username})", userId,
+                    user.Username);
                 return Ok(userProfile);
             }
             catch (Exception ex)
@@ -179,25 +226,25 @@ namespace API.Controllers
             {
                 var userId = GetCurrentUserId();
                 _logger.LogInformation("User {UserId} attempting to update their profile", userId);
-                
+
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) 
+                if (user == null)
                 {
                     _logger.LogWarning("User {UserId} not found in database during profile update", userId);
                     return NotFound("User not found");
                 }
-                
+
                 // Validate user is active
                 if (!user.IsActive)
                 {
                     _logger.LogWarning("Inactive user {UserId} attempting to update profile", userId);
                     return Unauthorized("Account is inactive");
                 }
-                
+
                 // Validate that the JWT claims match the database user
                 var jwtUsername = User.FindFirstValue(ClaimTypes.Name);
                 var jwtEmail = User.FindFirstValue(ClaimTypes.Email);
-                
+
                 if (jwtUsername != user.Username || jwtEmail != user.Email)
                 {
                     _logger.LogError("JWT claims mismatch during profile update for user {UserId}", userId);
@@ -205,25 +252,29 @@ namespace API.Controllers
                 }
 
                 // Update user properties with validation
-                if (!string.IsNullOrWhiteSpace(dto.Username)) 
+                if (!string.IsNullOrWhiteSpace(dto.Username))
                 {
                     // Check if username is already taken by another user
                     var existingUser = await _userRepository.GetUserByUsernameAsync(dto.Username);
                     if (existingUser != null && existingUser.Id != userId)
                     {
-                        _logger.LogWarning("User {UserId} attempted to use username already taken by user {ExistingUserId}", 
+                        _logger.LogWarning(
+                            "User {UserId} attempted to use username already taken by user {ExistingUserId}",
                             userId, existingUser.Id);
                         return BadRequest("Username is already taken");
                     }
+
                     user.Username = dto.Username;
                 }
-                
+
                 // Handle ProfileDescription: update if not null, but allow empty string to clear it
-                if (dto.ProfileDescription != null) 
-                    user.ProfileDescription = string.IsNullOrWhiteSpace(dto.ProfileDescription) ? null : dto.ProfileDescription;
-                    
+                if (dto.ProfileDescription != null)
+                    user.ProfileDescription = string.IsNullOrWhiteSpace(dto.ProfileDescription)
+                        ? null
+                        : dto.ProfileDescription;
+
                 // Handle ProfileImageUrl: update if not null, allow empty string to remove image
-                if (dto.ProfileImageUrl != null) 
+                if (dto.ProfileImageUrl != null)
                 {
                     // If empty string, set to null to remove image
                     if (string.IsNullOrWhiteSpace(dto.ProfileImageUrl))
@@ -234,26 +285,33 @@ namespace API.Controllers
                     else
                     {
                         // Validate URL format if not empty
-                        if (!Uri.TryCreate(dto.ProfileImageUrl, UriKind.Absolute, out _) && 
+                        if (!Uri.TryCreate(dto.ProfileImageUrl, UriKind.Absolute, out _) &&
                             !dto.ProfileImageUrl.StartsWith("/"))
                         {
-                            _logger.LogWarning("Invalid ProfileImageUrl format for user {UserId}: {Url}", userId, dto.ProfileImageUrl);
+                            _logger.LogWarning("Invalid ProfileImageUrl format for user {UserId}: {Url}", userId,
+                                dto.ProfileImageUrl);
                             return BadRequest("Invalid ProfileImageUrl format");
                         }
+
                         user.ProfileImageUrl = dto.ProfileImageUrl;
-                        _logger.LogInformation("Profile image URL updated for user {UserId}: {ImageUrl}", userId, dto.ProfileImageUrl);
+                        _logger.LogInformation("Profile image URL updated for user {UserId}: {ImageUrl}", userId,
+                            dto.ProfileImageUrl);
                     }
                 }
 
                 await _userRepository.UpdateAsync(user);
-                _logger.LogInformation("Profile updated successfully for user {UserId} ({Username})", userId, user.Username);
-                _logger.LogInformation("User ProfileImageUrl after update: {ProfileImageUrl}", user.ProfileImageUrl ?? "null");
+                _logger.LogInformation("Profile updated successfully for user {UserId} ({Username})", userId,
+                    user.Username);
+                _logger.LogInformation("User ProfileImageUrl after update: {ProfileImageUrl}",
+                    user.ProfileImageUrl ?? "null");
 
                 var userProfile = _mapper.Map<UserProfileDTO>(user);
-                _logger.LogInformation("Mapped UserProfileDTO ProfileImageUrl: {ProfileImageUrl}", userProfile.ProfileImageUrl ?? "null");
-                
+                _logger.LogInformation("Mapped UserProfileDTO ProfileImageUrl: {ProfileImageUrl}",
+                    userProfile.ProfileImageUrl ?? "null");
+
                 // Convert relative image URL to full URL if it exists
-                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) && !userProfile.ProfileImageUrl.StartsWith("http"))
+                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) &&
+                    !userProfile.ProfileImageUrl.StartsWith("http"))
                 {
                     var request = HttpContext.Request;
                     var baseUrl = $"{request.Scheme}://{request.Host}";
@@ -290,25 +348,25 @@ namespace API.Controllers
             {
                 var userId = GetCurrentUserId();
                 _logger.LogInformation("User {UserId} attempting to change password", userId);
-                
+
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) 
+                if (user == null)
                 {
                     _logger.LogWarning("User {UserId} not found in database during password change", userId);
                     return NotFound("User not found");
                 }
-                
+
                 // Validate user is active
                 if (!user.IsActive)
                 {
                     _logger.LogWarning("Inactive user {UserId} attempting to change password", userId);
                     return Unauthorized("Account is inactive");
                 }
-                
+
                 // Validate that the JWT claims match the database user
                 var jwtUsername = User.FindFirstValue(ClaimTypes.Name);
                 var jwtEmail = User.FindFirstValue(ClaimTypes.Email);
-                
+
                 if (jwtUsername != user.Username || jwtEmail != user.Email)
                 {
                     _logger.LogError("JWT claims mismatch during password change for user {UserId}", userId);
@@ -317,7 +375,8 @@ namespace API.Controllers
 
                 // Verify current password
                 var saltBytes = Convert.FromBase64String(user.Salt);
-                using (var pbkdf2 = new Rfc2898DeriveBytes(dto.CurrentPassword, saltBytes, 10000, HashAlgorithmName.SHA256))
+                using (var pbkdf2 =
+                       new Rfc2898DeriveBytes(dto.CurrentPassword, saltBytes, 10000, HashAlgorithmName.SHA256))
                 {
                     var hash = Convert.ToBase64String(pbkdf2.GetBytes(32));
                     if (hash != user.HashedPassword)
@@ -339,7 +398,8 @@ namespace API.Controllers
                 user.HashedPassword = newHash;
 
                 await _userRepository.UpdateAsync(user);
-                _logger.LogInformation("Password changed successfully for user {UserId} ({Username})", userId, user.Username);
+                _logger.LogInformation("Password changed successfully for user {UserId} ({Username})", userId,
+                    user.Username);
 
                 // Send email notification
                 _ = Task.Run(async () =>
@@ -388,73 +448,50 @@ namespace API.Controllers
             {
                 var userId = GetCurrentUserId();
                 _logger.LogInformation("User {UserId} attempting to upload profile image", userId);
-                
+
                 if (image == null || image.Length == 0)
-                {
-                    _logger.LogWarning("No image file provided for user {UserId}", userId);
-                    var errorResponse = new UploadImageResponseDTO
-                    {
-                        Success = false,
-                        Message = "No image file provided"
-                    };
-                    return BadRequest(errorResponse);
-                }
+                    return BadRequest(
+                        new UploadImageResponseDTO { Success = false, Message = "No image file provided" });
 
                 // Validate file size (max 5MB)
                 if (image.Length > 5 * 1024 * 1024)
-                {
-                    _logger.LogWarning("File size too large for user {UserId}: {Size} bytes", userId, image.Length);
-                    var errorResponse = new UploadImageResponseDTO
-                    {
-                        Success = false,
-                        Message = "File size must be less than 5MB"
-                    };
-                    return BadRequest(errorResponse);
-                }
+                    return BadRequest(new UploadImageResponseDTO
+                        { Success = false, Message = "File size must be less than 5MB" });
 
                 // Validate file type
                 var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
                 if (!allowedTypes.Contains(image.ContentType.ToLower()))
-                {
-                    _logger.LogWarning("Invalid file type for user {UserId}: {ContentType}", userId, image.ContentType);
-                    var errorResponse = new UploadImageResponseDTO
-                    {
-                        Success = false,
-                        Message = "Invalid file type. Please upload a JPG, PNG, or GIF image"
-                    };
-                    return BadRequest(errorResponse);
-                }
+                    return BadRequest(new UploadImageResponseDTO
+                        { Success = false, Message = "Invalid file type. Please upload a JPG, PNG, or GIF image" });
 
                 var user = await _userRepository.GetByIdAsync(userId);
-                if (user == null) 
-                {
-                    _logger.LogWarning("User {UserId} not found in database during image upload", userId);
+                if (user == null)
                     return NotFound("User not found");
-                }
-                
+
                 // Validate user is active
                 if (!user.IsActive)
-                {
-                    _logger.LogWarning("Inactive user {UserId} attempting to upload profile image", userId);
                     return Unauthorized("Account is inactive");
-                }
-                
+
                 // Validate that the JWT claims match the database user
                 var jwtUsername = User.FindFirstValue(ClaimTypes.Name);
                 var jwtEmail = User.FindFirstValue(ClaimTypes.Email);
-                
+
                 if (jwtUsername != user.Username || jwtEmail != user.Email)
-                {
-                    _logger.LogError("JWT claims mismatch during image upload for user {UserId}", userId);
                     return Unauthorized("Token validation failed");
+
+                // Moderate image using Google Vision API
+                using (var stream = image.OpenReadStream())
+                {
+                    bool isSafe = await _fileModerationService.IsImageSafeAsync(stream);
+                    if (!isSafe)
+                        return BadRequest(new UploadImageResponseDTO
+                            { Success = false, Message = "Sensitive or inappropriate content detected." });
                 }
 
                 // Create uploads directory if it doesn't exist
                 var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "profile-images");
                 if (!Directory.Exists(uploadsPath))
-                {
                     Directory.CreateDirectory(uploadsPath);
-                }
 
                 // Generate unique filename with user ID to prevent conflicts
                 var fileExtension = Path.GetExtension(image.FileName);
@@ -462,17 +499,18 @@ namespace API.Controllers
                 var filePath = Path.Combine(uploadsPath, fileName);
 
                 // Save file
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
                 {
-                    await image.CopyToAsync(stream);
+                    await image.CopyToAsync(fileStream);
                 }
 
                 // Update user profile with new image URL
                 var imageUrl = $"/uploads/profile-images/{fileName}";
                 user.ProfileImageUrl = imageUrl;
                 await _userRepository.UpdateAsync(user);
-                
-                _logger.LogInformation("Profile image uploaded successfully for user {UserId} ({Username})", userId, user.Username);
+
+                _logger.LogInformation("Profile image uploaded successfully for user {UserId} ({Username})", userId,
+                    user.Username);
 
                 // Get the full URL for the response
                 var request = HttpContext.Request;
@@ -491,45 +529,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error uploading profile image");
-                var errorResponse = new UploadImageResponseDTO
-                {
-                    Success = false,
-                    Message = "An error occurred while uploading the image"
-                };
                 return Problem("An error occurred while uploading the image.");
-            }
-        }
-
-        /// <summary>
-        /// Extracts the current user's ID from the JWT claims.
-        /// </summary>
-        /// <returns>The current user's ID.</returns>
-        /// <exception cref="UnauthorizedAccessException">Thrown when the User ID is not found or is not a valid integer.</exception>
-        protected int GetCurrentUserId()
-        {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
-                throw new UnauthorizedAccessException("User ID claim missing or invalid.");
-            return userId;
-        }
-
-        private static string GenerateSalt()
-        {
-            byte[] saltBytes = new byte[16];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(saltBytes);
-            }
-            return Convert.ToBase64String(saltBytes);
-        }
-
-        private static string HashPassword(string password, string salt)
-        {
-            var saltBytes = Convert.FromBase64String(salt);
-            using (var pbkdf2 = new Rfc2898DeriveBytes(password, saltBytes, 10000, HashAlgorithmName.SHA256))
-            {
-                byte[] hash = pbkdf2.GetBytes(32);
-                return Convert.ToBase64String(hash);
             }
         }
     }

@@ -24,19 +24,22 @@ namespace API.Controllers
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
         private readonly IUserRepository _userRepository;
+    private readonly API.Services.FileModerationService _fileModerationService;
 
         public ProductsController(
             IProductService productService, 
             ILogger<ProductsController> logger, 
             IMapper mapper,
             IEmailService emailService,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            API.Services.FileModerationService fileModerationService)
         {
             _productService = productService;
             _logger = logger;
             _mapper = mapper;
             _emailService = emailService;
             _userRepository = userRepository;
+            _fileModerationService = fileModerationService;
         }
 
         /// <summary>
@@ -173,6 +176,7 @@ namespace API.Controllers
         /// </summary>
         [HttpPut("{id}")]
         [Authorize(Roles = RoleConstants.Creator)]
+        [Authorize(Roles = RoleConstants.Admin)]
         [ProducesResponseType(typeof(ProductDetailDTO), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
@@ -204,6 +208,8 @@ namespace API.Controllers
         /// </summary>
         [HttpDelete("{id}")]
         [Authorize(Roles = RoleConstants.Creator)]
+        [Authorize(Roles = RoleConstants.Admin)]
+
         [ProducesResponseType(204)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
@@ -392,6 +398,20 @@ namespace API.Controllers
             };
             if (!allowedTypes.Contains(file.ContentType))
                 return BadRequest("File type not allowed.");
+            // Moderate image files only
+            var imageTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
+            if (imageTypes.Contains(file.ContentType.ToLower()))
+            {
+                using (var stream = file.OpenReadStream())
+                {
+                    bool isSafe = await _fileModerationService.IsImageSafeAsync(stream);
+                    if (!isSafe)
+                    {
+                        _logger.LogWarning("Sensitive or inappropriate image detected for product {ProductId}", id);
+                        return BadRequest("Sensitive or inappropriate image detected.");
+                    }
+                }
+            }
             var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), FileStorageConstants.ProductUploadsRoot, id.ToString());
             Directory.CreateDirectory(uploadsRoot);
             var fileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
