@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatSignalRService, ChatMessage, ConversationUpdate } from '../../core/services/chat-signalr.service';
 import { UserService } from '../../core/services/user.service';
-import { MessagingHttpService, ConversationDto, MessageRequestDto, MinimalUserDto, ServiceRequestDto, DeadlineProposalDto, DeliveryDto } from '../../core/services/messaging-http.service';
+import { MessagingHttpService, ConversationDto, MessageRequestDto, MinimalUserDto, ServiceRequestDto, DeliveryDto } from '../../core/services/messaging-http.service';
 import { UnreadService } from '../../core/services/unread.service';
 import { ServiceRequestFormComponent } from '../../components/messaging/service-request-form/service-request-form';
 import Swal from 'sweetalert2';
@@ -41,8 +41,6 @@ export class ChatPage implements OnInit, OnDestroy {
   pendingRequests = signal<MessageRequestDto[]>([]);
   outgoingRequests = signal<MessageRequestDto[]>([]);
   serviceRequests = signal<ServiceRequestDto[]>([]);
-  // pending deadline proposal for the selected conversation/service-request
-  pendingProposal = signal<DeadlineProposalDto | null>(null);
   deliveries = signal<DeliveryDto[]>([]);
 
   // inputs
@@ -149,6 +147,15 @@ export class ChatPage implements OnInit, OnDestroy {
           normalized.type = 'image';
         }
       }
+      // If it's an image and the body is just the URL (no caption), clear the body for sender-side display
+      if ((normalized.type || '').toLowerCase() === 'image') {
+        const bodyTrim = (normalized.body || '').trim();
+        if (!bodyTrim) {
+          normalized.body = '';
+        } else if (urlField && bodyTrim === String(urlField).trim()) {
+          normalized.body = '';
+        }
+      }
       const inCurrent = normalized.conversationId === this.currentConversationId();
       try { console.debug('[ChatPage] normalized', normalized, { current: this.currentConversationId(), inCurrent }); } catch {}
       // Mark seen ASAP for non-mine messages (even if we buffer their render)
@@ -160,7 +167,7 @@ export class ChatPage implements OnInit, OnDestroy {
         // Buffer potential caption texts briefly so they can render together with their image if it arrives shortly after
         const isImage = (normalized.type || '').toLowerCase() === 'image';
         const isFromOther = !this.isMine(normalized);
-        if (isFromOther && !isImage) {
+        if (!isImage) {
           // buffer this text-like message for 400ms
           const t = setTimeout(() => {
             // timeout -> insert if still buffered
@@ -168,6 +175,26 @@ export class ChatPage implements OnInit, OnDestroy {
             if (!ent) return;
             this.captionBuffer.delete(normalized.id);
             this.messages.update(list => {
+              // First, try to merge this caption into a recent image from same sender/conv
+              const nTime = new Date(normalized.createdAt).getTime();
+              for (let i = list.length - 1; i >= 0 && i >= list.length - 30; i--) {
+                const x = list[i] as any;
+                if (!x) continue;
+                if (x.conversationId !== normalized.conversationId) continue;
+                if (x.senderId !== normalized.senderId) continue;
+                const xIsImg = ((x.type || '') + '').toLowerCase() === 'image';
+                if (!xIsImg) continue;
+                const t = new Date(x.createdAt).getTime();
+                if (Math.abs(nTime - t) > 15000) continue;
+                // Merge caption into image and return without inserting a separate text entry
+                const updated: any = { ...x };
+                if (normalized.body && normalized.body.trim()) updated.body = normalized.body;
+                const mergedList = [...list];
+                mergedList[i] = updated;
+                mergedList.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                return mergedList;
+              }
+              // Otherwise, upsert by ID as usual
               const idx = list.findIndex(x => x.id === normalized.id);
               if (idx >= 0) {
                 const merged = [...list];
@@ -191,8 +218,8 @@ export class ChatPage implements OnInit, OnDestroy {
           return; // defer rendering for now
         }
 
-        // If an image arrives, try flush any buffered caption from same sender/conv within 60s
-        if (isFromOther && isImage) {
+        // If an image arrives (from any sender), try flush any buffered caption from same sender/conv within 60s
+        if (isImage) {
           const fortySec = 60 * 1000;
           const imgTime = new Date(normalized.createdAt).getTime();
           const toFlush: string[] = [];
@@ -225,6 +252,29 @@ export class ChatPage implements OnInit, OnDestroy {
             });
             setTimeout(() => this.scrollToBottom(), 0);
           }
+          // Coalesce any existing nearby text-only duplicate into this image message
+          this.messages.update(list => {
+            const nTime = new Date(normalized.createdAt).getTime();
+            let updated = [...list];
+            for (let i = updated.length - 1; i >= 0 && i >= updated.length - 30; i--) {
+              const x = updated[i] as any;
+              if (!x) continue;
+              if (x.conversationId !== normalized.conversationId) continue;
+              if (x.senderId !== normalized.senderId) continue;
+              const xIsImg = ((x.type || '') + '').toLowerCase() === 'image';
+              if (xIsImg) continue; // only text-like
+              const t = new Date(x.createdAt).getTime();
+              if (Math.abs(nTime - t) > 15000) continue;
+              const sameBody = (x.body && normalized.body && x.body === normalized.body);
+              if (sameBody) {
+                // merge text into image by updating body if needed, then remove text entry
+                (normalized as any).body = (normalized.body && normalized.body.trim()) ? normalized.body : x.body;
+                updated.splice(i, 1);
+                break;
+              }
+            }
+            return updated;
+          });
           // If nothing flushed, proceed to normal insertion below
         }
 
@@ -248,7 +298,43 @@ export class ChatPage implements OnInit, OnDestroy {
             merged = [...list];
             merged[idx] = updated;
           } else {
-            merged = [...list, normalized];
+            // De-duplication for image messages from any sender: if a very similar image message already exists,
+            // merge into it instead of appending a new one to avoid duplicates (e.g., caption+image double events).
+            const isImg = (normalized.type || '').toLowerCase() === 'image';
+            let dupIdx = -1;
+            if (isImg) {
+              const nTime = new Date(normalized.createdAt).getTime();
+              // search recent tail for a candidate within 15s window
+              for (let i = list.length - 1; i >= 0 && i >= list.length - 30; i--) {
+                const x = list[i] as any;
+                if (!x) continue;
+                if (x.conversationId !== normalized.conversationId) continue;
+                if (x.senderId !== normalized.senderId) continue;
+                const xIsImg = ((x.type || '') + '').toLowerCase() === 'image';
+                if (!xIsImg) continue;
+                const t = new Date(x.createdAt).getTime();
+                if (Math.abs(nTime - t) > 15000) continue;
+                const sameUrl = (x.attachmentUrl && (normalized as any).attachmentUrl && x.attachmentUrl === (normalized as any).attachmentUrl);
+                const sameBody = (x.body && normalized.body && x.body === normalized.body);
+                if (sameUrl || sameBody) { dupIdx = i; break; }
+              }
+            }
+            if (dupIdx >= 0) {
+              const existing = list[dupIdx] as any;
+              const updated: any = {
+                ...existing,
+                body: (normalized.body && normalized.body.trim()) ? normalized.body : existing.body,
+                type: (normalized.type && normalized.type.trim()) ? normalized.type : existing.type,
+                createdAt: normalized.createdAt || existing.createdAt,
+                url: (normalized as any).url || existing.url,
+                attachmentUrl: (normalized as any).attachmentUrl ?? existing.attachmentUrl ?? null,
+                attachmentType: (normalized as any).attachmentType ?? existing.attachmentType ?? null,
+              };
+              merged = [...list];
+              merged[dupIdx] = updated;
+            } else {
+              merged = [...list, normalized];
+            }
           }
           merged.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
           return merged;
@@ -328,26 +414,6 @@ export class ChatPage implements OnInit, OnDestroy {
     // service request or delivery updates -> refetch lists to sync UI
     const s8 = this.chat.serviceRequest$.subscribe(u => { if (u) { this.refreshLists(); this.reloadConversationExtras(); } });
     const s9 = this.chat.delivery$.subscribe(u => { if (u) { this.refreshLists(); this.reloadConversationExtras(); } });
-    // deadline proposal updates -> update banner without manual refresh
-    const s10 = this.chat.deadlineProposal$.subscribe(e => {
-      if (!e) return;
-      if (e.conversationId !== this.currentConversationId()) return;
-      // Update pendingProposal immediately for responsive UI
-      if (e.proposal) {
-        this.pendingProposal.set({
-          id: e.proposal.id,
-          serviceRequestId: e.proposal.serviceRequestId,
-          proposedDeadlineUtc: e.proposal.proposedDeadlineUtc,
-          status: e.proposal.status,
-          createdAt: e.proposal.createdAt,
-          reason: e.proposal.reason ?? null,
-        });
-      } else {
-        this.pendingProposal.set(null);
-      }
-      // Also refresh lists to sync any service request deadline/status changes
-      this.refreshLists();
-    });
 
     // Rejoin current conversation group after reconnection so recipients keep receiving real-time messages
     const sConn = this.chat.connectionState$.subscribe(st => {
@@ -370,7 +436,6 @@ export class ChatPage implements OnInit, OnDestroy {
       () => s3b.unsubscribe(),
       () => s8.unsubscribe(),
       () => s9.unsubscribe(),
-      () => s10.unsubscribe(),
       () => sConn.unsubscribe(),
     );
 
@@ -404,22 +469,9 @@ export class ChatPage implements OnInit, OnDestroy {
         const f = this.pendingAttachment.file;
         // Send caption together with the image, avoid creating a separate text message
         const resp = await this.http.uploadAttachment(convId, f, text || undefined).toPromise();
-        // Optimistically append attachment message to timeline using API response
-        if (resp) {
-          const msg: any = {
-            id: String(resp.id),
-            conversationId: String((resp as any).conversationId || convId),
-            senderId: Number((resp as any).senderId || this.currentUserId() || 0),
-            body: String((resp as any).body || ''),
-            type: String((resp as any).type || 'image'),
-            createdAt: String((resp as any).createdAt || new Date().toISOString()),
-            attachmentUrl: (resp as any).attachmentUrl || null,
-            attachmentType: (resp as any).attachmentType || (f.type || 'image/*'),
-          } as ChatMessage;
-          this.messages.update(list => [...list, msg]);
-          // Scroll to bottom to show the new image
-          setTimeout(() => this.scrollToBottom(), 0);
-        }
+        // Do not optimistically append; rely on SignalR broadcast to avoid duplicates
+        // Scroll to bottom to anticipate incoming message
+        setTimeout(() => this.scrollToBottom(), 0);
         // Do NOT send a separate text message; caption already included with the image
       } catch (e: any) {
         alert(e?.message || 'Failed to send attachment');
@@ -628,56 +680,25 @@ export class ChatPage implements OnInit, OnDestroy {
       }
     });
     if (!formValues) return;
-    try { await this.chat.createServiceRequest(convId, formValues.requirements, formValues.budget ?? null); }
-    catch (e: any) { await Swal.fire('Error', e?.message || 'Failed to create service request', 'error'); }
-    finally { this.showAttachMenu.set(false); }
-  }
-
-  async updateServiceDeadline(sr: ServiceRequestDto) {
-    const { value: form } = await Swal.fire<{ date: string; time: string; reason?: string }>({
-      title: 'Update Deadline',
-      html: `
-        <div style="display:flex;flex-direction:column;gap:10px;text-align:left">
-          <div style="display:flex;gap:10px;align-items:end">
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <label>Date</label>
-              <input id="sr_date2" class="swal2-input" type="date" />
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <label>Time</label>
-              <input id="sr_time2" class="swal2-input" type="time" />
-            </div>
-          </div>
-          <label>Reason (optional)</label>
-          <textarea id="sr_reason2" class="swal2-textarea" placeholder="Explain why you are updating the deadline"></textarea>
-        </div>
-      `,
-      showCancelButton: true,
-      preConfirm: () => {
-        const d = (document.getElementById('sr_date2') as HTMLInputElement)?.value?.trim();
-        const t = (document.getElementById('sr_time2') as HTMLInputElement)?.value?.trim() || '23:59';
-        const reason = (document.getElementById('sr_reason2') as HTMLTextAreaElement)?.value?.trim();
-        if (!d) { Swal.showValidationMessage('Please choose a date'); return false as any; }
-        return { date: d, time: t, reason };
-      }
-    });
-    if (!form) return;
-    const convId = sr.conversationId;
-    const iso = new Date(`${form.date}T${form.time}:00Z`).toISOString();
     try {
-      // prefer HTTP proposal creation; SignalR method may not support 2-step flow
-      await this.http.proposeDeadline(convId, sr.id, iso, form.reason ?? null).toPromise();
-      await Swal.fire('Sent', 'Deadline change proposed. Waiting for customer approval.', 'success');
-      await this.reloadPendingProposalFor(sr);
-    } catch (e2: any) {
-      await Swal.fire('Error', e2?.message || 'Failed to propose deadline', 'error');
+      await this.chat.createServiceRequest(convId, formValues.requirements, formValues.budget ?? null);
+      const uname = (this.peerUsername() || '').trim();
+      const who = uname ? `@${uname}` : 'the creator';
+      await Swal.fire({ icon: 'success', title: 'Service request sent', text: `Your service request has been sent successfully to ${who}.` });
+    } catch (e: any) {
+      await Swal.fire('Error', e?.message || 'Failed to create service request', 'error');
+    } finally {
+      this.showAttachMenu.set(false);
     }
   }
 
-  onServiceSubmitted(_: any) {
+  async onServiceSubmitted(_: any) {
     // close form and refresh sidebars
     this.showServiceForm.set(false);
-    this.refreshLists();
+    await this.refreshLists();
+    const uname = (this.peerUsername() || '').trim();
+    const who = uname ? `@${uname}` : 'the creator';
+    await Swal.fire({ icon: 'success', title: 'Service request sent', text: `Your service request has been sent successfully to ${who}.` });
   }
 
   async sendProduct() {
@@ -697,44 +718,6 @@ export class ChatPage implements OnInit, OnDestroy {
     this.showAttachMenu.set(false);
   }
 
-  async requestExtension() {
-    const convId = this.currentConversationId();
-    if (!convId) return;
-    const { value: form } = await Swal.fire<{ date: string; time: string; reason?: string }>({
-      title: 'Request Deadline Extension',
-      html: `
-        <div style="display:flex;flex-direction:column;gap:10px;text-align:left">
-          <label>New deadline</label>
-          <div style="display:flex;gap:10px;align-items:end">
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <input id="sw_date" class="swal2-input" type="date" />
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <input id="sw_time" class="swal2-input" type="time" />
-            </div>
-          </div>
-          <label>Reason (optional)</label>
-          <textarea id="sw_reason" class="swal2-textarea" placeholder="Why do you need more time?"></textarea>
-        </div>
-      `,
-      showCancelButton: true,
-      preConfirm: () => {
-        const date = (document.getElementById('sw_date') as HTMLInputElement)?.value?.trim();
-        const time = (document.getElementById('sw_time') as HTMLInputElement)?.value?.trim() || '23:59';
-        const reason = (document.getElementById('sw_reason') as HTMLTextAreaElement)?.value?.trim();
-        if (!date) { Swal.showValidationMessage('Please pick a date'); return false as any; }
-        return { date, time, reason };
-      }
-    });
-    if (!form) return;
-    // Find a current service request that is accepted (creator-owned)
-    const sr = this.currentServiceRequests().find(x => x.status === 'AcceptedByCreator');
-    if (!sr) { await Swal.fire('Info', 'No accepted service request to extend.', 'info'); return; }
-    const iso = new Date(`${form.date}T${form.time}:00Z`).toISOString();
-    try { await this.http.proposeDeadline(convId, sr.id, iso, form.reason ?? null).toPromise(); await this.reloadPendingProposalFor(sr); await Swal.fire('Sent', 'Extension request sent to customer.', 'success'); }
-    catch (e2: any) { await Swal.fire('Error', e2?.message || 'Failed to request extension', 'error'); }
-    finally { this.showAttachMenu.set(false); }
-  }
 
   async refreshLists() {
     try {
@@ -1199,14 +1182,6 @@ export class ChatPage implements OnInit, OnDestroy {
     setTimeout(() => this.scrollToBottom(), 0);
   }
 
-  private async reloadPendingProposalFor(sr: ServiceRequestDto) {
-    try {
-      const convId = sr.conversationId;
-      const prop = await this.http.getPendingDeadlineProposal(convId, sr.id).toPromise();
-      this.pendingProposal.set(prop || null);
-    } catch { this.pendingProposal.set(null); }
-  }
-
   private async reloadDeliveries() {
     try {
       const cid = this.currentConversationId();
@@ -1218,32 +1193,8 @@ export class ChatPage implements OnInit, OnDestroy {
 
   private async reloadConversationExtras() {
     const cid = this.currentConversationId();
-    if (!cid) { this.pendingProposal.set(null); this.deliveries.set([]); return; }
-    // find any service request in this conversation that has a pending proposal
-    const srs = (this.currentServiceRequests() || []).filter(x => x.conversationId === cid);
-    this.pendingProposal.set(null);
-    for (const s of srs) {
-      try {
-        const prop = await this.http.getPendingDeadlineProposal(cid, s.id).toPromise();
-        if (prop) { this.pendingProposal.set(prop); break; }
-      } catch {}
-    }
+    if (!cid) { this.deliveries.set([]); return; }
     await this.reloadDeliveries();
-  }
-
-  async respondToProposal(accept: boolean) {
-    const prop = this.pendingProposal();
-    if (!prop) return;
-    const cid = this.currentConversationId();
-    if (!cid) return;
-    try {
-      await this.http.respondToDeadlineProposal(cid, prop.serviceRequestId, prop.id, accept).toPromise();
-      await this.refreshLists();
-      this.pendingProposal.set(null);
-      await Swal.fire('Done', accept ? 'Deadline change accepted' : 'Deadline change declined', 'success');
-    } catch (e: any) {
-      await Swal.fire('Error', e?.message || 'Failed to respond to proposal', 'error');
-    }
   }
 
   async purchaseDelivery(d: DeliveryDto) {
@@ -1313,6 +1264,13 @@ export class ChatPage implements OnInit, OnDestroy {
   hasConfirmedServiceRequest(): boolean {
     const list = this.currentServiceRequests();
     return list.some(sr => sr.status === 'ConfirmedByCustomer');
+  }
+
+  // Count "active/ongoing" services between the two parties for the current conversation.
+  // We treat AcceptedByCreator and ConfirmedByCustomer as active/ongoing engagements.
+  activeOngoingCount(): number {
+    const list = this.currentServiceRequests();
+    return list.filter(sr => sr.status === 'AcceptedByCreator' || sr.status === 'ConfirmedByCustomer').length;
   }
 
   async acceptServiceRequest(sr: ServiceRequestDto) {

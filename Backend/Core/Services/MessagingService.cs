@@ -203,6 +203,37 @@ namespace Core.Services
             return req;
         }
 
+        public async Task DeclineServiceRequestAsync(int userId, Guid conversationId, Guid serviceRequestId)
+        {
+            var conv = await _conversations.GetByIdAsync(conversationId) ?? throw new KeyNotFoundException("Conversation not found.");
+            if (userId != conv.CreatorId && userId != conv.CustomerId) throw new UnauthorizedAccessException("Not a participant.");
+            var req = await _serviceRequests.GetByIdAsync(serviceRequestId) ?? throw new KeyNotFoundException("Service request not found.");
+            if (req.ConversationId != conversationId) throw new InvalidOperationException("Mismatched conversation.");
+
+            // Validate who can decline at which stage
+            switch (req.Status)
+            {
+                case ServiceRequestStatus.Pending:
+                    if (userId != conv.CreatorId) throw new UnauthorizedAccessException("Only the creator can decline a pending request.");
+                    break;
+                case ServiceRequestStatus.AcceptedByCreator:
+                    if (userId != conv.CustomerId) throw new UnauthorizedAccessException("Only the customer can decline after creator acceptance.");
+                    break;
+                case ServiceRequestStatus.ConfirmedByCustomer:
+                    throw new InvalidOperationException("Confirmed requests cannot be declined.");
+                default:
+                    break;
+            }
+
+            // Prevent removal if a purchased delivery exists (shouldn't for non-confirmed, but defensive)
+            var purchased = await _deliveries.GetPurchasedForServiceRequestAsync(serviceRequestId);
+            if (purchased != null)
+                throw new InvalidOperationException("Cannot decline a request with a purchased delivery.");
+
+            _serviceRequests.Remove(req);
+            await _serviceRequests.SaveChangesAsync();
+        }
+
         public async Task<ServiceRequest> UpdateServiceRequestDeadlineAsync(int creatorId, Guid conversationId, Guid serviceRequestId, DateTime newDeadlineUtc)
         {
             var conv = await _conversations.GetByIdAsync(conversationId) ?? throw new KeyNotFoundException("Conversation not found.");
@@ -424,6 +455,24 @@ namespace Core.Services
             var sr = await _serviceRequests.GetByIdAsync(serviceRequestId) ?? throw new KeyNotFoundException("Service request not found.");
             if (sr.ConversationId != conversationId) throw new InvalidOperationException("Mismatched conversation.");
             return await _deadlineChanges.GetPendingByServiceRequestAsync(serviceRequestId);
+        }
+
+        public async Task<ServiceRequestDeadlineChange?> GetLatestDeadlineProposalAsync(int userId, Guid conversationId, Guid serviceRequestId)
+        {
+            var conv = await _conversations.GetByIdAsync(conversationId) ?? throw new KeyNotFoundException("Conversation not found.");
+            if (userId != conv.CreatorId && userId != conv.CustomerId) throw new UnauthorizedAccessException();
+            var sr = await _serviceRequests.GetByIdAsync(serviceRequestId) ?? throw new KeyNotFoundException("Service request not found.");
+            if (sr.ConversationId != conversationId) throw new InvalidOperationException("Mismatched conversation.");
+            return await _deadlineChanges.GetLatestByServiceRequestAsync(serviceRequestId);
+        }
+
+        public async Task<List<ServiceRequestDeadlineChange>> GetDeadlineProposalHistoryAsync(int userId, Guid conversationId, Guid serviceRequestId)
+        {
+            var conv = await _conversations.GetByIdAsync(conversationId) ?? throw new KeyNotFoundException("Conversation not found.");
+            if (userId != conv.CreatorId && userId != conv.CustomerId) throw new UnauthorizedAccessException();
+            var sr = await _serviceRequests.GetByIdAsync(serviceRequestId) ?? throw new KeyNotFoundException("Service request not found.");
+            if (sr.ConversationId != conversationId) throw new InvalidOperationException("Mismatched conversation.");
+            return await _deadlineChanges.ListByServiceRequestAsync(serviceRequestId);
         }
 
         public async Task<List<Delivery>> GetDeliveriesForConversationAsync(int userId, Guid conversationId)
