@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
@@ -26,11 +26,11 @@ interface ProductDetail {
   selector: 'app-add-new-product',
   imports: [
     CommonModule,
-    RouterModule,
-    FormsModule,
-    ReactiveFormsModule,
-    DashboardSidebar, 
-  ],
+            RouterModule,
+            FormsModule,
+            ReactiveFormsModule,
+            DashboardSidebar, 
+          ],
   templateUrl: './add-new-product.html',
   styleUrls: ['./add-new-product.css']
 })
@@ -75,7 +75,8 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
   // Tag-related properties
   availableTags: TagDTO[] = [];
   selectedTags: TagDTO[] = [];
-  newTagInput: string = '';
+  filteredTags: TagDTO[] = [];
+  tagSearchInput: string = '';
 
   // Private Delivery Mode state
   privateDeliveryMode = false;
@@ -88,6 +89,43 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
 
   // Form validation
   isFormValid: boolean = true;
+  fieldErrors: { [key: string]: string } = {};
+
+  // Heading dropdown UI state
+  headingMenuOpen: boolean = false;
+  private headingHoverTimer: any = null;
+
+  // Keep menu open on hover and close with a slight delay to avoid flicker
+  onHeadingMenuEnter(): void {
+    if (this.headingHoverTimer) {
+      clearTimeout(this.headingHoverTimer);
+      this.headingHoverTimer = null;
+    }
+    this.headingMenuOpen = true;
+  }
+
+  onHeadingMenuLeave(): void {
+    if (this.headingHoverTimer) {
+      clearTimeout(this.headingHoverTimer);
+    }
+    this.headingHoverTimer = setTimeout(() => {
+      this.headingMenuOpen = false;
+    }, 150);
+  }
+
+  onHeadingToggleClick(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.headingMenuOpen = !this.headingMenuOpen;
+  }
+
+  // Close when clicking anywhere else
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(_: MouseEvent): void {
+    if (this.headingMenuOpen) {
+      this.headingMenuOpen = false;
+    }
+  }
 
   constructor(
     private fb: FormBuilder,
@@ -205,29 +243,178 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
 
   private initializeForm(): void {
     this.productForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
-      description: ['', [Validators.maxLength(5000)]],
-      price: [0, [Validators.required, Validators.min(0.01), Validators.max(1000000)]],
-      currency: ['USD', [Validators.required, Validators.pattern(/^(USD|EGP)$/)]],
+      name: ['', [
+        Validators.required, 
+        Validators.minLength(3), 
+        Validators.maxLength(200),
+        Validators.pattern(/^[a-zA-Z0-9\s\-_]+$/)
+      ]],
+      description: ['', [
+        Validators.required,
+        Validators.minLength(10), 
+        Validators.maxLength(5000)
+      ]],
+      price: [0, [
+        Validators.required, 
+        Validators.min(0.01), 
+        Validators.max(1000000),
+        Validators.pattern(/^\d+(\.\d{1,2})?$/)
+      ]],
+      currency: ['USD', [
+        Validators.required, 
+        Validators.pattern(/^(USD|EGP)$/)
+      ]],
       
+      // Optional fields (nullable in backend)
       coverImageUrl: [''],
       thumbnailImageUrl: [''],
       previewVideoUrl: [''],
-             isPublic: [true], // Default to published
-      permalink: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
-      // Enhanced product details
-      compatibility: [''],
-      license: [''],
-      updates: [''],
+      isPublic: [true], // Default to published
+      permalink: ['', [
+        Validators.required, 
+        Validators.minLength(3),
+        Validators.maxLength(200),
+        Validators.pattern(/^[a-z0-9-]+$/)
+      ]],
+      
+      // Enhanced product details (optional)
+      compatibility: ['', [Validators.maxLength(500)]],
+      license: ['', [Validators.maxLength(100)]],
+      updates: ['', [Validators.maxLength(100)]],
+      
+      // Required fields
       categoryId: [null, [Validators.required]],
-      tagIds: [[]]
+      tagIds: [[], [Validators.required, Validators.minLength(1)]]
     });
+
+    // Add real-time validation feedback
+    this.setupFormValidation();
+  }
+
+  private setupFormValidation(): void {
+    // Watch form changes for real-time validation
+    this.productForm.valueChanges.subscribe(() => {
+      this.updateFormValidation();
+    });
+
+    // Watch individual field changes for immediate feedback
+    Object.keys(this.productForm.controls).forEach(key => {
+      const control = this.productForm.get(key);
+      if (control) {
+        control.valueChanges.subscribe(() => {
+          this.validateField(key);
+        });
+      }
+    });
+  }
+
+  private validateField(fieldName: string): void {
+    const control = this.productForm.get(fieldName);
+    if (!control) return;
+
+    const value = control.value;
+    const errors = control.errors;
+    const touched = control.touched;
+
+    // Only show errors if field has been touched or form is being submitted
+    if (touched || this.isSubmitting) {
+      switch (fieldName) {
+        case 'name':
+          this.validateName(value, errors);
+          break;
+        case 'description':
+          this.validateDescription(value, errors);
+          break;
+        case 'price':
+          this.validatePrice(value, errors);
+          break;
+        case 'permalink':
+          this.validatePermalink(value, errors);
+          break;
+        case 'tagIds':
+          this.validateTags(value, errors);
+          break;
+      }
+    }
+  }
+
+  private validateName(value: string, errors: any): void {
+    if (!value) {
+      this.showFieldError('name', 'Product name is required');
+    } else if (value.length < 3) {
+      this.showFieldError('name', 'Product name must be at least 3 characters');
+    } else if (value.length > 200) {
+      this.showFieldError('name', 'Product name cannot exceed 200 characters');
+    } else if (!/^[a-zA-Z0-9\s\-_]+$/.test(value)) {
+      this.showFieldError('name', 'Product name can only contain letters, numbers, spaces, hyphens, and underscores');
+    } else {
+      this.clearFieldError('name');
+    }
+  }
+
+  private validateDescription(value: string, errors: any): void {
+    if (!value) {
+      this.showFieldError('description', 'Product description is required');
+    } else if (value.length < 10) {
+      this.showFieldError('description', 'Product description must be at least 10 characters');
+    } else if (value.length > 5000) {
+      this.showFieldError('description', 'Product description cannot exceed 5000 characters');
+    } else {
+      this.clearFieldError('description');
+    }
+  }
+
+  private validatePrice(value: number, errors: any): void {
+    if (!value || value <= 0) {
+      this.showFieldError('price', 'Price must be greater than 0');
+    } else if (value > 1000000) {
+      this.showFieldError('price', 'Price cannot exceed $1,000,000');
+    } else if (!/^\d+(\.\d{1,2})?$/.test(value.toString())) {
+      this.showFieldError('price', 'Price must be a valid number with up to 2 decimal places');
+    } else {
+      this.clearFieldError('price');
+    }
+  }
+
+  private validatePermalink(value: string, errors: any): void {
+    if (!value) {
+      this.showFieldError('permalink', 'Permalink is required');
+    } else if (value.length < 3) {
+      this.showFieldError('permalink', 'Permalink must be at least 3 characters');
+    } else if (value.length > 200) {
+      this.showFieldError('permalink', 'Permalink cannot exceed 200 characters');
+    } else if (!/^[a-z0-9-]+$/.test(value)) {
+      this.showFieldError('permalink', 'Permalink must be lowercase alphanumeric with hyphens only');
+    } else {
+      this.clearFieldError('permalink');
+    }
+  }
+
+  private validateTags(value: number[], errors: any): void {
+    if (!this.selectedTags || this.selectedTags.length === 0) {
+      this.showFieldError('tagIds', 'At least one tag must be selected');
+    } else {
+      this.clearFieldError('tagIds');
+    }
+  }
+
+  private showFieldError(fieldName: string, message: string): void {
+    // Store error message for display in template
+    this.fieldErrors[fieldName] = message;
+  }
+
+  private clearFieldError(fieldName: string): void {
+    delete this.fieldErrors[fieldName];
   }
 
   private initializeQuillEditor(): void {
     // Initialize Quill editor for content tab
     setTimeout(() => {
       try {
+        // Avoid double initialization
+        if (this.quillEditor) {
+          return;
+        }
         const editorElement = document.querySelector('#content-editor');
         if (editorElement) {
           this.quillEditor = this.quillService.initializeQuill('#content-editor', 'Start writing your product content here...', 'content');
@@ -264,64 +451,21 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
       this.tagService.getTagsForCategories([categoryId]).subscribe({
         next: (tags: TagDTO[]) => {
           this.availableTags = (tags || []).slice(0, 15);
+          this.filteredTags = [...this.availableTags]; // Initialize filtered tags
         },
         error: (error: any) => {
           console.error('Failed to load tags:', error);
           this.availableTags = [];
+          this.filteredTags = [];
         }
       });
     } else {
       this.availableTags = [];
+      this.filteredTags = [];
     }
   }
 
-  getFilteredAvailableTags(): TagDTO[] {
-    return this.availableTags.filter(tag => 
-      !this.selectedTags.some(selected => selected.id === tag.id)
-    );
-  }
 
-  selectSuggestedTag(tag: TagDTO): void {
-    if (this.selectedTags.length < 5 && !this.selectedTags.some(selected => selected.id === tag.id)) {
-      this.selectedTags.push(tag);
-    }
-  }
-
-  addCustomTag(event?: Event): void {
-    if (event) {
-      event.preventDefault();
-    }
-    
-    const tagName = this.newTagInput.trim();
-    if (tagName && this.selectedTags.length < 5) {
-      // Check if tag already exists in available tags
-      const existingTag = this.availableTags.find(tag => 
-        tag.name && tag.name.toLowerCase() === tagName.toLowerCase()
-      );
-      
-      if (existingTag) {
-        // Use existing tag
-        this.selectSuggestedTag(existingTag);
-      } else {
-        // Create new tag (for now, just add it locally - backend will handle creation)
-        const newTag: TagDTO = {
-          id: 0, // Temporary ID, backend will assign real ID
-          name: tagName
-        };
-        this.selectedTags.push(newTag);
-      }
-      
-      this.newTagInput = '';
-    }
-  }
-
-  onTagInputChange(event: any): void {
-    this.newTagInput = event.target.value;
-  }
-
-  removeTag(index: number): void {
-    this.selectedTags.splice(index, 1);
-  }
 
   getCategoryIcon(categoryName: string): string {
     // Return icon class based on category name
@@ -439,11 +583,85 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleFiles(files: File[]): void {
+    // Define supported file types with user-friendly names
+    const supportedTypes = [
+      'application/pdf',
+      'application/zip',
+      'application/x-zip-compressed',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'video/mp4',
+      'audio/mpeg',
+      'audio/mp3',
+      'text/plain',
+      'text/csv',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // pptx
+      'application/vnd.ms-powerpoint', // ppt
+      'application/msword', // doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+      'application/vnd.ms-excel', // xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' // xlsx
+    ];
+
+    const supportedExtensions = [
+      'PDF', 'ZIP', 'JPG', 'JPEG', 'PNG', 'GIF', 'MP4', 'MP3', 'TXT', 'CSV', 
+      'PPTX', 'PPT', 'DOC', 'DOCX', 'XLS', 'XLSX'
+    ];
+
+    // File size limit: 1 GB (1,073,741,824 bytes)
+    const maxFileSize = 1073741824;
+ 
+    // Filter files by supported types and size
+    const validFiles = files.filter(file => {
+      // Check file size first
+      if (file.size > maxFileSize) {
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        Swal.fire({
+          icon: 'warning',
+          title: 'File Too Large',
+          text: `${file.name} (${fileSizeMB} MB) exceeds the maximum file size of 1 GB.`,
+          confirmButtonColor: '#3b82f6'
+        });
+        return false;
+      }
+
+      // Check file type
+      if (!supportedTypes.includes(file.type)) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Unsupported File Type',
+          html: `
+            <p><strong>${file.name}</strong> is not a supported file type.</p>
+            <p><strong>Supported file types:</strong></p>
+            <ul style="text-align: left; margin: 10px 0;">
+              <li>Documents: PDF, DOC, DOCX, TXT, CSV</li>
+              <li>Images: JPG, PNG, GIF</li>
+              <li>Videos: MP4</li>
+              <li>Audio: MP3</li>
+              <li>Archives: ZIP</li>
+              <li>Presentations: PPT, PPTX</li>
+              <li>Spreadsheets: XLS, XLSX</li>
+            </ul>
+            <p><strong>Maximum file size:</strong> 1 GB per file</p>
+          `,
+          confirmButtonColor: '#3b82f6'
+        });
+        return false;
+      }
+      return true;
+    });
+ 
+    if (validFiles.length === 0) {
+      return;
+    }
+ 
     // Add files to the product files array
-    this.productFiles.push(...files);
+    this.productFiles.push(...validFiles);
     
     // Convert files to FileDTO format for display (temporary)
-    files.forEach(file => {
+    validFiles.forEach(file => {
       this.uploadedFiles.push({
         id: Date.now() + Math.random(), // Generate temporary ID
         name: file.name,
@@ -451,6 +669,18 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
         size: file.size
       });
     });
+
+    // Show success message for valid files
+    if (validFiles.length > 0) {
+      const fileNames = validFiles.map(f => f.name).join(', ');
+      Swal.fire({
+        icon: 'success',
+        title: 'Files Added Successfully',
+        text: `Added ${validFiles.length} file(s): ${fileNames}`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
   }
 
   private async uploadFiles(files: File[]): Promise<void> {
@@ -501,25 +731,102 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Tag management methods
-  addTag(): void {
-    if (this.newTagInput.trim() && this.selectedTags.length < 5) {
-      const newTag: TagDTO = {
-        id: -Date.now(), // Temporary negative ID for new tags
-        name: this.newTagInput.trim()
-      };
-      this.selectedTags.push(newTag);
-      this.newTagInput = '';
-    }
-  }
-
   selectTag(tag: TagDTO): void {
     if (this.selectedTags.length < 5 && !this.selectedTags.some(t => t.id === tag.id)) {
       this.selectedTags.push(tag);
+      // Update the form control with the selected tag IDs
+      this.productForm.patchValue({
+        tagIds: this.selectedTags.map(t => t.id)
+      });
+      // Update filtered tags to reflect the selection
+      this.filterTags();
+      // Trigger validation
+      this.validateField('tagIds');
     }
+  }
+
+  removeTag(index: number): void {
+    this.selectedTags.splice(index, 1);
+    // Update the form control with the remaining tag IDs
+    this.productForm.patchValue({
+      tagIds: this.selectedTags.map(t => t.id)
+    });
+    // Update filtered tags to reflect the removal
+    this.filterTags();
+    // Trigger validation
+    this.validateField('tagIds');
   }
 
   isTagSelected(tagId: number): boolean {
     return this.selectedTags.some(t => t.id === tagId);
+  }
+
+  filterTags(): void {
+    if (!this.tagSearchInput.trim()) {
+      this.filteredTags = [...this.availableTags];
+    } else {
+      const searchTerm = this.tagSearchInput.toLowerCase().trim();
+      this.filteredTags = this.availableTags.filter(tag => 
+        tag.name && tag.name.toLowerCase().includes(searchTerm)
+      );
+    }
+  }
+
+  // Enhanced Quill Editor Methods
+  clearEditor(): void {
+    if (this.quillEditor) {
+      this.quillService.setContent('');
+      this.contentPreview = '';
+    }
+  }
+
+  insertTemplate(): void {
+    const template = `
+      <h2>Welcome to Your Product!</h2>
+      <p>This is a template to help you get started with your product content. You can:</p>
+      <ul>
+        <li>Replace this text with your actual product description</li>
+        <li>Add images, videos, and links</li>
+        <li>Use different formatting options</li>
+        <li>Create engaging content for your customers</li>
+      </ul>
+      <h3>Getting Started</h3>
+      <p>Start by describing what your product offers and how it can help your customers.</p>
+      <blockquote>
+        <p>Remember: Great content leads to better customer satisfaction!</p>
+      </blockquote>
+    `;
+    
+    if (this.quillEditor) {
+      this.quillService.setContent(template);
+      this.contentPreview = template;
+    }
+  }
+
+  getWordCount(): number {
+    const text = this.quillService.getText();
+    return text.trim() ? text.trim().split(/\s+/).length : 0;
+  }
+
+  getParagraphCount(): number {
+    const content = this.quillService.getContent();
+    if (!content) return 0;
+    
+    // Count paragraph tags and line breaks
+    const paragraphMatches = content.match(/<p[^>]*>/g);
+    const lineBreakMatches = content.match(/<br\s*\/?>/g);
+    
+    const paragraphCount = paragraphMatches ? paragraphMatches.length : 0;
+    const lineBreakCount = lineBreakMatches ? lineBreakMatches.length : 0;
+    
+    return Math.max(paragraphCount, lineBreakCount, 1);
+  }
+
+  getReadingTime(): number {
+    const wordCount = this.getWordCount();
+    const wordsPerMinute = 200; // Average reading speed
+    const readingTime = Math.ceil(wordCount / wordsPerMinute);
+    return Math.max(readingTime, 1);
   }
 
     // Main save and publish method
@@ -528,6 +835,12 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
     
     // Mark all fields as touched to trigger validation display
     this.productForm.markAllAsTouched();
+    
+    // Trigger validation for all fields
+    this.isSubmitting = true;
+    Object.keys(this.productForm.controls).forEach(key => {
+      this.validateField(key);
+    });
     
     console.log('📋 Form State:', {
       invalid: this.productForm.invalid,
@@ -548,11 +861,11 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
       categoryId: this.productForm.get('categoryId')?.value,
       categoryValid: this.productForm.get('categoryId')?.valid,
       categoryTouched: this.productForm.get('categoryId')?.touched,
-      currency: this.productForm.get('currency')?.value,
-      currencyValid: this.productForm.get('currency')?.valid,
+      currency: this.productForm.get('currency')?.valid,
       permalink: this.productForm.get('permalink')?.value,
       permalinkValid: this.productForm.get('permalink')?.valid,
-      permalinkTouched: this.productForm.get('permalink')?.touched
+      permalinkTouched: this.productForm.get('permalink')?.touched,
+      tagIds: this.selectedTags.length
     });
     
     // Log all form controls and their validation status
@@ -569,20 +882,48 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
       });
     });
     
-    if (this.productForm.invalid) {
-      console.log('❌ Form is invalid, showing error');
+    // Check for validation errors
+    if (this.productForm.invalid || Object.keys(this.fieldErrors).length > 0) {
+      console.log('❌ Form is invalid, showing detailed error');
+      
+      // Collect all validation errors
+      const errors: string[] = [];
+      
+      if (this.fieldErrors['name']) errors.push(this.fieldErrors['name']);
+      if (this.fieldErrors['description']) errors.push(this.fieldErrors['description']);
+      if (this.fieldErrors['price']) errors.push(this.fieldErrors['price']);
+      if (this.fieldErrors['permalink']) errors.push(this.fieldErrors['permalink']);
+      if (this.fieldErrors['tagIds']) errors.push(this.fieldErrors['tagIds']);
+      
+      // Check for missing required fields
+      if (!this.productForm.get('name')?.value) errors.push('Product name is required');
+      if (!this.productForm.get('description')?.value) errors.push('Product description is required');
+      if (!this.productForm.get('price')?.value || this.productForm.get('price')?.value <= 0) errors.push('Valid price is required');
+      if (!this.productForm.get('categoryId')?.value) errors.push('Category selection is required');
+      if (!this.productForm.get('permalink')?.value) errors.push('Permalink is required');
+      if (this.selectedTags.length === 0) errors.push('At least one tag must be selected');
+      
       Swal.fire({
         icon: 'error',
-        title: 'Validation Error',
-        text: 'Please fill in all required fields correctly.',
+        title: 'Validation Errors',
+        html: `
+          <div style="text-align: left;">
+            <p><strong>Please fix the following issues:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+              ${errors.map(error => `<li>${error}</li>`).join('')}
+            </ul>
+          </div>
+        `,
         confirmButtonColor: '#3b82f6'
       });
+      
+      this.isSubmitting = false;
       return;
     }
     
-    this.isSubmitting = true;
-    this.errorMessage = null;
-    
+      this.isSubmitting = true;
+      this.errorMessage = null;
+      
     try {
       const formValue = this.productForm.value;
       
@@ -674,9 +1015,9 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
                 title: 'Delivery Failed',
                 text: 'Product created but failed to deliver: ' + (err?.message || 'Unknown error'),
                 confirmButtonColor: '#3b82f6'
-              });
-            }
-          }
+      });
+    }
+  }
 
           // Navigate to the product page or dashboard
           this.router.navigate(['/dashboard']);
@@ -724,10 +1065,10 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
     });
 
     if (result.isConfirmed) {
-      this.productForm.reset();
-      this.productId = undefined;
-      this.successMessage = null;
-      this.errorMessage = null;
+    this.productForm.reset();
+    this.productId = undefined;
+    this.successMessage = null;
+    this.errorMessage = null;
       this.selectedTags = [];
       this.uploadedFiles = [];
       this.productFiles = [];

@@ -341,39 +341,8 @@
               <strong>Purchase Required:</strong> You need to purchase this product before you can write a review.
             </div>
 
-                          <!-- User has purchased - Show download section and review form -->
+                          <!-- User has purchased - Show review form -->
               <div *ngIf="!loadingPurchaseStatus && hasPurchased">
-                <!-- Download Files Section -->
-                <div class="download-section mb-4" *ngIf="hasFiles()">
-                  <h5>Your Files</h5>
-                  <div class="files-list">
-                    <div class="file-item" *ngFor="let file of product?.files || []">
-                      <div class="file-info">
-                        <div class="file-icon">
-                          <i [class]="getFileIcon(file)"></i>
-                        </div>
-                        <div class="file-details">
-                          <h6 class="file-name">{{ file.name }}</h6>
-                          <div class="file-meta">
-                            <span class="file-type">{{ getFileType(file.name) }}</span>
-                            <span class="file-size">{{ formatFileSize(file.size) }}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="file-actions">
-                        <button 
-                          class="btn btn-primary btn-sm download-btn" 
-                          (click)="downloadFile(file)"
-                          [disabled]="file.isDownloading"
-                        >
-                          <i class="fas fa-download"></i>
-                          <span *ngIf="!file.isDownloading">Download</span>
-                          <span *ngIf="file.isDownloading">Downloading...</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               
               <!-- Existing Review Display (when not editing) -->
               <!-- <div *ngIf="existingReview && !isEditingReview" class="existing-review-display mb-4">

@@ -70,7 +70,8 @@ export class ProductEdit implements OnInit {
   // Tag-related properties
   availableTags: TagDTO[] = [];
   selectedTags: TagDTO[] = [];
-  newTagInput: string = '';
+  filteredTags: TagDTO[] = [];
+  tagSearchInput: string = '';
 
   constructor(
     private fb: FormBuilder, 
@@ -384,63 +385,47 @@ export class ProductEdit implements OnInit {
       this.tagService.getTagsForCategories([categoryId]).subscribe({
         next: (tags: TagDTO[]) => {
           this.availableTags = (tags || []).slice(0, 15);
+          this.filteredTags = [...this.availableTags]; // Initialize filtered tags
         },
         error: (error: any) => {
           console.error('Failed to load tags:', error);
           this.availableTags = [];
+          this.filteredTags = [];
         }
       });
     } else {
       this.availableTags = [];
+      this.filteredTags = [];
     }
   }
 
-  getFilteredAvailableTags(): TagDTO[] {
-    return this.availableTags.filter(tag => 
-      !this.selectedTags.some(selected => selected.id === tag.id)
-    );
-  }
-
-  selectSuggestedTag(tag: TagDTO): void {
-    if (this.selectedTags.length < 5 && !this.selectedTags.some(selected => selected.id === tag.id)) {
+  selectTag(tag: TagDTO): void {
+    if (this.selectedTags.length < 5 && !this.selectedTags.some(t => t.id === tag.id)) {
       this.selectedTags.push(tag);
+      // Update filtered tags to reflect the selection
+      this.filterTags();
     }
-  }
-
-  addCustomTag(event?: Event): void {
-    if (event) {
-      event.preventDefault();
-    }
-    
-    const tagName = this.newTagInput.trim();
-    if (tagName && this.selectedTags.length < 5) {
-      // Check if tag already exists in available tags
-      const existingTag = this.availableTags.find(tag => 
-        tag.name && tag.name.toLowerCase() === tagName.toLowerCase()
-      );
-      
-      if (existingTag) {
-        // Use existing tag
-        this.selectSuggestedTag(existingTag);
-      } else {
-        // Create new tag (for now, just add it locally - backend will handle creation)
-        const newTag: TagDTO = {
-          id: 0, // Temporary ID, backend will assign real ID
-          name: tagName
-        };
-        this.selectedTags.push(newTag);
-      }
-      
-      this.newTagInput = '';
-    }
-  }
-
-  onTagInputChange(event: any): void {
-    this.newTagInput = event.target.value;
   }
 
   removeTag(index: number): void {
     this.selectedTags.splice(index, 1);
+    // Update filtered tags to reflect the removal
+    this.filterTags();
+  }
+
+  isTagSelected(tagId: number): boolean {
+    return this.selectedTags.some(t => t.id === tagId);
+  }
+
+  filterTags(): void {
+    if (!this.tagSearchInput.trim()) {
+      this.filteredTags = [...this.availableTags];
+    } else {
+      const searchTerm = this.tagSearchInput.toLowerCase().trim();
+      this.filteredTags = this.availableTags.filter(tag => 
+        tag.name && tag.name.toLowerCase().includes(searchTerm)
+      );
+    }
   }
 
   // Category management methods

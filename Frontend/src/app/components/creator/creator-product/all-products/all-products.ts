@@ -160,7 +160,10 @@ export class AllProducts implements OnInit {
       // Prefer analytics sales in selected currency (sales count is currency-agnostic but comes with analytics)
       const salesMap = this.salesByCurrency[to] || new Map<number, number>();
       const analyticsSales = salesMap.get(p.id);
+      
+      // Calculate fallback revenue using original price and sales, then convert
       const fallbackRevenue = (p.sales * p.price) * r;
+      
       return {
         ...p,
         revenue: analyticsRevenue !== undefined ? analyticsRevenue : fallbackRevenue,

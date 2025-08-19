@@ -120,28 +120,11 @@ export const CATEGORIES: Category[] = [
   },
   { 
     id: 14, 
-    name: 'Comics & Graphic Novels',
-    icon: 'fas fa-comic',
-    description: 'Comic books, illustrations, and sequential art'
-  },
-  { 
-    id: 15, 
-    name: 'Fiction Books',
+    name: 'eBooks',
     icon: 'fas fa-book-open',
-    description: 'Novels, short stories, and fictional literature'
+    description: 'Digital books, comics, graphic novels, and fiction literature'
   },
-  { 
-    id: 16, 
-    name: 'Audio',
-    icon: 'fas fa-microphone',
-    description: 'Podcasts, voice-overs, and audio content'
-  },
-  { 
-    id: 17, 
-    name: 'Recorded Music',
-    icon: 'fas fa-compact-disc',
-    description: 'Music albums, singles, and recorded audio'
-  },
+  // Note: Audio and Recorded Music categories have been consolidated into Music & Sound Design
 
 
   
@@ -250,26 +233,15 @@ export const CATEGORIES: Category[] = [
   { id: 95, name: 'Reference Photos', parentId: 13 },
   { id: 96, name: 'Stock Photos', parentId: 13 },
 
-  // Subcategories - Comics & Graphic Novels (ParentId: 14)
+  // Subcategories - eBooks (ParentId: 14)
+  { id: 97, name: 'Fiction & Novels', parentId: 14 },
+  { id: 98, name: 'Comics & Graphic Novels', parentId: 14 },
+  { id: 99, name: 'Non-Fiction', parentId: 14 },
+  { id: 100, name: 'Children\'s Books', parentId: 14 },
+  { id: 101, name: 'Educational Books', parentId: 14 },
+  { id: 102, name: 'Reference Materials', parentId: 14 },
 
-  // Subcategories - Fiction Books (ParentId: 15)
-  { id: 97, name: 'Children\'s Books', parentId: 15 },
-  { id: 98, name: 'Fantasy', parentId: 15 },
-  { id: 99, name: 'Mystery', parentId: 15 },
-  { id: 100, name: 'Romance', parentId: 15 },
-  { id: 101, name: 'Science Fiction & Young Adult', parentId: 15 },
-
-  // Subcategories - Audio (ParentId: 16)
-  { id: 102, name: 'ASMR', parentId: 16 },
-  { id: 103, name: 'Healing', parentId: 16 },
-  { id: 104, name: 'Hypnosis', parentId: 16 },
-  { id: 105, name: 'Sleep & Meditation', parentId: 16 },
-  { id: 106, name: 'Subliminal Messages', parentId: 16 },
-  { id: 107, name: 'Voiceover', parentId: 16 },
-
-  // Subcategories - Recorded Music (ParentId: 17)
-  { id: 108, name: 'Albums', parentId: 17 },
-  { id: 109, name: 'Singles', parentId: 17 },
+  // Note: Audio and Recorded Music subcategories have been consolidated into Music & Sound Design
   
 
 
@@ -352,27 +324,7 @@ export const CATEGORIES: Category[] = [
   { id: 153, name: 'Frontend', parentId: 90 },
   { id: 154, name: 'Backend', parentId: 90 },
 
-  // Sub-Subcategories  Singles - Recorded Music (109)
-  { id: 155, name: 'Children Music', parentId: 109 },
-  { id: 156, name: 'Christian', parentId: 109 },
-  { id: 157, name: 'Classic Rock', parentId: 109 },
-  { id: 158, name: 'Classical', parentId: 109 },
-  { id: 159, name: 'Country', parentId: 109 },
-  { id: 160, name: 'Dance & Electronic', parentId: 109 },
-  { id: 161, name: 'Folk', parentId: 109 },
-  { id: 162, name: 'Gospel', parentId: 109 },
-  { id: 163, name: 'Hard Rock & Metal', parentId: 109 },
-  { id: 164, name: 'Holiday Music', parentId: 109 },
-  { id: 165, name: 'Jazz', parentId: 109 },
-  { id: 166, name: 'Latin Music', parentId: 109 },
-  { id: 167, name: 'New Age', parentId: 109 },
-  { id: 168, name: 'Opera & Vocal', parentId: 109 },
-  { id: 169, name: 'Pop', parentId: 109 },
-  { id: 170, name: 'Rap & Hip-Hop', parentId: 109 },
-  { id: 171, name: 'R&B', parentId: 109 },
-  { id: 172, name: 'Rock', parentId: 109 },
-  { id: 173, name: 'Soundtracks', parentId: 109 },
-  { id: 174, name: 'World Music', parentId: 109 },
+  // Note: Recorded Music sub-subcategories have been consolidated into Music & Sound Design
 
 
 

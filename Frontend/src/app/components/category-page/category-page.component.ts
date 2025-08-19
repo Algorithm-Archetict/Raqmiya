@@ -212,10 +212,8 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
       'software-development': { id: 11, name: 'Software Development' },
       'gaming': { id: 12, name: 'Gaming' },
       'photography': { id: 13, name: 'Photography' },
-      'comics-graphic-novels': { id: 14, name: 'Comics & Graphic Novels' },
-      'fiction-books': { id: 15, name: 'Fiction Books' },
-      'audio': { id: 16, name: 'Audio' },
-      'recorded-music': { id: 17, name: 'Recorded Music' }
+          'ebooks': { id: 14, name: 'eBooks' },
+      // Note: Audio and Recorded Music categories have been consolidated into Music & Sound Design
     };
 
     const categoryInfo = categorySlugMap[slug];
@@ -599,10 +597,7 @@ export class CategoryPageComponent implements OnInit, OnDestroy {
       11: 'software-development',
       12: 'gaming',
       13: 'photography',
-      14: 'comics-graphic-novels',
-      15: 'fiction-books', 
-      16: 'audio',
-      17: 'recorded-music'
+              14: 'ebooks'
     };
     
     return slugMap[categoryId] || null;

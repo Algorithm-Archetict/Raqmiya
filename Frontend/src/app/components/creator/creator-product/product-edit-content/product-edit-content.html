@@ -114,13 +114,14 @@
                   type="file" 
                   id="file-upload" 
                   multiple 
+                  accept=".pdf,.zip,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.txt,.csv,.pptx,.ppt,.doc,.docx,.xls,.xlsx"
                   (change)="onFileSelected($event)"
                   style="display: none;"
                 >
                 <label for="file-upload" class="file-upload-btn">
                   <i class="fas fa-cloud-upload-alt"></i>
                   <span>Choose Files</span>
-                  <small>PDF, ZIP, Images, Videos</small>
+                  <small>PDF, ZIP, Images, Videos, Audio, Text, Office Files</small>
                 </label>
               </div>
 

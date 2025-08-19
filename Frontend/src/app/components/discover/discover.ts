@@ -93,6 +93,9 @@ export class Discover implements OnInit, AfterViewInit {
   wishlistCounter: number = 0;
   private wishlistCounterTimeout: any;
   showWishlistCounterPopup: boolean = false;
+  
+  // Event handler for cleanup
+  private focusHandler: (() => void) | null = null;
 
   constructor(
     private router: Router,
@@ -142,9 +145,10 @@ export class Discover implements OnInit, AfterViewInit {
     }, 200);
 
     // Listen for focus events to refresh wishlist when user returns to tab
-    window.addEventListener('focus', () => {
+    this.focusHandler = () => {
       this.loadWishlistStatus(); // This now handles anonymous users properly
-    });
+    };
+    window.addEventListener('focus', this.focusHandler);
   }
 
   // ======= SEARCH SUGGESTIONS =======
@@ -192,14 +196,16 @@ export class Discover implements OnInit, AfterViewInit {
       .map(c => ({ type: 'creator' as const, id: c.id, label: c.username }));
 
     // Fetch additional creators from backend
-    this.userService.searchCreators(q, 20, 0).subscribe(apiCreators => {
-      const apiCreatorMatches = (apiCreators || []).map(c => ({ type: 'creator' as const, id: c.id, label: c.username }));
-      // Merge unique by id
-      const mergedCreatorsMap = new Map<number, { type: 'creator'; id: number; label: string }>();
-      [...localCreatorMatches, ...apiCreatorMatches].forEach(c => { if (!mergedCreatorsMap.has(c.id)) mergedCreatorsMap.set(c.id, c); });
-      const mergedCreators = Array.from(mergedCreatorsMap.values());
-      this.suggestions = [...mergedCreators, ...productMatches];
-    });
+    this.userService.searchCreators(q, 20, 0)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(apiCreators => {
+        const apiCreatorMatches = (apiCreators || []).map(c => ({ type: 'creator' as const, id: c.id, label: c.username }));
+        // Merge unique by id
+        const mergedCreatorsMap = new Map<number, { type: 'creator'; id: number; label: string }>();
+        [...localCreatorMatches, ...apiCreatorMatches].forEach(c => { if (!mergedCreatorsMap.has(c.id)) mergedCreatorsMap.set(c.id, c); });
+        const mergedCreators = Array.from(mergedCreatorsMap.values());
+        this.suggestions = [...mergedCreators, ...productMatches];
+      });
   }
 
   // Execute full search and show results page
@@ -228,14 +234,16 @@ export class Discover implements OnInit, AfterViewInit {
     this.searchResultCreators = Array.from(creatorMap.values());
 
     // Also query backend for global creators
-    this.userService.searchCreators(q, 100, 0).subscribe(apiCreators => {
-      const existing = new Set(this.searchResultCreators.map(c => c.id));
-      for (const c of apiCreators || []) {
-        if (!existing.has(c.id)) {
-          this.searchResultCreators.push({ id: c.id, username: c.username });
+    this.userService.searchCreators(q, 100, 0)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(apiCreators => {
+        const existing = new Set(this.searchResultCreators.map(c => c.id));
+        for (const c of apiCreators || []) {
+          if (!existing.has(c.id)) {
+            this.searchResultCreators.push({ id: c.id, username: c.username });
+          }
         }
-      }
-    });
+      });
 
     this.searchResultsMode = true;
     this.showSuggestions = false;
@@ -267,6 +275,16 @@ export class Discover implements OnInit, AfterViewInit {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    
+    // Clean up event listeners
+    if (this.focusHandler) {
+      window.removeEventListener('focus', this.focusHandler);
+    }
+    
+    // Clean up timeouts
+    if (this.wishlistCounterTimeout) {
+      clearTimeout(this.wishlistCounterTimeout);
+    }
   }
 
   // Helper method to ensure image URLs are full URLs
@@ -293,7 +311,9 @@ export class Discover implements OnInit, AfterViewInit {
   initializeProducts() {
     this.loading = true;
     // Use cached, shared observable to avoid repeated calls
-    this.productService.getProductList(1, 1000).subscribe({
+    this.productService.getProductList(1, 1000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (products: ProductListItemDTO[]) => {
         this.allProducts = products.map(product => ({
           id: product.id,
@@ -371,7 +391,9 @@ export class Discover implements OnInit, AfterViewInit {
     const isLoggedIn = this.authService.isLoggedIn();
     console.log('🔍 User logged in for personalization:', isLoggedIn);
     
-    this.analyticsService.getDiscoverFeed(12).subscribe({
+    this.analyticsService.getDiscoverFeed(12)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (feedData: DiscoverFeedResponse) => {
         console.log('✅ Analytics discover feed loaded successfully:', feedData);
         
@@ -515,7 +537,9 @@ export class Discover implements OnInit, AfterViewInit {
       return;
     }
 
-    this.productService.getWishlist().subscribe({
+    this.productService.getWishlist()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (wishlistProducts: ProductListItemDTO[]) => {
         const wishlistIds = wishlistProducts.map(p => p.id);
         
@@ -570,7 +594,9 @@ export class Discover implements OnInit, AfterViewInit {
     console.log('Loading purchase status for products...');
     
     // Get purchased products from order service
-    this.orderService.getPurchasedProducts().subscribe({
+    this.orderService.getPurchasedProducts()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (purchasedProducts) => {
         const purchasedProductIds = purchasedProducts.map(p => p.productId);
         console.log(`User has purchased ${purchasedProductIds.length} products:`, purchasedProductIds);
@@ -615,7 +641,9 @@ export class Discover implements OnInit, AfterViewInit {
       ? this.productService.removeFromWishlist(product.id)
       : this.productService.addToWishlist(product.id);
 
-    apiCall.subscribe({
+    apiCall
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (response) => {
         // Toggle wishlist status
         product.inWishlist = !product.inWishlist;
@@ -1100,7 +1128,9 @@ export class Discover implements OnInit, AfterViewInit {
     this.loading = true;
     
     // Use the new single API endpoint for multiple categories
-    this.productService.getProductsByMultipleCategories(categoryIds, 1, 1000).subscribe({
+    this.productService.getProductsByMultipleCategories(categoryIds, 1, 1000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (result) => {
         console.log('✅ Products loaded successfully for multiple categories:', result);
         console.log('Number of products found:', result.items?.length || 0);
@@ -1132,7 +1162,9 @@ export class Discover implements OnInit, AfterViewInit {
     
     if (categoryId === 'all') {
       // Load all products using the main products endpoint
-      this.productService.getAll(1, 1000).subscribe({
+      this.productService.getAll(1, 1000)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
         next: (result) => {
           console.log('✅ All products loaded successfully:', result);
           console.log('Number of products:', result.items?.length || 0);
@@ -1147,7 +1179,9 @@ export class Discover implements OnInit, AfterViewInit {
     } else {
       // Use the Products API with categoryId parameter - this calls the backend GetProducts endpoint
       console.log('🔍 Calling ProductService.getProductsByCategory...');
-      this.productService.getProductsByCategory(categoryId, 1, 1000).subscribe({
+      this.productService.getProductsByCategory(categoryId, 1, 1000)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
         next: (result) => {
           console.log('✅ Products loaded successfully for category', categoryId, ':', result);
           console.log('Number of products found:', result.items?.length || 0);
@@ -1171,7 +1205,9 @@ export class Discover implements OnInit, AfterViewInit {
             ? this.categoryService.getCategoryProductsIncludeNested(categoryId, 1, 1000)
             : this.categoryService.getCategoryProducts(categoryId, 1, 1000);
           
-          categoryCall.subscribe({
+          categoryCall
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
             next: (result) => {
               console.log('✅ Fallback: Products loaded for category', categoryId, ':', result);
               console.log('Fallback: Number of products found:', result.items?.length || 0);
@@ -1220,7 +1256,9 @@ export class Discover implements OnInit, AfterViewInit {
 
   // Tag filtering
   loadAvailableTags() {
-    this.tagService.getAllTags().subscribe({
+    this.tagService.getAllTags()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (tags) => {
         this.availableTags = tags;
         this.popularTags = tags
