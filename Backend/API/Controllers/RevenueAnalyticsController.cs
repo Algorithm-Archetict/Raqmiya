@@ -16,15 +16,77 @@ namespace API.Controllers
         private readonly IRevenueAnalyticsService _revenueAnalyticsService;
         private readonly ILogger<RevenueAnalyticsController> _logger;
         private readonly RaqmiyaDbContext _context;
+        private readonly IEmailService _emailService;
 
         public RevenueAnalyticsController(
             IRevenueAnalyticsService revenueAnalyticsService,
             ILogger<RevenueAnalyticsController> logger,
-            RaqmiyaDbContext context)
+            RaqmiyaDbContext context,
+            IEmailService emailService)
         {
             _revenueAnalyticsService = revenueAnalyticsService;
             _logger = logger;
             _context = context;
+            _emailService = emailService;
+        }
+
+        [HttpPost("email-my-report")]
+        public async Task<IActionResult> EmailMyReport([FromQuery] string currency = "USD")
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                {
+                    return Unauthorized(new { error = "User not found" });
+                }
+
+                var analytics = await _revenueAnalyticsService.GetCreatorRevenueAnalyticsAsync(userId, currency);
+                var html = BuildReportHtml(analytics);
+
+                var subject = $"Your Sales Analytics Report - {DateTime.UtcNow:yyyy-MM-dd}";
+                var sent = await _emailService.SendEmailAsync(user.Email, subject, html, true);
+                if (!sent)
+                {
+                    return StatusCode(500, new { success = false, message = "Failed to send report email" });
+                }
+
+                return Ok(new { success = true, message = "Report emailed successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error emailing analytics report");
+                return StatusCode(500, new { success = false, message = "Failed to email report" });
+            }
+        }
+
+        private string BuildReportHtml(dynamic analytics)
+        {
+            var symbol = analytics.Currency == "EGP" ? "EGP " : "$";
+            string F(decimal n) => $"{symbol}{n:F2}";
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'><title>Sales Report</title>");
+            sb.AppendLine("<style>body{font-family:Arial,Helvetica,sans-serif;color:#111} .wrap{max-width:780px;margin:auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden} .head{padding:18px 22px;background:linear-gradient(180deg,#0f172a,#0b1221);color:#e5e7eb;border-bottom:1px solid #334155} .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px} .kpi{display:flex;align-items:center;gap:12px;border:1px solid #e5e7eb;border-radius:12px;padding:12px} .muted{color:#64748b;font-size:12px} table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px;border-bottom:1px solid #f1f5f9} th{text-align:left;border-bottom:1px solid #e5e7eb}</style></head><body>");
+            sb.AppendLine("<div class='wrap'>");
+            sb.AppendLine($"<div class='head'><h2 style='margin:0;font-size:20px'>Sales Analytics Report</h2><div class='muted'>Generated on {DateTime.Now} • Currency: {analytics.Currency}</div></div>");
+            sb.AppendLine("<div class='grid'>");
+            sb.AppendLine($"<div class='kpi'><div><div class='muted'>Total Sales</div><div style='font-size:16px;font-weight:700'>{analytics.TotalSales}</div></div></div>");
+            sb.AppendLine($"<div class='kpi'><div><div class='muted'>Total Revenue</div><div style='font-size:16px;font-weight:700'>{F((decimal)analytics.TotalRevenue)}</div></div></div>");
+            sb.AppendLine($"<div class='kpi'><div><div class='muted'>Monthly Revenue</div><div style='font-size:16px;font-weight:700'>{F((decimal)analytics.MonthlyRevenue)}</div></div></div>");
+            sb.AppendLine($"<div class='kpi'><div><div class='muted'>Weekly Revenue</div><div style='font-size:16px;font-weight:700'>{F((decimal)analytics.WeeklyRevenue)}</div></div></div>");
+            sb.AppendLine($"<div class='kpi'><div><div class='muted'>Avg. Order Value</div><div style='font-size:16px;font-weight:700'>{F((decimal)analytics.AverageOrderValue)}</div></div></div>");
+            sb.AppendLine("</div>");
+            sb.AppendLine("<div style='padding:0 16px 16px'><h3 style='margin:8px 0 10px;font-size:16px'>Top Performing Products</h3>");
+            sb.AppendLine("<table><thead><tr><th>Product</th><th style='text-align:right'>Sales</th><th style='text-align:right'>Revenue</th></tr></thead><tbody>");
+            foreach (var p in analytics.TopProducts)
+            {
+                sb.AppendLine($"<tr><td>{System.Net.WebUtility.HtmlEncode((string)p.Name)}</td><td style='text-align:right'>{p.Sales}</td><td style='text-align:right'>{F((decimal)p.Revenue)}</td></tr>");
+            }
+            sb.AppendLine("</tbody></table></div>");
+            sb.AppendLine("</div></body></html>");
+            return sb.ToString();
         }
 
         [HttpGet("my-monthly-series")]

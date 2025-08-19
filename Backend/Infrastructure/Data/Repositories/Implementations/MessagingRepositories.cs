@@ -77,16 +77,21 @@ namespace Raqmiya.Infrastructure.Data.Repositories.Implementations
         public async Task AddAsync(ServiceRequest request) { await _db.ServiceRequests.AddAsync(request); }
         public Task<List<ServiceRequest>> GetForCreatorAsync(int creatorId, ServiceRequestStatus[] statuses, int take = 50, int skip = 0)
             => _db.ServiceRequests
+                .Include(sr => sr.Conversation)
+                    .ThenInclude(c => c.Customer)
                 .Where(sr => sr.Conversation.CreatorId == creatorId && statuses.Contains(sr.Status))
                 .OrderByDescending(sr => sr.CreatedAt)
                 .Skip(skip).Take(take)
                 .ToListAsync();
         public Task<List<ServiceRequest>> GetForCustomerAsync(int customerId, ServiceRequestStatus[] statuses, int take = 50, int skip = 0)
             => _db.ServiceRequests
+                .Include(sr => sr.Conversation)
+                    .ThenInclude(c => c.Creator)
                 .Where(sr => sr.RequestedByCustomerId == customerId && statuses.Contains(sr.Status))
                 .OrderByDescending(sr => sr.CreatedAt)
                 .Skip(skip).Take(take)
                 .ToListAsync();
+        public void Remove(ServiceRequest request) { _db.ServiceRequests.Remove(request); }
         public Task SaveChangesAsync() => _db.SaveChangesAsync();
     }
 
@@ -124,6 +129,16 @@ namespace Raqmiya.Infrastructure.Data.Repositories.Implementations
             => _db.ServiceRequestDeadlineChanges.FirstOrDefaultAsync(x => x.Id == id);
         public Task<ServiceRequestDeadlineChange?> GetPendingByServiceRequestAsync(Guid serviceRequestId)
             => _db.ServiceRequestDeadlineChanges.FirstOrDefaultAsync(x => x.ServiceRequestId == serviceRequestId && x.Status == DeadlineChangeStatus.Pending);
+        public Task<ServiceRequestDeadlineChange?> GetLatestByServiceRequestAsync(Guid serviceRequestId)
+            => _db.ServiceRequestDeadlineChanges
+                .Where(x => x.ServiceRequestId == serviceRequestId)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
+        public Task<List<ServiceRequestDeadlineChange>> ListByServiceRequestAsync(Guid serviceRequestId)
+            => _db.ServiceRequestDeadlineChanges
+                .Where(x => x.ServiceRequestId == serviceRequestId)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
         public async Task AddAsync(ServiceRequestDeadlineChange change) { await _db.ServiceRequestDeadlineChanges.AddAsync(change); }
         public Task SaveChangesAsync() => _db.SaveChangesAsync();
     }

@@ -1,0 +1,38 @@
+<div class="services-page compact">
+  <div class="header">
+    <h1>Services</h1>
+    <p class="sub">Track and manage all your ongoing services and active requests.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab==='customer'" (click)="selectTab('customer')">
+      <i class="fas fa-briefcase"></i>
+      <span>My Services</span>
+    </button>
+    <button class="tab" [class.active]="activeTab==='creator'" (click)="selectTab('creator')" *ngIf="isCreator">
+      <i class="fas fa-handshake"></i>
+      <span>Active Requests (Creator)</span>
+    </button>
+    <button class="tab" [class.active]="activeTab==='deadlines'" (click)="selectTab('deadlines')">
+      <i class="fas fa-hourglass-half"></i>
+      <span>Deadline Updates</span>
+    </button>
+  </div>
+
+  <div class="content">
+    <section *ngIf="activeTab==='customer'" class="panel">
+      <h2 class="section-title"><i class="fas fa-briefcase"></i> My Services</h2>
+      <app-customer-service-requests-bar></app-customer-service-requests-bar>
+    </section>
+
+    <section *ngIf="activeTab==='creator'" class="panel">
+      <h2 class="section-title"><i class="fas fa-handshake"></i> Active Requests</h2>
+      <app-service-requests-bar></app-service-requests-bar>
+    </section>
+
+    <section *ngIf="activeTab==='deadlines'" class="panel">
+      <h2 class="section-title"><i class="fas fa-hourglass-half"></i> Deadline Updates</h2>
+      <app-deadline-updates-bar></app-deadline-updates-bar>
+    </section>
+  </div>
+</div>

@@ -171,6 +171,15 @@ export class PaymentService {
       .pipe(map(res => res.series || []));
   }
 
+  // Email my analytics report
+  emailMyAnalyticsReport(currency: string = 'USD'): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${this.baseUrl}/revenue-analytics/email-my-report?currency=${encodeURIComponent(currency)}`,
+      {},
+      { headers: this.getHeaders() }
+    );
+  }
+
   // Convert currency with proper EGP/USD conversion
   convertCurrency(amount: number, fromCurrency: string, toCurrency: string): Observable<{
     originalAmount: number;

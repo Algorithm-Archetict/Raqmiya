@@ -4,8 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DashboardSidebar } from '../../dashboard-sidebar/dashboard-sidebar';
 import { PaymentService, BalanceResponse, RevenueAnalytics } from '../../../core/services/payment.service';
-import { ServiceRequestsBar } from '../service-requests-bar/service-requests-bar';
-import { CustomerServiceRequestsBar } from '../../customer/service-requests-bar/service-requests-bar';
+// Services widgets moved to dedicated Services page; keep dashboard lean
 
 interface DashboardData {
   balance: number;
@@ -18,7 +17,7 @@ interface DashboardData {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, DashboardSidebar, ServiceRequestsBar, CustomerServiceRequestsBar],
+  imports: [CommonModule, RouterModule, FormsModule, DashboardSidebar],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css']
 })

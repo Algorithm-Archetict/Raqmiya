@@ -7,12 +7,45 @@
 .sr-empty{color:#9ca3af;font-style:italic}
 .sr-list{display:flex;flex-direction:column;gap:8px}
 .sr-item{display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid #24324a;border-radius:8px;background:#0b1221}
-.sr-meta{display:flex;align-items:center;gap:12px}
-.sr-status{font-size:12px;padding:2px 8px;border-radius:9999px;border:1px solid #334155;background:#0b1221}
+.sr-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+/* Identity chip (creator) to match creator bar */
+.sr-customer{display:inline-flex;align-items:center;gap:12px;font-size:15px;padding:8px 14px;border-radius:9999px;border:1px solid #334155;background:linear-gradient(180deg,#0f172a,#0b1221);color:#e8edf5;line-height:1;box-shadow:0 1px 0 rgba(148,163,184,.15), inset 0 0 0 1px rgba(51,65,85,.35)}
+.sr-customer.neutral{opacity:.8}
+.sr-customer i{color:#94a3b8}
+.sr-customer span{font-weight:700;letter-spacing:.2px;font-size:13px;line-height:1.2;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;display:inline-block}
+.sr-avatar{width:50px;height:50px;border-radius:50%;object-fit:cover;border:1px solid #334155;background:#111827;box-shadow:0 0 0 2px rgba(17,24,39,.6)}
+.sr-customer:hover{box-shadow:0 0 0 2px rgba(37,99,235,.25), inset 0 0 0 1px rgba(51,65,85,.45)}
+.sr-status{font-size:12px;padding:2px 8px;border-radius:9999px;border:1px solid #334155;background:#0b1221;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .sr-status.accepted{border-color:#2563eb;color:#bfdbfe}
 .sr-status.confirmed{border-color:#16a34a;color:#bbf7d0}
+.sr-status.pending{border-color:#f59e0b;color:#fde68a}
 .sr-deadline{margin-left:auto;display:flex;align-items:center;gap:6px;color:#e5e7eb}
-.sr-deadline.overdue{color:#fecaca}
-.sr-body{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.sr-req{color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%}
-.sr-budget{color:#cbd5e1;font-size:12px}
+.sr-deadline.overdue{color:#fecaca;background:#4a0b0b33;border:1px solid #7f1d1d;border-radius:9999px;padding:2px 10px;white-space:normal;line-height:1.2}
+.sr-body{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.sr-actions{display:flex;gap:8px;flex-shrink:0;order:1;margin-left:auto}
+.sr-req{color:#e2e8f0;overflow:visible;display:block;white-space:pre-wrap;flex:1 1 100%;min-width:0;word-break:break-word;line-height:1.6;order:2}
+.sr-req.collapsed{display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
+.sr-budget{order:0;flex:0 0 auto;color:#eaf2ff;background:linear-gradient(180deg, #0f172a, #0b1221);border:1px solid #2563eb;padding:6px 12px;border-radius:9999px;font-size:15px;font-weight:700;box-shadow:0 1px 0 rgba(148,163,184,.15), inset 0 0 0 1px rgba(37,99,235,.25)}
+
+/* Read more/less toggle */
+.sr-toggle{background:transparent;border:0;color:#93c5fd;cursor:pointer;order:3;align-self:flex-start;padding:0;margin:0}
+.sr-toggle:hover{text-decoration:underline;color:#bfdbfe}
+
+/* Compact scaling for small screens */
+@media (max-width: 480px){
+  .sr-customer{gap:10px;font-size:14px;padding:6px 12px}
+  .sr-avatar{width:28px;height:28px}
+  .sr-customer span{max-width:180px}
+  .sr-req{flex-basis:100%}
+}
+
+/* micro-animations & hover polish (no entrance animation to avoid re-trigger) */
+.sr-list .sr-item{transition:border-color .2s, box-shadow .2s, transform .12s}
+.sr-list .sr-item:hover{border-color:#2b3b5a;box-shadow:0 6px 18px rgba(0,0,0,.25);transform:translateY(-1px)}
+.refresh-btn{transition:background-color .2s, border-color .2s, transform .06s, box-shadow .2s}
+.refresh-btn:hover{background:#0f1a32;border-color:#3b6bff;box-shadow:0 4px 14px rgba(59,107,255,.18)}
+.refresh-btn:active{transform:translateY(1px)}
+.sr-item + .sr-item{position:relative}
+.sr-item + .sr-item::before{content:"";position:absolute;top:-6px;left:8px;right:8px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}

@@ -1,7 +1,7 @@
 <div class="sr-bar">
   <div class="sr-header">
     <h3>Your Ongoing Services</h3>
-    <button class="refresh-btn" (click)="fetch()" [disabled]="loading">
+    <button class="refresh-btn" (click)="fetch(true)" [disabled]="loading">
       <span *ngIf="!loading">Refresh</span>
       <span *ngIf="loading">Loading...</span>
     </button>
@@ -14,17 +14,45 @@
   </div>
 
   <div class="sr-list" *ngIf="!loading && !error && items.length > 0">
-    <div class="sr-item" *ngFor="let it of items">
+    <div class="sr-item" *ngFor="let it of items; trackBy: trackById">
       <div class="sr-meta">
-        <div class="sr-status" [class.confirmed]="it.status==='ConfirmedByCustomer'" [class.accepted]="it.status==='AcceptedByCreator'">{{ it.status }}</div>
+        <div class="sr-customer" *ngIf="it.creatorUsername as uname; else noCreator">
+          <img *ngIf="it.creatorProfileImageUrl" class="sr-avatar" [src]="it.creatorProfileImageUrl" alt="avatar" />
+          <i class="fas fa-user" *ngIf="!it.creatorProfileImageUrl"></i>
+          <span>@{{ uname }}</span>
+        </div>
+        <ng-template #noCreator>
+          <div class="sr-customer neutral">
+            <i class="fas fa-user"></i>
+            <span>Creator</span>
+          </div>
+        </ng-template>
+        <div class="sr-status" [class.confirmed]="it.status==='ConfirmedByCustomer'" [class.accepted]="it.status==='AcceptedByCreator'" [class.pending]="it.status==='Pending'">
+          <i class="fas fa-hourglass-half" *ngIf="it.status==='Pending'"></i>
+          <i class="fas fa-user-check" *ngIf="it.status==='AcceptedByCreator'"></i>
+          <i class="fas fa-check-circle" *ngIf="it.status==='ConfirmedByCustomer'"></i>
+          <span>
+            {{ it.status==='Pending' ? 'Awaiting Creator Approval' : (it.status==='AcceptedByCreator' ? 'Awaiting Customer Approval' : 'Confirmed') }}
+          </span>
+        </div>
         <div class="sr-deadline" [class.overdue]="it.overdue">
           <i class="far fa-clock"></i>
           <span>{{ it.timeLeft }}</span>
         </div>
       </div>
       <div class="sr-body">
-        <div class="sr-req">{{ it.requirements }}</div>
+        <div class="sr-req" [attr.data-id]="it.id" [class.collapsed]="!isExpanded(it.id)" [title]="it.requirements">{{ it.requirements }}</div>
+        <button class="sr-toggle" *ngIf="shouldShowToggle(it)" (click)="toggleExpand(it)">
+          {{ isExpanded(it.id) ? 'Read less' : 'Read more' }}
+        </button>
         <div class="sr-budget" *ngIf="it.proposedBudget != null">Budget: {{ it.proposedBudget | number:'1.0-2' }} {{ it.currency || '' }}</div>
+        <div class="sr-actions">
+          <ng-container *ngIf="it.status==='AcceptedByCreator'">
+            <button class="refresh-btn" (click)="confirmRequest(it)" [disabled]="loading || actionBusy===it.id" title="Accept the proposed deadline">Accept</button>
+            <button class="refresh-btn" (click)="declineRequest(it)" [disabled]="loading || actionBusy===it.id" title="Decline this request">Decline</button>
+          </ng-container>
+          <!-- No actions for Pending (waiting on creator) or Confirmed (handled elsewhere) -->
+        </div>
       </div>
     </div>
   </div>
