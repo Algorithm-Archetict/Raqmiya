@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 
@@ -70,9 +70,42 @@ namespace Raqmiya.Infrastructure
 
         public async Task DeleteAsync(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            // Load product with dependents to ensure safe removal without FK violations
+            var product = await _context.Products
+                .Include(p => p.Files)
+                .Include(p => p.ProductTags)
+                .Include(p => p.WishlistItems)
+                .Include(p => p.Reviews)
+                .Include(p => p.OfferCodes)
+                .Include(p => p.Variants)
+                .Include(p => p.ProductViews)
+                .Include(p => p.Licenses)
+                .Include(p => p.UserInteractions)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (product != null)
             {
+                // Remove dependents first
+                if (product.Files?.Any() == true)
+                    _context.Files.RemoveRange(product.Files);
+                if (product.ProductTags?.Any() == true)
+                    _context.ProductTags.RemoveRange(product.ProductTags);
+                if (product.WishlistItems?.Any() == true)
+                    _context.WishlistItems.RemoveRange(product.WishlistItems);
+                if (product.Reviews?.Any() == true)
+                    _context.Reviews.RemoveRange(product.Reviews);
+                if (product.OfferCodes?.Any() == true)
+                    _context.OfferCodes.RemoveRange(product.OfferCodes);
+                if (product.Variants?.Any() == true)
+                    _context.Variants.RemoveRange(product.Variants);
+                if (product.ProductViews?.Any() == true)
+                    _context.ProductViews.RemoveRange(product.ProductViews);
+                if (product.Licenses?.Any() == true)
+                    _context.Licenses.RemoveRange(product.Licenses);
+                if (product.UserInteractions?.Any() == true)
+                    _context.UserInteractions.RemoveRange(product.UserInteractions);
+
+                // Finally remove the product
                 _context.Products.Remove(product);
                 await _context.SaveChangesAsync();
             }
@@ -94,7 +127,7 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.OfferCodes)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
 
-                .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
+                .Include(p => p.Category)
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                 .Include(p => p.WishlistItems)
                 .Include(p => p.ProductViews)
@@ -108,7 +141,7 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.Variants)
                 .Include(p => p.OfferCodes)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
+                .Include(p => p.Category)
                 .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                 .Include(p => p.WishlistItems)
                 .Include(p => p.OrderItems)
@@ -134,16 +167,16 @@ namespace Raqmiya.Infrastructure
         {
             var query = _context.Products
                 .AsNoTracking()
-                .Include(p => p.ProductCategories).ThenInclude(pc => pc.Category)
+                .Include(p => p.Category)
                 .Include(p => p.Creator)
-                .Include(p => p.Reviews).ThenInclude(r => r.User)
-                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive);
+                .Include(p => p.Reviews).ThenInclude(r => r.User);
+                //.Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive);
             return await ApplyPagination(query, pageNumber, pageSize).ToListAsync();
         }
         public async Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId, int pageNumber, int pageSize)
         {
             return await _context.Products
-                .Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
+                .Where(p => p.CategoryId == categoryId)
                 .OrderByDescending(p => p.PublishedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -151,6 +184,41 @@ namespace Raqmiya.Infrastructure
                 .Include(p => p.Creator)
                 .Include(p => p.Reviews).ThenInclude(r => r.User)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Product>> GetProductsByMultipleCategoryIdsAsync(List<int> categoryIds, int pageNumber, int pageSize)
+        {
+            return await _context.Products
+                .Where(p => categoryIds.Contains(p.CategoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .AsNoTracking()
+                .Include(p => p.Creator)
+                .Include(p => p.Category)
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetProductsCountByMultipleCategoryIdsAsync(List<int> categoryIds)
+        {
+            return await _context.Products
+                .Where(p => categoryIds.Contains(p.CategoryId) && p.Status == "published" && p.IsPublic && !p.IsDeleted && p.Creator.IsActive)
+                .CountAsync();
+        }
+
+        public async Task<int> GetProductsCountByTagIdAsync(int tagId)
+        {
+            return await _context.Products
+                .Where(p => p.ProductTags.Any(pt => pt.TagId == tagId))
+                .CountAsync();
+        }
+
+        public async Task<int> GetProductsCountBySearchAsync(string searchTerm)
+        {
+            return await _context.Products
+                .Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm))
+                .CountAsync();
         }
         public async Task<List<Product>> GetProductsByTagIdAsync(int tagId, int? pageNumber = 1, int? pageSize = 10)
         {
@@ -279,23 +347,17 @@ namespace Raqmiya.Infrastructure
 
         public async Task<List<Tag>> GetAvailableTagsForProductCategoriesAsync(int productId)
         {
-            // Get the categories associated with the product
-            var categoryIds = await _context.ProductCategories
-                .Where(pc => pc.ProductId == productId)
-                .Select(pc => pc.CategoryId)
-                .ToListAsync();
-
-            if (!categoryIds.Any())
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null)
             {
                 return new List<Tag>();
             }
 
-            // Get tags associated with those categories
             return await _context.CategoryTags
                 .AsNoTracking()
-                .Where(ct => categoryIds.Contains(ct.CategoryId))
+                .Where(ct => ct.CategoryId == product.CategoryId)
                 .Select(ct => ct.Tag)
-                .Distinct() // Ensure unique tags
+                .Distinct()
                 .ToListAsync();
         }
 

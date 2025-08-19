@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,5 +31,24 @@ namespace Raqmiya.Infrastructure
         public async Task UpdateAsync(User user) { _context.Users.Update(user); await _context.SaveChangesAsync(); }
 
         public async Task<List<User>> GetAllAsync() => await _context.Users.ToListAsync();
+
+        public async Task<List<User>> SearchCreatorsAsync(string? query, int take = 50, int skip = 0)
+        {
+            var q = _context.Users
+                .AsNoTracking()
+                .Where(u => u.Role == "Creator" && u.IsActive && !u.IsDeleted);
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var term = query.Trim().ToLower();
+                q = q.Where(u => (u.Username ?? "").ToLower().Contains(term));
+            }
+
+            return await q
+                .OrderBy(u => u.Username)
+                .Skip(skip)
+                .Take(take)
+                .ToListAsync();
+        }
     }
 }

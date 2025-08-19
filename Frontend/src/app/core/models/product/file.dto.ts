@@ -3,4 +3,5 @@ export interface FileDTO {
   name: string;
   fileUrl: string;
   size: number; // File size in bytes
+  isDownloading?: boolean; // Optional property for UI state
 }

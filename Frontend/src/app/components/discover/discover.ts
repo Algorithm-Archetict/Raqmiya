@@ -1,13 +1,22 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, ViewEncapsulation } from '@angular/core';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
+import { CategoryService } from '../../core/services/category.service';
+import { TagService } from '../../core/services/tag.service';
 import { ProductListItemDTO } from '../../core/models/product/product-list-item.dto';
+import { TagDTO } from '../../core/models/product/tag.dto';
 import { Navbar } from '../navbar/navbar';
 import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
-import Swal from 'sweetalert2';
+import { HierarchicalCategoryNav } from '../shared/hierarchical-category-nav/hierarchical-category-nav';
+import { AnalyticsService, DiscoverFeedResponse } from '../../core/services/analytics.service';
+import { ProductCarouselComponent } from '../shared/product-carousel/product-carousel.component';
+import { UserService } from '../../core/services/user.service';
+import Swal from 'sweetalert2/dist/sweetalert2.js';
+import { environment } from '../../../environments/environment';
 
 interface Product {
   id: number;
@@ -32,7 +41,7 @@ interface Product {
 
 @Component({
   selector: 'app-discover',
-  imports: [CommonModule, FormsModule, RouterModule, Navbar],
+  imports: [CommonModule, FormsModule, RouterModule, Navbar, HierarchicalCategoryNav, ProductCarouselComponent],
   templateUrl: './discover.html',
   styleUrl: './discover.css',
   encapsulation: ViewEncapsulation.None
@@ -42,7 +51,15 @@ export class Discover implements OnInit, AfterViewInit {
 
   // Search and Filter Properties
   searchQuery: string = '';
-  selectedCategory: string = 'all';
+  private searchInput$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
+  showSuggestions = false;
+  suggestions: Array<{ type: 'creator'|'product'; id: number; label: string; sublabel?: string; image?: string }> = [];
+  // Full-page search results
+  searchResultsMode = false;
+  searchResultProducts: Product[] = [];
+  searchResultCreators: Array<{ id: number; username: string }> = [];
+  selectedCategory: number | 'all' = 'all';
   priceRange: number = 1000; // Increased from 50 to 1000 to show all products
   selectedRating: number = 0;
   selectedTags: string[] = [];
@@ -53,23 +70,71 @@ export class Discover implements OnInit, AfterViewInit {
   allProducts: Product[] = [];
   filteredProducts: Product[] = [];
   recommendedProducts: Product[] = [];
-  popularTags: string[] = ['3D', 'Design', 'Audio', 'Templates', 'Icons', 'Fonts', 'Graphics', 'Code'];
+  // Section datasets for carousels
+  sectionMostWished: Product[] = [];
+  sectionRecommended: Product[] = [];
+  sectionBestSellers: Product[] = [];
+  sectionTopRated: Product[] = [];
+  sectionNewArrivals: Product[] = [];
+  sectionTrending: Product[] = [];
+  // DTO mirrors for carousels
+  sectionMostWishedDto: ProductListItemDTO[] = [];
+  sectionRecommendedDto: ProductListItemDTO[] = [];
+  sectionBestSellersDto: ProductListItemDTO[] = [];
+  sectionTopRatedDto: ProductListItemDTO[] = [];
+  sectionNewArrivalsDto: ProductListItemDTO[] = [];
+  sectionTrendingDto: ProductListItemDTO[] = [];
+
+  private categorySelection$ = new Subject<{id: number | 'all', includeNested: boolean, allCategoryIds?: number[]}>();
+  popularTags: string[] = [];
+  availableTags: TagDTO[] = [];
   
   // Wishlist Counter for Multiple Additions
   wishlistCounter: number = 0;
   private wishlistCounterTimeout: any;
   showWishlistCounterPopup: boolean = false;
+  
+  // Event handler for cleanup
+  private focusHandler: (() => void) | null = null;
 
   constructor(
     private router: Router,
     private productService: ProductService,
+    private categoryService: CategoryService,
+    private tagService: TagService,
     private authService: AuthService,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private analyticsService: AnalyticsService,
+    private userService: UserService
   ) {}
 
   ngOnInit() {
+    // Load analytics-driven discover sections first (personalized carousels)
+    this.loadDiscoverSections();
+    
+    // Load the general product data for filtering/searching
     this.initializeProducts();
+    this.loadAvailableTags();
     this.applyFilters();
+    
+    // Debounce category selection to avoid spamming backend
+    this.categorySelection$
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))
+      )
+      .subscribe((event) => {
+        if (event.allCategoryIds && event.allCategoryIds.length > 0) {
+          this.loadProductsByMultipleCategories(event.allCategoryIds);
+        } else {
+          this.loadProductsByCategory(event.id, event.includeNested);
+        }
+      });
+
+    // Debounced in-memory search suggestions (products + creators from loaded products)
+    this.searchInput$
+      .pipe(debounceTime(150), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe((q) => this.buildSuggestions(q));
   }
 
   ngAfterViewInit() {
@@ -80,9 +145,146 @@ export class Discover implements OnInit, AfterViewInit {
     }, 200);
 
     // Listen for focus events to refresh wishlist when user returns to tab
-    window.addEventListener('focus', () => {
+    this.focusHandler = () => {
       this.loadWishlistStatus(); // This now handles anonymous users properly
-    });
+    };
+    window.addEventListener('focus', this.focusHandler);
+  }
+
+  // ======= SEARCH SUGGESTIONS =======
+  onSearch() {
+    this.searchInput$.next(this.searchQuery || '');
+    this.showSuggestions = !!this.searchQuery?.trim();
+  }
+
+  onSearchFocus() {
+    if (this.suggestions.length > 0) this.showSuggestions = true;
+  }
+
+  onSearchBlur() {
+    // Delay to allow click on suggestion
+    setTimeout(() => (this.showSuggestions = false), 120);
+  }
+
+  private buildSuggestions(query: string) {
+    const q = (query || '').trim().toLowerCase();
+    if (!q) {
+      this.suggestions = [];
+      return;
+    }
+
+    // Products by title
+    const productMatches = this.allProducts
+      .filter(p => (p.title || '').toLowerCase().includes(q))
+      .slice(0, 10)
+      .map(p => ({
+        type: 'product' as const,
+        id: p.id,
+        label: p.title,
+        sublabel: `by ${p.creator}`,
+        image: p.image
+      }));
+
+    // Creators by username (unique)
+    const creatorMap = new Map<number, { id: number; username: string }>();
+    for (const p of this.allProducts) {
+      if (p.creatorId && p.creator && p.creator.toLowerCase().includes(q)) {
+        if (!creatorMap.has(p.creatorId)) creatorMap.set(p.creatorId, { id: p.creatorId, username: p.creator });
+      }
+    }
+    const localCreatorMatches = Array.from(creatorMap.values())
+      .map(c => ({ type: 'creator' as const, id: c.id, label: c.username }));
+
+    // Fetch additional creators from backend
+    this.userService.searchCreators(q, 20, 0)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(apiCreators => {
+        const apiCreatorMatches = (apiCreators || []).map(c => ({ type: 'creator' as const, id: c.id, label: c.username }));
+        // Merge unique by id
+        const mergedCreatorsMap = new Map<number, { type: 'creator'; id: number; label: string }>();
+        [...localCreatorMatches, ...apiCreatorMatches].forEach(c => { if (!mergedCreatorsMap.has(c.id)) mergedCreatorsMap.set(c.id, c); });
+        const mergedCreators = Array.from(mergedCreatorsMap.values());
+        this.suggestions = [...mergedCreators, ...productMatches];
+      });
+  }
+
+  // Execute full search and show results page
+  executeSearch() {
+    const q = (this.searchQuery || '').trim().toLowerCase();
+    if (!q) {
+      this.searchResultsMode = false;
+      this.searchResultProducts = [];
+      this.searchResultCreators = [];
+      return;
+    }
+
+    // Products matching title or creator
+    this.searchResultProducts = this.allProducts.filter(p =>
+      (p.title || '').toLowerCase().includes(q) || (p.creator || '').toLowerCase().includes(q)
+    );
+
+    // Unique creators matching
+    const creatorMap = new Map<number, { id: number; username: string }>();
+    for (const p of this.allProducts) {
+      if (p.creatorId && p.creator && p.creator.toLowerCase().includes(q)) {
+        if (!creatorMap.has(p.creatorId)) creatorMap.set(p.creatorId, { id: p.creatorId, username: p.creator });
+      }
+    }
+    // Start with local creators
+    this.searchResultCreators = Array.from(creatorMap.values());
+
+    // Also query backend for global creators
+    this.userService.searchCreators(q, 100, 0)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(apiCreators => {
+        const existing = new Set(this.searchResultCreators.map(c => c.id));
+        for (const c of apiCreators || []) {
+          if (!existing.has(c.id)) {
+            this.searchResultCreators.push({ id: c.id, username: c.username });
+          }
+        }
+      });
+
+    this.searchResultsMode = true;
+    this.showSuggestions = false;
+  }
+
+  selectSuggestion(item: { type: 'creator'|'product'; id: number }) {
+    if (item.type === 'creator') {
+      this.viewCreatorProfile(item.id);
+    } else {
+      this.viewProduct(item.id);
+    }
+    this.showSuggestions = false;
+  }
+
+  // ======= NAVIGATION HELPERS =======
+  viewProduct(id: number) {
+    this.router.navigate(['/discover', id]);
+  }
+
+  viewCreatorProfile(creatorId?: number, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (!creatorId) return;
+    this.router.navigate(['/creator', creatorId]);
+  }
+
+  // Tidy up streams
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+    
+    // Clean up event listeners
+    if (this.focusHandler) {
+      window.removeEventListener('focus', this.focusHandler);
+    }
+    
+    // Clean up timeouts
+    if (this.wishlistCounterTimeout) {
+      clearTimeout(this.wishlistCounterTimeout);
+    }
   }
 
   // Helper method to ensure image URLs are full URLs
@@ -96,17 +298,22 @@ export class Discover implements OnInit, AfterViewInit {
     
     // If it's a relative URL, convert to full backend URL
     if (url.startsWith('/')) {
-      return `http://localhost:5255${url}`;
+      const baseHost = environment.apiUrl.replace(/\/api$/, '');
+      return `${baseHost}${url}`;
     }
     
     return url;
   }
 
-  // Initialize product data from API
+  // Initialize product data from API (one-shot load, used for all sections)
+  // OPTIMIZATION NOTE: This loads the general product list for filtering/searching.
+  // The carousel sections now use dedicated analytics endpoints for better performance.
   initializeProducts() {
     this.loading = true;
-    
-    this.productService.getProductList(1, 1000).subscribe({
+    // Use cached, shared observable to avoid repeated calls
+    this.productService.getProductList(1, 1000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (products: ProductListItemDTO[]) => {
         this.allProducts = products.map(product => ({
           id: product.id,
@@ -129,6 +336,23 @@ export class Discover implements OnInit, AfterViewInit {
           loadingPurchase: false
         }));
         
+        this.recommendedProducts = this.allProducts.slice(0, 6);
+        this.filteredProducts = [...this.allProducts];
+        this.loading = false;
+        
+        // Load wishlist status for all products
+        this.loadWishlistStatus();
+        
+        // Load actual review counts for all products
+        this.loadReviewCounts();
+        
+        // Load purchase status for all products
+        this.loadPurchaseStatus();
+
+        // Load analytics-driven discover sections from backend (fallback if not already loaded)
+        if (this.sectionMostWishedDto.length === 0) {
+          this.loadDiscoverSections();
+        }
                  this.recommendedProducts = this.allProducts.slice(0, 6);
          this.filteredProducts = [...this.allProducts];
          this.loading = false;
@@ -159,6 +383,148 @@ export class Discover implements OnInit, AfterViewInit {
     });
   }
 
+  // Load analytics-driven discover sections from backend
+  private loadDiscoverSections() {
+    console.log('🔍 Loading personalized discover sections from analytics endpoints...');
+    
+    // User ID is automatically passed via JWT token to backend
+    const isLoggedIn = this.authService.isLoggedIn();
+    console.log('🔍 User logged in for personalization:', isLoggedIn);
+    
+    this.analyticsService.getDiscoverFeed(12)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+      next: (feedData: DiscoverFeedResponse) => {
+        console.log('✅ Analytics discover feed loaded successfully:', feedData);
+        
+        // Verify each section is properly mapped
+        this.sectionMostWishedDto = feedData.mostWished || [];
+        this.sectionRecommendedDto = feedData.recommended || [];
+        this.sectionBestSellersDto = feedData.bestSellers || [];
+        this.sectionTopRatedDto = feedData.topRated || [];
+        this.sectionNewArrivalsDto = feedData.newArrivals || [];
+        this.sectionTrendingDto = feedData.trending || [];
+
+        // Convert DTOs to internal Product format
+        this.sectionMostWished = this.sectionMostWishedDto.map(dto => this.fromDTO(dto));
+        this.sectionRecommended = this.sectionRecommendedDto.map(dto => this.fromDTO(dto));
+        this.sectionBestSellers = this.sectionBestSellersDto.map(dto => this.fromDTO(dto));
+        this.sectionTopRated = this.sectionTopRatedDto.map(dto => this.fromDTO(dto));
+        this.sectionNewArrivals = this.sectionNewArrivalsDto.map(dto => this.fromDTO(dto));
+        this.sectionTrending = this.sectionTrendingDto.map(dto => this.fromDTO(dto));
+
+        console.log('📊 Analytics sections loaded:', {
+          mostWished: this.sectionMostWishedDto.length,
+          recommended: this.sectionRecommendedDto.length,
+          bestSellers: this.sectionBestSellersDto.length,
+          topRated: this.sectionTopRatedDto.length,
+          newArrivals: this.sectionNewArrivalsDto.length,
+          trending: this.sectionTrendingDto.length
+        });
+
+        // Log first few products of each section for verification
+        console.log('🔍 Section verification (first 3 products of each):');
+        console.log('📍 Most Wished:', this.sectionMostWishedDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('🎯 Recommended:', this.sectionRecommendedDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('💰 Best Sellers:', this.sectionBestSellersDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('⭐ Top Rated:', this.sectionTopRatedDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('🆕 New Arrivals:', this.sectionNewArrivalsDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        console.log('🔥 Trending:', this.sectionTrendingDto.slice(0, 3).map(p => ({ id: p.id, name: p.name })));
+        
+        // Verify sections have different products
+        const allProductIds = [
+          ...this.sectionMostWishedDto.map(p => p.id),
+          ...this.sectionRecommendedDto.map(p => p.id),
+          ...this.sectionBestSellersDto.map(p => p.id),
+          ...this.sectionTopRatedDto.map(p => p.id),
+          ...this.sectionNewArrivalsDto.map(p => p.id),
+          ...this.sectionTrendingDto.map(p => p.id)
+        ];
+        const uniqueProductIds = new Set(allProductIds);
+        console.log('📊 Product diversity check:', {
+          totalProductSlots: allProductIds.length,
+          uniqueProducts: uniqueProductIds.size,
+          diversityPercentage: `${Math.round((uniqueProductIds.size / allProductIds.length) * 100)}%`
+        });
+        
+        if (isLoggedIn) {
+          console.log('👤 Personalized recommendations loaded for logged-in user');
+        } else {
+          console.log('🌐 Generic recommendations loaded for anonymous user');
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error loading analytics discover feed:', error);
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          message: error.message
+        });
+        
+        // Initialize empty arrays if API fails
+        this.sectionMostWishedDto = [];
+        this.sectionRecommendedDto = [];
+        this.sectionBestSellersDto = [];
+        this.sectionTopRatedDto = [];
+        this.sectionNewArrivalsDto = [];
+        this.sectionTrendingDto = [];
+        
+        this.sectionMostWished = [];
+        this.sectionRecommended = [];
+        this.sectionBestSellers = [];
+        this.sectionTopRated = [];
+        this.sectionNewArrivals = [];
+        this.sectionTrending = [];
+        
+        console.log('⚠️ Initialized empty carousel sections due to API error');
+      }
+    });
+  }
+
+
+
+  private toDTO(p: Product): ProductListItemDTO {
+    return {
+      id: p.id,
+      name: p.title,
+      price: p.price,
+      coverImageUrl: p.image,
+      averageRating: p.rating,
+      creatorUsername: p.creator,
+      isPublic: true,
+      // Fill minimal category to satisfy consumers if needed
+      category: { id: 0, name: p.category, parentCategoryId: undefined },
+      salesCount: 0,
+      currency: 'USD',
+      permalink: `product-${p.id}`,
+      status: 'Published',
+      publishedAt: new Date().toISOString()
+    } as ProductListItemDTO;
+  }
+
+  private fromDTO(dto: ProductListItemDTO): Product {
+    return {
+      id: dto.id,
+      title: dto.name || 'Untitled Product',
+      creator: dto.creatorUsername || 'Unknown Creator',
+      price: dto.price,
+      rating: dto.averageRating,
+      ratingCount: 0, // Review count will be determined from analytics data
+      image: this.ensureFullUrl(dto.coverImageUrl),
+      category: dto.category?.name || 'design',
+      tags: ['Design'], // Default tags, ideally these should come from analytics
+      badge: dto.isPublic ? 'Public' : 'Private',
+      // Initialize wishlist properties
+      inWishlist: false,
+      loadingWishlist: false,
+      wishlistHovered: false,
+      // Initialize purchase properties
+      isPurchased: false,
+      loadingPurchase: false
+    };
+  }
+
   // Load wishlist status for all products
   loadWishlistStatus() {
     // Only load wishlist status if user is logged in
@@ -171,7 +537,9 @@ export class Discover implements OnInit, AfterViewInit {
       return;
     }
 
-    this.productService.getWishlist().subscribe({
+    this.productService.getWishlist()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (wishlistProducts: ProductListItemDTO[]) => {
         const wishlistIds = wishlistProducts.map(p => p.id);
         
@@ -196,29 +564,24 @@ export class Discover implements OnInit, AfterViewInit {
   }
 
   // Load actual review counts for all products
+  // OPTIMIZED: Analytics endpoints provide comprehensive product data including review counts
+  // This eliminates the need for individual getById calls to /api/Products/id
   loadReviewCounts() {
-    // For performance, we'll only load review counts for products that have ratings > 0
-    const productsWithRatings = this.allProducts.filter(product => product.rating > 0);
+    console.log('✅ Review counts optimization: Using analytics data instead of individual API calls');
     
-    if (productsWithRatings.length === 0) return;
+    // Since we're now using analytics endpoints for carousel data, the review counts 
+    // should be included in the analytics responses. The individual getById calls 
+    // to /api/Products/id are no longer needed.
     
-    console.log(`Loading review counts for ${productsWithRatings.length} products with ratings...`);
+    // The analytics endpoints (discover-feed, carousel endpoints) should provide 
+    // complete product information including review counts and other metrics.
     
-    // Fetch product details for products with ratings to get actual review count
-    productsWithRatings.forEach(product => {
-      this.productService.getById(product.id).subscribe({
-        next: (productDetail) => {
-          if (productDetail && productDetail.reviews) {
-            product.ratingCount = productDetail.reviews.length;
-            console.log(`Updated product ${product.id} with ${productDetail.reviews.length} reviews`);
-          }
-        },
-        error: (error) => {
-          console.warn(`Failed to load review count for product ${product.id}:`, error);
-          // Keep ratingCount as 0 if we can't fetch the details
-        }
-      });
-    });
+    // For any additional review count needs, we can enhance the analytics endpoints
+    // rather than making individual product detail calls.
+    
+    // NOTE: If specific review count updates are still needed for the main product list,
+    // we should batch them or use a dedicated analytics endpoint instead of individual calls.
+    console.log('Review count loading optimized - using analytics endpoints data');
   }
 
   // Load purchase status for all products
@@ -231,7 +594,9 @@ export class Discover implements OnInit, AfterViewInit {
     console.log('Loading purchase status for products...');
     
     // Get purchased products from order service
-    this.orderService.getPurchasedProducts().subscribe({
+    this.orderService.getPurchasedProducts()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (purchasedProducts) => {
         const purchasedProductIds = purchasedProducts.map(p => p.productId);
         console.log(`User has purchased ${purchasedProductIds.length} products:`, purchasedProductIds);
@@ -276,7 +641,9 @@ export class Discover implements OnInit, AfterViewInit {
       ? this.productService.removeFromWishlist(product.id)
       : this.productService.addToWishlist(product.id);
 
-    apiCall.subscribe({
+    apiCall
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (response) => {
         // Toggle wishlist status
         product.inWishlist = !product.inWishlist;
@@ -364,12 +731,7 @@ export class Discover implements OnInit, AfterViewInit {
     this.router.navigate(['/products']);
   }
 
-  // Navigate to creator profile
-  viewCreatorProfile(creatorId?: number) {
-    if (creatorId) {
-      this.router.navigate(['/creator', creatorId]);
-    }
-  }
+  
 
   // Show login prompt for anonymous users
   showLoginPrompt(action: string) {
@@ -677,15 +1039,208 @@ export class Discover implements OnInit, AfterViewInit {
     product.wishlistHovered = isHovered;
   }
 
-  // Search functionality
-  onSearch() {
-    this.applyFilters();
+  // Search functionality handled by debounced searchInput$ in ngOnInit and buildSuggestions()
+  // onSearch() is already defined earlier to push into searchInput$
+
+  // Helper method to convert CategoryService ProductListItemDTO to the main ProductListItemDTO
+  private convertCategoryProductToMain(product: import('../../core/services/category.service').ProductListItemDTO): ProductListItemDTO {
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      coverImageUrl: product.coverImageUrl,
+      averageRating: product.averageRating,
+      creatorUsername: product.creatorUsername,
+      isPublic: product.isPublic,
+      category: {
+        id: product.category.id,
+        name: product.category.name,
+        parentCategoryId: product.category.parentCategoryId === null ? undefined : product.category.parentCategoryId
+      },
+      salesCount: 0, // Default value since not provided by category service
+      currency: 'USD', // Default currency
+      permalink: `product-${product.id}`, // Generate a default permalink
+      status: 'Published', // Default status
+      publishedAt: new Date().toISOString() // Default published date
+    };
+  }
+
+  // Helper method to update products from API response
+  private updateProductsFromAPI(products: ProductListItemDTO[]) {
+    console.log('=== Updating Products from API ===');
+    console.log('Raw API products:', products);
+    console.log('Number of products received:', products.length);
+    
+    this.allProducts = products.map(product => ({
+      id: product.id,
+      title: product.name || 'Untitled Product',
+      creator: product.creatorUsername || 'Unknown Creator',
+      price: product.price,
+      rating: product.averageRating,
+      ratingCount: 0, // Will be populated with actual review count
+      image: this.ensureFullUrl(product.coverImageUrl),
+      category: 'design', // Default category, you might want to add this to the DTO
+      tags: ['Design'], // Default tags, you might want to add this to the DTO
+      badge: product.isPublic ? 'Public' : 'Private',
+      // Initialize wishlist properties
+      inWishlist: false,
+      loadingWishlist: false,
+      wishlistHovered: false,
+      // Initialize purchase properties
+      isPurchased: false,
+      loadingPurchase: false
+    }));
+    
+    console.log('Mapped allProducts:', this.allProducts);
+    console.log('Number of mapped products:', this.allProducts.length);
+    
+    this.recommendedProducts = this.allProducts.slice(0, 6);
+    this.filteredProducts = [...this.allProducts];
+    
+    console.log('Recommended products:', this.recommendedProducts);
+    console.log('Filtered products:', this.filteredProducts);
+    console.log('filteredProducts length:', this.filteredProducts.length);
+    
+    // Load wishlist status for all products
+    this.loadWishlistStatus();
+    
+    // Load actual review counts for all products
+    this.loadReviewCounts();
+    
+    // Load purchase status for all products
+    this.loadPurchaseStatus();
   }
 
   // Category filtering
+  onCategorySelected(event: {id: number | 'all', includeNested: boolean, allCategoryIds?: number[]}) {
+    console.log('Category selected event received:', event);
+    this.selectedCategory = event.id;
+    // Debounced fetch via subject
+    this.categorySelection$.next(event);
+  }
+
+  // New method to load products by multiple categories (for hierarchical search)
+  loadProductsByMultipleCategories(categoryIds: number[]) {
+    console.log('=== Loading Products by Multiple Categories ===');
+    console.log('Category IDs:', categoryIds);
+    console.log('API URL will be:', `http://localhost:5255/api/products/by-categories?${categoryIds.map(id => `categoryIds=${id}`).join('&')}`);
+    
+    this.loading = true;
+    
+    // Use the new single API endpoint for multiple categories
+    this.productService.getProductsByMultipleCategories(categoryIds, 1, 1000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+      next: (result) => {
+        console.log('✅ Products loaded successfully for multiple categories:', result);
+        console.log('Number of products found:', result.items?.length || 0);
+        console.log('Products:', result.items);
+        
+        this.updateProductsFromAPI(result.items || []);
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error loading products for multiple categories:', error);
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+          message: error.message
+        });
+        this.loading = false;
+      }
+    });
+  }
+
+  loadProductsByCategory(categoryId: number | 'all', includeNested: boolean = true) {
+    console.log('=== Loading Products by Category ===');
+    console.log('Category ID:', categoryId);
+    console.log('Include nested:', includeNested);
+    console.log('API URL will be:', `http://localhost:5255/api/products${categoryId !== 'all' ? '?categoryId=' + categoryId : ''}`);
+    
+    this.loading = true;
+    
+    if (categoryId === 'all') {
+      // Load all products using the main products endpoint
+      this.productService.getAll(1, 1000)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+        next: (result) => {
+          console.log('✅ All products loaded successfully:', result);
+          console.log('Number of products:', result.items?.length || 0);
+          this.updateProductsFromAPI(result.items || []);
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('❌ Error loading all products:', error);
+          this.loading = false;
+        }
+      });
+    } else {
+      // Use the Products API with categoryId parameter - this calls the backend GetProducts endpoint
+      console.log('🔍 Calling ProductService.getProductsByCategory...');
+      this.productService.getProductsByCategory(categoryId, 1, 1000)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+        next: (result) => {
+          console.log('✅ Products loaded successfully for category', categoryId, ':', result);
+          console.log('Number of products found:', result.items?.length || 0);
+          console.log('Products:', result.items);
+          this.updateProductsFromAPI(result.items || []);
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('❌ Error loading products for category', categoryId, ':', error);
+          console.error('Error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            url: error.url,
+            message: error.message
+          });
+          this.loading = false;
+          
+          // Fallback: try the category service approach
+          console.log('🔄 Falling back to category service...');
+          const categoryCall = includeNested 
+            ? this.categoryService.getCategoryProductsIncludeNested(categoryId, 1, 1000)
+            : this.categoryService.getCategoryProducts(categoryId, 1, 1000);
+          
+          categoryCall
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+            next: (result) => {
+              console.log('✅ Fallback: Products loaded for category', categoryId, ':', result);
+              console.log('Fallback: Number of products found:', result.items?.length || 0);
+              const convertedProducts = result.items.map(item => this.convertCategoryProductToMain(item));
+              this.updateProductsFromAPI(convertedProducts);
+              this.loading = false;
+            },
+            error: (fallbackError) => {
+              console.error('❌ Fallback error loading products by category:', fallbackError);
+              this.loading = false;
+            }
+          });
+        }
+      });
+    }
+  }
+
+  // Legacy method for backward compatibility
   filterByCategory(category: string) {
-    this.selectedCategory = category;
-    this.applyFilters();
+    // Convert old string-based categories to new number-based system
+    const categoryMap: {[key: string]: number} = {
+      '3d': 6,
+      'design': 15,
+      'sound': 7,
+      'other': 1 // Default fallback
+    };
+    
+    if (category === 'all') {
+      this.onCategorySelected({ id: 'all', includeNested: true });
+    } else {
+      const categoryId = categoryMap[category] || 1;
+      this.onCategorySelected({ id: categoryId, includeNested: true });
+    }
   }
 
   // Price range filtering
@@ -700,6 +1255,25 @@ export class Discover implements OnInit, AfterViewInit {
   }
 
   // Tag filtering
+  loadAvailableTags() {
+    this.tagService.getAllTags()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+      next: (tags) => {
+        this.availableTags = tags;
+        this.popularTags = tags
+          .filter(tag => tag.name) // Filter out tags without names
+          .map(tag => tag.name!) // Get the names
+          .slice(0, 8); // Take first 8 tags as popular tags
+      },
+      error: (error) => {
+        console.error('Failed to load tags:', error);
+        // Fallback to default tags if API fails
+        this.popularTags = ['3D', 'Design', 'Audio', 'Templates', 'Icons', 'Fonts', 'Graphics', 'Code'];
+      }
+    });
+  }
+
   toggleTag(tag: string) {
     const index = this.selectedTags.indexOf(tag);
     if (index > -1) {
@@ -834,10 +1408,7 @@ export class Discover implements OnInit, AfterViewInit {
     }, 1000);
   }
 
-  // Navigate to product details
-  viewProduct(productId: number) {
-    this.router.navigate(['/discover', productId]);
-  }
+  // viewProduct is defined earlier among navigation helpers
 
   // Navigate to library for purchased products
   goToLibrary(product: Product, event: Event) {

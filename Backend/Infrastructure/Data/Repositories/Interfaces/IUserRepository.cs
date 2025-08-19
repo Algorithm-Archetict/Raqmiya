@@ -1,4 +1,4 @@
-﻿using Raqmiya.Infrastructure;
+using Raqmiya.Infrastructure;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -27,5 +27,7 @@ namespace Raqmiya.Infrastructure
         Task UpdateAsync(User user);
         /// <summary>Gets all users (admin only).</summary>
         Task<List<User>> GetAllAsync();
+        /// <summary>Search creators by optional query (public).</summary>
+        Task<List<User>> SearchCreatorsAsync(string? query, int take = 50, int skip = 0);
     }
 }

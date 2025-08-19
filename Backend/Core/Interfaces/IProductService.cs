@@ -12,6 +12,7 @@ namespace Core.Interfaces
         // Publicly accessible product listings
         Task<PagedResultDTO<ProductListItemDTO>> GetPublishedProductsAsync(int pageNumber, int pageSize);
         Task<PagedResultDTO<ProductListItemDTO>> GetProductsByCategoryAsync(int categoryId, int pageNumber, int pageSize);
+        Task<PagedResultDTO<ProductListItemDTO>> GetProductsByMultipleCategoriesAsync(List<int> categoryIds, int pageNumber, int pageSize);
         Task<PagedResultDTO<ProductListItemDTO>> GetProductsByTagAsync(int tagId, int pageNumber, int pageSize);
         Task<PagedResultDTO<ProductListItemDTO>> SearchProductsAsync(string search, int pageNumber, int pageSize);
         Task<ProductDetailDTO?> GetProductDetailsByPermalinkAsync(string permalink, int? userId = null); // For public view by permalink
@@ -37,10 +38,19 @@ namespace Core.Interfaces
         Task<PagedResultDTO<ProductListItemDTO>> GetMostWishedProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
         Task<PagedResultDTO<ProductListItemDTO>> GetTopRatedProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
         Task<PagedResultDTO<ProductListItemDTO>> GetBestSellingProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
+        Task<PagedResultDTO<ProductListItemDTO>> GetNewArrivalsProductsAsync(int count, int pageNumber, int pageSize); // Added pagination
         Task<PagedResultDTO<ProductListItemDTO>> GetTrendyProductsAsync(int count, int daysBack, int pageNumber, int pageSize); // Added pagination
 
+        // Simplified Analytics for Carousels (without pagination)
+        Task<IEnumerable<ProductListItemDTO>> GetMostWishedProductsAsync(int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetRecommendedProductsAsync(int? userId = null, int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetBestSellerProductsAsync(int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetTopRatedProductsAsync(int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetNewArrivalsAsync(int count = 12);
+        Task<IEnumerable<ProductListItemDTO>> GetTrendingProductsAsync(int count = 12);
+
         // Category & Tag helpers for forms (API endpoints will call these)
-        Task<List<ProductCategoryDTO>> GetAllCategoriesAsync();
+        Task<List<CategoryDTO>> GetAllCategoriesAsync();
         Task<List<TagDTO>> GetAllTagsAsync();
         Task<List<TagDTO>> GetTagsForCategoriesAsync(List<int> categoryIds);
 

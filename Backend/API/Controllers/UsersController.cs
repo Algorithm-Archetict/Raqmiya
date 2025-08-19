@@ -38,6 +38,70 @@ namespace API.Controllers
         }
 
         /// <summary>
+        /// Get minimal public profile for a user by ID. Used by chat peer display.
+        /// </summary>
+        [HttpGet("{id:int}")]
+        [Authorize]
+        public async Task<ActionResult<object>> GetById(int id)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null) return NotFound();
+
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                var profileImageUrl = !string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.StartsWith("http")
+                    ? baseUrl + user.ProfileImageUrl
+                    : user.ProfileImageUrl;
+
+                return Ok(new { id = user.Id, username = user.Username, profileImageUrl });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user by id {Id}", id);
+                return Problem("An error occurred while retrieving the user.");
+            }
+        }
+
+        /// <summary>
+        /// Public endpoint to search creators (by username). Returns minimal info.
+        /// </summary>
+        /// <param name="query">Optional search term (case-insensitive, matches username contains)</param>
+        /// <param name="take">Max results to return (default 50)</param>
+        /// <param name="skip">Number of results to skip for paging</param>
+        [HttpGet("creators")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<object>>> SearchCreators([FromQuery] string? query = null, [FromQuery] int take = 50, [FromQuery] int skip = 0)
+        {
+            try
+            {
+                take = Math.Clamp(take, 1, 200);
+                skip = Math.Max(skip, 0);
+
+                var creators = await _userRepository.SearchCreatorsAsync(query, take, skip);
+
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+
+                var result = creators.Select(u => new
+                {
+                    id = u.Id,
+                    username = u.Username,
+                    profileImageUrl = !string.IsNullOrEmpty(u.ProfileImageUrl) && !u.ProfileImageUrl.StartsWith("http")
+                        ? baseUrl + u.ProfileImageUrl
+                        : u.ProfileImageUrl
+                });
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching creators");
+                return Problem("An error occurred while searching creators.");
+            }
+        }
+
+        /// <summary>
         /// Get the current authenticated user's profile.
         /// </summary>
         [HttpGet("me")]

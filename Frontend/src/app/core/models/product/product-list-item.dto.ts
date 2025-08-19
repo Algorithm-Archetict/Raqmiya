@@ -1,3 +1,6 @@
+import { CategoryDTO } from '../../../core/models/product/category.dto';
+
+
 export interface ProductListItemDTO {
   id: number;
   name?: string; // Nullable in backend → optional in frontend
@@ -13,6 +16,7 @@ export interface ProductListItemDTO {
   status?: string;
   isPublic: boolean;
   publishedAt?: string; // ISO date string (e.g., "2025-08-01T14:30:00Z")
+  category: CategoryDTO;
   isCreatorDeleted?: boolean; // Indicates if the creator's account is soft-deleted
   userHasPurchased?: boolean; // Indicates if the current user has purchased this product
 }

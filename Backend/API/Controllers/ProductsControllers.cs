@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.DTOs.ProductDTOs;
@@ -7,6 +7,8 @@ using API.Constants;
 using Shared.Constants;
 using AutoMapper;
 using Raqmiya.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace API.Controllers
 {
@@ -52,6 +54,25 @@ namespace API.Controllers
             if (!string.IsNullOrWhiteSpace(search))
                 return Ok(await _productService.SearchProductsAsync(search, pageNumber, pageSize));
             return Ok(await _productService.GetPublishedProductsAsync(pageNumber, pageSize));
+        }
+
+        /// <summary>
+        /// Get products by multiple category IDs (for hierarchical category filtering).
+        /// </summary>
+        [HttpGet("by-categories")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetProductsByCategories([FromQuery] List<int> categoryIds, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (categoryIds == null || !categoryIds.Any())
+            {
+                return BadRequest("At least one category ID must be provided.");
+            }
+
+            _logger.LogInformation("GetProductsByCategories called with categoryIds: {CategoryIds}, pageNumber: {PageNumber}, pageSize: {PageSize}", 
+                string.Join(",", categoryIds), pageNumber, pageSize);
+
+            return Ok(await _productService.GetProductsByMultipleCategoriesAsync(categoryIds, pageNumber, pageSize));
         }
 
         /// <summary>
@@ -323,6 +344,17 @@ namespace API.Controllers
         }
 
         /// <summary>
+        /// Get new arrivals products (paged).
+        /// </summary>
+        [HttpGet("analytics/new-arrivals")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(PagedResultDTO<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetNewArrivals([FromQuery] int count = 10, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            return Ok(await _productService.GetNewArrivalsProductsAsync(count, pageNumber, pageSize));
+        }
+
+        /// <summary>
         /// Upload a file for a product. Files are stored in wwwroot/uploads/products/{productId}/.
         /// Only the product's creator can upload files. Allowed types: PDF, ZIP, JPG, PNG, MP4, etc.
         /// </summary>
@@ -338,7 +370,26 @@ namespace API.Controllers
             var creatorId = GetCurrentUserId();
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
-            var allowedTypes = new[] { "application/pdf", "application/zip", "image/jpeg", "image/png", "video/mp4" };
+            var allowedTypes = new[] { 
+                "application/pdf", 
+                "application/zip", 
+                "application/x-zip-compressed",
+                "image/jpeg", 
+                "image/jpg", 
+                "image/png", 
+                "image/gif",
+                "video/mp4",
+                "audio/mpeg",
+                "audio/mp3",
+                "text/plain",
+                "text/csv",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation", // pptx
+                "application/vnd.ms-powerpoint", // ppt
+                "application/msword", // doc
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
+                "application/vnd.ms-excel", // xls
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" // xlsx
+            };
             if (!allowedTypes.Contains(file.ContentType))
                 return BadRequest("File type not allowed.");
             var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), FileStorageConstants.ProductUploadsRoot, id.ToString());
@@ -682,6 +733,237 @@ namespace API.Controllers
             return Ok("Product rejected.");
         }
 
+        // --- Analytics Endpoints for Carousels ---
+        
+        /// <summary>
+        /// Get most wished products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/most-wished")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetMostWishedForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetMostWishedProductsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get recommended products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/recommended")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetRecommendedForCarousel([FromQuery] int count = 12)
+        {
+            var userId = GetCurrentUserIdOrNull();
+            var products = await _productService.GetRecommendedProductsAsync(userId, count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get best seller products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/best-sellers")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetBestSellerForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetBestSellerProductsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get top rated products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/top-rated")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetTopRatedForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetTopRatedProductsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get new arrivals for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/new-arrivals")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetNewArrivalsForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetNewArrivalsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Get trending products for carousels (without pagination).
+        /// </summary>
+        [HttpGet("carousel/trending")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<ProductListItemDTO>), 200)]
+        public async Task<IActionResult> GetTrendingForCarousel([FromQuery] int count = 12)
+        {
+            var products = await _productService.GetTrendingProductsAsync(count);
+            return Ok(products);
+        }
+
+        /// <summary>
+        /// Aggregate discover feed: returns all sections in one response to minimize requests.
+        /// </summary>
+        [HttpGet("discover")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetDiscoverFeed([FromQuery] int countPerSection = 12)
+        {
+            try
+            {
+                var userId = GetCurrentUserIdOrNull();
+                _logger.LogInformation("Getting discover feed for user {UserId}, count per section: {Count}", userId, countPerSection);
+
+                // Call each method individually with error handling
+                var mostWished = await GetSectionSafely(() => _productService.GetMostWishedProductsAsync(countPerSection), "MostWished");
+                var recommended = await GetSectionSafely(() => _productService.GetRecommendedProductsAsync(userId, countPerSection), "Recommended");
+                var bestSellers = await GetSectionSafely(() => _productService.GetBestSellerProductsAsync(countPerSection), "BestSellers");
+                var topRated = await GetSectionSafely(() => _productService.GetTopRatedProductsAsync(countPerSection), "TopRated");
+                var newArrivals = await GetSectionSafely(() => _productService.GetNewArrivalsAsync(countPerSection), "NewArrivals");
+                var trending = await GetSectionSafely(() => _productService.GetTrendingProductsAsync(countPerSection), "Trending");
+
+                _logger.LogInformation("Discover feed results - MostWished: {MW}, Recommended: {R}, BestSellers: {BS}, TopRated: {TR}, NewArrivals: {NA}, Trending: {T}", 
+                    mostWished.Count(), recommended.Count(), bestSellers.Count(), topRated.Count(), newArrivals.Count(), trending.Count());
+
+                return Ok(new
+                {
+                    mostWished = mostWished,
+                    recommended = recommended,
+                    bestSellers = bestSellers,
+                    topRated = topRated,
+                    newArrivals = newArrivals,
+                    trending = trending
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting discover feed");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        private async Task<IEnumerable<ProductListItemDTO>> GetSectionSafely(Func<Task<IEnumerable<ProductListItemDTO>>> sectionCall, string sectionName)
+        {
+            try
+            {
+                var result = await sectionCall();
+                _logger.LogInformation("{SectionName} returned {Count} products", sectionName, result.Count());
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting {SectionName} products", sectionName);
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        /// <summary>
+        /// Debug endpoint to test individual methods
+        /// </summary>
+        [HttpGet("debug-sections")]
+        [AllowAnonymous]
+        public async Task<IActionResult> DebugSections([FromQuery] int count = 12)
+        {
+            try
+            {
+                var userId = GetCurrentUserIdOrNull();
+                
+                // Test each method individually
+                var bestSellers = await _productService.GetBestSellerProductsAsync(count);
+                var topRated = await _productService.GetTopRatedProductsAsync(count);
+                var newArrivals = await _productService.GetNewArrivalsAsync(count);
+                var trending = await _productService.GetTrendingProductsAsync(count);
+                var recommended = await _productService.GetRecommendedProductsAsync(userId, count);
+                
+                return Ok(new
+                {
+                    bestSellersCount = bestSellers.Count(),
+                    topRatedCount = topRated.Count(),
+                    newArrivalsCount = newArrivals.Count(),
+                    trendingCount = trending.Count(),
+                    recommendedCount = recommended.Count(),
+                    bestSellers = bestSellers.Take(2),
+                    topRated = topRated.Take(2),
+                    newArrivals = newArrivals.Take(2),
+                    trending = trending.Take(2),
+                    recommended = recommended.Take(2)
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { error = ex.Message, stackTrace = ex.StackTrace });
+            }
+        }
+
+        /// <summary>
+        /// Test endpoint to demonstrate personalization with different user IDs
+        /// </summary>
+        [HttpGet("analytics/test-personalization")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestPersonalization([FromQuery] int? testUserId = null, [FromQuery] int count = 5)
+        {
+            try
+            {
+                var userId = testUserId ?? GetCurrentUserIdOrNull();
+                _logger.LogInformation("Testing personalization for user ID: {UserId}", userId);
+                
+                var recommended = await _productService.GetRecommendedProductsAsync(userId, count);
+                
+                return Ok(new
+                {
+                    testUserId = userId,
+                    isAuthenticated = userId.HasValue,
+                    recommendedCount = recommended.Count(),
+                    recommended = recommended.Select(p => new { 
+                        id = p.Id, 
+                        name = p.Name, 
+                        category = p.Category?.Name,
+                        price = p.Price,
+                        rating = p.AverageRating
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { error = ex.Message, stackTrace = ex.StackTrace });
+            }
+        }
+
+        /// <summary>
+        /// Get all available tags.
+        /// </summary>
+        [HttpGet("tags")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(List<TagDTO>), 200)]
+        public async Task<IActionResult> GetAllTags()
+        {
+            var tags = await _productService.GetAllTagsAsync();
+            return Ok(tags);
+        }
+
+        /// <summary>
+        /// Get tags for specific categories.
+        /// </summary>
+        [HttpGet("tags/by-categories")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(List<TagDTO>), 200)]
+        public async Task<IActionResult> GetTagsForCategories([FromQuery] List<int> categoryIds)
+        {
+            if (categoryIds == null || !categoryIds.Any())
+            {
+                return BadRequest("At least one category ID must be provided.");
+            }
+
+            var tags = await _productService.GetTagsForCategoriesAsync(categoryIds);
+            return Ok(tags);
+        }
+
         // --- Helpers ---
         protected int GetCurrentUserId()
         {
@@ -782,6 +1064,17 @@ namespace API.Controllers
                 _logger.LogError(ex, "Error getting products for creator {CreatorId}", creatorId);
                 return StatusCode(500, new { success = false, message = "An error occurred while getting products" });
             }
+        }
+
+        // Returns count of PUBLIC products for a creator (excludes soft-deleted and private)
+        [HttpGet("creator/{creatorId:int}/public-count")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicCountForCreator(int creatorId, [FromServices] RaqmiyaDbContext dbContext)
+        {
+            var count = await dbContext.Products
+                .Where(p => p.CreatorId == creatorId && p.IsPublic && !p.IsDeleted)
+                .CountAsync();
+            return Ok(new { count });
         }
     }
 }

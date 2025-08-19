@@ -13,17 +13,20 @@ namespace Core.Mapping_Profiles
     {
         public ProductMappingProfile()
         {
-            // Map from Product entity to ProductListItemDTO
             CreateMap<Product, ProductListItemDTO>()
-                // Custom mapping for the CreatorUsername property
-                // This tells AutoMapper to get the username from the nested Creator object
-                .ForMember(dest => dest.CreatorUsername, opt => opt.MapFrom(src => src.Creator.Username));
+                .ForMember(dest => dest.CreatorUsername, opt => opt.MapFrom(src => src.Creator.Username))
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category));
 
-            // You can also create mappings for other DTOs like ProductCreateRequestDTO
-            // CreateMap<ProductCreateRequestDTO, Product>();
+            CreateMap<Product, ProductDetailDTO>()
+                .ForMember(dest => dest.CreatorUsername, opt => opt.MapFrom(src => src.Creator.Username))
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category))
+                .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => src.ProductTags.Select(pt => pt.Tag).ToList()));
 
-            // And for update operations
-            // CreateMap<ProductUpdateRequestDTO, Product>();
+            CreateMap<ProductCreateRequestDTO, Product>()
+                .ForMember(dest => dest.ProductTags, opt => opt.Ignore()); // Tags are handled separately
+
+            CreateMap<ProductUpdateRequestDTO, Product>()
+                .ForMember(dest => dest.ProductTags, opt => opt.Ignore()); // Tags are handled separately
         }
     }
 }

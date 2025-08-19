@@ -69,8 +69,20 @@ namespace Raqmiya.Infrastructure
         /// <summary>Gets products by category ID with paging (alternative signature).</summary>
         Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId, int pageNumber, int pageSize);
 
+        /// <summary>Gets products by multiple category IDs with paging.</summary>
+        Task<IEnumerable<Product>> GetProductsByMultipleCategoryIdsAsync(List<int> categoryIds, int pageNumber, int pageSize);
+
+        /// <summary>Gets the count of products by multiple category IDs.</summary>
+        Task<int> GetProductsCountByMultipleCategoryIdsAsync(List<int> categoryIds);
+
         /// <summary>Gets products by tag ID with paging (alternative signature).</summary>
         Task<IEnumerable<Product>> GetProductsByTagIdAsync(int tagId, int pageNumber, int pageSize);
+
+        /// <summary>Gets the count of products by tag ID.</summary>
+        Task<int> GetProductsCountByTagIdAsync(int tagId);
+
+        /// <summary>Gets the count of products by search term.</summary>
+        Task<int> GetProductsCountBySearchAsync(string searchTerm);
 
         // Tag Management for Products
         Task AddProductTagAsync(int productId, int tagId);

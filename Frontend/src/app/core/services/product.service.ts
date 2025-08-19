@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, shareReplay } from 'rxjs';
 
 import { ProductCreateRequestDTO } from '../models/product/product-create-request.dto';
 import { ProductUpdateRequestDTO } from '../models/product/product-update-request.dto';
@@ -14,7 +15,10 @@ import { Receipt } from '../interfaces/receipt.interface';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private apiUrl = 'http://localhost:5255/api/Products';
+  private apiUrl = `${environment.apiUrl}/Products`;
+  // Simple in-memory caches to avoid repeated network calls
+  private allCacheKey = 'all:page=1:size=1000';
+  private cache = new Map<string, Observable<any>>();
 
   constructor(private http: HttpClient) {}
 
@@ -25,26 +29,36 @@ export class ProductService {
 
   // ======= READ =======
   getAll(page = 1, size = 10): Observable<ProductListItemDTOPagedResultDTO> {
-    return this.http.get<ProductListItemDTOPagedResultDTO>(
-      `${this.apiUrl}?pageNumber=${page}&pageSize=${size}`
-    );
+    const key = `all:page=${page}:size=${size}`;
+    if (!this.cache.has(key)) {
+      const req$ = this.http
+        .get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}`)
+        .pipe(shareReplay(1));
+      this.cache.set(key, req$);
+    }
+    return this.cache.get(key) as Observable<ProductListItemDTOPagedResultDTO>;
   }
 
   // ======= PRODUCTS =======
-  getProductList(pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTO[]> {
-    return this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
-      map(response => {
-        // Handle both paged and direct array responses
-        if (response && response.items && Array.isArray(response.items)) {
-          return response.items;
-        } else if (Array.isArray(response)) {
-          return response;
-        } else {
-          console.warn('Unexpected product list response format:', response);
-          return [];
-        }
-      })
-    );
+   getProductList(pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTO[]> {
+    const key = `list:page=${pageNumber}:size=${pageSize}`;
+    if (!this.cache.has(key)) {
+      const req$ = this.http.get<any>(`${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`).pipe(
+        map(response => {
+          if (response && response.items && Array.isArray(response.items)) {
+            return response.items;
+          } else if (Array.isArray(response)) {
+            return response;
+          } else {
+            console.warn('Unexpected product list response format:', response);
+            return [];
+          }
+        }),
+        shareReplay(1)
+      );
+      this.cache.set(key, req$);
+    }
+    return this.cache.get(key) as Observable<ProductListItemDTO[]>;
   }
 
   // Get products by current creator (authenticated user)
@@ -60,7 +74,10 @@ export class ProductService {
         }
       })
     );
+    // return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}?pageNumber=${page}&pageSize=${size}`);
   }
+
+  
 
   getById(id: number): Observable<ProductDetailDTO> {
     return this.http.get<ProductDetailDTO>(`${this.apiUrl}/${id}`);
@@ -195,6 +212,45 @@ export class ProductService {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/${productId}/reviews/my-review`);
   }
 
+  // ======= CATEGORY FILTERING =======
+  getProductsByCategory(categoryId: number, pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    const key = `byCategory:${categoryId}:page=${pageNumber}:size=${pageSize}`;
+    if (!this.cache.has(key)) {
+      const req$ = this.http
+        .get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}?categoryId=${categoryId}&pageNumber=${pageNumber}&pageSize=${pageSize}`)
+        .pipe(shareReplay(1));
+      this.cache.set(key, req$);
+    }
+    return this.cache.get(key) as Observable<ProductListItemDTOPagedResultDTO>;
+  }
+
+  // Search products by query
+  searchProducts(search: string, pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    return this.http.get<ProductListItemDTOPagedResultDTO>(
+      `${this.apiUrl}?search=${encodeURIComponent(search)}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+    );
+  }
+
+  // Get products by tag
+  getProductsByTag(tagId: number, pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    return this.http.get<ProductListItemDTOPagedResultDTO>(
+      `${this.apiUrl}?tagId=${tagId}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+    );
+  }
+
+  // Get products by multiple categories (for hierarchical filtering)
+  getProductsByMultipleCategories(categoryIds: number[], pageNumber: number = 1, pageSize: number = 10): Observable<ProductListItemDTOPagedResultDTO> {
+    const categoryParams = categoryIds.map(id => `categoryIds=${id}`).join('&');
+    const key = `byCategories:${categoryIds.sort((a,b)=>a-b).join(',')}:page=${pageNumber}:size=${pageSize}`;
+    if (!this.cache.has(key)) {
+      const req$ = this.http
+        .get<ProductListItemDTOPagedResultDTO>(`${this.apiUrl}/by-categories?${categoryParams}&pageNumber=${pageNumber}&pageSize=${pageSize}`)
+        .pipe(shareReplay(1));
+      this.cache.set(key, req$);
+    }
+    return this.cache.get(key) as Observable<ProductListItemDTOPagedResultDTO>;
+  }
+
   // ======= RECEIPTS =======
   getReceipt(orderId: number): Observable<Receipt> {
     return this.http.get<Receipt>(`${this.apiUrl}/receipt/${orderId}`);
@@ -206,5 +262,12 @@ export class ProductService {
 
   getProductsByCreator(creatorId: number): Observable<ProductListItemDTO[]> {
     return this.http.get<ProductListItemDTO[]>(`${this.apiUrl}/creator/${creatorId}/products`);
+  }
+
+  // Get count of PUBLIC products for a creator (excludes private/freelance products)
+  getPublicProductCountForCreator(creatorId: number): Observable<number> {
+    return this.http.get<{ count: number }>(`${this.apiUrl}/creator/${creatorId}/public-count`).pipe(
+      map(res => res.count)
+    );
   }
 }

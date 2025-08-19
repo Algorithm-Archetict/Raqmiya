@@ -8,6 +8,7 @@ import { ProductService } from '../../../../core/services/product.service';
 import { ProductDetailDTO } from '../../../../core/models/product/product-detail.dto';
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { FileDTO } from '../../../../core/models/product/file.dto';
+import { CATEGORIES } from '../../../../core/data/categories';
 
 @Component({
   selector: 'app-product-edit-content',
@@ -132,7 +133,7 @@ export class ProductEditContent implements OnInit {
         description: this.productForm.get('content')?.value || '',
         price: this.product!.price,
         currency: this.product!.currency,
-        productType: this.product!.productType,
+        //productType: this.product!.productType,
         coverImageUrl: this.product!.coverImageUrl,
         thumbnailImageUrl: this.product!.thumbnailImageUrl,
         previewVideoUrl: this.product!.previewVideoUrl,
@@ -142,9 +143,10 @@ export class ProductEditContent implements OnInit {
         compatibility: this.product!.compatibility,
         license: this.product!.license,
         updates: this.product!.updates,
-        categoryIds: this.product!.categories?.map(c => c.id) || [],
+        categoryId: this.product!.category.id,
         tagIds: this.product!.tags?.map(t => t.id) || [],
-        features: this.product!.features || []
+        features: this.product!.features || [],
+        productCategory: CATEGORIES[0]
       };
 
       // Log the request payload for debugging

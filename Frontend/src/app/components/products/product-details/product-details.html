@@ -6,13 +6,13 @@
       <div class="row align-items-center">
         <div class="col-lg-8">
           <nav class="breadcrumb-nav">
-            <a routerLink="/discover" class="breadcrumb-link">
+            <a (click)="goBack()" class="breadcrumb-link">
               <i class="fas fa-arrow-left"></i>
-              Back to Discover
+              Back to Category
             </a>
 
             <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current">{{ product?.categories?.[0]?.name }}</span>
+            <span class="breadcrumb-current">{{ product?.category?.name }}</span>
 
             <span> {{ product?.price | currency:product?.currency:'symbol' }}</span>
           </nav>
@@ -341,8 +341,8 @@
               <strong>Purchase Required:</strong> You need to purchase this product before you can write a review.
             </div>
 
-            <!-- User has purchased - Show review form or existing review -->
-            <div *ngIf="!loadingPurchaseStatus && hasPurchased">
+                          <!-- User has purchased - Show review form -->
+              <div *ngIf="!loadingPurchaseStatus && hasPurchased">
               
               <!-- Existing Review Display (when not editing) -->
               <!-- <div *ngIf="existingReview && !isEditingReview" class="existing-review-display mb-4">

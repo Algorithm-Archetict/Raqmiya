@@ -101,6 +101,7 @@
 .breadcrumb-link:hover {
   color: var(--epic-blue);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .breadcrumb-separator {

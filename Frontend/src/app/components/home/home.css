@@ -207,12 +207,12 @@
 
 .showcase-card-2 {
   top: 50px;
-  right: 0;
+  right: 100px;
   animation-delay: 1s;
 }
 
 .showcase-card-3 {
-  bottom: 0;
+  bottom: -50px;
   left: 50px;
   animation-delay: 2s;
 }

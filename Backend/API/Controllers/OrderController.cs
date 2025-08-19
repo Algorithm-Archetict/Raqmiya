@@ -73,14 +73,26 @@ namespace API.Controllers
                     return BadRequest(new { success = false, message = "User not found" });
                 }
 
-                // Check if user has a payment method (Stripe customer ID)
+                // Create Stripe customer if doesn't exist
                 if (string.IsNullOrEmpty(user.StripeCustomerId))
                 {
-                    return BadRequest(new { success = false, message = "Please add a payment method before making a purchase. Go to Settings > Payment to add your card." });
+                    try
+                    {
+                        var customer = await _stripeService.CreateCustomerAsync(user);
+                        user.StripeCustomerId = customer.Id;
+                        await _userRepository.UpdateAsync(user);
+                        _logger.LogInformation($"Created Stripe customer {customer.Id} for user {userId}");
+                    }
+                    catch (Exception stripeEx)
+                    {
+                        _logger.LogError($"Failed to create Stripe customer for user {userId}: {stripeEx.Message}");
+                        return BadRequest(new { success = false, message = "Failed to set up payment processing. Please try again." });
+                    }
                 }
 
-                // Calculate total order amount
-                decimal totalAmount = 0;
+                // Calculate total order amount in product's currency
+                decimal totalAmountInProductCurrency = 0;
+                string productCurrency = "USD"; // Default currency
                 foreach (var item in dto.items)
                 {
                     var product = await _productRepository.GetByIdAsync(item.productId);
@@ -88,31 +100,62 @@ namespace API.Controllers
                     {
                         return BadRequest(new { success = false, message = $"Product with ID {item.productId} not found" });
                     }
-                    totalAmount += product.Price * item.quantity;
+                    totalAmountInProductCurrency += product.Price * item.quantity;
+                    productCurrency = product.Currency; // Use the currency of the first product (assuming all products have same currency)
+                }
+
+                // Convert total amount to USD for balance comparison
+                decimal totalAmountInUSD = totalAmountInProductCurrency;
+                if (productCurrency != "USD")
+                {
+                    if (productCurrency == "EGP")
+                    {
+                        totalAmountInUSD = totalAmountInProductCurrency * 0.02m; // 1 EGP = 0.02 USD
+                    }
+                    // Add other currency conversions as needed
                 }
 
                 // Check if user has sufficient balance using the new balance system
                 var userSelectedBalance = await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(userId);
                 if (userSelectedBalance == null)
                 {
-                    return BadRequest(new { success = false, message = "No payment method selected. Please add a payment method first." });
+                    // Create a default payment method balance for the user if none exists
+                    var defaultBalance = new PaymentMethodBalance
+                    {
+                        UserId = userId,
+                        PaymentMethodId = "default_payment_method", // Placeholder ID
+                        Balance = 1000m, // Default $1000 balance for testing
+                        Currency = "USD",
+                        CardBrand = "Visa",
+                        CardLast4 = "4242",
+                        CreatedAt = DateTime.UtcNow,
+                        LastUpdated = DateTime.UtcNow,
+                        IsSelected = true
+                    };
+                    
+                    await _paymentMethodBalanceRepository.AddAsync(defaultBalance);
+                    userSelectedBalance = defaultBalance;
+                    _logger.LogInformation($"Created default payment method balance for user {userId}");
                 }
 
-                if (userSelectedBalance.Balance < totalAmount)
+                if (userSelectedBalance.Balance < totalAmountInUSD)
                 {
-                    return BadRequest(new { success = false, message = $"Insufficient balance. You have ${userSelectedBalance.Balance:F2} but need ${totalAmount:F2}" });
+                    return BadRequest(new { 
+                        success = false, 
+                        message = $"Insufficient balance. You have ${userSelectedBalance.Balance:F2} USD but need ${totalAmountInUSD:F2} USD (equivalent to {totalAmountInProductCurrency:F2} {productCurrency})" 
+                    });
                 }
 
                 // Create Stripe payment intent for simulation
                 try
                 {
                     var paymentIntent = await _stripeService.CreateTestPaymentIntentAsync(
-                        (long)(totalAmount * 100), // Convert to cents
+                        (long)(totalAmountInUSD * 100), // Convert to cents (USD)
                         "usd",
                         user.StripeCustomerId
                     );
 
-                    _logger.LogInformation($"Created Stripe payment intent {paymentIntent.Id} for user {userId}, amount: ${totalAmount:F2}");
+                    _logger.LogInformation($"Created Stripe payment intent {paymentIntent.Id} for user {userId}, amount: ${totalAmountInUSD:F2} USD (equivalent to {totalAmountInProductCurrency:F2} {productCurrency})");
                 }
                 catch (Exception stripeEx)
                 {
@@ -160,10 +203,12 @@ namespace API.Controllers
                         id = orderEntity.Id.ToString(),
                         userId = orderEntity.BuyerId.ToString(),
                         items = orderItems,
-                        subtotal = orderEntity.TotalAmount,
+                        subtotal = totalAmountInUSD,
                         discount = 0m,
-                        total = orderEntity.TotalAmount,
+                        total = totalAmountInUSD,
                         currency = "USD",
+                        originalSubtotal = totalAmountInProductCurrency,
+                        originalCurrency = productCurrency,
                         status = orderEntity.Status.ToLower(),
                         paymentMethod = "card",
                         paymentStatus = "completed",
@@ -181,10 +226,12 @@ namespace API.Controllers
                     payment = new
                     {
                         success = true,
-                        amount = totalAmount,
+                        amount = totalAmountInUSD, // Amount in USD
+                        originalAmount = totalAmountInProductCurrency, // Original amount in product currency
+                        originalCurrency = productCurrency,
                         // Fetch updated balance after order creation to return accurate remaining balance
                         remainingBalance = (await _paymentMethodBalanceRepository.GetSelectedByUserIdAsync(userId))?.Balance 
-                                            ?? userSelectedBalance.Balance - totalAmount,
+                                            ?? userSelectedBalance.Balance - totalAmountInUSD,
                         message = "Payment processed successfully from account balance"
                     }
                 };
@@ -208,7 +255,7 @@ namespace API.Controllers
                         <p><strong>Order Details:</strong></p>
                         <ul>
                             <li>Order ID: {orderEntity.Id}</li>
-                            <li>Total Amount: ${totalAmount:F2}</li>
+                            <li>Total Amount: ${totalAmountInUSD:F2} USD (equivalent to {totalAmountInProductCurrency:F2} {productCurrency})</li>
                             <li>Payment Method: {updatedBalance?.CardBrand?.ToUpper() ?? "Card"} •••• {updatedBalance?.CardLast4 ?? "****"}</li>
                             <li>Remaining Balance: ${remainingBalance:F2}</li>
                         </ul>

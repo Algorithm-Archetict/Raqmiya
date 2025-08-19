@@ -31,11 +31,46 @@
           </a>
         </li>
         
+        <!-- Admin-only menu items -->
+        <li class="nav-item" *ngIf="isAdmin">
+          <a routerLink="/admin/users" class="nav-link" [class.active]="isActive('/admin/users')">
+            <i class="fas fa-users-cog"></i>
+            <span>Manage Users</span>
+          </a>
+        </li>
+        <li class="nav-item" *ngIf="isAdmin">
+          <a routerLink="/admin/users/create" class="nav-link" [class.active]="isActive('/admin/users/create')">
+            <i class="fas fa-user-plus"></i>
+            <span>Create User</span>
+          </a>
+        </li>
+        
         <!-- Customer-only menu items -->
         <li class="nav-item">
           <a routerLink="/cart-checkout" class="nav-link" [class.active]="isActive('/cart-checkout')">
             <i class="fas fa-shopping-cart"></i>
             <span>Checkout</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/messages" class="nav-link" [class.active]="isActive('/messages')">
+            <i class="fas fa-comments"></i>
+            <span>Messages</span>
+            <ng-container *ngIf="(messagesUnread$ | async) as msgCnt">
+              <span class="badge" *ngIf="msgCnt > 0">{{ msgCnt }}</span>
+            </ng-container>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/deliveries" class="nav-link" [class.active]="isActive('/deliveries')">
+            <i class="fas fa-box-open"></i>
+            <span>Deliveries</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/services" class="nav-link" [class.active]="isActive('/services')">
+            <i class="fas fa-concierge-bell"></i>
+            <span>Services</span>
           </a>
         </li>
         <li class="nav-item">

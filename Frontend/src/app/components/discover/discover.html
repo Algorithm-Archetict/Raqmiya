@@ -1,4 +1,4 @@
-<!-- Discover Page - Epic Games Style -->
+<!-- Discover Page - Analytics-Driven Modern Design -->
 <div class="discover-container">
   <!-- Use existing navbar component -->
   <app-navbar></app-navbar>
@@ -27,57 +27,37 @@
                   [(ngModel)]="searchQuery"
                   [ngModelOptions]="{standalone: true}"
                   (input)="onSearch()"
+                  (focus)="onSearchFocus()"
+                  (blur)="onSearchBlur()"
+                  (keyup.enter)="executeSearch()"
                 >
-                <button class="btn btn-primary search-btn">
+                <button class="btn btn-primary search-btn" (click)="executeSearch()">
                   <i class="fas fa-search"></i>
                 </button>
+                
+                <!-- Suggestions Dropdown -->
+                <div class="search-suggestions" *ngIf="showSuggestions && suggestions.length > 0">
+                  <div 
+                    class="suggestion-item"
+                    *ngFor="let s of suggestions"
+                    (mousedown)="selectSuggestion(s)"
+                  >
+                    <i class="fas" [ngClass]="s.type === 'creator' ? 'fa-user' : 'fa-box-open'"></i>
+                    <div class="suggestion-text">
+                      <div class="label">{{ s.label }}</div>
+                      <div class="sublabel" *ngIf="s.sublabel">{{ s.sublabel }}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <!-- Category Filters -->
+            <!-- Hierarchical Category Navigation -->
             <div class="category-filters">
-              <div class="filter-buttons">
-                <button 
-                  class="filter-btn" 
-                  [class.active]="selectedCategory === 'all'"
-                  (click)="filterByCategory('all')"
-                >
-                  <i class="fas fa-th-large"></i>
-                  All
-                </button>
-                <button 
-                  class="filter-btn" 
-                  [class.active]="selectedCategory === '3d'"
-                  (click)="filterByCategory('3d')"
-                >
-                  <i class="fas fa-cube"></i>
-                  3D Design
-                </button>
-                <button 
-                  class="filter-btn" 
-                  [class.active]="selectedCategory === 'design'"
-                  (click)="filterByCategory('design')"
-                >
-                  <i class="fas fa-palette"></i>
-                  Design
-                </button>
-                <button 
-                  class="filter-btn" 
-                  [class.active]="selectedCategory === 'sound'"
-                  (click)="filterByCategory('sound')"
-                >
-                  <i class="fas fa-music"></i>
-                  Sound
-                </button>
-                <button 
-                  class="filter-btn" 
-                  [class.active]="selectedCategory === 'other'"
-                  (click)="filterByCategory('other')"
-                >
-                  <i class="fas fa-ellipsis-h"></i>
-                  More
-                </button>
-              </div>
+              <app-hierarchical-category-nav 
+                [navigateToPages]="true"
+                (categorySelected)="onCategorySelected($event)">
+              </app-hierarchical-category-nav>
             </div>
           </div>
         </div>
@@ -85,25 +65,68 @@
     </div>
   </header>
 
-  <!-- Recommended Products Carousel -->
-  <section class="recommended-section">
+  <!-- Analytics-Driven Carousels Section -->
+  <main class="analytics-carousels-section" *ngIf="!searchResultsMode">
     <div class="container">
+      
+      <!-- Most Wished Products -->
+      <app-product-carousel
+        title="Most Wished"
+        subtitle="Products everyone wants to have"
+        icon="fas fa-heart"
+        [products]="sectionMostWishedDto"
+        [loading]="loading">
+      </app-product-carousel>
+
+      <!-- Recommended Products - Only show for logged-in users -->
+      <app-product-carousel
+        *ngIf="isLoggedIn()"
+        title="Recommended for You"
+        subtitle="Handpicked products based on your interests"
+        icon="fas fa-sparkles"
+        [products]="sectionRecommendedDto"
+        [loading]="loading">
+      </app-product-carousel>
+
+      <!-- Best Seller Products -->
+      <app-product-carousel
+        title="Best Sellers"
+        subtitle="Top-selling products this month"
+        icon="fas fa-trophy"
+        [products]="sectionBestSellersDto"
+        [loading]="loading">
+      </app-product-carousel>
+
+      <!-- Top Rated Products -->
+      <app-product-carousel
+        title="Top Rated"
+        subtitle="Highest rated products by our community"
+        icon="fas fa-star"
+        [products]="sectionTopRatedDto"
+        [loading]="loading">
+      </app-product-carousel>
+
+      <!-- New Arrivals -->
+      <app-product-carousel
+        title="New Arrivals"
+        subtitle="Fresh products just added to our marketplace"
+        icon="fas fa-clock"
+        [products]="sectionNewArrivalsDto"
+        [loading]="loading">
+      </app-product-carousel>
+
+      <!-- Trending Products -->
+      <app-product-carousel
+        title="Trending Now"
+        subtitle="Products gaining popularity this week"
+        icon="fas fa-fire"
+        [products]="sectionTrendingDto"
+        [loading]="loading">
+      </app-product-carousel>
+
       <div class="row">
         <div class="col-12">
-          <div class="section-header">
-            <h2 class="section-title">
-              <i class="fas fa-star text-warning"></i>
-              Recommended for You
-            </h2>
-            <div class="carousel-controls">
-              <button class="btn btn-outline carousel-btn" (click)="scrollCarousel('left')">
-                <i class="fas fa-chevron-left"></i>
-              </button>
-              <button class="btn btn-outline carousel-btn" (click)="scrollCarousel('right')">
-                <i class="fas fa-chevron-right"></i>
-              </button>
-            </div>
-          </div>
+          
           
           <div class="products-carousel" #carouselContainer>
             <div class="carousel-track">
@@ -159,7 +182,69 @@
                 </div>
                 <div class="product-info">
                   <h5 class="product-title">{{ product.title }}</h5>
-                  <p class="product-creator">by {{ product.creator }}</p>
+                  <p class="product-creator">
+                    by <a class="creator-link" (click)="$event.stopPropagation(); viewCreatorProfile(product.creatorId)">{{ product.creator }}</a>
+                  </p>
+                  <div class="product-meta">
+                    <span class="product-price">${{ product.price }}</span>
+                    <div class="product-rating">
+                      <i class="fas fa-star text-warning"></i>
+                      <span>{{ product.rating | number:'1.1-1' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Full Search Results -->
+  <section class="search-results" *ngIf="searchResultsMode">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-12 d-flex align-items-center justify-content-between">
+          <h2 class="section-title m-0">Search results for "{{ searchQuery }}"</h2>
+          <button class="btn btn-outline" (click)="searchResultsMode = false">Clear search</button>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <!-- Creators Column -->
+        <div class="col-lg-4" *ngIf="searchResultCreators.length > 0">
+          <div class="card results-card">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="fas fa-user"></i>
+              <span>Creators</span>
+            </div>
+            <div class="list-group list-group-flush">
+              <a 
+                class="list-group-item list-group-item-action creator-result"
+                *ngFor="let c of searchResultCreators"
+                (click)="viewCreatorProfile(c.id)"
+              >
+                <i class="fas fa-user-circle me-2"></i>
+                {{ c.username }}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="col-lg-8">
+          <div class="row g-4">
+            <div class="col-md-6" *ngFor="let product of searchResultProducts">
+              <div class="product-card grid-item" (click)="viewProduct(product.id)">
+                <div class="product-image">
+                  <img [src]="product.image" [alt]="product.title">
+                </div>
+                <div class="product-info">
+                  <h5 class="product-title">{{ product.title }}</h5>
+                  <p class="product-creator">
+                    by <a class="creator-link" (click)="$event.stopPropagation(); viewCreatorProfile(product.creatorId)">{{ product.creator }}</a>
+                  </p>
                   <div class="product-meta">
                     <span class="product-price">${{ product.price }}</span>
                     <div class="product-rating">
@@ -176,14 +261,14 @@
     </div>
   </section>
 
-  <!-- Curated Products Section -->
-  <section class="curated-section">
+  <!-- Curated Products Section (Legacy) -->
+  <section class="curated-section" *ngIf="selectedCategory !== 'all' || searchQuery.trim()">
     <div class="container">
       <div class="row">
         <div class="col-12">
           <h2 class="section-title text-center mb-5">
             <i class="fas fa-magic text-primary"></i>
-            Curated for You
+            {{ selectedCategory !== 'all' ? 'Category Results' : 'Search Results' }}
           </h2>
         </div>
       </div>
@@ -206,7 +291,7 @@
                     type="range" 
                     class="form-range" 
                     min="0" 
-                    max="100" 
+                    max="1000" 
                     [(ngModel)]="priceRange"
                     [ngModelOptions]="{standalone: true}"
                     (input)="onPriceRangeChange()"
@@ -214,7 +299,7 @@
                   <div class="price-labels">
                     <span>$0</span>
                     <span>${{ priceRange }}</span>
-                    <span>$100</span>
+                    <span>$1000</span>
                   </div>
                 </div>
               </div>
@@ -270,6 +355,16 @@
         
         <!-- Products Grid -->
         <div class="col-lg-9">
+          <!-- Debug Info -->
+          <div class="debug-info" style="background: #f8f9fa; padding: 10px; margin-bottom: 20px; border-radius: 5px;" *ngIf="false">
+            <h6>Debug Info:</h6>
+            <p>Loading: {{ loading }}</p>
+            <p>All Products Count: {{ allProducts.length }}</p>
+            <p>Filtered Products Count: {{ filteredProducts.length }}</p>
+            <p>Recommended Products Count: {{ recommendedProducts.length }}</p>
+            <p>Selected Category: {{ selectedCategory }}</p>
+          </div>
+          
           <div class="products-grid">
             <div class="row g-4">
               <div 
@@ -351,18 +446,6 @@
               </div>
             </div>
             
-            <!-- Load More Button -->
-            <div class="load-more-section text-center mt-5">
-              <button 
-                class="btn btn-outline btn-lg load-more-btn"
-                (click)="loadMoreProducts()"
-                [disabled]="loading"
-              >
-                <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-                <i class="fas fa-plus" *ngIf="!loading"></i>
-                {{ loading ? 'Loading...' : 'Load More Products' }}
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -373,20 +456,4 @@
   <div class="toast-container">
     <!-- Toasts will be dynamically inserted here -->
   </div>
-  
-  <!-- Wishlist Counter Popup -->
-  <!-- <div class="wishlist-counter-popup" [class.show]="showWishlistCounterPopup" #wishlistCounterPopup>
-    <div class="popup-content">
-      <div class="popup-icon">
-        <i class="fas fa-heart"></i>
-      </div>
-      <div class="popup-text">
-        <span class="popup-count">{{wishlistCounter}} Item{{wishlistCounter > 1 ? 's' : ''}} saved</span>
-        <button class="btn-view-wishlist" (click)="viewWishlist()">
-          <i class="fas fa-eye"></i>
-          View Wishlist
-        </button>
-      </div>
-    </div>
-  </div> -->
 </div>
