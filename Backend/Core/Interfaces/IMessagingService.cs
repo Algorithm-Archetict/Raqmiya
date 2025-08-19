@@ -17,6 +17,7 @@ namespace Core.Interfaces
         Task<ServiceRequest> CreateServiceRequestAsync(int customerId, Guid conversationId, string requirements, decimal? proposedBudget, string? currency);
         Task<ServiceRequest> AcceptServiceRequestAsync(int creatorId, Guid conversationId, Guid serviceRequestId, DateTime deadlineUtc);
         Task<ServiceRequest> ConfirmServiceRequestAsync(int customerId, Guid conversationId, Guid serviceRequestId);
+        Task DeclineServiceRequestAsync(int userId, Guid conversationId, Guid serviceRequestId);
         Task<ServiceRequest> UpdateServiceRequestDeadlineAsync(int creatorId, Guid conversationId, Guid serviceRequestId, DateTime newDeadlineUtc);
 
         Task<Delivery> DeliverProductAsync(int creatorId, Guid conversationId, Guid? serviceRequestId, int productId, decimal price);
@@ -52,6 +53,12 @@ namespace Core.Interfaces
 
         // Fetch latest pending deadline proposal for a service request
         Task<ServiceRequestDeadlineChange?> GetPendingDeadlineProposalAsync(int userId, Guid conversationId, Guid serviceRequestId);
+
+        // Fetch latest deadline proposal (any status) for a service request
+        Task<ServiceRequestDeadlineChange?> GetLatestDeadlineProposalAsync(int userId, Guid conversationId, Guid serviceRequestId);
+
+        // Fetch all deadline proposals (history) for a service request
+        Task<List<ServiceRequestDeadlineChange>> GetDeadlineProposalHistoryAsync(int userId, Guid conversationId, Guid serviceRequestId);
 
         // List deliveries for a conversation (for participants)
         Task<List<Delivery>> GetDeliveriesForConversationAsync(int userId, Guid conversationId);

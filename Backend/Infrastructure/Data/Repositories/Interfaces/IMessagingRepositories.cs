@@ -38,6 +38,7 @@ namespace Raqmiya.Infrastructure.Data.Repositories.Interfaces
         Task AddAsync(ServiceRequest request);
         Task<List<ServiceRequest>> GetForCreatorAsync(int creatorId, ServiceRequestStatus[] statuses, int take = 50, int skip = 0);
         Task<List<ServiceRequest>> GetForCustomerAsync(int customerId, ServiceRequestStatus[] statuses, int take = 50, int skip = 0);
+        void Remove(ServiceRequest request);
         Task SaveChangesAsync();
     }
 
@@ -45,6 +46,8 @@ namespace Raqmiya.Infrastructure.Data.Repositories.Interfaces
     {
         Task<ServiceRequestDeadlineChange?> GetByIdAsync(Guid id);
         Task<ServiceRequestDeadlineChange?> GetPendingByServiceRequestAsync(Guid serviceRequestId);
+        Task<ServiceRequestDeadlineChange?> GetLatestByServiceRequestAsync(Guid serviceRequestId);
+        Task<List<ServiceRequestDeadlineChange>> ListByServiceRequestAsync(Guid serviceRequestId);
         Task AddAsync(ServiceRequestDeadlineChange change);
         Task SaveChangesAsync();
     }

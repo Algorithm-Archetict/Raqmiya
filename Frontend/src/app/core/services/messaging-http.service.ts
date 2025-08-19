@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface ConversationDto {
   id: string;
@@ -66,6 +67,12 @@ export interface ServiceRequestDto {
   currency?: string | null;
   deadlineUtc?: string | null;
   createdAt: string;
+  customerId?: number;
+  customerUsername?: string | null;
+  customerProfileImageUrl?: string | null;
+  creatorId?: number;
+  creatorUsername?: string | null;
+  creatorProfileImageUrl?: string | null;
 }
 
 export interface DeadlineProposalDto {
@@ -186,6 +193,20 @@ export class MessagingHttpService {
     );
   }
 
+  getLatestDeadlineProposal(conversationId: string, serviceRequestId: string): Observable<DeadlineProposalDto | null>{
+    return this.http.get<DeadlineProposalDto | null>(
+      `${this.base}/messaging/${conversationId}/service-requests/${serviceRequestId}/deadline/latest`,
+      this.headers()
+    );
+  }
+
+  getDeadlineProposalHistory(conversationId: string, serviceRequestId: string): Observable<DeadlineProposalDto[]> {
+    return this.http.get<DeadlineProposalDto[]>(
+      `${this.base}/messaging/${conversationId}/service-requests/${serviceRequestId}/deadline/history`,
+      this.headers()
+    );
+  }
+
   respondToDeadlineProposal(conversationId: string, serviceRequestId: string, proposalId: string, accept: boolean): Observable<{ id: string; conversationId: string; status: string; deadlineUtc?: string | null; }>{
     return this.http.post<{ id: string; conversationId: string; status: string; deadlineUtc?: string | null; }>(
       `${this.base}/messaging/${conversationId}/service-requests/${serviceRequestId}/deadline/${proposalId}/respond`,
@@ -197,6 +218,14 @@ export class MessagingHttpService {
   confirmServiceRequest(conversationId: string, serviceRequestId: string): Observable<{ id: string; conversationId: string; status: string; }>{
     return this.http.post<{ id: string; conversationId: string; status: string; }>(
       `${this.base}/messaging/${conversationId}/service-requests/${serviceRequestId}/confirm`,
+      {},
+      this.headers()
+    );
+  }
+
+  declineServiceRequest(conversationId: string, serviceRequestId: string): Observable<void>{
+    return this.http.post<void>(
+      `${this.base}/messaging/${conversationId}/service-requests/${serviceRequestId}/decline`,
       {},
       this.headers()
     );
@@ -249,7 +278,37 @@ export class MessagingHttpService {
     (statuses || []).forEach(s => qs.append('statuses', s));
     qs.append('take', String(take));
     qs.append('skip', String(skip));
-    return this.http.get<ServiceRequestDto[]>(`${this.base}/messaging/service-requests/creator?${qs.toString()}`, this.headers());
+    return this.http
+      .get<any[]>(`${this.base}/messaging/service-requests/creator?${qs.toString()}`, this.headers())
+      .pipe(
+        map((items) => (items || []).map((it: any) => {
+          // Backend returns a single 'budget' string like "120 USD" or null.
+          let proposedBudget: number | null = null;
+          let currency: string | null = null;
+          if (it && typeof it.budget === 'string') {
+            const parts = it.budget.trim().split(/\s+/);
+            if (parts.length >= 1) {
+              const num = Number(parts[0].replace(/[,]/g, ''));
+              proposedBudget = isNaN(num) ? null : num;
+              currency = parts.length >= 2 ? parts.slice(1).join(' ') : null;
+            }
+          }
+          const mapped: ServiceRequestDto = {
+            id: it.id,
+            conversationId: it.conversationId,
+            status: it.status,
+            requirements: it.requirements,
+            proposedBudget,
+            currency,
+            deadlineUtc: it.deadlineUtc ?? null,
+            createdAt: it.createdAt,
+            customerId: it.customerId,
+            customerUsername: it.customerUsername,
+            customerProfileImageUrl: it.customerProfileImageUrl
+          };
+          return mapped;
+        }))
+      );
   }
 
   getCustomerServiceRequests(statuses: string[] = ['AcceptedByCreator','ConfirmedByCustomer'], take = 50, skip = 0): Observable<ServiceRequestDto[]>{

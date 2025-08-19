@@ -1,0 +1,71 @@
+.services-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.header h1 {
+  font-size: 28px;
+  margin: 0 0 4px 0;
+}
+.header .sub {
+  color: #667085;
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.tab:hover { color: #111827; }
+.tab.active {
+  color: #111827;
+  border-bottom-color: #111827;
+  font-weight: 600;
+}
+
+.content {
+  display: grid;
+}
+.panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* Enhance inner bars visually to feel cohesive on this page */
+.sr-bar {
+  --accent: #111827;
+}
+.sr-bar .sr-header h3 { margin: 0; }
+.sr-bar .sr-item {
+  border-radius: 10px;
+  border: 1px solid #eef0f3;
+  padding: 12px;
+  background: #fafafa;
+}
+.sr-bar .sr-status.confirmed { color: #0ea5e9; }
+.sr-bar .sr-status.accepted { color: #16a34a; }
+.sr-bar .refresh-btn {
+  background: #111827;
+  color: #fff;
+  border-radius: 8px;
+  border: none;
+  padding: 6px 10px;
+}
+.sr-bar .refresh-btn[disabled] { opacity: 0.6; }
