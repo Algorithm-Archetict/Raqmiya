@@ -1,0 +1,198 @@
+<div class="admin-user-detail">
+  <div class="container">
+    <!-- Header -->
+    <div class="detail-header">
+      <div class="header-content">
+        <h2 class="section-title">User Details</h2>
+        <p class="section-subtitle">View and manage user information and permissions</p>
+      </div>
+      <div class="header-actions">
+        <a routerLink="/admin/users" class="btn btn-outline">
+          <i class="bi bi-arrow-left"></i> Back to Users
+        </a>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="loading-text">Loading user details...</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="error-container">
+      <div class="alert alert-danger">
+        <div class="error-content">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div class="error-message">
+            <h5>Error Loading User</h5>
+            <p>{{ error }}</p>
+          </div>
+        </div>
+        <button class="btn btn-outline-danger" (click)="retryLoad()">
+          <i class="bi bi-arrow-clockwise"></i> Retry
+        </button>
+      </div>
+    </div>
+
+    <!-- Not Found State -->
+    <div *ngIf="notFound && !loading" class="not-found-container">
+      <div class="not-found-content">
+        <i class="bi bi-person-x"></i>
+        <h4>User Not Found</h4>
+        <p>The user you're looking for doesn't exist or has been removed.</p>
+        <a routerLink="/admin/users" class="btn btn-primary">
+          <i class="bi bi-arrow-left"></i> Back to Users
+        </a>
+      </div>
+    </div>
+
+    <!-- User Details -->
+    <div *ngIf="user && !loading" class="user-details-container">
+      <!-- User Profile Section -->
+      <div class="user-profile-section">
+        <div class="user-avatar-large">
+          {{ getUserInitials(user.username) }}
+        </div>
+        <div class="user-info-main">
+          <h3 class="user-name">{{ user.username }}</h3>
+          <div class="user-badges">
+            <span class="badge" [ngClass]="getRoleBadgeClass(user.role)">
+              {{ user.role }}
+            </span>
+            <span class="badge" [ngClass]="getStatusBadgeClass(user.isActive)">
+              {{ user.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <div class="user-email">
+            <i class="bi bi-envelope"></i>
+            {{ user.email }}
+          </div>
+        </div>
+        <div class="user-actions">
+          <button 
+            class="btn" 
+            [ngClass]="user.isActive ? 'btn-outline-danger' : 'btn-outline-success'"
+            (click)="toggleActivation()"
+            [disabled]="loading">
+            <i class="bi" [ngClass]="user.isActive ? 'bi-person-x' : 'bi-person-check'"></i>
+            {{ user.isActive ? 'Deactivate' : 'Activate' }} User
+          </button>
+        </div>
+      </div>
+
+      <!-- User Details Cards -->
+      <div class="details-grid">
+        <!-- Basic Information -->
+        <div class="detail-card">
+          <div class="card-header">
+            <i class="bi bi-person-circle"></i>
+            <h4>Basic Information</h4>
+          </div>
+          <div class="card-body">
+            <div class="info-item">
+              <span class="info-label">User ID:</span>
+              <span class="info-value">{{ user.id }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Username:</span>
+              <span class="info-value">{{ user.username }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email:</span>
+              <span class="info-value">{{ user.email }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Role:</span>
+              <span class="info-value">
+                <span class="badge" [ngClass]="getRoleBadgeClass(user.role)">
+                  {{ user.role }}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Status -->
+        <div class="detail-card">
+          <div class="card-header">
+            <i class="bi bi-shield-check"></i>
+            <h4>Account Status</h4>
+          </div>
+          <div class="card-body">
+            <div class="info-item">
+              <span class="info-label">Status:</span>
+              <span class="info-value">
+                <span class="badge" [ngClass]="getStatusBadgeClass(user.isActive)">
+                  {{ user.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Account Type:</span>
+              <span class="info-value">{{ user.role }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Last Updated:</span>
+              <span class="info-value">Recently</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Creator Information (if applicable) -->
+        <div *ngIf="user.role === 'Creator'" class="detail-card">
+          <div class="card-header">
+            <i class="bi bi-box-seam"></i>
+            <h4>Creator Information</h4>
+          </div>
+          <div class="card-body">
+            <div class="info-item">
+              <span class="info-label">Total Products:</span>
+              <span class="info-value">
+                <i class="bi bi-box-seam"></i>
+                {{ user.productCount || 0 }} products
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Creator Since:</span>
+              <span class="info-value">Recently</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Platform Status:</span>
+              <span class="info-value">
+                <span class="badge badge-success">Verified</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Information (if applicable) -->
+        <div *ngIf="user.role === 'Admin'" class="detail-card">
+          <div class="card-header">
+            <i class="bi bi-shield-lock"></i>
+            <h4>Admin Information</h4>
+          </div>
+          <div class="card-body">
+            <div class="info-item">
+              <span class="info-label">Admin Level:</span>
+              <span class="info-value">Full Access</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Permissions:</span>
+              <span class="info-value">All Platform Features</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Admin Since:</span>
+              <span class="info-value">Recently</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  

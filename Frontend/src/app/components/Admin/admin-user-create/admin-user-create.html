@@ -1,0 +1,179 @@
+<div class="admin-user-create">
+  <div class="container">
+    <!-- Header -->
+    <div class="create-header">
+      <div class="header-content">
+        <h2 class="section-title">Create New User</h2>
+        <p class="section-subtitle">Add a new user to the platform with appropriate permissions</p>
+      </div>
+      <div class="header-actions">
+        <a routerLink="/admin/users" class="btn btn-outline">
+          <i class="bi bi-arrow-left"></i> Back to Users
+        </a>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="success" class="alert alert-success">
+      <div class="success-content">
+        <i class="bi bi-check-circle-fill"></i>
+        <div class="success-message">
+          <h5>Success!</h5>
+          <p>{{ success }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="alert alert-danger">
+      <div class="error-content">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div class="error-message">
+          <h5>Error</h5>
+          <p>{{ error }}</p>
+        </div>
+      </div>
+      <button class="btn btn-outline-danger" (click)="clearMessages()">
+        <i class="bi bi-x"></i> Dismiss
+      </button>
+    </div>
+
+    <!-- Create User Form -->
+    <div class="form-container">
+      <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="create-form">
+        <div class="form-row">
+          <!-- Email Field -->
+          <div class="form-group">
+            <label for="email" class="form-label">
+              <i class="bi bi-envelope"></i> Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              formControlName="email"
+              class="form-control"
+              [class.is-invalid]="getFieldError('email')"
+              placeholder="Enter email address"
+              autocomplete="email"
+            />
+            <div *ngIf="getFieldError('email')" class="invalid-feedback">
+              {{ getFieldError('email') }}
+            </div>
+          </div>
+
+          <!-- Username Field -->
+          <div class="form-group">
+            <label for="username" class="form-label">
+              <i class="bi bi-person"></i> Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              formControlName="username"
+              class="form-control"
+              [class.is-invalid]="getFieldError('username')"
+              placeholder="Enter username"
+              autocomplete="username"
+            />
+            <div *ngIf="getFieldError('username')" class="invalid-feedback">
+              {{ getFieldError('username') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Password Field -->
+          <div class="form-group">
+            <label for="password" class="form-label">
+              <i class="bi bi-lock"></i> Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              formControlName="password"
+              class="form-control"
+              [class.is-invalid]="getFieldError('password')"
+              placeholder="Enter password (min 6 characters)"
+              autocomplete="new-password"
+            />
+            <div *ngIf="getFieldError('password')" class="invalid-feedback">
+              {{ getFieldError('password') }}
+            </div>
+          </div>
+
+          <!-- Confirm Password Field -->
+          <div class="form-group">
+            <label for="confirmPassword" class="form-label">
+              <i class="bi bi-lock-fill"></i> Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              formControlName="confirmPassword"
+              class="form-control"
+              [class.is-invalid]="getPasswordError()"
+              placeholder="Confirm password"
+              autocomplete="new-password"
+            />
+            <div *ngIf="getPasswordError()" class="invalid-feedback">
+              {{ getPasswordError() }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Role Field -->
+        <div class="form-group">
+          <label for="role" class="form-label">
+            <i class="bi bi-shield"></i> User Role
+          </label>
+          <select
+            id="role"
+            formControlName="role"
+            class="form-select"
+            [class.is-invalid]="getFieldError('role')"
+          >
+            <option *ngFor="let role of availableRoles" [value]="role.value">
+              {{ role.label }}
+            </option>
+          </select>
+          <div *ngIf="getFieldError('role')" class="invalid-feedback">
+            {{ getFieldError('role') }}
+          </div>
+          <div class="form-text">
+            <strong>Creator:</strong> Can create and manage products<br>
+            <strong>Customer:</strong> Can purchase and access products<br>
+            <strong>Admin:</strong> Full platform access and user management
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button
+            type="button"
+            routerLink="/admin/users"
+            class="btn btn-outline"
+            [disabled]="loading"
+          >
+            <i class="bi bi-x"></i> Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="loading || userForm.invalid"
+          >
+            <span *ngIf="!loading">
+              <i class="bi bi-person-plus-fill"></i> Create User
+            </span>
+            <span *ngIf="loading">
+              <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              Creating...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+  
