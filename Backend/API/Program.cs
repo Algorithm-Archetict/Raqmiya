@@ -1,6 +1,4 @@
 using AutoMapper;
-using Core.Interfaces;
-using Core.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.OpenApi.Models;
@@ -30,6 +28,7 @@ namespace API
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddSingleton<API.Services.FileModerationService>();
 
             // --- 1. Configure DbContext ---
             builder.Services.AddDbContext<RaqmiyaDbContext>(options =>
