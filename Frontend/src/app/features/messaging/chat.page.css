@@ -54,6 +54,8 @@
 
 .message-list{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:radial-gradient(1200px 600px at 100% -10%,rgba(59,107,255,.08),transparent),radial-gradient(900px 500px at -10% 110%,rgba(62,229,140,.06),transparent)}
 .message{display:flex}
+.message.system{justify-content:center}
+.message.system .bubble{max-width:100%;background:transparent;border:1px dashed rgba(255,255,255,.14);color:#b9c4dd;border-radius:12px;padding:6px 10px;font-size:12px;opacity:.9}
 .message.me{justify-content:flex-end}
 .message .bubble{max-width:min(70ch,80%);background:#121836;border:1px solid rgba(255,255,255,.08);padding:10px 12px;border-radius:16px;color:#e6e9f0;box-shadow:0 4px 16px rgba(0,0,0,.2);position:relative}
 .message.me .bubble{background:#1e2a54;border-color:#2a3a70}

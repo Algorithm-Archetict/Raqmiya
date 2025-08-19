@@ -202,6 +202,16 @@ namespace API.Controllers
             return Ok(new { id = sr.Id, conversationId = sr.ConversationId, status = sr.Status.ToString() });
         }
 
+        // Decline service request
+        // - Creator can decline when status is Pending
+        // - Customer can decline when status is AcceptedByCreator
+        [HttpPost("{conversationId:guid}/service-requests/{serviceRequestId:guid}/decline")]
+        public async Task<IActionResult> DeclineServiceRequest(Guid conversationId, Guid serviceRequestId)
+        {
+            await _svc.DeclineServiceRequestAsync(UserId, conversationId, serviceRequestId);
+            return NoContent();
+        }
+
         // Creator initiates deadline update as a proposal (no immediate update)
         [HttpPost("{conversationId:guid}/service-requests/{serviceRequestId:guid}/deadline")]
         public async Task<IActionResult> UpdateServiceRequestDeadline(Guid conversationId, Guid serviceRequestId, [FromBody] UpdateDeadlineDto dto)
@@ -230,6 +240,23 @@ namespace API.Controllers
             var prop = await _svc.GetPendingDeadlineProposalAsync(UserId, conversationId, serviceRequestId);
             if (prop == null) return NoContent();
             return Ok(new { id = prop.Id, serviceRequestId = prop.ServiceRequestId, proposedDeadlineUtc = prop.ProposedDeadlineUtc, status = prop.Status.ToString(), createdAt = prop.CreatedAt, reason = prop.Reason });
+        }
+
+        // Fetch latest deadline proposal (any status) for this service request
+        [HttpGet("{conversationId:guid}/service-requests/{serviceRequestId:guid}/deadline/latest")]
+        public async Task<IActionResult> GetLatestDeadlineProposal(Guid conversationId, Guid serviceRequestId)
+        {
+            var prop = await _svc.GetLatestDeadlineProposalAsync(UserId, conversationId, serviceRequestId);
+            if (prop == null) return NoContent();
+            return Ok(new { id = prop.Id, serviceRequestId = prop.ServiceRequestId, proposedDeadlineUtc = prop.ProposedDeadlineUtc, status = prop.Status.ToString(), createdAt = prop.CreatedAt, reason = prop.Reason });
+        }
+
+        // Fetch deadline proposal history for this service request
+        [HttpGet("{conversationId:guid}/service-requests/{serviceRequestId:guid}/deadline/history")]
+        public async Task<IActionResult> GetDeadlineProposalHistory(Guid conversationId, Guid serviceRequestId)
+        {
+            var list = await _svc.GetDeadlineProposalHistoryAsync(UserId, conversationId, serviceRequestId);
+            return Ok(list.Select(prop => new { id = prop.Id, serviceRequestId = prop.ServiceRequestId, proposedDeadlineUtc = prop.ProposedDeadlineUtc, status = prop.Status.ToString(), createdAt = prop.CreatedAt, reason = prop.Reason }));
         }
 
         // Customer responds to a deadline proposal
@@ -318,6 +345,9 @@ namespace API.Controllers
                 parsed = new[] { ServiceRequestStatus.AcceptedByCreator, ServiceRequestStatus.ConfirmedByCustomer };
             }
             var list = await _svc.GetServiceRequestsForCreatorAsync(UserId, parsed, take, skip);
+            var request = HttpContext.Request;
+            var baseUrl = $"{request.Scheme}://{request.Host}";
+
             var dto = list.Select(sr => new
             {
                 id = sr.Id,
@@ -326,7 +356,14 @@ namespace API.Controllers
                 requirements = sr.Requirements,
                 budget = sr.ProposedBudget.HasValue ? $"{sr.ProposedBudget.Value} {sr.Currency}" : null,
                 deadlineUtc = sr.CreatorDeadlineUtc,
-                createdAt = sr.CreatedAt
+                createdAt = sr.CreatedAt,
+                customerId = sr.Conversation != null ? sr.Conversation.CustomerId : 0,
+                customerUsername = sr.Conversation != null && sr.Conversation.Customer != null ? sr.Conversation.Customer.Username : null,
+                customerProfileImageUrl = sr.Conversation != null && sr.Conversation.Customer != null
+                    ? (!string.IsNullOrEmpty(sr.Conversation.Customer.ProfileImageUrl) && !sr.Conversation.Customer.ProfileImageUrl.StartsWith("http")
+                        ? baseUrl + sr.Conversation.Customer.ProfileImageUrl
+                        : sr.Conversation.Customer.ProfileImageUrl)
+                    : null
             });
             return Ok(dto);
         }
@@ -345,6 +382,9 @@ namespace API.Controllers
                 parsed = new[] { ServiceRequestStatus.AcceptedByCreator, ServiceRequestStatus.ConfirmedByCustomer };
             }
             var list = await _svc.GetServiceRequestsForCustomerAsync(UserId, parsed, take, skip);
+            var request = HttpContext.Request;
+            var baseUrl = $"{request.Scheme}://{request.Host}";
+
             var dto = list.Select(sr => new
             {
                 id = sr.Id,
@@ -354,7 +394,14 @@ namespace API.Controllers
                 proposedBudget = sr.ProposedBudget,
                 currency = sr.Currency,
                 deadlineUtc = sr.CreatorDeadlineUtc,
-                createdAt = sr.CreatedAt
+                createdAt = sr.CreatedAt,
+                creatorId = sr.Conversation != null ? sr.Conversation.CreatorId : 0,
+                creatorUsername = sr.Conversation != null && sr.Conversation.Creator != null ? sr.Conversation.Creator.Username : null,
+                creatorProfileImageUrl = sr.Conversation != null && sr.Conversation.Creator != null
+                    ? (!string.IsNullOrEmpty(sr.Conversation.Creator.ProfileImageUrl) && !sr.Conversation.Creator.ProfileImageUrl.StartsWith("http")
+                        ? baseUrl + sr.Conversation.Creator.ProfileImageUrl
+                        : sr.Conversation.Creator.ProfileImageUrl)
+                    : null
             });
             return Ok(dto);
         }

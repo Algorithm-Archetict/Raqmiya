@@ -121,6 +121,17 @@
         </div>
       </div>
       <button class="btn ghost small" *ngIf="hasMoreHistory" (click)="loadOlder()">Load older messages</button>
+      <!-- System-style message summarizing active/ongoing services count -->
+      <div class="message system" *ngIf="activeOngoingCount() > 0">
+        <div class="bubble">
+          <ng-container *ngIf="isCreatorInCurrent(); else customerMsg">
+            You have {{ activeOngoingCount() }} active services with this customer.
+          </ng-container>
+          <ng-template #customerMsg>
+            You have {{ activeOngoingCount() }} ongoing services with this creator.
+          </ng-template>
+        </div>
+      </div>
       <ng-container *ngFor="let m of messages(); trackBy: trackByMessageId; let i = index">
         <div *ngIf="!isCaptionOfPrevious(i)" class="message fade-in" [class.me]="isMine(m)">
           <div class="bubble">
@@ -155,27 +166,6 @@
       </div>
     </section>
 
-    <!-- Pending deadline proposal banner -->
-    <section *ngIf="pendingProposal() as prop" class="banner info">
-      <div class="icon">⏳</div>
-      <div class="content">
-        <div class="title">Pending deadline change</div>
-        <div class="msg-preview">
-          <div class="label">Proposed new deadline</div>
-          <div class="bubble">{{ prop.proposedDeadlineUtc | date:'medium' }}</div>
-        </div>
-        <div class="msg-preview" *ngIf="prop.reason">
-          <div class="label">Reason</div>
-          <div class="bubble">{{ prop.reason }}</div>
-        </div>
-        <div class="actions" *ngIf="!isCreatorInCurrent()">
-          <button class="btn" (click)="respondToProposal(false)">Decline</button>
-          <button class="btn primary" (click)="respondToProposal(true)">Accept</button>
-        </div>
-        <div class="hint" *ngIf="isCreatorInCurrent()">Waiting for customer to respond.</div>
-      </div>
-    </section>
-    
     <!-- Inline Service Request Form (Customer only) -->
     <section *ngIf="currentConversationId() && !isCreatorInCurrent()" class="service-form-section">
       <button class="btn ghost small" (click)="toggleServiceForm()">{{ showServiceForm() ? 'Hide' : 'Request a service' }}</button>
@@ -184,32 +174,7 @@
       </div>
     </section>
 
-    <!-- Current conversation's service requests & actions -->
-    <section *ngIf="currentServiceRequests().length > 0" class="service-requests">
-      <div class="sr-item" *ngFor="let sr of currentServiceRequests()">
-        <div class="sr-main">
-          <div class="sr-row"><span class="lbl">Status:</span> <span class="val">{{ formatStatus(sr.status) }}</span></div>
-          <div class="sr-row" *ngIf="sr.proposedBudget != null">
-            <span class="lbl">Proposed budget:</span>
-            <span class="val">{{ (sr.currency || 'USD') }} {{ sr.proposedBudget | number:'1.0-2' }}</span>
-          </div>
-          <div class="sr-row" *ngIf="sr.deadlineUtc"><span class="lbl">Deadline:</span> <span class="val">{{ sr.deadlineUtc | date:'medium' }} <span class="muted small">(in {{ timeLeft(sr.deadlineUtc) }})</span></span></div>
-          <div class="sr-req">{{ sr.requirements }}</div>
-        </div>
-        <div class="sr-actions">
-          <!-- Creator can accept when status is Pending (initial) -->
-          <button class="btn primary" *ngIf="isCreatorInCurrent() && sr.status==='Pending'" (click)="acceptServiceRequest(sr)">Accept</button>
-          <!-- Customer can confirm when status is AcceptedByCreator -->
-          <button class="btn primary" *ngIf="!isCreatorInCurrent() && sr.status==='AcceptedByCreator'" (click)="confirmServiceRequest(sr)">Confirm</button>
-          <!-- Creator can update deadline only after customer confirms -->
-          <button class="btn" *ngIf="isCreatorInCurrent() && sr.status==='ConfirmedByCustomer'" (click)="updateServiceDeadline(sr)">Update deadline</button>
-        </div>
-      </div>
-    </section>
-    <section *ngIf="currentConversationId() && currentServiceRequests().length === 0" class="service-requests empty">
-      <div class="sr-empty">No service requests for this conversation yet.</div>
-    </section>
-
+    <!-- Removed inline service requests display from chat; handled in Services page -->
 
     <footer class="composer" *ngIf="!isCurrentPending()">
       <div class="left">
@@ -248,7 +213,6 @@
         <button (click)="triggerFile()">Upload image</button>
         <button *ngIf="!isCreatorInCurrent()" (click)="requestService()">Request service</button>
         <button *ngIf="isCreatorInCurrent()" (click)="sendProduct()">Send product</button>
-        <button *ngIf="isCreatorInCurrent() && hasConfirmedServiceRequest()" (click)="requestExtension()">Request deadline extension</button>
       </div>
     </footer>
   </main>

@@ -7,6 +7,8 @@ import { DashboardSidebar } from '../../dashboard-sidebar/dashboard-sidebar';
 import { PaymentService, BalanceResponse, RevenueAnalytics, MonthlyRevenuePoint } from '../../../core/services/payment.service';
 import { OrderService } from '../../../core/services/order.service';
 import { AuthService } from '../../../core/services/auth.service';
+import Swal from 'sweetalert2';
+import { firstValueFrom } from 'rxjs';
 
 interface SalesData {
   totalSales: number;
@@ -320,5 +322,113 @@ export class Sales implements OnInit, AfterViewInit {
     setTimeout(() => {
       try { this.chart?.resize(); } catch {}
     }, 120);
+  }
+
+  // --- Export Report ---
+  async onExportReport() {
+    try {
+      const html = this.buildReportHtml();
+      const { isConfirmed } = await Swal.fire({
+        title: 'Export Report',
+        html: `
+          <div style="text-align:left;max-height:55vh;overflow:auto;border:1px solid #e5e7eb;border-radius:10px">
+            ${html}
+          </div>
+          <div style="margin-top:10px;color:#6b7280;font-size:12px">Preview of the report to be exported</div>
+        `,
+        width: '72rem',
+        showCancelButton: true,
+        confirmButtonText: 'Send to my email',
+        cancelButtonText: 'Close',
+        showDenyButton: false,
+        focusConfirm: false
+      });
+
+      if (isConfirmed) {
+        // Show loading without awaiting; otherwise code will pause until modal closes
+        Swal.fire({ title: 'Sending…', didOpen: () => Swal.showLoading(), allowOutsideClick: false, allowEscapeKey: false });
+        try {
+          // Ask backend to email the analytics report for current creator and currency
+          await firstValueFrom(this.paymentService.emailMyAnalyticsReport(this.selectedCurrency));
+          Swal.close();
+          await Swal.fire({ icon: 'success', title: 'Report emailed', text: 'A copy of your analytics report was sent to your email.' });
+        } catch (err: any) {
+          Swal.close();
+          throw err;
+        }
+      }
+    } catch (e: any) {
+      await Swal.fire({ icon: 'error', title: 'Export failed', text: e?.message || 'Something went wrong while exporting the report.' });
+    }
+  }
+
+  private buildReportHtml(): string {
+    const symbol = this.getCurrencySymbol();
+    const fmt = (n: number) => `${symbol}${Number(n || 0).toFixed(2)}`;
+    const now = new Date();
+    const head = `
+      <div style="padding:18px 22px;background:linear-gradient(180deg,#0f172a,#0b1221);color:#e5e7eb;border-bottom:1px solid #334155">
+        <h2 style="margin:0;font-size:20px;letter-spacing:.2px">Sales Analytics Report</h2>
+        <div style="font-size:12px;opacity:.85">Generated on ${now.toLocaleString()} • Currency: ${this.selectedCurrency}</div>
+      </div>`;
+    const kpis = `
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px">
+        ${this.kpiCard('Total Sales', String(this.salesData.totalSales), 'fas fa-shopping-cart')}
+        ${this.kpiCard('Total Revenue', fmt(this.salesData.totalRevenue), 'fas fa-dollar-sign')}
+        ${this.kpiCard('Monthly Revenue', fmt(this.salesData.monthlyRevenue), 'fas fa-chart-line')}
+        ${this.kpiCard('Weekly Revenue', fmt(this.salesData.weeklyRevenue), 'fas fa-calendar-week')}
+        ${this.kpiCard('Avg. Order Value', fmt(this.salesData.averageOrderValue), 'fas fa-calculator')}
+      </div>`;
+    const topProducts = `
+      <div style="padding:0 16px 16px">
+        <h3 style="margin:8px 0 10px;font-size:16px">Top Performing Products</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr>
+              <th style="text-align:left;border-bottom:1px solid #e5e7eb;padding:8px">Product</th>
+              <th style="text-align:right;border-bottom:1px solid #e5e7eb;padding:8px">Sales</th>
+              <th style="text-align:right;border-bottom:1px solid #e5e7eb;padding:8px">Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(this.salesData.topProducts || []).map(p => `
+              <tr>
+                <td style=\"padding:8px;border-bottom:1px solid #f1f5f9\">${this.escapeHtml(p.name)}</td>
+                <td style=\"padding:8px;border-bottom:1px solid #f1f5f9;text-align:right\">${p.sales}</td>
+                <td style=\"padding:8px;border-bottom:1px solid #f1f5f9;text-align:right\">${fmt(p.revenue)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    const wrapper = `
+      <div style="font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+        ${head}
+        ${kpis}
+        ${topProducts}
+      </div>`;
+    return wrapper;
+  }
+
+  private kpiCard(label: string, value: string, icon: string): string {
+    return `
+      <div style=\"display:flex;align-items:center;gap:12px;border:1px solid #e5e7eb;border-radius:12px;padding:12px\">
+        <div style=\"width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#eff6ff;color:#2563eb\">
+          <i class=\"${icon}\"></i>
+        </div>
+        <div style=\"display:flex;flex-direction:column\">
+          <div style=\"font-size:12px;color:#64748b\">${this.escapeHtml(label)}</div>
+          <div style=\"font-size:16px;font-weight:700\">${this.escapeHtml(value)}</div>
+        </div>
+      </div>`;
+  }
+
+  private escapeHtml(s: string): string {
+    return (s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 }
