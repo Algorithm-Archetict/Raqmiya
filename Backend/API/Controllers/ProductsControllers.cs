@@ -34,12 +34,12 @@ namespace API.Controllers
             IUserRepository userRepository,
             API.Services.FileModerationService fileModerationService)
         {
-            _productService = productService;
-            _logger = logger;
-            _mapper = mapper;
-            _emailService = emailService;
-            _userRepository = userRepository;
-            _fileModerationService = fileModerationService;
+            _productService = productService ?? throw new ArgumentNullException(nameof(productService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _fileModerationService = fileModerationService ?? throw new ArgumentNullException(nameof(fileModerationService));
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace API.Controllers
         {
             try
             {
-                var userId = GetCurrentUserId();
+                var userId = GetCurrentUserIdOrNull(); // Allow anonymous users
                 var product = await _productService.GetProductDetailsByPermalinkAsync(permalink, userId);
                 if (product == null) return NotFound();
                 return Ok(product);
@@ -202,10 +202,7 @@ namespace API.Controllers
                 return Problem("An error occurred while updating the product.");
             }
         }
-
-        /// <summary>
-        /// Delete a product (creator only).
-        /// </summary>
+        
         [HttpDelete("{id}")]
         [Authorize(Roles = RoleConstants.Creator)]
         [Authorize(Roles = RoleConstants.Admin)]

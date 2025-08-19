@@ -48,7 +48,6 @@ namespace API.Controllers
             {
                 rng.GetBytes(saltBytes);
             }
-
             return Convert.ToBase64String(saltBytes);
         }
 
@@ -71,12 +70,12 @@ namespace API.Controllers
             IWebHostEnvironment environment,
             API.Services.FileModerationService fileModerationService)
         {
-            _userRepository = userRepository;
-            _logger = logger;
-            _mapper = mapper;
-            _emailService = emailService;
-            _environment = environment;
-            _fileModerationService = fileModerationService;
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _environment = environment ?? throw new ArgumentNullException(nameof(environment));
+            _fileModerationService = fileModerationService ?? throw new ArgumentNullException(nameof(fileModerationService));
         }
 
         /// <summary>
@@ -93,8 +92,7 @@ namespace API.Controllers
 
                 var request = HttpContext.Request;
                 var baseUrl = $"{request.Scheme}://{request.Host}";
-                var profileImageUrl = !string.IsNullOrEmpty(user.ProfileImageUrl) &&
-                                      !user.ProfileImageUrl.StartsWith("http")
+                var profileImageUrl = !string.IsNullOrEmpty(user.ProfileImageUrl) && !user.ProfileImageUrl.StartsWith("http")
                     ? baseUrl + user.ProfileImageUrl
                     : user.ProfileImageUrl;
 
@@ -115,8 +113,7 @@ namespace API.Controllers
         /// <param name="skip">Number of results to skip for paging</param>
         [HttpGet("creators")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<object>>> SearchCreators([FromQuery] string? query = null,
-            [FromQuery] int take = 50, [FromQuery] int skip = 0)
+        public async Task<ActionResult<IEnumerable<object>>> SearchCreators([FromQuery] string? query = null, [FromQuery] int take = 50, [FromQuery] int skip = 0)
         {
             try
             {
@@ -184,8 +181,7 @@ namespace API.Controllers
 
                 if (jwtUsername != user.Username || jwtEmail != user.Email)
                 {
-                    _logger.LogError(
-                        "JWT claims mismatch for user {UserId}. JWT Username: {JwtUsername}, DB Username: {DbUsername}",
+                    _logger.LogError("JWT claims mismatch for user {UserId}. JWT Username: {JwtUsername}, DB Username: {DbUsername}",
                         userId, jwtUsername, user.Username);
                     return Unauthorized("Token validation failed");
                 }
@@ -193,16 +189,14 @@ namespace API.Controllers
                 var userProfile = _mapper.Map<UserProfileDTO>(user);
 
                 // Convert relative image URL to full URL if it exists
-                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) &&
-                    !userProfile.ProfileImageUrl.StartsWith("http"))
+                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) && !userProfile.ProfileImageUrl.StartsWith("http"))
                 {
                     var request = HttpContext.Request;
                     var baseUrl = $"{request.Scheme}://{request.Host}";
                     userProfile.ProfileImageUrl = $"{baseUrl}{userProfile.ProfileImageUrl}";
                 }
 
-                _logger.LogInformation("Successfully retrieved profile data for user {UserId} ({Username})", userId,
-                    user.Username);
+                _logger.LogInformation("Successfully retrieved profile data for user {UserId} ({Username})", userId, user.Username);
                 return Ok(userProfile);
             }
             catch (Exception ex)
@@ -258,20 +252,16 @@ namespace API.Controllers
                     var existingUser = await _userRepository.GetUserByUsernameAsync(dto.Username);
                     if (existingUser != null && existingUser.Id != userId)
                     {
-                        _logger.LogWarning(
-                            "User {UserId} attempted to use username already taken by user {ExistingUserId}",
+                        _logger.LogWarning("User {UserId} attempted to use username already taken by user {ExistingUserId}",
                             userId, existingUser.Id);
                         return BadRequest("Username is already taken");
                     }
-
                     user.Username = dto.Username;
                 }
 
                 // Handle ProfileDescription: update if not null, but allow empty string to clear it
                 if (dto.ProfileDescription != null)
-                    user.ProfileDescription = string.IsNullOrWhiteSpace(dto.ProfileDescription)
-                        ? null
-                        : dto.ProfileDescription;
+                    user.ProfileDescription = string.IsNullOrWhiteSpace(dto.ProfileDescription) ? null : dto.ProfileDescription;
 
                 // Handle ProfileImageUrl: update if not null, allow empty string to remove image
                 if (dto.ProfileImageUrl != null)
@@ -288,30 +278,23 @@ namespace API.Controllers
                         if (!Uri.TryCreate(dto.ProfileImageUrl, UriKind.Absolute, out _) &&
                             !dto.ProfileImageUrl.StartsWith("/"))
                         {
-                            _logger.LogWarning("Invalid ProfileImageUrl format for user {UserId}: {Url}", userId,
-                                dto.ProfileImageUrl);
+                            _logger.LogWarning("Invalid ProfileImageUrl format for user {UserId}: {Url}", userId, dto.ProfileImageUrl);
                             return BadRequest("Invalid ProfileImageUrl format");
                         }
-
                         user.ProfileImageUrl = dto.ProfileImageUrl;
-                        _logger.LogInformation("Profile image URL updated for user {UserId}: {ImageUrl}", userId,
-                            dto.ProfileImageUrl);
+                        _logger.LogInformation("Profile image URL updated for user {UserId}: {ImageUrl}", userId, dto.ProfileImageUrl);
                     }
                 }
 
                 await _userRepository.UpdateAsync(user);
-                _logger.LogInformation("Profile updated successfully for user {UserId} ({Username})", userId,
-                    user.Username);
-                _logger.LogInformation("User ProfileImageUrl after update: {ProfileImageUrl}",
-                    user.ProfileImageUrl ?? "null");
+                _logger.LogInformation("Profile updated successfully for user {UserId} ({Username})", userId, user.Username);
+                _logger.LogInformation("User ProfileImageUrl after update: {ProfileImageUrl}", user.ProfileImageUrl ?? "null");
 
                 var userProfile = _mapper.Map<UserProfileDTO>(user);
-                _logger.LogInformation("Mapped UserProfileDTO ProfileImageUrl: {ProfileImageUrl}",
-                    userProfile.ProfileImageUrl ?? "null");
+                _logger.LogInformation("Mapped UserProfileDTO ProfileImageUrl: {ProfileImageUrl}", userProfile.ProfileImageUrl ?? "null");
 
                 // Convert relative image URL to full URL if it exists
-                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) &&
-                    !userProfile.ProfileImageUrl.StartsWith("http"))
+                if (!string.IsNullOrEmpty(userProfile.ProfileImageUrl) && !userProfile.ProfileImageUrl.StartsWith("http"))
                 {
                     var request = HttpContext.Request;
                     var baseUrl = $"{request.Scheme}://{request.Host}";
@@ -375,8 +358,7 @@ namespace API.Controllers
 
                 // Verify current password
                 var saltBytes = Convert.FromBase64String(user.Salt);
-                using (var pbkdf2 =
-                       new Rfc2898DeriveBytes(dto.CurrentPassword, saltBytes, 10000, HashAlgorithmName.SHA256))
+                using (var pbkdf2 = new Rfc2898DeriveBytes(dto.CurrentPassword, saltBytes, 10000, HashAlgorithmName.SHA256))
                 {
                     var hash = Convert.ToBase64String(pbkdf2.GetBytes(32));
                     if (hash != user.HashedPassword)
@@ -398,8 +380,7 @@ namespace API.Controllers
                 user.HashedPassword = newHash;
 
                 await _userRepository.UpdateAsync(user);
-                _logger.LogInformation("Password changed successfully for user {UserId} ({Username})", userId,
-                    user.Username);
+                _logger.LogInformation("Password changed successfully for user {UserId} ({Username})", userId, user.Username);
 
                 // Send email notification
                 _ = Task.Run(async () =>
@@ -450,19 +431,16 @@ namespace API.Controllers
                 _logger.LogInformation("User {UserId} attempting to upload profile image", userId);
 
                 if (image == null || image.Length == 0)
-                    return BadRequest(
-                        new UploadImageResponseDTO { Success = false, Message = "No image file provided" });
+                    return BadRequest(new UploadImageResponseDTO { Success = false, Message = "No image file provided" });
 
                 // Validate file size (max 5MB)
                 if (image.Length > 5 * 1024 * 1024)
-                    return BadRequest(new UploadImageResponseDTO
-                        { Success = false, Message = "File size must be less than 5MB" });
+                    return BadRequest(new UploadImageResponseDTO { Success = false, Message = "File size must be less than 5MB" });
 
                 // Validate file type
                 var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
                 if (!allowedTypes.Contains(image.ContentType.ToLower()))
-                    return BadRequest(new UploadImageResponseDTO
-                        { Success = false, Message = "Invalid file type. Please upload a JPG, PNG, or GIF image" });
+                    return BadRequest(new UploadImageResponseDTO { Success = false, Message = "Invalid file type. Please upload a JPG, PNG, or GIF image" });
 
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null)
@@ -484,14 +462,12 @@ namespace API.Controllers
                 {
                     bool isSafe = await _fileModerationService.IsImageSafeAsync(stream);
                     if (!isSafe)
-                        return BadRequest(new UploadImageResponseDTO
-                            { Success = false, Message = "Sensitive or inappropriate content detected." });
+                        return BadRequest(new UploadImageResponseDTO { Success = false, Message = "Sensitive or inappropriate content detected." });
                 }
 
                 // Create uploads directory if it doesn't exist
                 var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "profile-images");
-                if (!Directory.Exists(uploadsPath))
-                    Directory.CreateDirectory(uploadsPath);
+                if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
 
                 // Generate unique filename with user ID to prevent conflicts
                 var fileExtension = Path.GetExtension(image.FileName);
@@ -509,8 +485,7 @@ namespace API.Controllers
                 user.ProfileImageUrl = imageUrl;
                 await _userRepository.UpdateAsync(user);
 
-                _logger.LogInformation("Profile image uploaded successfully for user {UserId} ({Username})", userId,
-                    user.Username);
+                _logger.LogInformation("Profile image uploaded successfully for user {UserId} ({Username})", userId, user.Username);
 
                 // Get the full URL for the response
                 var request = HttpContext.Request;
