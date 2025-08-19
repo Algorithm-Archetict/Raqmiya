@@ -18,6 +18,7 @@ export class DashboardSidebar implements OnInit {
   currentRoute: string = '';
   isCreator: boolean = false;
   isCustomer: boolean = false;
+  isAdmin: boolean = false;
   isLoggedIn: boolean = false;
   totalUnread$!: Observable<number>; // includes pending (may be used elsewhere)
   messagesUnread$!: Observable<number>; // excludes pending, used for sidebar badge
@@ -97,6 +98,7 @@ export class DashboardSidebar implements OnInit {
     this.isLoggedIn = this.authService.isLoggedIn();
     this.isCreator = this.authService.isCreator();
     this.isCustomer = this.authService.isCustomer();
+    this.isAdmin = this.authService.isAdmin();
   }
 
   logout() {
