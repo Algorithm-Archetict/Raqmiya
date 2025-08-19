@@ -37,6 +37,8 @@ export class CartCheckout implements OnInit {
   balanceLoading = false;
   hasSufficientBalance = false;
   total: number = 0;
+  totalInUSD: number = 0;
+  itemCurrency: string = 'USD';
 
   constructor(
     private cartService: CartService,
@@ -140,13 +142,29 @@ export class CartCheckout implements OnInit {
   }
 
   private calculateTotal() {
+    // Calculate total in the original currency of the first item (assuming all items have same currency)
     this.total = this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     this.checkBalanceForPurchase();
   }
 
   private checkBalanceForPurchase() {
-    if (this.total > 0) {
-      this.hasSufficientBalance = this.currentBalance >= this.total;
+    if (this.total > 0 && this.cartItems.length > 0) {
+      // Get the currency of the first item (assuming all items have same currency)
+      this.itemCurrency = this.cartItems[0].currency;
+      
+      // Convert the total to USD for comparison with user's balance
+      this.paymentService.convertCurrency(this.total, this.itemCurrency, 'USD').subscribe({
+        next: (conversion) => {
+          this.totalInUSD = conversion.convertedAmount;
+          this.hasSufficientBalance = this.currentBalance >= this.totalInUSD;
+        },
+        error: (error) => {
+          this.loggingService.error('Error converting currency:', error);
+          // Fallback to direct comparison if conversion fails
+          this.totalInUSD = this.total;
+          this.hasSufficientBalance = this.currentBalance >= this.total;
+        }
+      });
     }
   }
 

@@ -278,44 +278,59 @@
                   Tags
                 </label>
                 <div class="tag-manager">
-                  <div class="tag-input-group">
+                  <p class="form-hint">Select tags to help customers find your product (max 5 tags)</p>
+                  
+                  <!-- Tag Search Input -->
+                  <div class="tag-search-container">
                     <input 
                       type="text" 
-                      class="form-input"
-                      placeholder="Add tags to help customers find your product..."
-                      [(ngModel)]="newTagInput"
+                      class="form-input tag-search-input"
+                      placeholder="Search suggested tags..."
+                      [(ngModel)]="tagSearchInput"
                       [ngModelOptions]="{standalone: true}"
-                      (keyup.enter)="addCustomTag($event)"
-                      (input)="onTagInputChange($event)"
+                      (input)="filterTags()"
                     >
-                    <button type="button" class="btn btn-secondary add-tag-btn" (click)="addCustomTag()">
-                      <i class="fas fa-plus"></i>
-                    </button>
+                    <i class="fas fa-search search-icon"></i>
                   </div>
-                  
+
                   <!-- Selected Tags -->
                   <div class="selected-tags" *ngIf="selectedTags.length > 0">
-                    <div class="tag-chip" *ngFor="let tag of selectedTags; let i = index">
+                    <div class="tag-chip selected" *ngFor="let tag of selectedTags; let i = index">
                       <span class="tag-name">{{ tag.name }}</span>
-                      <button type="button" class="remove-tag-btn" (click)="removeTag(i)">
+                      <button type="button" class="remove-tag-btn" (click)="removeTag(i)" title="Remove tag">
                         <i class="fas fa-times"></i>
                       </button>
                     </div>
                   </div>
-                  
+
                   <!-- Suggested Tags -->
-                  <div class="suggested-tags" *ngIf="getFilteredAvailableTags().length > 0">
-                    <h5>Suggested Tags:</h5>
-                    <div class="tag-suggestions">
-                      <button 
-                        type="button" 
-                        class="tag-suggestion-btn" 
-                        *ngFor="let tag of getFilteredAvailableTags()"
-                        (click)="selectSuggestedTag(tag)"
+                  <div class="suggested-tags" *ngIf="filteredTags.length > 0">
+                    <h5>Suggested Tags</h5>
+                    <div class="tag-chips">
+                      <div 
+                        class="tag-chip suggested" 
+                        *ngFor="let tag of filteredTags"
+                        [class.disabled]="isTagSelected(tag.id)"
+                        [class.selected]="isTagSelected(tag.id)"
+                        (click)="selectTag(tag)"
+                        [title]="isTagSelected(tag.id) ? 'Tag already selected' : 'Click to add tag'"
                       >
-                        {{ tag.name }}
-                      </button>
+                        <span>{{ tag.name }}</span>
+                        <i class="fas fa-plus add-icon" *ngIf="!isTagSelected(tag.id)"></i>
+                        <i class="fas fa-check check-icon" *ngIf="isTagSelected(tag.id)"></i>
+                      </div>
                     </div>
+                  </div>
+
+                  <!-- No tags found message -->
+                  <div class="no-tags-message" *ngIf="tagSearchInput && filteredTags.length === 0">
+                    <p>No tags found matching "{{ tagSearchInput }}"</p>
+                    <p class="hint">Try a different search term or select from the suggested tags above.</p>
+                  </div>
+
+                  <!-- Tag limit warning -->
+                  <div class="tag-limit-warning" *ngIf="selectedTags.length >= 5">
+                    <p><i class="fas fa-info-circle"></i> Maximum of 5 tags reached</p>
                   </div>
                 </div>
               </div>

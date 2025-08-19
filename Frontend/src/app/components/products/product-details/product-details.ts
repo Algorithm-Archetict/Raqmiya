@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, Input } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Input, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { FileDTO } from '../../../core/models/product/file.dto';
 import { ReviewDTO } from '../../../core/models/product/review.dto';
 import { environment } from '../../../../environments/environment';
 import Swal from 'sweetalert2';
+import { Subject, takeUntil } from 'rxjs';
 
 
 interface MediaItem {
@@ -24,7 +25,8 @@ interface MediaItem {
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })
-export class ProductDetails implements OnInit, AfterViewInit {
+export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   product: ProductDetailDTO | null = null;
   selectedMediaIndex: number = 0;
   selectedMedia: MediaItem = { type: 'image', url: '' };
@@ -91,7 +93,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        this.productService.deleteReview(this.product!.id).subscribe({
+        this.productService.deleteReview(this.product!.id)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
           next: () => {
             // Remove the review from the reviews array
             this.reviews = this.reviews.filter(r => r.id !== review.id);
@@ -147,43 +151,52 @@ export class ProductDetails implements OnInit, AfterViewInit {
     }, 100);
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   // Refresh wishlist status by checking current user's wishlist
   refreshWishlistStatus() {
     if (!this.authService.isLoggedIn() || !this.product) {
       return;
     }
 
-    this.productService.getWishlist().subscribe({
-      next: (wishlistProducts: any[]) => {
-        const wishlistIds = wishlistProducts.map(p => p.id);
-        const wasInWishlist = this.isInWishlist;
-        this.isInWishlist = wishlistIds.includes(this.product!.id);
-        
-        // Log the change for debugging
-        if (wasInWishlist !== this.isInWishlist) {
-          console.log(`Wishlist status updated for product ${this.product!.id}: ${wasInWishlist} -> ${this.isInWishlist}`);
+    this.productService.getWishlist()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (wishlistProducts: any[]) => {
+          const wishlistIds = wishlistProducts.map(p => p.id);
+          const wasInWishlist = this.isInWishlist;
+          this.isInWishlist = wishlistIds.includes(this.product!.id);
+          
+          // Log the change for debugging
+          if (wasInWishlist !== this.isInWishlist) {
+            console.log(`Wishlist status updated for product ${this.product!.id}: ${wasInWishlist} -> ${this.isInWishlist}`);
+          }
+        },
+        error: (error) => {
+          console.error('Error refreshing wishlist status:', error);
         }
-      },
-      error: (error) => {
-        console.error('Error refreshing wishlist status:', error);
-      }
-    });
+      });
   }
 
   // Load product data from backend
   loadProduct() {
-    this.route.params.subscribe(params => {
-      const productId = params['id'];
-      if (productId) {
-        this.fetchProduct(productId);
-        // Also refresh wishlist status when route changes
-        setTimeout(() => {
-          this.refreshWishlistStatus();
-        }, 500); // Small delay to ensure product is loaded first
-      } else {
-        this.error = 'Product ID not found';
-      }
-    });
+    this.route.params
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        const productId = params['id'];
+        if (productId) {
+          this.fetchProduct(productId);
+          // Also refresh wishlist status when route changes
+          setTimeout(() => {
+            this.refreshWishlistStatus();
+          }, 500); // Small delay to ensure product is loaded first
+        } else {
+          this.error = 'Product ID not found';
+        }
+      });
   }
 
   fetchProduct(productId: string) {
@@ -193,46 +206,50 @@ export class ProductDetails implements OnInit, AfterViewInit {
     // Try to parse as number first, then as permalink
     const numericId = parseInt(productId);
     if (!isNaN(numericId)) {
-      this.productService.getById(numericId).subscribe({
-        next: (product) => {
-          this.product = product;
-          this.reviews = product.reviews;
-          this.isInWishlist = product.isInWishlist || false;
-          
-          // Initialize selected media with the first media item (cover image)
-          this.initializeSelectedMedia();
-          
-          this.checkPurchaseAndReviewStatus(); // Check if user can review
-          this.checkCartStatus(); // Check if product is in cart
-          this.loadRelatedProducts();
-          this.isLoading = false;
-        },
-        error: (error) => {
-          this.error = 'Product not found';
-          this.isLoading = false;
-        }
-      });
+      this.productService.getById(numericId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (product) => {
+            this.product = product;
+            this.reviews = product.reviews;
+            this.isInWishlist = product.isInWishlist || false;
+            
+            // Initialize selected media with the first media item (cover image)
+            this.initializeSelectedMedia();
+            
+            this.checkPurchaseAndReviewStatus(); // Check if user can review
+            this.checkCartStatus(); // Check if product is in cart
+            this.loadRelatedProducts();
+            this.isLoading = false;
+          },
+          error: (error) => {
+            this.error = 'Product not found';
+            this.isLoading = false;
+          }
+        });
     } else {
       // Try as permalink
-      this.productService.getByPermalink(productId).subscribe({
-        next: (product) => {
-          this.product = product;
-          this.reviews = product.reviews;
-          this.isInWishlist = product.isInWishlist || false;
-          
-          // Initialize selected media with the first media item (cover image)
-          this.initializeSelectedMedia();
-          
-          this.checkPurchaseAndReviewStatus(); // Check if user can review
-          this.checkCartStatus(); // Check if product is in cart
-          this.loadRelatedProducts();
-          this.isLoading = false;
-        },
-        error: (error) => {
-          this.error = 'Product not found';
-          this.isLoading = false;
-        }
-      });
+      this.productService.getByPermalink(productId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (product) => {
+            this.product = product;
+            this.reviews = product.reviews;
+            this.isInWishlist = product.isInWishlist || false;
+            
+            // Initialize selected media with the first media item (cover image)
+            this.initializeSelectedMedia();
+            
+            this.checkPurchaseAndReviewStatus(); // Check if user can review
+            this.checkCartStatus(); // Check if product is in cart
+            this.loadRelatedProducts();
+            this.isLoading = false;
+          },
+          error: (error) => {
+            this.error = 'Product not found';
+            this.isLoading = false;
+          }
+        });
     }
   }
 
@@ -438,13 +455,17 @@ export class ProductDetails implements OnInit, AfterViewInit {
     this.loadingPurchaseStatus = true;
 
     // Check purchase status
-    this.productService.checkPurchaseStatus(this.product.id).subscribe({
+    this.productService.checkPurchaseStatus(this.product.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (response) => {
         this.hasPurchased = response.hasPurchased;
         
         if (this.hasPurchased) {
           // If user has purchased, check if they have an existing review
-                      this.productService.getMyReview(this.product!.id).subscribe({
+                      this.productService.getMyReview(this.product!.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
               next: (reviewResponse) => {
                 console.log('My review response:', reviewResponse);
                 if (reviewResponse.hasReview && reviewResponse.review) {
@@ -512,7 +533,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
       ? this.productService.updateReview(this.product!.id, reviewData)
       : this.productService.submitReview(this.product!.id, reviewData);
 
-    serviceCall.subscribe({
+    serviceCall
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (review: ReviewDTO) => {
         console.log('Review submission response:', review);
         if (this.existingReview) {
@@ -622,7 +645,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
       cancelButtonText: 'Cancel'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.productService.deleteReview(this.product!.id).subscribe({
+        this.productService.deleteReview(this.product!.id)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
           next: () => {
             // Remove review from the list
             this.product!.reviews = this.product!.reviews.filter(r => r.id !== this.existingReview!.id);
@@ -697,7 +722,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
     }
 
     this.checkingCartStatus = true;
-    this.cartService.getCart().subscribe({
+    this.cartService.getCart()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (response) => {
         if (response.success && response.cart && response.cart.items) {
           this.isInCart = response.cart.items.some(item => item.productId === this.product!.id);
@@ -730,7 +757,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
       return;
     }
     
-    this.cartService.addToCart(this.product.id, 1).subscribe({
+    this.cartService.addToCart(this.product.id, 1)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (response) => {
         if (response.success) {
           console.log('Added to cart:', this.product?.name);
@@ -805,7 +834,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
     const productTitle = this.product.name;
 
     // First, get the current wishlist status to avoid 400 errors
-    this.productService.getWishlist().subscribe({
+    this.productService.getWishlist()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (wishlistProducts: any[]) => {
         const wishlistIds = wishlistProducts.map(p => p.id);
         const currentlyInWishlist = wishlistIds.includes(productId);
@@ -816,7 +847,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
         // Now perform the toggle action based on current server state
         if (currentlyInWishlist) {
           // Remove from wishlist
-          this.productService.removeFromWishlist(productId).subscribe({
+          this.productService.removeFromWishlist(productId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
             next: (response: any) => {
               this.isInWishlist = false;
               this.loadingWishlist = false;
@@ -832,7 +865,9 @@ export class ProductDetails implements OnInit, AfterViewInit {
           });
         } else {
           // Add to wishlist
-          this.productService.addToWishlist(productId).subscribe({
+          this.productService.addToWishlist(productId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
             next: (response: any) => {
               this.isInWishlist = true;
               this.loadingWishlist = false;
@@ -1148,107 +1183,5 @@ export class ProductDetails implements OnInit, AfterViewInit {
     }
   }
 
-  // File-related methods
-  hasFiles(): boolean {
-    return !!(this.product?.files && this.product.files.length > 0);
-  }
 
-  getFileIcon(file: FileDTO): string {
-    const extension = file.name.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf': return 'fas fa-file-pdf';
-      case 'doc':
-      case 'docx': return 'fas fa-file-word';
-      case 'xls':
-      case 'xlsx': return 'fas fa-file-excel';
-      case 'ppt':
-      case 'pptx': return 'fas fa-file-powerpoint';
-      case 'zip':
-      case 'rar':
-      case '7z': return 'fas fa-file-archive';
-      case 'mp3':
-      case 'wav':
-      case 'flac': return 'fas fa-file-audio';
-      case 'mp4':
-      case 'avi':
-      case 'mov': return 'fas fa-file-video';
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif': return 'fas fa-file-image';
-      case 'txt': return 'fas fa-file-alt';
-      default: return 'fas fa-file';
-    }
-  }
-
-  getFileType(filename: string): string {
-    const extension = filename.split('.').pop()?.toLowerCase();
-    return extension ? extension.toUpperCase() : 'Unknown';
-  }
-
-  formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  async downloadFile(file: FileDTO) {
-    if (!this.product) {
-      console.error('No product found');
-      return;
-    }
-    
-    // Set downloading state for this specific file
-    (file as any).isDownloading = true;
-
-    try {
-      // Create download URL using the correct API endpoint
-      const downloadUrl = `${environment.apiUrl}/download/file/${this.product.id}/${file.id}`;
-      
-      // Use HTTP client to download file with proper authentication
-      const response = await fetch(downloadUrl, {
-        headers: {
-          'Authorization': `Bearer ${this.authService.getToken()}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Create blob and trigger download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = file.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up blob URL
-      window.URL.revokeObjectURL(url);
-      
-      // Download completed successfully
-      (file as any).isDownloading = false;
-      
-      this.showToast(`"${file.name}" downloaded successfully!`, 'success');
-    } catch (error) {
-      console.error('Download failed:', error);
-      (file as any).isDownloading = false;
-      
-      if (error instanceof Error && error.message.includes('401')) {
-        this.showToast('Please log in again to download files.', 'error');
-      } else if (error instanceof Error && error.message.includes('403')) {
-        this.showToast('You do not have access to this file.', 'error');
-      } else if (error instanceof Error && error.message.includes('404')) {
-        this.showToast('File not found.', 'error');
-      } else {
-        this.showToast('Download failed. Please try again.', 'error');
-      }
-    }
-  }
 }

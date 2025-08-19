@@ -75,7 +75,10 @@
             </div>
             <div class="balance-status" [class.sufficient]="hasSufficientBalance" [class.insufficient]="!hasSufficientBalance">
               <i class="fas" [class.fa-check-circle]="hasSufficientBalance" [class.fa-exclamation-triangle]="!hasSufficientBalance"></i>
-              {{ hasSufficientBalance ? 'Sufficient balance for purchase' : 'Insufficient balance for purchase' }}
+              <span *ngIf="hasSufficientBalance">Sufficient balance for purchase</span>
+              <span *ngIf="!hasSufficientBalance && totalInUSD > 0">
+                Insufficient balance for purchase (Need {{ totalInUSD | currency:'USD' }} USD)
+              </span>
             </div>
           </div>
         </div>
@@ -88,7 +91,10 @@
             <span>{{ item.price | currency:item.currency }}</span>
           </div>
           <div class="summary-total">
-            <strong>Total: {{ total | currency:'USD' }}</strong>
+            <strong>Total: {{ total | currency:itemCurrency }}</strong>
+            <div class="converted-total" *ngIf="itemCurrency !== 'USD'">
+              <small>({{ totalInUSD | currency:'USD' }} USD)</small>
+            </div>
           </div>
         </div>
 

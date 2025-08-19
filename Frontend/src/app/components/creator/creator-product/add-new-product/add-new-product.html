@@ -67,45 +67,62 @@
             <!-- Left Section - Form -->
           <div class="form-section" [formGroup]="productForm">
             <div class="form-group">
-                <label for="productName" class="form-label">Name</label>
+                <label for="productName" class="form-label">Name *</label>
               <input 
                 type="text" 
                 id="productName"
                 class="form-input"
+                [class.error]="fieldErrors['name'] || (productForm.get('name')?.invalid && productForm.get('name')?.touched)"
+                [class.success]="productForm.get('name')?.valid && productForm.get('name')?.value"
                 placeholder="Name of your product"
                 formControlName="name"
                 (input)="onNameChange()"
               >
-              <div class="error-message" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
-                  <span *ngIf="productForm.get('name')?.errors?.['required']">Name is required</span>
-                  <span *ngIf="productForm.get('name')?.errors?.['minlength']">Name must be at least 3 characters</span>
-                  <span *ngIf="productForm.get('name')?.errors?.['maxlength']">Name cannot exceed 200 characters</span>
+              <div class="error-message" *ngIf="fieldErrors['name'] || (productForm.get('name')?.invalid && productForm.get('name')?.touched)">
+                  <span *ngIf="fieldErrors['name']">{{ fieldErrors['name'] }}</span>
+                  <span *ngIf="!fieldErrors['name'] && productForm.get('name')?.errors?.['required']">Name is required</span>
+                  <span *ngIf="!fieldErrors['name'] && productForm.get('name')?.errors?.['minlength']">Name must be at least 3 characters</span>
+                  <span *ngIf="!fieldErrors['name'] && productForm.get('name')?.errors?.['maxlength']">Name cannot exceed 200 characters</span>
+                  <span *ngIf="!fieldErrors['name'] && productForm.get('name')?.errors?.['pattern']">Name can only contain letters, numbers, spaces, hyphens, and underscores</span>
+              </div>
+              <div class="success-message" *ngIf="productForm.get('name')?.valid && productForm.get('name')?.value">
+                <i class="fas fa-check-circle"></i> Valid product name
               </div>
             </div>
             
               <div class="form-group">
-                <label for="productDescription" class="form-label">Description</label>
+                <label for="productDescription" class="form-label">Description *</label>
                 <textarea 
                   id="productDescription"
                   class="form-input"
+                  [class.error]="fieldErrors['description'] || (productForm.get('description')?.invalid && productForm.get('description')?.touched)"
+                  [class.success]="productForm.get('description')?.valid && productForm.get('description')?.value"
                   placeholder="Describe your product..."
                   formControlName="description"
                   rows="4"
                 ></textarea>
-                <div class="error-message" *ngIf="productForm.get('description')?.invalid && productForm.get('description')?.touched">
-                  <span *ngIf="productForm.get('description')?.errors?.['maxlength']">Description cannot exceed 5000 characters</span>
+                <div class="error-message" *ngIf="fieldErrors['description'] || (productForm.get('description')?.invalid && productForm.get('description')?.touched)">
+                  <span *ngIf="fieldErrors['description']">{{ fieldErrors['description'] }}</span>
+                  <span *ngIf="!fieldErrors['description'] && productForm.get('description')?.errors?.['required']">Description is required</span>
+                  <span *ngIf="!fieldErrors['description'] && productForm.get('description')?.errors?.['minlength']">Description must be at least 10 characters</span>
+                  <span *ngIf="!fieldErrors['description'] && productForm.get('description')?.errors?.['maxlength']">Description cannot exceed 5000 characters</span>
+                </div>
+                <div class="success-message" *ngIf="productForm.get('description')?.valid && productForm.get('description')?.value">
+                  <i class="fas fa-check-circle"></i> Valid description
+                </div>
               </div>
-            </div>
               
               
             
             <div class="form-group">
-                <label for="productPrice" class="form-label">Price</label>
+                <label for="productPrice" class="form-label">Price *</label>
               <div class="price-input-group">
                 <input 
                   type="number" 
                   id="productPrice"
                   class="form-input"
+                  [class.error]="fieldErrors['price'] || (productForm.get('price')?.invalid && productForm.get('price')?.touched)"
+                  [class.success]="productForm.get('price')?.valid && productForm.get('price')?.value > 0"
                     placeholder="0.00"
                     formControlName="price"
                     step="0.01"
@@ -116,10 +133,15 @@
                   <option value="EGP">EGP</option>
                 </select>
               </div>
-              <div class="error-message" *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched">
-                <span *ngIf="productForm.get('price')?.errors?.['required']">Price is required</span>
-                  <span *ngIf="productForm.get('price')?.errors?.['min']">Price must be at least 0.01</span>
-                  <span *ngIf="productForm.get('price')?.errors?.['max']">Price cannot exceed 1,000,000</span>
+              <div class="error-message" *ngIf="fieldErrors['price'] || (productForm.get('price')?.invalid && productForm.get('price')?.touched)">
+                <span *ngIf="fieldErrors['price']">{{ fieldErrors['price'] }}</span>
+                <span *ngIf="!fieldErrors['price'] && productForm.get('price')?.errors?.['required']">Price is required</span>
+                  <span *ngIf="!fieldErrors['price'] && productForm.get('price')?.errors?.['min']">Price must be at least 0.01</span>
+                  <span *ngIf="!fieldErrors['price'] && productForm.get('price')?.errors?.['max']">Price cannot exceed 1,000,000</span>
+                  <span *ngIf="!fieldErrors['price'] && productForm.get('price')?.errors?.['pattern']">Price must be a valid number with up to 2 decimal places</span>
+                </div>
+                <div class="success-message" *ngIf="productForm.get('price')?.valid && productForm.get('price')?.value > 0">
+                  <i class="fas fa-check-circle"></i> Valid price
                 </div>
               </div>
 
@@ -164,17 +186,25 @@
               </div>
               
               <div class="form-group">
-                <label for="productPermalink" class="form-label">Permalink</label>
+                <label for="productPermalink" class="form-label">Permalink *</label>
                 <input 
                   type="text" 
                   id="productPermalink"
                   class="form-input"
+                  [class.error]="fieldErrors['permalink'] || (productForm.get('permalink')?.invalid && productForm.get('permalink')?.touched)"
+                  [class.success]="productForm.get('permalink')?.valid && productForm.get('permalink')?.value"
                   placeholder="my-awesome-product"
                   formControlName="permalink"
                 >
-                <div class="error-message" *ngIf="productForm.get('permalink')?.invalid && productForm.get('permalink')?.touched">
-                  <span *ngIf="productForm.get('permalink')?.errors?.['required']">Permalink is required</span>
-                  <span *ngIf="productForm.get('permalink')?.errors?.['pattern']">Permalink must be lowercase alphanumeric with hyphens</span>
+                <div class="error-message" *ngIf="fieldErrors['permalink'] || (productForm.get('permalink')?.invalid && productForm.get('permalink')?.touched)">
+                  <span *ngIf="fieldErrors['permalink']">{{ fieldErrors['permalink'] }}</span>
+                  <span *ngIf="!fieldErrors['permalink'] && productForm.get('permalink')?.errors?.['required']">Permalink is required</span>
+                  <span *ngIf="!fieldErrors['permalink'] && productForm.get('permalink')?.errors?.['minlength']">Permalink must be at least 3 characters</span>
+                  <span *ngIf="!fieldErrors['permalink'] && productForm.get('permalink')?.errors?.['maxlength']">Permalink cannot exceed 200 characters</span>
+                  <span *ngIf="!fieldErrors['permalink'] && productForm.get('permalink')?.errors?.['pattern']">Permalink must be lowercase alphanumeric with hyphens only</span>
+                </div>
+                <div class="success-message" *ngIf="productForm.get('permalink')?.valid && productForm.get('permalink')?.value">
+                  <i class="fas fa-check-circle"></i> Valid permalink
                 </div>
               </div>
               
@@ -220,71 +250,105 @@
             
             <div class="form-group">
                 <label for="productLicense" class="form-label">License</label>
-                <select id="productLicense" class="form-select" formControlName="license">
-                  <option value="">Select License</option>
-                  <option value="Standard License">Standard License</option>
-                  <option value="Commercial License">Commercial License</option>
-                  <option value="Extended License">Extended License</option>
-                  <option value="Unlimited License">Unlimited License</option>
-                  <option value="Personal License">Personal License</option>
-                  <option value="Custom License">Custom License</option>
-                </select>
+                <div class="select-wrapper">
+                  <select id="productLicense" class="form-select" formControlName="license">
+                    <option value="">Select License</option>
+                    <option value="Standard License">Standard License</option>
+                    <option value="Commercial License">Commercial License</option>
+                    <option value="Extended License">Extended License</option>
+                    <option value="Unlimited License">Unlimited License</option>
+                    <option value="Personal License">Personal License</option>
+                    <option value="Custom License">Custom License</option>
+                  </select>
+                  <i class="fas fa-chevron-down select-arrow"></i>
+                </div>
             </div>
             
             <div class="form-group">
                 <label for="productUpdates" class="form-label">Updates</label>
-                <select id="productUpdates" class="form-select" formControlName="updates">
-                  <option value="">Select Updates</option>
-                  <option value="Lifetime Updates">Lifetime Updates</option>
-                  <option value="1 Year Updates">1 Year Updates</option>
-                  <option value="6 Months Updates">6 Months Updates</option>
-                  <option value="3 Months Updates">3 Months Updates</option>
-                  <option value="No Updates">No Updates</option>
-                  <option value="Custom Updates">Custom Updates</option>
-                </select>
+                <div class="select-wrapper">
+                  <select id="productUpdates" class="form-select" formControlName="updates">
+                    <option value="">Select Updates</option>
+                    <option value="Lifetime Updates">Lifetime Updates</option>
+                    <option value="1 Year Updates">1 Year Updates</option>
+                    <option value="6 Months Updates">6 Months Updates</option>
+                    <option value="3 Months Updates">3 Months Updates</option>
+                    <option value="No Updates">No Updates</option>
+                    <option value="Custom Updates">Custom Updates</option>
+                  </select>
+                  <i class="fas fa-chevron-down select-arrow"></i>
+                </div>
               </div>
               
               <!-- Tags -->
               <div class="section-divider"></div>
               <div class="form-group">
-                <label class="form-label">Tags</label>
-                <div class="tag-input-container">
-              <input 
-                type="text" 
-                class="form-input"
-                    placeholder="Add tags to help people find your product..."
-                    [(ngModel)]="newTagInput"
+                <label class="form-label">Tags *</label>
+                <p class="form-hint">Select tags to help people find your product (max 5 tags)</p>
+                
+                <!-- Tag Search Input -->
+                <div class="tag-search-container">
+                  <input 
+                    type="text" 
+                    class="form-input tag-search-input"
+                    placeholder="Search suggested tags..."
+                    [(ngModel)]="tagSearchInput"
                     [ngModelOptions]="{standalone: true}"
-                    (keyup.enter)="addTag()"
+                    (input)="filterTags()"
                   >
-                  <button class="btn btn-secondary" (click)="addTag()" [disabled]="!newTagInput.trim()">
-                    <i class="fas fa-plus"></i>
-                  </button>
+                  <i class="fas fa-search search-icon"></i>
                 </div>
 
                 <!-- Selected Tags -->
                 <div class="selected-tags" *ngIf="selectedTags.length > 0">
-                  <div class="tag-chip" *ngFor="let tag of selectedTags; let i = index">
+                  <div class="tag-chip selected" *ngFor="let tag of selectedTags; let i = index">
                     <span>{{ tag.name }}</span>
-                    <button class="remove-tag-btn" (click)="removeTag(i)">
+                    <button class="remove-tag-btn" (click)="removeTag(i)" title="Remove tag">
                       <i class="fas fa-times"></i>
                     </button>
                   </div>
                 </div>
 
                 <!-- Suggested Tags -->
-                <div class="suggested-tags" *ngIf="availableTags.length > 0">
+                <div class="suggested-tags" *ngIf="filteredTags.length > 0">
                   <h5>Suggested Tags</h5>
                   <div class="tag-chips">
                     <div 
                       class="tag-chip suggested" 
-                      *ngFor="let tag of availableTags"
+                      *ngFor="let tag of filteredTags"
                       [class.disabled]="isTagSelected(tag.id)"
+                      [class.selected]="isTagSelected(tag.id)"
                       (click)="selectTag(tag)"
+                      [title]="isTagSelected(tag.id) ? 'Tag already selected' : 'Click to add tag'"
                     >
-                      {{ tag.name }}
+                      <span>{{ tag.name }}</span>
+                      <i class="fas fa-plus add-icon" *ngIf="!isTagSelected(tag.id)"></i>
+                      <i class="fas fa-check check-icon" *ngIf="isTagSelected(tag.id)"></i>
                     </div>
                   </div>
+                </div>
+
+                <!-- No tags found message -->
+                <div class="no-tags-message" *ngIf="tagSearchInput && filteredTags.length === 0">
+                  <p>No tags found matching "{{ tagSearchInput }}"</p>
+                  <p class="hint">Try a different search term or select from the suggested tags above.</p>
+                </div>
+
+                <!-- Tag limit warning -->
+                <div class="tag-limit-warning" *ngIf="selectedTags.length >= 5">
+                  <p><i class="fas fa-info-circle"></i> Maximum of 5 tags reached</p>
+                </div>
+
+                <!-- Tag validation error -->
+                <div class="error-message" *ngIf="fieldErrors['tagIds'] || (productForm.get('tagIds')?.invalid && productForm.get('tagIds')?.touched)">
+                  <span *ngIf="fieldErrors['tagIds']">{{ fieldErrors['tagIds'] }}</span>
+                  <span *ngIf="!fieldErrors['tagIds'] && productForm.get('tagIds')?.errors?.['required']">At least one tag must be selected</span>
+                  <span *ngIf="!fieldErrors['tagIds'] && productForm.get('tagIds')?.errors?.['minlength']">At least one tag must be selected</span>
+                </div>
+
+                <!-- Tag validation success -->
+                <div class="success-message" *ngIf="selectedTags.length > 0 && !fieldErrors['tagIds']">
+                  <i class="fas fa-check-circle"></i> {{ selectedTags.length }} tag(s) selected
                 </div>
             </div>
             
@@ -426,14 +490,85 @@
             <!-- Left Section - Content Editor -->
             <div class="content-section">
               <div class="form-group">
-                <label class="form-label">Product Content</label>
-                <p class="form-hint">This is what your customers will receive when they purchase your product.</p>
+                <div class="editor-header">
+                  <div class="editor-title">
+                    <label class="form-label">
+                      <i class="fas fa-edit"></i>
+                      Product Content
+                    </label>
+                    <p class="form-hint">Create rich content that your customers will receive when they purchase your product.</p>
+                  </div>
+                  <div class="editor-actions">
+                    <button 
+                      type="button" 
+                      class="btn btn-outline btn-sm"
+                      (click)="clearEditor()"
+                      title="Clear all content"
+                    >
+                      <i class="fas fa-eraser"></i>
+                      Clear
+                    </button>
+                    <button 
+                      type="button" 
+                      class="btn btn-secondary btn-sm"
+                      (click)="insertTemplate()"
+                      title="Insert template content"
+                    >
+                      <i class="fas fa-magic"></i>
+                      Template
+                    </button>
+                  </div>
+                </div>
                 
-                <!-- Quill Editor -->
-                <div class="quill-editor">
-                  <div id="content-editor"></div>
-            </div>
-          </div>
+                <!-- Enhanced Quill Editor -->
+                <div class="quill-editor-container">
+                  <div class="quill-editor">
+                     <div id="content-editor-toolbar" class="ql-toolbar ql-snow">
+                      <!-- Simplified toolbar: Heading | Text | Bold | Italic | Underline | Strike | Bullet | Number | Link -->
+                      <span class="ql-formats">
+                        <button class="ql-header" value="3" title="Title">Title</button>
+                        <button class="ql-header" value="" title="Text">Text</button>
+                      </span>
+                      <span class="ql-formats">
+                        <button class="ql-bold" title="Bold"></button>
+                        <button class="ql-italic" title="Italic"></button>
+                        <button class="ql-underline" title="Underline"></button>
+                        <button class="ql-strike" title="Strikethrough"></button>
+                      </span>
+                      <span class="ql-formats">
+                        <button class="ql-list" value="bullet" title="Bulleted list"></button>
+                        <button class="ql-list" value="ordered" title="Numbered list"></button>
+                      </span>
+                      <span class="ql-formats">
+                        <button class="ql-link" title="Insert link"></button>
+                      </span>
+                    </div>
+                    <div id="content-editor"></div>
+                  </div>
+                  
+                  <!-- Editor Footer -->
+                  <div class="editor-footer">
+                    <div class="editor-stats">
+                      <span class="stat-item">
+                        <i class="fas fa-font"></i>
+                        {{ getWordCount() }} words
+                      </span>
+                      <!-- <span class="stat-item">
+                        <i class="fas fa-paragraph"></i>
+                        {{ getParagraphCount() }} paragraphs
+                      </span>
+                      <span class="stat-item">
+                        <i class="fas fa-clock"></i>
+                        {{ getReadingTime() }} min read
+                      </span> -->
+                    </div>
+                    <div class="editor-tips">
+                      <i class="fas fa-lightbulb"></i>
+                      <span>Tip: Use headers, lists, and formatting to make your content engaging</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <!-- File Upload -->
               <div class="form-group">
@@ -451,10 +586,14 @@
             </div>
                   <div class="upload-text">Upload your product files</div>
                   <div class="upload-hint">Drag and drop files here or click to browse</div>
+                  <div class="supported-files">
+                    <small>Supported: PDF, ZIP, Images (JPG, PNG, GIF), Videos (MP4), Audio (MP3), Text (TXT, CSV), Office (PPTX, DOC, XLSX)</small>
+                  </div>
               <input 
                 type="file" 
                     #fileInput 
                 multiple
+                accept=".pdf,.zip,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.txt,.csv,.pptx,.ppt,.doc,.docx,.xls,.xlsx"
                 (change)="onFileSelected($event)"
                 style="display: none;"
               >
