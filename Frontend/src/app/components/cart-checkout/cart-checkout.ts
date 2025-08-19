@@ -8,6 +8,7 @@ import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
 import Swal from 'sweetalert2';
 import { CartResponse, CartItem } from '../../core/models/cart/cart.model';
+import { LoggingService } from '../../core/services/logging.service';
 import { firstValueFrom } from 'rxjs';
 
 interface CartItemDisplay {
@@ -36,6 +37,8 @@ export class CartCheckout implements OnInit {
   balanceLoading = false;
   hasSufficientBalance = false;
   total: number = 0;
+  totalInUSD: number = 0;
+  itemCurrency: string = 'USD';
 
   constructor(
     private cartService: CartService,
@@ -43,7 +46,8 @@ export class CartCheckout implements OnInit {
     private authService: AuthService,
     private paymentService: PaymentService,
     private router: Router,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private loggingService: LoggingService
   ) {
     this.checkoutForm = this.formBuilder.group({
       email: ['', [Validators.required, Validators.email]],
@@ -87,7 +91,7 @@ export class CartCheckout implements OnInit {
         }
       },
       error: (error: any) => {
-        console.error('Failed to load cart items:', error);
+        this.loggingService.error('Failed to load cart items:', error);
         this.errorMessage = 'Failed to load cart items. Please try again.';
       }
     });
@@ -102,7 +106,7 @@ export class CartCheckout implements OnInit {
         this.balanceLoading = false;
       },
       error: (error) => {
-        console.error('Error loading balance:', error);
+        this.loggingService.error('Error loading balance:', error);
         this.currentBalance = 0;
         this.balanceLoading = false;
       }
@@ -117,7 +121,7 @@ export class CartCheckout implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error validating payment method:', error);
+        this.loggingService.error('Error validating payment method:', error);
       }
     });
   }
@@ -138,13 +142,29 @@ export class CartCheckout implements OnInit {
   }
 
   private calculateTotal() {
+    // Calculate total in the original currency of the first item (assuming all items have same currency)
     this.total = this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     this.checkBalanceForPurchase();
   }
 
   private checkBalanceForPurchase() {
-    if (this.total > 0) {
-      this.hasSufficientBalance = this.currentBalance >= this.total;
+    if (this.total > 0 && this.cartItems.length > 0) {
+      // Get the currency of the first item (assuming all items have same currency)
+      this.itemCurrency = this.cartItems[0].currency;
+      
+      // Convert the total to USD for comparison with user's balance
+      this.paymentService.convertCurrency(this.total, this.itemCurrency, 'USD').subscribe({
+        next: (conversion) => {
+          this.totalInUSD = conversion.convertedAmount;
+          this.hasSufficientBalance = this.currentBalance >= this.totalInUSD;
+        },
+        error: (error) => {
+          this.loggingService.error('Error converting currency:', error);
+          // Fallback to direct comparison if conversion fails
+          this.totalInUSD = this.total;
+          this.hasSufficientBalance = this.currentBalance >= this.total;
+        }
+      });
     }
   }
 
@@ -156,7 +176,7 @@ export class CartCheckout implements OnInit {
 
     // Prevent duplicate submissions
     if (this.isLoading) {
-      console.log('Checkout already in progress, ignoring duplicate request');
+      this.loggingService.debug('Checkout already in progress, ignoring duplicate request');
       return;
     }
 
@@ -203,7 +223,7 @@ export class CartCheckout implements OnInit {
           icon: 'success',
           title: 'Purchase Successful!',
           text: 'Your purchase has been completed successfully for products: ' + this.cartItems.map(item => item.name).join(', ') + '. Redirecting to your library...',
-          timer: 5000,
+          timer: 3000,
           timerProgressBar: true,
           showConfirmButton: false
         });
@@ -222,7 +242,7 @@ export class CartCheckout implements OnInit {
         });
       }
     } catch (error) {
-      console.error('Checkout error:', error);
+      this.loggingService.error('Checkout error:', error);
       this.errorMessage = 'An error occurred during checkout. Please try again.';
     } finally {
       this.isLoading = false;
@@ -245,7 +265,7 @@ export class CartCheckout implements OnInit {
           }
         },
         error: (error) => {
-          console.error('Error updating cart:', error);
+          this.loggingService.error('Error updating cart:', error);
           this.errorMessage = 'Failed to update cart.';
         }
       });
@@ -260,7 +280,7 @@ export class CartCheckout implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error removing item:', error);
+        this.loggingService.error('Error removing item:', error);
         this.errorMessage = 'Failed to remove item from cart.';
       }
     });

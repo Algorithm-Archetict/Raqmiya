@@ -1,0 +1,125 @@
+<div class="product-carousel" [class.loading]="loading">
+  <!-- Section Header -->
+  <div class="carousel-header">
+    <div class="title-section">
+      <div class="icon-title">
+        <i [class]="icon"></i>
+        <h2 class="carousel-title">{{ title }}</h2>
+      </div>
+      <p class="carousel-subtitle" *ngIf="subtitle">{{ subtitle }}</p>
+    </div>
+    
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="carousel-loading">
+    <div class="loading-grid">
+      <div *ngFor="let item of [1,2,3,4]" class="loading-card">
+        <div class="loading-image"></div>
+        <div class="loading-content">
+          <div class="loading-line long"></div>
+          <div class="loading-line medium"></div>
+          <div class="loading-line short"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carousel Content -->
+  <div *ngIf="!loading && carouselProducts.length > 0" class="carousel-container">
+    <!-- Navigation Buttons -->
+    <button 
+      class="nav-btn nav-btn-left" 
+      [class.disabled]="!canGoLeft"
+      [disabled]="!canGoLeft"
+      (click)="slideLeft()">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    
+    <button 
+      class="nav-btn nav-btn-right" 
+      [class.disabled]="!canGoRight"
+      [disabled]="!canGoRight"
+      (click)="slideRight()">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <!-- Products Grid -->
+    <div class="carousel-grid">
+      <div 
+        *ngFor="let product of getVisibleProducts(); trackBy: trackByProduct" 
+        class="product-card"
+        (click)="onProductClick(product.id)">
+        
+        <!-- Product Image -->
+        <div class="product-image-container">
+          <img [src]="product.image" [alt]="product.title" class="product-image">
+          
+          <!-- Badge -->
+          <div *ngIf="product.badge" class="product-badge">
+            {{ product.badge }}
+          </div>
+
+          <!-- Wishlist Button -->
+          <button 
+            *ngIf="isLoggedIn() && !product.isPurchased"
+            class="wishlist-btn"
+            [class.active]="product.inWishlist"
+            [class.loading]="product.loadingWishlist"
+            [class.hovered]="product.wishlistHovered"
+            (click)="toggleWishlist(product, $event)"
+            (mouseenter)="onWishlistHover(product, true, $event)"
+            (mouseleave)="onWishlistHover(product, false, $event)">
+            <i class="fas fa-heart"></i>
+          </button>
+
+          <!-- Purchased Indicator -->
+          <div *ngIf="product.isPurchased" class="purchased-indicator">
+            <i class="fas fa-check-circle"></i>
+            <span>Owned</span>
+          </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="product-info">
+          <h3 class="product-title">{{ product.title }}</h3>
+          <p class="product-creator">by <a class="creator-link" (click)="viewCreatorProfile(product.creatorId, $event, product.id)">{{ product.creator }}</a></p>
+          
+          <div class="product-rating">
+            <div class="stars">
+              <span class="star" [class.filled]="product.rating >= 1">⭐</span>
+              <span class="star" [class.filled]="product.rating >= 2">⭐</span>
+              <span class="star" [class.filled]="product.rating >= 3">⭐</span>
+              <span class="star" [class.filled]="product.rating >= 4">⭐</span>
+              <span class="star" [class.filled]="product.rating >= 5">⭐</span>
+            </div>
+            <span class="rating-text">{{ product.rating.toFixed(1) }}</span>
+          </div>
+
+          <div class="product-price">
+            ${{ product.price.toFixed(2) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination Dots -->
+    <div class="carousel-pagination" *ngIf="totalSlides > 1">
+      <button 
+        *ngFor="let slide of [].constructor(totalSlides); let i = index"
+        class="pagination-dot"
+        [class.active]="currentSlide === i"
+        (click)="currentSlide = i">
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && carouselProducts.length === 0" class="carousel-empty">
+    <div class="empty-icon">
+      <i class="fas fa-box-open"></i>
+    </div>
+    <h3>No products found</h3>
+    <p>Check back later for new products in this category</p>
+  </div>
+</div>

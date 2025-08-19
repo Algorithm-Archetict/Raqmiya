@@ -4,20 +4,40 @@
 
   <!-- Main Content Area -->
   <div class="main-content">
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading...</p>
+      </div>
+    </div>
+
+    <!-- Error and Success Messages -->
+    <div class="messages-container" *ngIf="errorMessage || successMessage">
+      <div class="alert alert-danger" *ngIf="errorMessage">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ errorMessage }}
+      </div>
+      <div class="alert alert-success" *ngIf="successMessage">
+        <i class="fas fa-check-circle"></i>
+        {{ successMessage }}
+      </div>
+    </div>
+
+    <!-- Main Content (only show when not loading) -->
+    <div *ngIf="!loading">
     <!-- Header Section -->
     <div class="product-header">
       <div class="header-left">
-        <h1 class="header-title" *ngIf="currentStep === 'create'">What will you be creating?</h1>
-        <h1 class="header-title" *ngIf="currentStep === 'customize'">{{ productForm.get('name')?.value || 'Product Name' }}</h1>
-        <h1 class="header-title" *ngIf="currentStep === 'content'">{{ productForm.get('name')?.value || 'Product Name' }}</h1>
-        
-        <!-- Navigation Tabs for Customize and Content steps -->
-        <div class="nav-tabs" *ngIf="currentStep === 'customize' || currentStep === 'content'">
-          <button class="nav-tab" [class.active]="currentStep === 'customize'" (click)="goToCustomize()">
+          <h1 class="header-title">{{ productForm.get('name')?.value || 'Create New Product' }}</h1>
+          
+          <!-- Navigation Tabs -->
+          <div class="nav-tabs">
+            <button class="nav-tab" [class.active]="currentTab === 'product'" (click)="setTab('product')">
             <i class="fas fa-edit"></i>
             Product
           </button>
-          <button class="nav-tab" [class.active]="currentStep === 'content'" (click)="goToContent()">
+            <button class="nav-tab" [class.active]="currentTab === 'content'" (click)="setTab('content')">
             <i class="fas fa-file-alt"></i>
             Content
           </button>
@@ -30,153 +50,306 @@
         </button>
         <button 
           class="btn btn-primary" 
-          *ngIf="currentStep === 'create'"
-          [disabled]="!isCreateStepValid"
-          (click)="nextToCustomize()"
-        >
-          Next: Customize
-        </button>
-        <button 
-          class="btn btn-primary" 
-          *ngIf="currentStep === 'customize'"
-          [disabled]="!isCustomizeStepValid"
-          (click)="saveAndContinue()"
-        >
-          Save and continue
-        </button>
-        <button 
-          class="btn btn-primary" 
-          *ngIf="currentStep === 'content'"
-          [disabled]="!productForm.valid || isSubmitting"
+            [disabled]="!isFormValid || isSubmitting"
           (click)="saveAndPublish()"
         >
-          <i class="fas fa-spinner fa-spin me-2" *ngIf="isSubmitting"></i>
-          {{ isSubmitting ? 'Creating Product...' : 'Save and publish' }}
+            <i class="fas fa-spinner fa-spin" *ngIf="isSubmitting"></i>
+            {{ isSubmitting ? 'Creating...' : 'Create Product' }}
         </button>
-      </div>
-    </div>
-
-    <!-- Error and Success Messages -->
-    <div class="messages-container" *ngIf="errorMessage || successMessage">
-      <div class="alert alert-danger" *ngIf="errorMessage">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        {{ errorMessage }}
-      </div>
-      <div class="alert alert-success" *ngIf="successMessage">
-        <i class="fas fa-check-circle me-2"></i>
-        {{ successMessage }}
       </div>
     </div>
 
     <!-- Content Area -->
     <div class="content-area">
-      <!-- Step 1: Create Product -->
-      <div class="create-step" *ngIf="currentStep === 'create'">
-        <div class="step-content">
-          <div class="quote-section">
-            <p class="quote-text">
-              Turn your idea into a live product in minutes. No fuss, just a few quick selections and you're ready to start selling. Whether it's digital downloads, online courses, or memberships — see what sticks.
-            </p>
-          </div>
-          
+        <!-- Product Tab -->
+        <div class="customize-step" *ngIf="currentTab === 'product'">
+          <div class="customize-layout">
+            <!-- Left Section - Form -->
           <div class="form-section" [formGroup]="productForm">
             <div class="form-group">
-              <label for="productName"  class="form-label">Name *</label>
+                <label for="productName" class="form-label">Name *</label>
               <input 
                 type="text" 
                 id="productName"
                 class="form-input"
-                [class.error]="productForm.get('name')?.invalid && productForm.get('name')?.touched"
+                [class.error]="fieldErrors['name'] || (productForm.get('name')?.invalid && productForm.get('name')?.touched)"
+                [class.success]="productForm.get('name')?.valid && productForm.get('name')?.value"
                 placeholder="Name of your product"
-                [formControlName]="'name'"
+                formControlName="name"
                 (input)="onNameChange()"
               >
-              <div class="error-message" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
-                <span *ngIf="productForm.get('name')?.errors?.['required']">Product name is required</span>
-                <span *ngIf="productForm.get('name')?.errors?.['minlength']">Product name must be at least 3 characters</span>
+              <div class="error-message" *ngIf="fieldErrors['name'] || (productForm.get('name')?.invalid && productForm.get('name')?.touched)">
+                  <span *ngIf="fieldErrors['name']">{{ fieldErrors['name'] }}</span>
+                  <span *ngIf="!fieldErrors['name'] && productForm.get('name')?.errors?.['required']">Name is required</span>
+                  <span *ngIf="!fieldErrors['name'] && productForm.get('name')?.errors?.['minlength']">Name must be at least 3 characters</span>
+                  <span *ngIf="!fieldErrors['name'] && productForm.get('name')?.errors?.['maxlength']">Name cannot exceed 200 characters</span>
+                  <span *ngIf="!fieldErrors['name'] && productForm.get('name')?.errors?.['pattern']">Name can only contain letters, numbers, spaces, hyphens, and underscores</span>
+              </div>
+              <div class="success-message" *ngIf="productForm.get('name')?.valid && productForm.get('name')?.value">
+                <i class="fas fa-check-circle"></i> Valid product name
               </div>
             </div>
             
-            <div class="product-types">
-              <div 
-                class="product-type-card" 
-                *ngFor="let type of productTypes"
-                [class.selected]="type.selected"
-                (click)="selectProductType(type.id)"
-              >
-                <div class="type-icon">
-                  <i [class]="type.icon"></i>
+              <div class="form-group">
+                <label for="productDescription" class="form-label">Description *</label>
+                <textarea 
+                  id="productDescription"
+                  class="form-input"
+                  [class.error]="fieldErrors['description'] || (productForm.get('description')?.invalid && productForm.get('description')?.touched)"
+                  [class.success]="productForm.get('description')?.valid && productForm.get('description')?.value"
+                  placeholder="Describe your product..."
+                  formControlName="description"
+                  rows="4"
+                ></textarea>
+                <div class="error-message" *ngIf="fieldErrors['description'] || (productForm.get('description')?.invalid && productForm.get('description')?.touched)">
+                  <span *ngIf="fieldErrors['description']">{{ fieldErrors['description'] }}</span>
+                  <span *ngIf="!fieldErrors['description'] && productForm.get('description')?.errors?.['required']">Description is required</span>
+                  <span *ngIf="!fieldErrors['description'] && productForm.get('description')?.errors?.['minlength']">Description must be at least 10 characters</span>
+                  <span *ngIf="!fieldErrors['description'] && productForm.get('description')?.errors?.['maxlength']">Description cannot exceed 5000 characters</span>
                 </div>
-                <div class="type-content">
-                  <h3 class="type-name">{{ type.name }}</h3>
-                  <p class="type-description">{{ type.description }}</p>
+                <div class="success-message" *ngIf="productForm.get('description')?.valid && productForm.get('description')?.value">
+                  <i class="fas fa-check-circle"></i> Valid description
                 </div>
               </div>
-            </div>
+              
+              
             
             <div class="form-group">
-              <label for="productPrice" class="form-label">Price *</label>
+                <label for="productPrice" class="form-label">Price *</label>
               <div class="price-input-group">
                 <input 
                   type="number" 
                   id="productPrice"
                   class="form-input"
-                  [class.error]="productForm.get('price')?.invalid && productForm.get('price')?.touched"
-                  placeholder="Price your product"
-                  [formControlName]="'price'"
-                >
-                <select class="currency-select" [(ngModel)]="currency" [ngModelOptions]="{standalone: true}">
+                  [class.error]="fieldErrors['price'] || (productForm.get('price')?.invalid && productForm.get('price')?.touched)"
+                  [class.success]="productForm.get('price')?.valid && productForm.get('price')?.value > 0"
+                    placeholder="0.00"
+                    formControlName="price"
+                    step="0.01"
+                    min="0.01"
+                  >
+                  <select class="form-select" formControlName="currency">
+                    <option value="USD">USD</option>
                   <option value="EGP">EGP</option>
-                  <option value="USD">USD</option>
                 </select>
               </div>
-              <div class="error-message" *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched">
-                <span *ngIf="productForm.get('price')?.errors?.['required']">Price is required</span>
-                <!-- <span *ngIf="productForm.get('price')?.errors?.['min']">Price must be greater than 0</span> -->
+              <div class="error-message" *ngIf="fieldErrors['price'] || (productForm.get('price')?.invalid && productForm.get('price')?.touched)">
+                <span *ngIf="fieldErrors['price']">{{ fieldErrors['price'] }}</span>
+                <span *ngIf="!fieldErrors['price'] && productForm.get('price')?.errors?.['required']">Price is required</span>
+                  <span *ngIf="!fieldErrors['price'] && productForm.get('price')?.errors?.['min']">Price must be at least 0.01</span>
+                  <span *ngIf="!fieldErrors['price'] && productForm.get('price')?.errors?.['max']">Price cannot exceed 1,000,000</span>
+                  <span *ngIf="!fieldErrors['price'] && productForm.get('price')?.errors?.['pattern']">Price must be a valid number with up to 2 decimal places</span>
+                </div>
+                <div class="success-message" *ngIf="productForm.get('price')?.valid && productForm.get('price')?.value > 0">
+                  <i class="fas fa-check-circle"></i> Valid price
+                </div>
+              </div>
+
+              <!-- Category Selection -->
+              <div class="form-group">
+                <label class="form-label">Category *</label>
+                <div class="category-section">
+                  <div class="category-grid">
+                    <div 
+                      class="category-card" 
+                      *ngFor="let category of parentCategories"
+                      [class.selected]="selectedParentCategory?.id === category.id"
+                      (click)="selectParentCategory(category)"
+                    >
+                      <div class="category-icon">
+                        <i [class]="category.icon || 'fas fa-cube'"></i>
+                      </div>
+                      <h4 class="category-name">{{ category.name }}</h4>
+                      <p class="category-description">{{ category.description }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Subcategory Selection -->
+                <div class="category-section" *ngIf="selectedParentCategory && subcategories.length > 0">
+                  <label class="form-label">Subcategory</label>
+                  <div class="category-grid">
+                    <div 
+                      class="category-card" 
+                      *ngFor="let subcategory of subcategories"
+                      [class.selected]="productForm.get('categoryId')?.value === subcategory.id"
+                      (click)="selectSubcategory(subcategory)"
+                    >
+                      <div class="category-icon">
+                        <i [class]="subcategory.icon || 'fas fa-tag'"></i>
+                      </div>
+                      <h4 class="category-name">{{ subcategory.name }}</h4>
+                      <p class="category-description">{{ subcategory.description }}</p>
               </div>
             </div>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="productPermalink" class="form-label">Permalink *</label>
+                <input 
+                  type="text" 
+                  id="productPermalink"
+                  class="form-input"
+                  [class.error]="fieldErrors['permalink'] || (productForm.get('permalink')?.invalid && productForm.get('permalink')?.touched)"
+                  [class.success]="productForm.get('permalink')?.valid && productForm.get('permalink')?.value"
+                  placeholder="my-awesome-product"
+                  formControlName="permalink"
+                >
+                <div class="error-message" *ngIf="fieldErrors['permalink'] || (productForm.get('permalink')?.invalid && productForm.get('permalink')?.touched)">
+                  <span *ngIf="fieldErrors['permalink']">{{ fieldErrors['permalink'] }}</span>
+                  <span *ngIf="!fieldErrors['permalink'] && productForm.get('permalink')?.errors?.['required']">Permalink is required</span>
+                  <span *ngIf="!fieldErrors['permalink'] && productForm.get('permalink')?.errors?.['minlength']">Permalink must be at least 3 characters</span>
+                  <span *ngIf="!fieldErrors['permalink'] && productForm.get('permalink')?.errors?.['maxlength']">Permalink cannot exceed 200 characters</span>
+                  <span *ngIf="!fieldErrors['permalink'] && productForm.get('permalink')?.errors?.['pattern']">Permalink must be lowercase alphanumeric with hyphens only</span>
+                </div>
+                <div class="success-message" *ngIf="productForm.get('permalink')?.valid && productForm.get('permalink')?.value">
+                  <i class="fas fa-check-circle"></i> Valid permalink
+                </div>
+              </div>
+              
+
+              
+              <!-- Enhanced Product Details -->
+              <div class="section-divider"></div>
+              <div class="form-group">
+                <label class="form-label">Features</label>
+                <div class="features-input-group">
+                  <input 
+                    type="text" 
+                    class="form-input"
+                    placeholder="Add a feature..."
+                    [(ngModel)]="newFeature"
+                    [ngModelOptions]="{standalone: true}"
+                    (keyup.enter)="addFeature()"
+                  >
+                  <button type="button" class="btn btn-secondary" (click)="addFeature()">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+                <div class="features-list" *ngIf="productFeatures.length > 0">
+                  <div class="feature-item" *ngFor="let feature of productFeatures; let i = index">
+                    <span class="feature-text">{{ feature }}</span>
+                    <button type="button" class="remove-feature-btn" (click)="removeFeature(i)">
+                      <i class="fas fa-times"></i>
+                    </button>
           </div>
         </div>
       </div>
 
-      <!-- Step 2: Customize Product -->
-      <div class="customize-step" *ngIf="currentStep === 'customize'">
-        <div class="customize-layout">
-          <!-- Left Section - Form -->
-          <div class="form-section" [formGroup]="productForm">
             <div class="form-group">
-              <label for="productNameEdit"  class="form-label">Name</label>
+                <label for="productCompatibility" class="form-label">Compatibility</label>
               <input 
                 type="text" 
-                id="productNameEdit"
+                  id="productCompatibility"
                 class="form-input"
-                [value] = "name"
-                placeholder="Name of your product"
-                [formControlName]="'name'"
-                (input)="onNameChange()"
+                  placeholder="e.g., Unity, Unreal Engine, Blender"
+                  formControlName="compatibility"
               >
             </div>
             
             <div class="form-group">
-              <label for="productDescription" class="form-label">Description</label>
-              <textarea 
-                id="productDescription"
-                class="form-textarea"
-                placeholder="Describe your product..."
-                [formControlName]="'description'"
-                rows="6"
-              ></textarea>
+                <label for="productLicense" class="form-label">License</label>
+                <div class="select-wrapper">
+                  <select id="productLicense" class="form-select" formControlName="license">
+                    <option value="">Select License</option>
+                    <option value="Standard License">Standard License</option>
+                    <option value="Commercial License">Commercial License</option>
+                    <option value="Extended License">Extended License</option>
+                    <option value="Unlimited License">Unlimited License</option>
+                    <option value="Personal License">Personal License</option>
+                    <option value="Custom License">Custom License</option>
+                  </select>
+                  <i class="fas fa-chevron-down select-arrow"></i>
+                </div>
             </div>
             
             <div class="form-group">
-              <label for="productUrl" class="form-label">URL</label>
-              <input 
-                type="text" 
-                id="productUrl"
-                class="form-input"
-                [formControlName]="'url'"
-                readonly
-              >
+                <label for="productUpdates" class="form-label">Updates</label>
+                <div class="select-wrapper">
+                  <select id="productUpdates" class="form-select" formControlName="updates">
+                    <option value="">Select Updates</option>
+                    <option value="Lifetime Updates">Lifetime Updates</option>
+                    <option value="1 Year Updates">1 Year Updates</option>
+                    <option value="6 Months Updates">6 Months Updates</option>
+                    <option value="3 Months Updates">3 Months Updates</option>
+                    <option value="No Updates">No Updates</option>
+                    <option value="Custom Updates">Custom Updates</option>
+                  </select>
+                  <i class="fas fa-chevron-down select-arrow"></i>
+                </div>
+              </div>
+              
+              <!-- Tags -->
+              <div class="section-divider"></div>
+              <div class="form-group">
+                <label class="form-label">Tags *</label>
+                <p class="form-hint">Select tags to help people find your product (max 5 tags)</p>
+                
+                <!-- Tag Search Input -->
+                <div class="tag-search-container">
+                  <input 
+                    type="text" 
+                    class="form-input tag-search-input"
+                    placeholder="Search suggested tags..."
+                    [(ngModel)]="tagSearchInput"
+                    [ngModelOptions]="{standalone: true}"
+                    (input)="filterTags()"
+                  >
+                  <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <!-- Selected Tags -->
+                <div class="selected-tags" *ngIf="selectedTags.length > 0">
+                  <div class="tag-chip selected" *ngFor="let tag of selectedTags; let i = index">
+                    <span>{{ tag.name }}</span>
+                    <button class="remove-tag-btn" (click)="removeTag(i)" title="Remove tag">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Suggested Tags -->
+                <div class="suggested-tags" *ngIf="filteredTags.length > 0">
+                  <h5>Suggested Tags</h5>
+                  <div class="tag-chips">
+                    <div 
+                      class="tag-chip suggested" 
+                      *ngFor="let tag of filteredTags"
+                      [class.disabled]="isTagSelected(tag.id)"
+                      [class.selected]="isTagSelected(tag.id)"
+                      (click)="selectTag(tag)"
+                      [title]="isTagSelected(tag.id) ? 'Tag already selected' : 'Click to add tag'"
+                    >
+                      <span>{{ tag.name }}</span>
+                      <i class="fas fa-plus add-icon" *ngIf="!isTagSelected(tag.id)"></i>
+                      <i class="fas fa-check check-icon" *ngIf="isTagSelected(tag.id)"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- No tags found message -->
+                <div class="no-tags-message" *ngIf="tagSearchInput && filteredTags.length === 0">
+                  <p>No tags found matching "{{ tagSearchInput }}"</p>
+                  <p class="hint">Try a different search term or select from the suggested tags above.</p>
+                </div>
+
+                <!-- Tag limit warning -->
+                <div class="tag-limit-warning" *ngIf="selectedTags.length >= 5">
+                  <p><i class="fas fa-info-circle"></i> Maximum of 5 tags reached</p>
+                </div>
+
+                <!-- Tag validation error -->
+                <div class="error-message" *ngIf="fieldErrors['tagIds'] || (productForm.get('tagIds')?.invalid && productForm.get('tagIds')?.touched)">
+                  <span *ngIf="fieldErrors['tagIds']">{{ fieldErrors['tagIds'] }}</span>
+                  <span *ngIf="!fieldErrors['tagIds'] && productForm.get('tagIds')?.errors?.['required']">At least one tag must be selected</span>
+                  <span *ngIf="!fieldErrors['tagIds'] && productForm.get('tagIds')?.errors?.['minlength']">At least one tag must be selected</span>
+                </div>
+
+                <!-- Tag validation success -->
+                <div class="success-message" *ngIf="selectedTags.length > 0 && !fieldErrors['tagIds']">
+                  <i class="fas fa-check-circle"></i> {{ selectedTags.length }} tag(s) selected
+                </div>
             </div>
             
             <!-- Cover Images Section -->
@@ -264,252 +437,209 @@
                 <img [src]="thumbnailImage" alt="Thumbnail">
               </div>
             </div>
-            
-            <!-- Product Info Section -->
-            <div class="section-divider"></div>
-            <div class="form-group">
-              <label for="productSummary" class="form-label">Summary</label>
-              <input 
-                type="text" 
-                id="productSummary"
-                class="form-input"
-                placeholder="You will get..."
-                [formControlName]="'summary'"
-              >
             </div>
             
-            <div class="form-group">
-              <label class="form-label">Additional details</label>
-              <div class="details-card">
-                <p class="details-hint">
-                  Call out important features of your product that help your customers decide to buy
-                </p>
-                <button 
-                  class="btn btn-secondary"
-                  (click)="showDetailsForm = true"
-                  *ngIf="!showDetailsForm"
-                >
-                  Add details
-                </button>
-                
-                <div class="details-form" *ngIf="showDetailsForm">
-                  <div class="detail-inputs">
-                    <input 
-                      type="text" 
-                      class="form-input"
-                      placeholder="Attribute (e.g., File size)"
-                      [(ngModel)]="newDetail.attribute"
-                      [ngModelOptions]="{standalone: true}"
-                    >
-                    <input 
-                      type="text" 
-                      class="form-input"
-                      placeholder="Value (e.g., 100MB)"
-                      [(ngModel)]="newDetail.value"
-                      [ngModelOptions]="{standalone: true}"
-                    >
-                  </div>
-                  <button 
-                    class="btn btn-primary"
-                    (click)="addProductDetail()"
-                  >
-                    Add details
-                  </button>
+            <!-- Right Section - Real Preview -->
+            <div class="preview-section">
+              <div class="real-preview">
+                <div class="preview-header">
+                  <h3>Product Preview</h3>
+                  <p>This is how your product will appear to customers</p>
                 </div>
                 
-                <!-- Existing Details -->
-                <div class="existing-details" *ngIf="productDetails.length > 0">
-                  <div class="detail-item" *ngFor="let detail of productDetails; let i = index">
-                    <span class="detail-attribute">{{ detail.attribute }}:</span>
-                    <span class="detail-value">{{ detail.value }}</span>
-                    <button class="remove-detail-btn" (click)="removeProductDetail(i)">
-                      <i class="fas fa-times"></i>
-                    </button>
+                <div class="preview-content">
+                  <!-- Product Image -->
+                  <div class="preview-image-container" *ngIf="coverImages.length > 0">
+                    <img [src]="coverImages[0]" alt="Product preview" class="preview-main-image">
+                  </div>
+                  <div class="preview-image-placeholder" *ngIf="coverImages.length === 0">
+                    <i class="fas fa-image"></i>
+                    <p>Upload a cover image to see preview</p>
+            </div>
+            
+                  <!-- Product Info -->
+                  <div class="preview-info">
+                    <h2 class="preview-title">{{ productForm.get('name')?.value || 'Product Name' }}</h2>
+                    <p class="preview-description">{{ productForm.get('description')?.value || 'Product description will appear here...' }}</p>
+                    
+                    <!-- Product Features -->
+                    <div class="preview-features" *ngIf="productFeatures.length > 0">
+                      <h4>Features:</h4>
+                      <ul class="features-list">
+                        <li *ngFor="let feature of productFeatures">{{ feature }}</li>
+                      </ul>
+                </div>
+                
+                    <!-- Price -->
+                    <div class="preview-price-section">
+                      <div class="price-display">
+                        <span class="price-amount">{{ productForm.get('price')?.value || '0' }}</span>
+                        <span class="price-currency">{{ productForm.get('currency')?.value || 'USD' }}</span>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <!-- Product Features Section -->
-            <div class="section-divider"></div>
-            <div class="form-group">
-              <label class="form-label">Product Features</label>
-              <div class="features-card">
-                <p class="features-hint">
-                  List the key features and benefits of your product
-                </p>
-                <div class="features-input-group">
-                  <input 
-                    type="text" 
-                    class="form-input"
-                    placeholder="Add a feature (e.g., 10 fully rigged 3D characters)"
-                    [(ngModel)]="newFeature"
-                    [ngModelOptions]="{standalone: true}"
-                  >
-                  <button 
-                    class="btn btn-primary"
-                    (click)="addFeature()"
-                    [disabled]="!newFeature.trim()"
-                  >
-                    Add Feature
-                  </button>
-                </div>
-                
-                <!-- Existing Features -->
-                <div class="existing-features" *ngIf="productFeatures.length > 0">
-                  <div class="feature-item" *ngFor="let feature of productFeatures; let i = index">
-                    <i class="fas fa-check-circle"></i>
-                    <span class="feature-text">{{ feature }}</span>
-                    <button class="remove-feature-btn" (click)="removeFeature(i)">
-                      <i class="fas fa-times"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Product Specifications Section -->
-            <div class="section-divider"></div>
-            <div class="form-group">
-              <label class="form-label">Product Specifications</label>
-              <div class="specs-grid">
-                <div class="spec-item">
-                  <label for="compatibility" class="spec-label">Compatibility</label>
-                  <input 
-                    type="text" 
-                    id="compatibility"
-                    class="form-input"
-                    placeholder="e.g., Unity, Unreal Engine, Blender"
-                    [formControlName]="'compatibility'"
-                  >
-                </div>
-                
-                <div class="spec-item">
-                  <label for="license" class="spec-label">License Type</label>
-                  <select id="license" class="form-input" [formControlName]="'license'">
-                    <option value="">Select License</option>
-                    <option value="Standard">Standard License</option>
-                    <option value="Commercial">Commercial License</option>
-                    <option value="Extended">Extended License</option>
-                    <option value="Custom">Custom License</option>
-                  </select>
-                </div>
-                
-                <div class="spec-item">
-                  <label for="updates" class="spec-label">Update Policy</label>
-                  <select id="updates" class="form-input" [formControlName]="'updates'">
-                    <option value="">Select Update Policy</option>
-                    <option value="Lifetime Updates">Lifetime Updates</option>
-                    <option value="1 Year Updates">1 Year Updates</option>
-                    <option value="6 Months Updates">6 Months Updates</option>
-                    <option value="No Updates">No Updates</option>
-                  </select>
                 </div>
               </div>
             </div>
           </div>
           
-          <!-- Right Section - Preview -->
-          <!-- <div class="preview-section">
-            <div class="preview-card">
-              <div class="preview-image" *ngIf="coverImages.length > 0">
-                <img [src]="coverImages[0]" alt="Product preview">
-              </div>
-              <div class="preview-content">
-                <h3 class="preview-title">{{ productForm.get('name')?.value || 'Product Name' }}</h3>
-                <p class="preview-description">{{ productForm.get('description')?.value || 'Product description will appear here...' }}</p>
-                <div class="preview-price">
-                  <span class="price-amount">{{ productForm.get('price')?.value || '0' }}</span>
-                  <span class="price-currency">{{ currency }}</span>
+        <!-- Content Tab -->
+        <div class="content-step" *ngIf="currentTab === 'content'">
+          <div class="content-layout">
+            <!-- Left Section - Content Editor -->
+            <div class="content-section">
+              <div class="form-group">
+                <div class="editor-header">
+                  <div class="editor-title">
+                    <label class="form-label">
+                      <i class="fas fa-edit"></i>
+                      Product Content
+                    </label>
+                    <p class="form-hint">Create rich content that your customers will receive when they purchase your product.</p>
+                  </div>
+                  <div class="editor-actions">
+                    <button 
+                      type="button" 
+                      class="btn btn-outline btn-sm"
+                      (click)="clearEditor()"
+                      title="Clear all content"
+                    >
+                      <i class="fas fa-eraser"></i>
+                      Clear
+                    </button>
+                    <button 
+                      type="button" 
+                      class="btn btn-secondary btn-sm"
+                      (click)="insertTemplate()"
+                      title="Insert template content"
+                    >
+                      <i class="fas fa-magic"></i>
+                      Template
+                    </button>
+                  </div>
                 </div>
-                <button class="preview-buy-btn">Buy now</button>
+                
+                <!-- Enhanced Quill Editor -->
+                <div class="quill-editor-container">
+                  <div class="quill-editor">
+                     <div id="content-editor-toolbar" class="ql-toolbar ql-snow">
+                      <!-- Simplified toolbar: Heading | Text | Bold | Italic | Underline | Strike | Bullet | Number | Link -->
+                      <span class="ql-formats">
+                        <button class="ql-header" value="3" title="Title">Title</button>
+                        <button class="ql-header" value="" title="Text">Text</button>
+                      </span>
+                      <span class="ql-formats">
+                        <button class="ql-bold" title="Bold"></button>
+                        <button class="ql-italic" title="Italic"></button>
+                        <button class="ql-underline" title="Underline"></button>
+                        <button class="ql-strike" title="Strikethrough"></button>
+                      </span>
+                      <span class="ql-formats">
+                        <button class="ql-list" value="bullet" title="Bulleted list"></button>
+                        <button class="ql-list" value="ordered" title="Numbered list"></button>
+                      </span>
+                      <span class="ql-formats">
+                        <button class="ql-link" title="Insert link"></button>
+                      </span>
+                    </div>
+                    <div id="content-editor"></div>
+                  </div>
+                  
+                  <!-- Editor Footer -->
+                  <div class="editor-footer">
+                    <div class="editor-stats">
+                      <span class="stat-item">
+                        <i class="fas fa-font"></i>
+                        {{ getWordCount() }} words
+                      </span>
+                      <!-- <span class="stat-item">
+                        <i class="fas fa-paragraph"></i>
+                        {{ getParagraphCount() }} paragraphs
+                      </span>
+                      <span class="stat-item">
+                        <i class="fas fa-clock"></i>
+                        {{ getReadingTime() }} min read
+                      </span> -->
+                    </div>
+                    <div class="editor-tips">
+                      <i class="fas fa-lightbulb"></i>
+                      <span>Tip: Use headers, lists, and formatting to make your content engaging</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div> -->
-        </div>
-      </div>
 
-      <!-- Step 3: Content -->
-      <div class="content-step" *ngIf="currentStep === 'content'">
-        <div class="content-layout">
-          <!-- Left Section - Text Editor -->
-          <div class="content-editor" [formGroup]="productForm">
-            <div class="editor-toolbar">
-              <button class="toolbar-btn">
-                <i class="fas fa-bold"></i>
-              </button>
-              <button class="toolbar-btn">
-                <i class="fas fa-italic"></i>
-              </button>
-              <button class="toolbar-btn">
-                <i class="fas fa-underline"></i>
-              </button>
-              <button class="toolbar-btn">
-                <i class="fas fa-link"></i>
-              </button>
+              <!-- File Upload -->
+              <div class="form-group">
+                <label class="form-label">Product Files</label>
+                <div 
+                  class="file-upload-area"
+                  (click)="triggerFileUpload()"
+                  (dragover)="onDragOver($event)"
+                  (dragleave)="onDragLeave($event)"
+                  (drop)="onDrop($event)"
+                  [class.dragover]="isDragOver"
+                >
+                  <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
             </div>
-            <div class="editor-content">
-              <textarea 
-                class="content-textarea"
-                placeholder="Enter the content you want to sell. Describe your product, add instructions, or any additional information."
-                [formControlName]="'content'"
-                rows="15"
-              ></textarea>
-            </div>
-            <div class="content-hint">
-              <p>This is what buyers will see when they purchase your product. Add descriptions, instructions, or any additional information.</p>
-            </div>
-          </div>
-
-          <!-- Right Section - File Upload -->
-          <div class="file-upload-section">
-            <div class="upload-header">
-              <h3 class="upload-title">Product Files</h3>
-              <p class="upload-subtitle">Upload the actual files customers will download</p>
-            </div>
-            <div class="file-upload-area">
+                  <div class="upload-text">Upload your product files</div>
+                  <div class="upload-hint">Drag and drop files here or click to browse</div>
+                  <div class="supported-files">
+                    <small>Supported: PDF, ZIP, Images (JPG, PNG, GIF), Videos (MP4), Audio (MP3), Text (TXT, CSV), Office (PPTX, DOC, XLSX)</small>
+                  </div>
               <input 
                 type="file" 
-                id="productFiles" 
+                    #fileInput 
                 multiple
-                accept=".pdf,.zip,.jpg,.jpeg,.png,.mp4"
+                accept=".pdf,.zip,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.txt,.csv,.pptx,.ppt,.doc,.docx,.xls,.xlsx"
                 (change)="onFileSelected($event)"
                 style="display: none;"
               >
-              <label for="productFiles" class="upload-btn">
-                <i class="fas fa-upload"></i>
-                Upload product files
-              </label>
-              <p class="upload-hint">
-                Supported formats: PDF, ZIP, JPG, PNG, MP4. Maximum file size: 50MB per file.
-              </p>
             </div>
-            <!-- File Preview -->
-            <div class="file-preview" *ngIf="productFiles.length > 0">
-              <div class="file-item" *ngFor="let file of productFiles; let i = index">
+
+                <!-- Uploaded Files List -->
+                <div class="uploaded-files" *ngIf="uploadedFiles.length > 0">
+                  <h4>Uploaded Files</h4>
+                  <div class="file-list">
+                    <div class="file-item" *ngFor="let file of uploadedFiles; let i = index">
                 <div class="file-info">
                   <i class="fas fa-file"></i>
-                  <span class="file-name">{{ file.name }}</span>
-                  <span class="file-size">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</span>
+                        <span>{{ file.name }}</span>
+                        <small>({{ formatFileSize(file.size) }})</small>
                 </div>
-                <button class="remove-btn" (click)="removeFile(i)">
-                  <i class="fas fa-times"></i>
+                      <button class="btn btn-secondary" (click)="removeFile(i)">
+                        <i class="fas fa-trash"></i>
                 </button>
               </div>
             </div>
-            <!-- Upload Progress -->
-            <div class="upload-progress" *ngIf="isUploading">
-              <div class="progress-bar">
-                <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+                </div>
               </div>
-              <span class="progress-text">Uploading files... {{ uploadProgress }}%</span>
             </div>
-            <!-- Uploaded Files -->
-            <div class="uploaded-files" *ngIf="uploadedFiles.length > 0">
-              <h4 class="uploaded-title">Uploaded Files</h4>
-              <div class="uploaded-file-item" *ngFor="let file of uploadedFiles">
-                <i class="fas fa-check-circle"></i>
-                <span class="file-name">{{ file.name }}</span>
+            
+            <!-- Right Section - Content Preview -->
+            <div class="preview-section">
+              <div class="content-preview">
+                <div class="preview-header">
+                  <h3>Content Preview</h3>
+                  <p>Preview of what customers will receive</p>
+              </div>
+                
+                <div class="preview-content">
+                  <div class="content-preview-area" [innerHTML]="contentPreview"></div>
+                  
+                  <!-- Files Preview -->
+                  <div class="files-preview" *ngIf="uploadedFiles.length > 0">
+                    <h4>Files Included:</h4>
+                    <ul class="files-list">
+                      <li *ngFor="let file of uploadedFiles">
+                        <i class="fas fa-file"></i>
+                        {{ file.name }}
+                      </li>
+                    </ul>
+            </div>
+                </div>
               </div>
             </div>
           </div>

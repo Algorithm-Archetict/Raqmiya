@@ -19,19 +19,22 @@ namespace Core.Services
         private readonly ITagRepository _tagRepository;
         private readonly ILogger<ProductService> _logger;
         private readonly RaqmiyaDbContext _context;
+        private readonly IRecommendationService _recommendationService;
 
         public ProductService(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
             ITagRepository tagRepository,
             ILogger<ProductService> logger,
-            RaqmiyaDbContext context)
+            RaqmiyaDbContext context,
+            IRecommendationService recommendationService)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _tagRepository = tagRepository;
             _logger = logger;
             _context = context;
+            _recommendationService = recommendationService;
         }
 
         // --- Helper for mapping (consider AutoMapper for complex scenarios) ---
@@ -46,7 +49,7 @@ namespace Core.Services
                 Description = product.Description,
                 Price = product.Price,
                 Currency = product.Currency,
-                ProductType = product.ProductType,
+                //ProductType = product.ProductType,
                 CoverImageUrl = product.CoverImageUrl,
                 ThumbnailImageUrl = product.ThumbnailImageUrl,
                 PreviewVideoUrl = product.PreviewVideoUrl,
@@ -70,7 +73,7 @@ namespace Core.Services
                     UserAvatar = r.User.ProfileImageUrl, // Use profile image URL
                     CreatedAt = r.CreatedAt
                 }).ToList(),
-                Categories = product.ProductCategories.Select(pc => new ProductCategoryDTO { Id = pc.Category.Id, Name = pc.Category.Name, ParentCategoryId = pc.Category.ParentCategoryId }).ToList(),
+                Category = new CategoryDTO { Id = product.Category.Id, Name = product.Category.Name, ParentCategoryId = product.Category.ParentCategoryId },
                 Tags = product.ProductTags.Select(pt => new TagDTO { Id = pt.Tag.Id, Name = pt.Tag.Name }).ToList(),
                 WishlistCount = product.WishlistItems.Count(),
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
@@ -102,7 +105,16 @@ namespace Core.Services
                 AverageRating = product.Reviews.Any() ? product.Reviews.Average(r => r.Rating) : 0,
                 SalesCount = product.OrderItems.Count(),
                 Status = product.Status,
-                IsPublic = product.IsPublic
+                IsPublic = product.IsPublic,
+                PublishedAt = product.PublishedAt,
+                Category = product.Category != null ? new CategoryDTO
+                {
+                    Id = product.Category.Id,
+                    Name = product.Category.Name,
+                    ParentCategoryId = product.Category.ParentCategoryId
+                } : null,
+                IsCreatorDeleted = product.Creator?.IsDeleted ?? false,
+                UserHasPurchased = false // This will be set by the calling method if needed
             };
         }
 
@@ -185,6 +197,10 @@ namespace Core.Services
                 throw new InvalidOperationException("A product with this permalink already exists.");
             }
 
+            // Log the IsPublic value for debugging
+            _logger.LogInformation("Creating product with IsPublic: {IsPublic}, Status will be: {Status}", 
+                productDto.IsPublic, productDto.IsPublic ? "published" : "draft");
+
             var newProduct = new Product
             {
                 CreatorId = creatorId,
@@ -192,30 +208,28 @@ namespace Core.Services
                 Description = productDto.Description,
                 Price = productDto.Price,
                 Currency = productDto.Currency,
-                ProductType = productDto.ProductType,
+                //ProductType = productDto.ProductType,
                 CoverImageUrl = productDto.CoverImageUrl,
                 ThumbnailImageUrl = productDto.ThumbnailImageUrl,
                 PreviewVideoUrl = productDto.PreviewVideoUrl,
                 IsPublic = productDto.IsPublic,
                 Permalink = productDto.Permalink,
-                Status = "draft", // Default status for new products
+                Status = productDto.IsPublic ? "published" : "draft", // Set status based on IsPublic
                 PublishedAt = productDto.IsPublic ? DateTime.UtcNow : (DateTime?)null, // Use UTC
                 // NEW: Enhanced product details
                 Features = JsonSerializer.Serialize(productDto.Features),
                 Compatibility = productDto.Compatibility,
                 License = productDto.License,
-                Updates = productDto.Updates
+                Updates = productDto.Updates,
+                CategoryId = productDto.CategoryId
             };
 
             // Add categories and tags
-            foreach (var catId in productDto.CategoryIds)
+            if (!await _categoryRepository.ExistsAsync(productDto.CategoryId))
             {
-                if (!await _categoryRepository.ExistsAsync(catId))
-                {
-                    throw new ArgumentException($"Category with ID {catId} does not exist.");
-                }
-                newProduct.ProductCategories.Add(new ProductCategory { CategoryId = catId });
+                throw new ArgumentException($"Category with ID {productDto.CategoryId} does not exist.");
             }
+
             foreach (var tagId in productDto.TagIds)
             {
                 if (!await _tagRepository.ExistsAsync(tagId))
@@ -226,6 +240,10 @@ namespace Core.Services
             }
 
             await _productRepository.AddAsync(newProduct);
+
+            // Log the created product status for debugging
+            _logger.LogInformation("Product created with ID: {ProductId}, Status: {Status}, IsPublic: {IsPublic}", 
+                newProduct.Id, newProduct.Status, newProduct.IsPublic);
 
             // Re-fetch to ensure all relationships are loaded for DTO mapping
             var createdProduct = await _productRepository.GetProductWithAllDetailsAsync(newProduct.Id);
@@ -262,7 +280,7 @@ namespace Core.Services
             product.Description = productDto.Description;
             product.Price = productDto.Price;
             product.Currency = productDto.Currency;
-            product.ProductType = productDto.ProductType;
+            //product.ProductType = productDto.ProductType;
             
             // Only update image URLs if they are provided (not null/undefined)
             if (!string.IsNullOrEmpty(productDto.CoverImageUrl))
@@ -292,23 +310,14 @@ namespace Core.Services
                 }
             }
 
-            // Update Categories
-            var existingCategoryIds = product.ProductCategories.Select(pc => pc.CategoryId).ToList();
-            var categoriesToAdd = productDto.CategoryIds.Except(existingCategoryIds).ToList();
-            var categoriesToRemove = existingCategoryIds.Except(productDto.CategoryIds).ToList();
-
-            foreach (var catId in categoriesToRemove)
+            // Update Category
+            if (product.CategoryId != productDto.CategoryId)
             {
-                var pcToRemove = product.ProductCategories.FirstOrDefault(pc => pc.CategoryId == catId);
-                if (pcToRemove != null) product.ProductCategories.Remove(pcToRemove);
-            }
-            foreach (var catId in categoriesToAdd)
-            {
-                if (!await _categoryRepository.ExistsAsync(catId))
+                if (!await _categoryRepository.ExistsAsync(productDto.CategoryId))
                 {
-                    throw new ArgumentException($"Category with ID {catId} does not exist.");
+                    throw new ArgumentException($"Category with ID {productDto.CategoryId} does not exist.");
                 }
-                product.ProductCategories.Add(new ProductCategory { ProductId = product.Id, CategoryId = catId });
+                product.CategoryId = productDto.CategoryId;
             }
 
             // Update Tags
@@ -381,6 +390,17 @@ namespace Core.Services
                 throw new InvalidOperationException("Product is already in your wishlist.");
             }
             await _productRepository.AddProductToWishlistAsync(userId, productId);
+
+            // Track wishlist interaction for personalization
+            try
+            {
+                await _recommendationService.RecordUserInteractionAsync(userId, productId, InteractionType.Wishlist);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to record wishlist interaction for personalization");
+                // Don't fail the main operation
+            }
         }
 
         public async Task RemoveProductFromWishlistAsync(int userId, int productId)
@@ -394,6 +414,9 @@ namespace Core.Services
                 throw new InvalidOperationException("Product is not in your wishlist.");
             }
             await _productRepository.RemoveProductFromWishlistAsync(userId, productId);
+
+            // Note: We don't track wishlist removal as it might skew personalization
+            // The removal is already captured by the absence of the wishlist item
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> GetUserWishlistAsync(int userId, int pageNumber, int pageSize)
@@ -417,6 +440,21 @@ namespace Core.Services
         {
             // The service is responsible for knowing the IP source or receiving it from the controller
             await _productRepository.RecordProductViewAsync(productId, userId, ipAddress);
+
+            // Also record in UserInteractions for personalization (if user is logged in)
+            if (userId.HasValue && userId.Value > 0)
+            {
+                try
+                {
+                    await _recommendationService.RecordUserInteractionAsync(userId.Value, productId, InteractionType.View, 
+                        System.Text.Json.JsonSerializer.Serialize(new { IpAddress = ipAddress, ViewedAt = DateTime.UtcNow }));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to record user interaction for personalization");
+                    // Don't fail the main operation
+                }
+            }
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> GetMostWishedProductsAsync(int count, int pageNumber, int pageSize)
@@ -479,10 +517,33 @@ namespace Core.Services
             };
         }
 
-        public async Task<List<ProductCategoryDTO>> GetAllCategoriesAsync()
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetNewArrivalsProductsAsync(int count, int pageNumber, int pageSize)
+        {
+            // New Arrivals by PublishedAt desc
+            var products = await _context.Products
+                .Include(p => p.Creator)
+                .Include(p => p.Category)
+                .Where(p => p.IsPublic)
+                .OrderByDescending(p => p.PublishedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var totalCount = await _productRepository.GetPublishedProductsCountAsync();
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                TotalCount = (int)totalCount
+            };
+        }
+
+        public async Task<List<CategoryDTO>> GetAllCategoriesAsync()
         {
             var categories = await _categoryRepository.GetAllCategoriesAsync();
-            return categories.Select(c => new ProductCategoryDTO { Id = c.Id, Name = c.Name, ParentCategoryId = c.ParentCategoryId }).ToList();
+            return categories.Select(c => new CategoryDTO { Id = c.Id, Name = c.Name, ParentCategoryId = c.ParentCategoryId }).ToList();
         }
 
         public async Task<List<TagDTO>> GetAllTagsAsync()
@@ -493,12 +554,8 @@ namespace Core.Services
 
         public async Task<List<TagDTO>> GetTagsForCategoriesAsync(List<int> categoryIds)
         {
-            // This method would get tags specifically linked to the provided category IDs
-            // You might need a new repository method for this:
-            // IProductRepository.GetTagsByCategoriesAsync(IEnumerable<int> categoryIds)
-            // For now, returning all tags or a placeholder.
-            _logger.LogWarning("GetTagsForCategoriesAsync not fully implemented - returns all tags or placeholder.");
-            return await GetAllTagsAsync(); // Placeholder
+            var tags = await _tagRepository.GetTagsByCategoriesAsync(categoryIds);
+            return tags.Select(t => new TagDTO { Id = t.Id, Name = t.Name }).ToList();
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByCategoryAsync(int categoryId, int pageNumber, int pageSize)
@@ -516,33 +573,63 @@ namespace Core.Services
             };
         }
 
-        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByTagAsync(int tagId, int pageNumber, int pageSize)
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByMultipleCategoriesAsync(List<int> categoryIds, int pageNumber, int pageSize)
         {
-            var products = await _productRepository.GetProductsByTagIdAsync(tagId, pageNumber, pageSize);
-            var totalProducts = products.Count();
-            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            // Get the total count first (without pagination)
+            var totalCount = await _productRepository.GetProductsCountByMultipleCategoryIdsAsync(categoryIds);
+            
+            // Get the paginated products
+            var products = await _productRepository.GetProductsByMultipleCategoryIdsAsync(categoryIds, pageNumber, pageSize);
+            
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            
             return new PagedResultDTO<ProductListItemDTO>
             {
                 Items = products.Select(MapToProductListItemDTO).ToList(),
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalPages = totalPages,
-                TotalCount = totalProducts
+                TotalCount = totalCount
+            };
+        }
+
+        public async Task<PagedResultDTO<ProductListItemDTO>> GetProductsByTagAsync(int tagId, int pageNumber, int pageSize)
+        {
+            // Get the total count first (without pagination)
+            var totalCount = await _productRepository.GetProductsCountByTagIdAsync(tagId);
+            
+            // Get the paginated products
+            var products = await _productRepository.GetProductsByTagIdAsync(tagId, pageNumber, pageSize);
+            
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            
+            return new PagedResultDTO<ProductListItemDTO>
+            {
+                Items = products.Select(MapToProductListItemDTO).ToList(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalCount
             };
         }
 
         public async Task<PagedResultDTO<ProductListItemDTO>> SearchProductsAsync(string search, int pageNumber, int pageSize)
         {
+            // Get the total count first (without pagination)
+            var totalCount = await _productRepository.GetProductsCountBySearchAsync(search);
+            
+            // Get the paginated products
             var products = await _productRepository.SearchProductsAsync(search, pageNumber, pageSize);
-            var totalProducts = products.Count();
-            var totalPages = (int)Math.Ceiling((double)totalProducts / pageSize);
+            
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            
             return new PagedResultDTO<ProductListItemDTO>
             {
                 Items = products.Select(MapToProductListItemDTO).ToList(),
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalPages = totalPages,
-                TotalCount = totalProducts
+                TotalCount = totalCount
             };
         }
 
@@ -585,7 +672,7 @@ namespace Core.Services
                 Name = p.Name,
                 Status = p.Status,
                 CreatorUsername = p.Creator.Username,
-                PublishedAt = p.PublishedAt,
+                //PublishedAt = p.PublishedAt,
                 Price = p.Price,
                 Currency = p.Currency
             }).ToList();
@@ -732,6 +819,183 @@ namespace Core.Services
             // Update the DTO with the actual username for immediate display
             reviewDto.userName = user.Username;
             reviewDto.UserAvatar = user.ProfileImageUrl;
+        }
+
+        // --- Analytics Methods ---
+        public async Task<IEnumerable<ProductListItemDTO>> GetMostWishedProductsAsync(int count = 12)
+        {
+            try
+            {
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.WishlistItems)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Where(p => p.IsPublic)
+                    .Where(p => p.WishlistItems.Count >= 1) // Minimum 1 wishlist item
+                    .OrderByDescending(p => p.WishlistItems.Count)
+                    .ThenByDescending(p => p.PublishedAt)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting most wished products");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetRecommendedProductsAsync(int? userId = null, int count = 12)
+        {
+            try
+            {
+                // Use the sophisticated recommendation service
+                if (userId.HasValue && userId.Value > 0)
+                {
+                    _logger.LogInformation("Getting personalized recommendations for user {UserId}", userId.Value);
+                    return await _recommendationService.GetPersonalizedRecommendationsAsync(userId.Value, count);
+                }
+                else
+                {
+                    _logger.LogInformation("Getting generic recommendations for anonymous user");
+                    return await _recommendationService.GetGenericRecommendationsAsync(count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting recommended products for user {UserId}", userId);
+                
+                // Fallback to simple recommendation logic
+                _logger.LogInformation("Falling back to simple recommendation logic");
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.WishlistItems)
+                    .Where(p => p.IsPublic)
+                    /*
+                    .OrderByDescending(p => p.WishlistItems.Count)
+                    .ThenByDescending(p => p.OrderItems.Count)
+                    .ThenByDescending(p => p.Reviews.Count)
+                    */
+                    .OrderByDescending(p => p.PublishedAt) // Most recent products
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetBestSellerProductsAsync(int count = 12)
+        {
+            try
+            {
+                // Products with most purchases (using OrderItems as proxy for sales)
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.WishlistItems)
+                    .Where(p => p.IsPublic)
+                    .Where(p => p.OrderItems.Count >= 1) // Minimum 1 sale
+                    .OrderByDescending(p => p.OrderItems.Count)
+                    .ThenByDescending(p => p.PublishedAt)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting best seller products");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetTopRatedProductsAsync(int count = 12)
+        {
+            try
+            {
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.WishlistItems)
+                    .Where(p => p.IsPublic)
+                    .Where(p => p.Reviews.Count >= 1) // Minimum 1 review for credibility
+                    .OrderByDescending(p => p.Reviews.Average(r => r.Rating))
+                    .ThenByDescending(p => p.Reviews.Count)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting top rated products");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetNewArrivalsAsync(int count = 12)
+        {
+            try
+            {
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.Reviews)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.WishlistItems)
+                    .Where(p => p.IsPublic)
+                    .OrderByDescending(p => p.PublishedAt)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting new arrivals");
+                return new List<ProductListItemDTO>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductListItemDTO>> GetTrendingProductsAsync(int count = 12)
+        {
+            try
+            {
+                // Trending: combination of recent views, wishlists, and purchases
+                var cutoffDate = DateTime.UtcNow.AddDays(-30); // Last 30 days
+                
+                var products = await _context.Products
+                    .Include(p => p.Creator)
+                    .Include(p => p.Category)
+                    .Include(p => p.WishlistItems)
+                    .Include(p => p.OrderItems)
+                    .Include(p => p.ProductViews)
+                    .Include(p => p.Reviews)
+                    .Where(p => p.IsPublic)
+                    .OrderByDescending(p => 
+                        p.WishlistItems.Count * 2 +
+                        p.OrderItems.Count * 3 +
+                        p.ProductViews.Count)
+                    .Take(count)
+                    .ToListAsync();
+
+                return products.Select(MapToProductListItemDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting trending products");
+                return new List<ProductListItemDTO>();
+            }
         }
 
         // --- License Key Generation ---

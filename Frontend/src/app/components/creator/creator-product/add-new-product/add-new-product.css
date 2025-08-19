@@ -18,6 +18,7 @@
 
 /* Product Header */
 .product-header {
+  position: sticky;
   background: var(--bg-glass);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-color);
@@ -129,6 +130,10 @@
   transform: translateY(-1px);
 }
 
+.content-editor-toolbar{
+  color:white;
+}
+
 /* Content Area */
 .content-area {
   flex: 1;
@@ -136,32 +141,38 @@
   overflow-y: auto;
 }
 
-/* Step 1: Create Product */
-.create-step {
-  max-width: 1200px;
+/* Customize Product */
+.customize-step {
+  max-width: 1400px;
   margin: 0 auto;
 }
 
-.step-content {
+.customize-layout {
   display: flex;
-  gap: 64px;
+  gap: 48px;
   align-items: flex-start;
 }
 
-.quote-section {
-  flex: 0 0 285px;
-}
-
-.quote-text {
-  font-size: 18px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.form-section {
+.customize-layout .form-section {
   flex: 1;
-  max-width: 791px;
+  max-width: 600px;
+}
+
+/* Content Layout */
+.content-step {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.content-layout {
+  display: flex;
+  gap: 48px;
+  align-items: flex-start;
+}
+
+.content-section {
+  flex: 1;
+  max-width: 600px;
 }
 
 /* Form Elements */
@@ -194,28 +205,9 @@
   box-shadow: 0 0 0 3px rgba(0, 116, 228, 0.1);
 }
 
-.form-input.error {
-  border-color: var(--danger-color);
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
-}
-
 .form-input[readonly] {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
-}
-
-.error-message {
-  color: var(--danger-color);
-  font-size: 14px;
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.error-message::before {
-  content: "⚠";
-  font-size: 12px;
 }
 
 .form-textarea {
@@ -237,103 +229,1043 @@
   box-shadow: 0 0 0 3px rgba(0, 116, 228, 0.1);
 }
 
-/* Product Types */
-.product-types {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.product-type-card {
-  width: 253px;
-  padding: 24px;
-  background: var(--bg-secondary);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  cursor: pointer;
-  transition: var(--transition-normal);
-  position: relative;
-}
-
-.product-type-card:hover {
-  border-color: var(--primary-color);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.product-type-card.selected {
-  border-color: var(--primary-color);
-  background: var(--bg-glass);
-  box-shadow: var(--shadow-lg);
-}
-
-.type-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--primary-color);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.type-icon i {
-  color: var(--text-primary);
-  font-size: 20px;
-}
-
-.type-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 8px 0;
-}
-
-.type-description {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-  margin: 0;
-}
-
-/* Price Input Group */
-.price-input-group {
-  display: flex;
-  gap: 12px;
-}
-
-.price-input-group .form-input {
-  flex: 1;
-}
-
-.currency-select {
+.form-select {
+  width: 100%;
   padding: 16px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   color: var(--text-primary);
   font-size: 16px;
-  cursor: pointer;
-  min-width: 100px;
+  transition: var(--transition-normal);
 }
 
-/* Step 2: Customize Product */
-.customize-step {
-  max-width: 1400px;
-  margin: 0 auto;
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 116, 228, 0.1);
 }
 
-.customize-layout {
+/* Enhanced Quill Editor Styles */
+.editor-header {
   display: flex;
-  gap: 48px;
+  justify-content: space-between;
   align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
 }
 
-.customize-layout .form-section {
+.editor-title {
   flex: 1;
-  max-width: 600px;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: var(--radius-md);
+}
+
+.quill-editor-container {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.quill-editor-container:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 116, 228, 0.1), var(--shadow-lg);
+}
+
+.quill-editor {
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+  min-height: 300px !important;
+}
+
+/* Override Quill's default theme */
+.quill-editor.ql-snow {
+  border: none;
+}
+
+/* Enhanced Toolbar */
+.quill-editor .ql-toolbar.ql-snow {
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+  border-bottom: 2px solid var(--border-color);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.quill-editor .ql-toolbar.ql-snow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--primary-color) 50%, transparent 100%);
+}
+
+.quill-editor .ql-toolbar.ql-snow .ql-formats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  transition: background 0.2s ease;
+}
+
+.quill-editor .ql-toolbar.ql-snow .ql-formats:hover {
+  background: rgba(0, 116, 228, 0.05);
+}
+
+/* Enhanced Container */
+.quill-editor .ql-container.ql-snow {
+  border: none;
+  font-size: 16px;
+  min-height: 250px;
+  background: var(--bg-secondary);
+}
+
+/* Quill Toolbar - Main Container */
+.ql-toolbar.ql-snow {
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  background: var(--bg-tertiary) !important;
+  padding: 12px 16px !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Quill Toolbar - Format Groups */
+.ql-toolbar.ql-snow .ql-formats {
+  margin-right: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.ql-toolbar.ql-snow .ql-formats:last-child {
+  margin-right: 0 !important;
+}
+
+/* Quill Toolbar - Buttons */
+.ql-toolbar.ql-snow button {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-md) !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 2px !important;
+}
+
+.ql-toolbar.ql-snow button:hover {
+  background: rgba(0, 116, 228, 0.1) !important;
+  border-color: rgba(0, 116, 228, 0.3) !important;
+  color: var(--primary-color) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 116, 228, 0.2) !important;
+}
+
+.ql-toolbar.ql-snow button.ql-active {
+  background: rgba(0, 116, 228, 0.15) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  box-shadow: 0 2px 4px rgba(0, 116, 228, 0.3) !important;
+}
+
+/* Quill Toolbar - SVG Icons */
+.ql-toolbar.ql-snow .ql-stroke {
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+}
+
+.ql-toolbar.ql-snow .ql-fill {
+  fill: currentColor !important;
+}
+
+.ql-toolbar.ql-snow .ql-thin {
+  stroke-width: 1 !important;
+}
+
+/* Quill Toolbar - Dropdowns */
+.ql-toolbar.ql-snow .ql-picker {
+  margin-right: 8px !important;
+  position: relative !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label {
+  padding: 6px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-md) !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label:hover {
+  background: rgba(0, 116, 228, 0.1) !important;
+  border-color: rgba(0, 116, 228, 0.3) !important;
+  color: var(--primary-color) !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label.ql-active {
+  background: rgba(0, 116, 228, 0.15) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-options {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  z-index: 1000 !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-xl) !important;
+  padding: 8px 0 !important;
+  min-width: 120px !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-item {
+  padding: 8px 16px !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-item:hover {
+  background: rgba(0, 116, 228, 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-item.ql-selected {
+  background: rgba(0, 116, 228, 0.15) !important;
+  color: var(--primary-color) !important;
+  font-weight: 600 !important;
+}
+
+/* Quill Toolbar - Specific Button Styles */
+.ql-toolbar.ql-snow .ql-bold,
+.ql-toolbar.ql-snow .ql-italic,
+.ql-toolbar.ql-snow .ql-underline,
+.ql-toolbar.ql-snow .ql-strike {
+  font-weight: bold !important;
+}
+
+.ql-toolbar.ql-snow .ql-bold::after {
+  content: 'B' !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+}
+
+.ql-toolbar.ql-snow .ql-italic::after {
+  content: 'I' !important;
+  font-style: italic !important;
+  font-size: 14px !important;
+}
+
+.ql-toolbar.ql-snow .ql-underline::after {
+  content: 'U' !important;
+  text-decoration: underline !important;
+  font-size: 14px !important;
+}
+
+.ql-toolbar.ql-snow .ql-strike::after {
+  content: 'S' !important;
+  text-decoration: line-through !important;
+  font-size: 14px !important;
+}
+
+.ql-toolbar.ql-snow .ql-list[value="ordered"]::after {
+  content: '1.' !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+}
+
+.ql-toolbar.ql-snow .ql-list[value="bullet"]::after {
+  content: '•' !important;
+  font-weight: bold !important;
+  font-size: 16px !important;
+}
+
+.ql-toolbar.ql-snow .ql-blockquote::after {
+  content: '"' !important;
+  font-weight: bold !important;
+  font-size: 18px !important;
+}
+
+.ql-toolbar.ql-snow .ql-code-block::after {
+  content: '</>' !important;
+  font-weight: bold !important;
+  font-family: monospace !important;
+  font-size: 12px !important;
+}
+
+.ql-toolbar.ql-snow .ql-link::after {
+  content: '🔗' !important;
+  font-size: 14px !important;
+}
+
+/* Enhanced Editor Area */
+.quill-editor .ql-editor {
+  padding: 24px;
+  color: var(--text-primary) !important;
+  background: var(--bg-secondary) !important;
+  min-height: 250px;
+  line-height: 1.6;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.quill-editor .ql-editor.ql-blank::before {
+  color: var(--text-secondary) !important;
+  font-style: italic;
+  font-size: 16px;
+  left: 24px;
+  top: 24px;
+}
+
+/* Quill Editor Container - Updated */
+.quill-editor {
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--bg-secondary) !important;
+  overflow: hidden !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Quill Container - Editor Area */
+.quill-editor .ql-container.ql-snow {
+  border: none !important;
+  font-size: 16px !important;
+  min-height: 250px !important;
+  background: var(--bg-secondary) !important;
+}
+
+/* Ensure editor is focusable and editable */
+.quill-editor .ql-editor {
+  padding: 24px !important;
+  color: var(--text-primary) !important;
+  background: var(--bg-secondary) !important;
+  min-height: 250px !important;
+  line-height: 1.6 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  outline: none !important;
+  cursor: text !important;
+  overflow-y: auto !important;
+  resize: none !important;
+}
+
+.quill-editor .ql-editor:focus {
+  outline: none !important;
+  border: none !important;
+}
+
+.quill-editor .ql-editor.ql-blank::before {
+  color: var(--text-secondary) !important;
+  font-style: italic !important;
+  font-size: 16px !important;
+  left: 24px !important;
+  top: 24px !important;
+  pointer-events: none !important;
+}
+
+.quill-editor .ql-toolbar.ql-snow .ql-picker-item:hover {
+  background: rgba(0, 116, 228, 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+.quill-editor .ql-toolbar.ql-snow .ql-picker-item.ql-selected {
+  background: var(--primary-color) !important;
+  color: white !important;
+}
+
+/* Override Quill's default SVG colors */
+.quill-editor .ql-toolbar.ql-snow svg {
+  color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-toolbar.ql-snow .ql-active svg {
+  color: var(--primary-color) !important;
+}
+
+/* Fix for Quill's default button styling */
+.quill-editor .ql-toolbar.ql-snow button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Override Quill's default focus styles */
+.quill-editor .ql-toolbar.ql-snow button:focus,
+.quill-editor .ql-toolbar.ql-snow .ql-picker-label:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Fix for Quill's default border styles */
+.quill-editor .ql-toolbar.ql-snow .ql-picker-label::before {
+  border-color: var(--border-color) !important;
+}
+
+.quill-editor .ql-toolbar.ql-snow .ql-picker-label:hover::before {
+  border-color: var(--primary-color) !important;
+}
+
+/* Editor Footer */
+.editor-footer {
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-color);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.editor-stats {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stat-item i {
+  color: var(--primary-color);
+  font-size: 12px;
+}
+
+.editor-tips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.editor-tips i {
+  color: #fbbf24;
+  font-size: 14px;
+}
+
+/* Content Preview Enhancements */
+.content-preview-area {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  min-height: 200px;
+  line-height: 1.6;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Additional Quill Editor Content Styling */
+.quill-editor .ql-editor h1,
+.quill-editor .ql-editor h2,
+.quill-editor .ql-editor h3,
+.quill-editor .ql-editor h4,
+.quill-editor .ql-editor h5,
+.quill-editor .ql-editor h6 {
+  color: var(--text-primary) !important;
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+}
+
+.quill-editor .ql-editor h1 {
+  font-size: 2rem !important;
+  color: var(--text-primary) !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-editor h3 {
+  font-size: 2rem !important;
+  color: inherit !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+.quill-editor .ql-editor p {
+  margin: 12px 0;
+  color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-editor ul,
+.quill-editor .ql-editor ol {
+  margin: 12px 0;
+  padding-left: 24px;
+  color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-editor li {
+  margin: 4px 0;
+  color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-editor blockquote {
+  border-left: 4px solid var(--primary-color);
+  padding: 12px 20px;
+  margin: 16px 0;
+  background: rgba(0, 116, 228, 0.05);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-style: italic;
+  color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-editor code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-editor pre {
+  background: var(--bg-tertiary);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: 16px 0;
+  color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  margin: 16px 0;
+}
+
+.quill-editor .ql-editor video {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  margin: 16px 0;
+}
+
+.quill-editor .ql-editor a {
+  color: var(--primary-color) !important;
+  text-decoration: underline;
+}
+
+.quill-editor .ql-editor a:hover {
+  color: var(--primary-hover) !important;
+}
+
+/* Fix for Quill's default link styling */
+.quill-editor .ql-editor .ql-link {
+  color: var(--primary-color) !important;
+}
+
+/* Override Quill's default selection color */
+.quill-editor .ql-editor ::selection {
+  background: rgba(0, 116, 228, 0.2) !important;
+}
+
+.quill-editor .ql-editor ::-moz-selection {
+  background: rgba(0, 116, 228, 0.2) !important;
+}
+
+/* Quill Tooltip Styling */
+.quill-editor .ql-tooltip {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+  color: var(--text-primary) !important;
+  z-index: 9999;
+}
+
+.quill-editor .ql-tooltip a {
+  color: var(--primary-color) !important;
+}
+
+.quill-editor .ql-tooltip input[type=text] {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.quill-editor .ql-tooltip input[type=text]:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(0, 116, 228, 0.1) !important;
+}
+
+/* Quill Link Tooltip */
+.quill-editor .ql-tooltip[data-mode=link]::before {
+  content: "Enter link:";
+  color: var(--text-secondary) !important;
+}
+
+.quill-editor .ql-tooltip[data-mode=video]::before {
+  content: "Enter video URL:";
+  color: var(--text-secondary) !important;
+}
+
+/* Quill Formula Tooltip */
+.quill-editor .ql-tooltip[data-mode=formula]::before {
+  content: "Enter formula:";
+  color: var(--text-secondary) !important;
+}
+
+/* Ensure Quill editor maintains dark theme consistency */
+.quill-editor * {
+  box-sizing: border-box;
+}
+
+/* Fix for Quill's default spacing issues */
+.quill-editor .ql-editor > * {
+  margin-bottom: 0.5em;
+}
+
+.quill-editor .ql-editor > *:last-child {
+  margin-bottom: 0;
+}
+
+.content-preview-area h1,
+.content-preview-area h2,
+.content-preview-area h3,
+.content-preview-area h4,
+.content-preview-area h5,
+.content-preview-area h6 {
+  color: var(--text-primary);
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+}
+
+.content-preview-area p {
+  margin: 12px 0;
+  color: var(--text-primary);
+}
+
+.content-preview-area ul,
+.content-preview-area ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.content-preview-area ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+/* Disable Quill Snow tooltip within our content editor only */
+.quill-editor .ql-tooltip,
+.quill-editor .ql-tooltip * {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Force-hide Quill tooltip globally as a final safeguard */
+.ql-tooltip,
+.ql-tooltip * {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Hide any popup or modal elements */
+.ql-editor .ql-popup,
+.ql-editor .ql-modal,
+.ql-editor .ql-dialog {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure the editor itself doesn't show any unwanted elements */
+.ql-editor {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* Hide any elements with specific Quill classes that might create input fields */
+.ql-editor .ql-link-tooltip,
+.ql-editor .ql-video-tooltip,
+.ql-editor .ql-formula-tooltip {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.content-preview-area li {
+  margin: 4px 0;
+  color: var(--text-primary);
+}
+
+.content-preview-area blockquote {
+  border-left: 4px solid var(--primary-color);
+  padding: 12px 20px;
+  margin: 16px 0;
+  background: rgba(0, 116, 228, 0.05);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-style: italic;
+}
+
+.content-preview-area code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+}
+
+.content-preview-area pre {
+  background: var(--bg-tertiary);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  overflow: auto;
+}
+
+.content-preview-area img {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  margin: 12px 0;
+}
+
+.content-preview-area video {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  margin: 16px 0;
+}
+
+/* Form inputs/textarea/select dark theming to avoid white boxes */
+.form-input,
+textarea.form-input,
+.form-select {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.form-input::placeholder,
+textarea.form-input::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+.form-input:focus,
+textarea.form-input:focus,
+.form-select:focus {
+  outline: none !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(0,116,228,0.1) !important;
+}
+
+/* Responsive Design for Quill Editor */
+@media (max-width: 768px) {
+  .editor-header {
+    flex-direction: column;
+  }
+}
+
+/* === Quill Toolbar - Modern UI === */
+.quill-editor .ql-toolbar.ql-snow {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+}
+
+.quill-editor .ql-toolbar .ql-formats {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-right: 10px !important;
+}
+
+.quill-editor .ql-toolbar .ql-formats:last-child {
+  margin-right: 0 !important;
+}
+
+/* (Removed) Custom heading dropdown/menu styles were pruned */
+
+.quill-editor .ql-toolbar button,
+.quill-editor .ql-toolbar .ql-picker {
+  height: 32px !important;
+}
+
+.quill-editor .ql-toolbar button,
+.quill-editor .ql-toolbar .ql-picker-label,
+.quill-editor .ql-toolbar .ql-picker-options .ql-picker-item {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.quill-editor .ql-toolbar button:hover,
+.quill-editor .ql-toolbar .ql-picker-label:hover {
+  background: rgba(0, 116, 228, 0.08) !important;
+  color: var(--primary-color) !important;
+  border-color: rgba(0, 116, 228, 0.25) !important;
+}
+
+.quill-editor .ql-toolbar button.ql-active,
+.quill-editor .ql-toolbar .ql-picker-label.ql-active {
+  background: rgba(0, 116, 228, 0.12) !important;
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.quill-editor .ql-toolbar button:focus,
+.quill-editor .ql-toolbar .ql-picker-label:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(0,116,228,0.15) !important;
+}
+
+/* Picker (header) */
+.quill-editor .ql-toolbar .ql-picker.ql-header .ql-picker-label::before,
+.quill-editor .ql-toolbar .ql-picker.ql-header .ql-picker-item::before {
+  color: var(--text-primary) !important;
+}
+
+.quill-editor .ql-toolbar .ql-picker.ql-header .ql-picker-options {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* Replace default Quill SVG icons with labeled glyphs */
+.quill-editor .ql-toolbar .ql-formats button {
+  min-width: 34px !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+}
+.quill-editor .ql-toolbar .ql-formats button svg {
+  display: none !important;
+}
+
+/* Inline styles */
+.quill-editor .ql-toolbar .ql-bold::after { content: 'B'; font-weight: 800; }
+.quill-editor .ql-toolbar .ql-italic::after { content: 'I'; font-style: italic; }
+.quill-editor .ql-toolbar .ql-underline::after { content: 'U'; text-decoration: underline; }
+.quill-editor .ql-toolbar .ql-strike::after { content: 'S'; text-decoration: line-through; }
+
+/* Normalize Heading/Text buttons to match others (smaller size, white text) */
+.quill-editor .ql-toolbar .ql-formats .ql-header[value="1"],
+.quill-editor .ql-toolbar .ql-formats .ql-header[value=""] {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: transparent !important; /* hide original label text */
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  position: relative !important;
+}
+.quill-editor .ql-toolbar .ql-formats .ql-header[value="1"]:hover,
+.quill-editor .ql-toolbar .ql-formats .ql-header[value=""]:hover {
+  background: rgba(0, 116, 228, 0.08) !important;
+  border-color: rgba(0, 116, 228, 0.25) !important;
+}
+.quill-editor .ql-toolbar .ql-formats .ql-header[value="1"].ql-active,
+.quill-editor .ql-toolbar .ql-formats .ql-header[value=""].ql-active {
+  background: rgba(0, 116, 228, 0.12) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Replace Heading/Text with compact glyphs */
+.quill-editor .ql-toolbar .ql-formats .ql-header[value="3"]::after {
+  content: 'T';
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-weight: 800;
+  font-size: 13px;
+  pointer-events: none;
+}
+.quill-editor .ql-toolbar .ql-formats .ql-header[value=""]::after {
+  content: 'T';
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.quill-editor .ql-toolbar .ql-formats .ql-header[value="3"]:hover::after,
+.quill-editor .ql-toolbar .ql-formats .ql-header[value=""]:hover::after {
+  color: var(--primary-color);
+}
+
+.quill-editor .ql-toolbar .ql-formats .ql-header[value="3"].ql-active::after,
+.quill-editor .ql-toolbar .ql-formats .ql-header[value=""].ql-active::after {
+  color: var(--primary-color);
+}
+
+/* Hide original text of header buttons to avoid duplicate label next to glyph */
+.quill-editor .ql-toolbar .ql-formats .ql-header {
+  color: transparent !important;
+  font-size: 0 !important;
+  position: relative !important;
+}
+
+/* Lists */
+.quill-editor .ql-toolbar .ql-list[value="bullet"]::after { content: '•'; font-size: 18px; line-height: 1; }
+.quill-editor .ql-toolbar .ql-list[value="ordered"]::after { content: '1.'; font-weight: 700; }
+
+/* Placeholder styling: make it visible in dark theme */
+.quill-editor .ql-editor.ql-blank::before {
+  color: rgba(255, 255, 255, 0.5) !important;
+  content: attr(data-placeholder) !important;
+  font-style: normal !important;
+  left: 12px !important; /* align with editor padding */
+  right: 12px !important;
+  pointer-events: none;
+  white-space: pre-wrap; /* allow multi-line placeholders if needed */
+}
+
+/* Comfortable editor height */
+.quill-editor .ql-container {
+  min-height: 220px;
+}
+.quill-editor .ql-editor {
+  min-height: 200px;
+}
+
+/* Blockquote, Code, Link */
+.quill-editor .ql-toolbar .ql-blockquote::after { content: '"'; font-weight: 700; font-size: 16px; }
+.quill-editor .ql-toolbar .ql-code-block::after { content: '</>'; font-family: monospace; font-weight: 700; font-size: 12px; }
+.quill-editor .ql-toolbar .ql-link::after { content: '🔗'; font-size: 14px; }
+
+@media (max-width: 768px) {
+  .editor-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .editor-actions {
+    justify-content: flex-start;
+  }
+
+  .quill-editor .ql-toolbar {
+    padding: 12px 16px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .quill-editor .ql-toolbar .ql-formats {
+    gap: 4px;
+  }
+
+  .quill-editor .ql-editor {
+    padding: 16px;
+    min-height: 200px;
+  }
+
+  .editor-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .editor-stats {
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .stat-item {
+    font-size: 12px;
+  }
+
+  .editor-tips {
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .content-preview-area {
+    padding: 16px;
+    min-height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .quill-editor .ql-toolbar {
+    padding: 8px 12px;
+  }
+
+  .quill-editor .ql-toolbar button {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .quill-editor .ql-toolbar .ql-picker-label {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .editor-stats {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-item {
+    justify-content: center;
+  }
 }
 
 /* Section Divider */
@@ -345,76 +1277,389 @@
 
 /* Upload Buttons */
 .upload-btn {
-  padding: 16px 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
   background: var(--bg-secondary);
   border: 2px dashed var(--border-color);
   border-radius: var(--radius-lg);
   color: var(--text-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 16px;
   font-weight: 600;
+  cursor: pointer;
   transition: var(--transition-normal);
-  width: 100%;
-  justify-content: center;
+  text-decoration: none;
+  font-size: 16px;
 }
 
 .upload-btn:hover {
   border-color: var(--primary-color);
   background: var(--bg-tertiary);
+  transform: translateY(-1px);
 }
 
-.upload-hint {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 12px 0 0 0;
-  line-height: 1.4;
-}
-
-/* Upload Options */
 .upload-options {
   margin-top: 16px;
   display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
 .upload-option {
-  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .upload-option-btn {
-  padding: 12px 20px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  padding: 12px 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
   transition: var(--transition-normal);
-  text-align: center;
-  justify-content: center;
+  text-decoration: none;
+  font-size: 16px;
 }
 
 .upload-option-btn:hover {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   border-color: var(--primary-color);
 }
 
 .link-input-group {
   display: flex;
   gap: 8px;
+  flex: 1;
 }
 
 .link-input-group .form-input {
   flex: 1;
 }
 
-/* Image Previews */
+.link-input-group .btn {
+  white-space: nowrap;
+}
+
+/* Price Input Group */
+.price-input-group {
+  display: flex;
+  gap: 16px;
+  align-items: end;
+}
+
+.price-input-group .form-input {
+  flex: 1;
+}
+
+.price-input-group .form-select {
+  width: 120px;
+}
+
+/* Category Selection */
+.category-section {
+  margin-top: 16px;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.category-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.category-card.selected {
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
+  box-shadow: var(--shadow-lg);
+}
+
+.category-icon {
+  font-size: 24px;
+  color: var(--primary-color);
+  margin-bottom: 12px;
+}
+
+.category-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  font-size: 14px;
+}
+
+.category-description {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 8px 0 0 0;
+  line-height: 1.3;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary-color);
+}
+
+/* Features Input Group */
+.features-input-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.features-input-group .form-input {
+  flex: 1;
+}
+
+.features-input-group .btn {
+  white-space: nowrap;
+}
+
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feature-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.feature-text {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.remove-feature-btn {
+  background: none;
+  border: none;
+  color: var(--text-error);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: var(--transition-fast);
+}
+
+.remove-feature-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Tag Styles */
+.form-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0 0 16px 0;
+  font-weight: 400;
+}
+
+.tag-search-container {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.tag-search-input {
+  padding-right: 40px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  transition: var(--transition-normal);
+}
+
+.tag-search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-color-alpha);
+}
+
+.search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--primary-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition-normal);
+  position: relative;
+}
+
+.tag-chip.selected {
+  background: var(--primary-color);
+  color: var(--text-primary);
+  border: 1px solid var(--primary-color);
+}
+
+.tag-chip.suggested {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  position: relative;
+}
+
+.tag-chip.suggested:hover:not(.disabled) {
+  background: var(--primary-color);
+  color: var(--text-primary);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.tag-chip.suggested.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-tertiary);
+}
+
+.tag-chip.suggested.selected {
+  background: var(--success-color);
+  color: var(--text-primary);
+  border-color: var(--success-color);
+}
+
+.add-icon, .check-icon {
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.add-icon {
+  color: var(--text-secondary);
+}
+
+.check-icon {
+  color: var(--text-primary);
+}
+
+.remove-tag-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  opacity: 0.8;
+  transition: var(--transition-fast);
+}
+
+.remove-tag-btn:hover {
+  opacity: 1;
+}
+
+.suggested-tags {
+  margin-top: 16px;
+}
+
+.suggested-tags h5 {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.no-tags-message {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.no-tags-message p {
+  margin: 0 0 8px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.no-tags-message .hint {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.tag-limit-warning {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--warning-color-alpha);
+  border: 1px solid var(--warning-color);
+  border-radius: var(--radius-md);
+  color: var(--warning-color);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tag-limit-warning i {
+  margin-right: 6px;
+}
+
+/* Cover Images Preview */
 .cover-images-preview {
   display: flex;
   gap: 16px;
@@ -428,7 +1673,7 @@
   height: 120px;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
 }
 
 .cover-image-item img {
@@ -441,26 +1686,32 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 24px;
-  height: 24px;
   background: rgba(0, 0, 0, 0.7);
+  color: white;
   border: none;
   border-radius: 50%;
-  color: white;
+  width: 24px;
+  height: 24px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
+  transition: var(--transition-fast);
 }
 
+.remove-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* Thumbnail Preview */
 .thumbnail-preview {
   margin-top: 16px;
   width: 120px;
   height: 120px;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
 }
 
 .thumbnail-preview img {
@@ -469,129 +1720,223 @@
   object-fit: cover;
 }
 
-/* Details Card */
-.details-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+/* File Upload Area */
+.file-upload-area {
+  border: 2px dashed var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 24px;
-}
-
-.details-hint {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0 0 16px 0;
-  line-height: 1.4;
-}
-
-.details-form {
-  margin-top: 16px;
-}
-
-.detail-inputs {
-  display: flex;
-  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--bg-secondary);
+  transition: var(--transition-normal);
+  cursor: pointer;
   margin-bottom: 16px;
 }
 
-.detail-inputs .form-input {
-  flex: 1;
+.file-upload-area:hover {
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
 }
 
-.existing-details {
-  margin-top: 16px;
+.file-upload-area.dragover {
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
+  transform: scale(1.02);
 }
 
-.detail-item {
+.upload-icon {
+  font-size: 48px;
+  color: var(--primary-color);
+  margin-bottom: 16px;
+}
+
+.upload-text {
+  font-size: 18px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.upload-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.supported-files {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 116, 228, 0.1);
+  border: 1px solid rgba(0, 116, 228, 0.2);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.supported-files small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Uploaded Files */
+.uploaded-files {
+  margin-top: 24px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.uploaded-files h4 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.file-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-md);
-  margin-bottom: 8px;
-}
-
-.detail-attribute {
-  font-weight: 600;
+  gap: 12px;
   color: var(--text-primary);
 }
 
-.detail-value {
-  color: var(--text-secondary);
-  flex: 1;
-}
-
-.remove-detail-btn {
-  width: 20px;
-  height: 20px;
-  background: var(--danger-color);
-  border: none;
-  border-radius: 50%;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
+.file-info i {
+  color: var(--primary-color);
 }
 
 /* Preview Section */
 .preview-section {
-  flex: 0 0 400px;
+  flex: 1;
+  max-width: 400px;
   position: sticky;
   top: 24px;
 }
 
-.preview-card {
-  background: var(--bg-glass);
-  backdrop-filter: blur(10px);
+.real-preview,
+.content-preview {
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
 }
 
-.preview-image {
-  width: 100%;
-  height: 240px;
-  background: var(--bg-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.preview-header {
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.preview-header h3 {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.preview-header p {
+  margin: 0;
   color: var(--text-secondary);
   font-size: 14px;
-}
-
-.preview-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .preview-content {
   padding: 24px;
 }
 
-.preview-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
+.preview-image-container {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.preview-main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-image-placeholder {
+  width: 100%;
+  height: 200px;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.preview-image-placeholder i {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.preview-image-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.preview-info h2 {
   margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 20px;
 }
 
 .preview-description {
-  font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.4;
-  margin: 0 0 20px 0;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
 }
 
-.preview-price {
+.preview-features {
+  margin-bottom: 16px;
+}
+
+.preview-features h4 {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.preview-features ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+}
+
+.preview-features li {
+  margin-bottom: 4px;
+}
+
+.preview-price-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.price-display {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  margin-bottom: 20px;
 }
 
 .price-amount {
@@ -605,187 +1950,184 @@
   color: var(--text-secondary);
 }
 
-.preview-buy-btn {
-  width: 100%;
-  padding: 16px;
-  background: var(--primary-color);
-  color: var(--text-primary);
-  border: none;
-  border-radius: var(--radius-lg);
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  transition: var(--transition-normal);
-}
-
-.preview-buy-btn:hover {
-  background: var(--secondary-color);
-  transform: translateY(-1px);
-}
-
-/* Step 3: Content */
-.content-step {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.content-editor {
-  background: var(--bg-glass);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-.editor-toolbar {
-  display: flex;
-  gap: 8px;
-  padding: 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.toolbar-btn {
-  width: 40px;
-  height: 40px;
+/* Content Preview */
+.content-preview-area {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-normal);
-}
-
-.toolbar-btn:hover {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border-color: var(--primary-color);
-}
-
-.editor-content {
-  padding: 24px;
-}
-
-.content-textarea {
-  width: 100%;
-  min-height: 400px;
   padding: 16px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  min-height: 200px;
   color: var(--text-primary);
-  font-size: 16px;
   line-height: 1.6;
-  resize: vertical;
-  font-family: inherit;
 }
 
-.content-textarea:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(0, 116, 228, 0.1);
-}
-
-.content-hint {
-  padding: 16px 24px;
-  background: var(--bg-secondary);
+.files-preview {
+  margin-top: 16px;
+  padding-top: 16px;
   border-top: 1px solid var(--border-color);
 }
 
-.content-hint p {
-  font-size: 14px;
-  color: var(--text-secondary);
+.files-preview h4 {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.files-list {
   margin: 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+}
+
+.files-list li {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.files-list i {
+  color: var(--primary-color);
+  font-size: 12px;
+}
+
+/* Error Messages */
+.error-message {
+  color: var(--text-error);
+  font-size: 14px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-message::before {
+  content: '⚠';
+  font-size: 12px;
+}
+
+/* Form Hints */
+.form-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
   line-height: 1.4;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-secondary);
+}
+
+.loading-spinner i {
+  font-size: 32px;
+  color: var(--primary-color);
+}
+
+.loading-spinner p {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* Messages */
+.messages-container {
+  padding: 24px 64px;
+}
+
+.alert {
+  padding: 16px 24px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+}
+
+.alert-danger {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--text-error);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.alert-success {
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--text-success);
+  border: 1px solid rgba(74, 222, 128, 0.3);
 }
 
 /* Responsive Design */
 @media (max-width: 1200px) {
-  .product-header {
-    padding: 20px 40px;
-  }
-  
-  .content-area {
-    padding: 32px 40px;
-  }
-  
-  .header-title {
-    font-size: 28px;
-  }
-  
-  .step-content {
+  .customize-layout,
+  .content-layout {
     flex-direction: column;
     gap: 32px;
   }
   
-  .quote-section {
-    flex: none;
+  .customize-layout .form-section,
+  .content-section {
     max-width: none;
   }
   
-  .customize-layout {
-    flex-direction: column;
-    gap: 32px;
-  }
-  
   .preview-section {
-    flex: none;
-    max-width: 500px;
-    margin: 0 auto;
+    max-width: none;
+    position: static;
   }
 }
 
 @media (max-width: 768px) {
-  .add-product-container {
-    flex-direction: column;
-  }
-  
   .product-header {
     padding: 16px 24px;
     flex-direction: column;
     gap: 16px;
-    align-items: flex-start;
+    align-items: stretch;
+  }
+  
+  .header-right {
+    justify-content: space-between;
   }
   
   .content-area {
     padding: 24px;
   }
   
-  .header-title {
-    font-size: 24px;
-  }
-  
-  .header-right {
+  .nav-tabs {
     width: 100%;
-    justify-content: space-between;
+    justify-content: center;
   }
   
-  .btn {
-    padding: 10px 20px;
-    font-size: 14px;
-  }
-  
-  .product-types {
-    flex-direction: column;
-  }
-  
-  .product-type-card {
-    width: 100%;
+  .category-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
   
   .price-input-group {
     flex-direction: column;
+    align-items: stretch;
   }
   
-  .upload-options {
+  .price-input-group .form-select {
+    width: 100%;
+  }
+  
+  .features-input-group {
     flex-direction: column;
   }
   
-  .detail-inputs {
+  .tag-input-container {
     flex-direction: column;
   }
   
@@ -798,499 +2140,354 @@
     height: 90px;
   }
   
-  .preview-section {
-    max-width: none;
+  .thumbnail-preview {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .messages-container {
+    padding: 16px 24px;
   }
 }
 
-@media (max-width: 480px) {
-  .product-header {
-    padding: 12px 16px;
-  }
-  
-  .content-area {
-    padding: 16px;
-  }
-  
-  .header-title {
-    font-size: 20px;
-  }
-  
-  .nav-tabs {
-    width: 100%;
-  }
-  
-  .nav-tab {
-    flex: 1;
-    justify-content: center;
-  }
-  
-  .form-input,
-  .form-textarea {
-    padding: 12px;
-    font-size: 14px;
-  }
-  
-  .upload-btn {
-    padding: 12px 16px;
-    font-size: 14px;
-  }
-  
-  .preview-content {
-    padding: 16px;
-  }
-  
-  .preview-title {
-    font-size: 18px;
-  }
-  
-  .editor-toolbar {
-    padding: 12px;
-    gap: 4px;
-  }
-  
-  .toolbar-btn {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .editor-content {
-    padding: 16px;
-  }
-  
-  .content-textarea {
-    min-height: 300px;
-    padding: 12px;
-    font-size: 14px;
-  }
+/* CSS Variables for Dark Theme */
+:root {
+  --bg-primary: #0f0f23;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --bg-glass: rgba(26, 26, 46, 0.8);
+  --text-primary: #ffffff;
+  --text-secondary: #b8b8d4;
+  --text-muted: #8b8ba7;
+  --text-success: #4ade80;
+  --text-error: #f87171;
+  --text-warning: #fbbf24;
+  --primary-color: #3b82f6;
+  --secondary-color: #2563eb;
+  --border-color: #2d2d5a;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 250ms ease-in-out;
+  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
 }
 
-/* Alert Messages */
-.messages-container {
-  margin: 0 24px 16px 24px;
+/* Force blue background for Quill content area (for debugging/visual check) */
+#content-editor.ql-container.ql-snow {
+  background: var(--bg-secondary) !important;
+  min-height: 300px !important;
+  border: none !important;
+  outline: none !important;
+  cursor: text !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
 }
 
-.alert {
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 12px;
+#content-editor .ql-editor {
+  background: var(--bg-secondary) !important;
+  padding: 24px !important;
+  min-height: 300px !important;
+  cursor: text !important;
+  outline: none !important;
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure the entire editor area is clickable and writable */
+#content-editor .ql-editor.ql-blank {
+  min-height: 300px !important;
+  cursor: text !important;
+  outline: none !important;
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Make sure paragraph elements don't constrain the typing area */
+#content-editor .ql-editor p {
+  min-height: 1.5em !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  cursor: text !important;
+  outline: none !important;
+  border: none !important;
+  width: 100% !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure the entire editor div is clickable */
+#content-editor .ql-editor[contenteditable="true"] {
+  cursor: text !important;
+  outline: none !important;
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 300px !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+/* Make sure any child elements don't interfere with clicking */
+#content-editor .ql-editor * {
+  cursor: text !important;
+  outline: none !important;
+  border: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep the background only on the editor surface; avoid forcing it on every child */
+#content-editor .ql-editor {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Ensure the input field is editable and styled correctly */
+#content-editor .ql-editor[contenteditable="true"] {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  cursor: text !important;
+  padding: 24px !important;
+  width: 100% !important;
+  min-height: 300px !important;
+  box-sizing: border-box !important;
+  border: none !important;
+  outline: none !important;
+  margin: 0 !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Ensure child elements are interactive and selectable */
+#content-editor .ql-editor[contenteditable="true"] * {
+  pointer-events: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text !important;
+}
+
+/* Specifically target the contenteditable area */
+#content-editor .ql-editor[contenteditable="true"] {
+  cursor: text !important;
+}
+
+/* Ensure no white backgrounds can appear anywhere */
+#content-editor *[style*="background: white"],
+#content-editor *[style*="background-color: white"],
+#content-editor *[style*="background: #fff"],
+#content-editor *[style*="background-color: #fff"],
+#content-editor *[style*="background: rgb(255, 255, 255)"],
+#content-editor *[style*="background-color: rgb(255, 255, 255)"] {
+  background: blue !important;
+  background-color: blue !important;
+}
+
+/* Force all text inside Quill editor to pure black */
+#content-editor .ql-editor,
+#content-editor .ql-editor * {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+#content-editor .ql-editor.ql-blank::before {
+  color: var(--text-secondary) !important;
+}
+
+/* Enhanced styling for blockquote, code-block, and link buttons */
+.ql-toolbar.ql-snow .ql-blockquote::after {
+  content: '"' !important;
+  font-weight: bold !important;
+  font-size: 18px !important;
+  color: inherit !important;
+}
+
+.ql-toolbar.ql-snow .ql-code-block::after {
+  content: '</>' !important;
+  font-weight: bold !important;
+  font-family: monospace !important;
+  font-size: 12px !important;
+  color: inherit !important;
+}
+
+.ql-toolbar.ql-snow .ql-link::after {
+  content: '🔗' !important;
+  font-size: 14px !important;
+  color: inherit !important;
+}
+
+/* Ensure proper spacing and alignment for the new buttons */
+.ql-toolbar.ql-snow .ql-formats {
+  margin-right: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.ql-toolbar.ql-snow .ql-formats:last-child {
+  margin-right: 0 !important;
+}
+
+/* Hover and active states for the new buttons */
+.ql-toolbar.ql-snow .ql-blockquote:hover,
+.ql-toolbar.ql-snow .ql-code-block:hover,
+.ql-toolbar.ql-snow .ql-link:hover {
+  background: rgba(0, 116, 228, 0.1) !important;
+  border-color: rgba(0, 116, 228, 0.3) !important;
+  color: var(--primary-color) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 116, 228, 0.2) !important;
+}
+
+.ql-toolbar.ql-snow .ql-blockquote.ql-active,
+.ql-toolbar.ql-snow .ql-code-block.ql-active,
+.ql-toolbar.ql-snow .ql-link.ql-active {
+  background: rgba(0, 116, 228, 0.15) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  box-shadow: 0 2px 4px rgba(0, 116, 228, 0.3) !important;
+}
+
+/* ===== FORM VALIDATION STYLES ===== */
+
+/* Form input validation states */
+.form-input.error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+.form-input.success {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+  background-color: rgba(16, 185, 129, 0.05) !important;
+}
+
+/* Error message styling */
+.error-message {
+  color: #ef4444;
+  font-size: 14px;
+  margin-top: 8px;
   display: flex;
   align-items: center;
+  gap: 6px;
   font-weight: 500;
-  border: 1px solid transparent;
 }
 
-.alert-danger {
-  background-color: rgba(220, 53, 69, 0.1);
-  border-color: rgba(220, 53, 69, 0.2);
-  color: #dc3545;
-}
-
-.alert-success {
-  background-color: rgba(40, 167, 69, 0.1);
-  border-color: rgba(40, 167, 69, 0.2);
-  color: #28a745;
-}
-
-.alert i {
-  margin-right: 8px;
+.error-message::before {
+  content: '⚠️';
   font-size: 16px;
 }
 
-/* Real Preview Styles */
-.real-preview {
-  background: var(--bg-glass);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-.preview-header {
-  padding: 20px 24px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.preview-header h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 4px 0;
-}
-
-.preview-header p {
+/* Success message styling */
+.success-message {
+  color: #10b981;
   font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-.preview-content {
-  padding: 24px;
-}
-
-.preview-image-container {
-  width: 100%;
-  height: 200px;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-
-.preview-main-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.preview-image-placeholder {
-  width: 100%;
-  height: 200px;
-  background: var(--bg-secondary);
-  border: 2px dashed var(--border-color);
-  border-radius: var(--radius-lg);
+  margin-top: 8px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  margin-bottom: 20px;
+  gap: 6px;
+  font-weight: 500;
 }
 
-.preview-image-placeholder i {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
-
-.preview-image-placeholder p {
-  font-size: 14px;
-  margin: 0;
-}
-
-.preview-info {
-  color: var(--text-primary);
-}
-
-.preview-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 12px 0;
-}
-
-.preview-description {
+.success-message i {
+  color: #10b981;
   font-size: 16px;
-  line-height: 1.5;
+}
+
+/* Dropdown arrow styling */
+.select-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.select-wrapper .form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 40px;
+  background-image: none;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-secondary);
-  margin: 0 0 20px 0;
+  font-size: 14px;
+  pointer-events: none;
+  transition: var(--transition-normal);
 }
 
-.preview-details {
-  margin-bottom: 20px;
-}
-
-.preview-details h4 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 12px 0;
+.select-wrapper:hover .select-arrow {
   color: var(--text-primary);
 }
 
-.details-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+/* Form label required indicator */
+.form-label:has(+ .form-input[required]),
+.form-label:has(+ .select-wrapper .form-select[required]) {
+  position: relative;
 }
 
-.details-list li {
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
-  color: var(--text-secondary);
+.form-label:has(+ .form-input[required])::after,
+.form-label:has(+ .select-wrapper .form-select[required])::after {
+  content: ' *';
+  color: #ef4444;
+  font-weight: bold;
 }
 
-.details-list li:last-child {
-  border-bottom: none;
-}
-
-.preview-summary {
-  margin-bottom: 20px;
-}
-
-.preview-summary p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-.preview-price-section {
-  border-top: 1px solid var(--border-color);
-  padding-top: 20px;
-}
-
-.price-display {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.price-amount {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.price-currency {
-  font-size: 18px;
-  color: var(--text-secondary);
-}
-
-/* Quill Editor Styles */
-.quill-editor {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.quill-editor-wrapper {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.quill-editor-large {
-  min-height: 400px;
-}
-
-/* File Upload Section */
-.file-upload-section {
-  background: var(--bg-glass);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  padding: 24px;
+/* Enhanced form group spacing */
+.form-group {
   margin-bottom: 24px;
 }
 
-.file-upload-header h4 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 8px 0;
+.form-group:last-child {
+  margin-bottom: 0;
 }
 
-.file-upload-header p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0 0 20px 0;
-  line-height: 1.4;
+/* File upload validation styling */
+.file-upload-error {
+  border: 2px dashed #ef4444;
+  background-color: rgba(239, 68, 68, 0.05);
 }
 
-.file-upload-area {
-  border: 2px dashed var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 40px 20px;
-  text-align: center;
-  transition: var(--transition-normal);
+.file-upload-success {
+  border: 2px dashed #10b981;
+  background-color: rgba(16, 185, 129, 0.05);
 }
 
-.file-upload-btn {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: var(--transition-normal);
-  color: var(--text-secondary);
+/* Tag validation styling */
+.tag-validation-error .tag-search-container {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
-.file-upload-btn:hover {
-  color: var(--text-primary);
+.tag-validation-success .tag-search-container {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
-.file-upload-btn i {
-  font-size: 32px;
-  color: var(--primary-color);
-}
-
-.file-upload-btn span {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.file-upload-btn small {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.uploaded-files {
-  margin-top: 24px;
-}
-
-.uploaded-files h5 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 16px 0;
-}
-
-.file-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.file-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-}
-
-.file-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.file-info i {
-  font-size: 16px;
-  color: var(--primary-color);
-}
-
-.file-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.file-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.file-size {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.remove-file-btn {
-  width: 24px;
-  height: 24px;
-  background: var(--danger-color);
-  border: none;
-  border-radius: 50%;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  transition: var(--transition-normal);
-}
-
-.remove-file-btn:hover {
-  background: #c82333;
-  transform: scale(1.1);
-}
-
-/* Features Section */
-.features-card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid var(--border-color);
-}
-
-.features-hint {
-  color: var(--text-muted);
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.features-input-group {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.features-input-group .form-input {
-  flex: 1;
-}
-
-.existing-features {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: var(--input-bg);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-}
-
-.feature-item i {
-  color: var(--success-color);
-  font-size: 1.1rem;
-}
-
-.feature-text {
-  flex: 1;
-  color: var(--text-primary);
-}
-
-.remove-feature-btn {
-  background: none;
-  border: none;
-  color: var(--danger-color);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.remove-feature-btn:hover {
-  background: var(--danger-bg);
-}
-
-/* Specifications Grid */
-.specs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.spec-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.spec-label {
-  font-weight: 500;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-}
-
-/* Responsive adjustments for new sections */
+/* Responsive validation messages */
 @media (max-width: 768px) {
-  .features-input-group {
-    flex-direction: column;
+  .error-message,
+  .success-message {
+    font-size: 13px;
   }
   
-  .specs-grid {
-    grid-template-columns: 1fr;
+  .select-arrow {
+    right: 8px;
+    font-size: 12px;
   }
 }

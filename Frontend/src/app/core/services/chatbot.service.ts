@@ -21,7 +21,7 @@ interface UploadedFile {
   providedIn: 'root'
 })
 export class ChatbotService {
-  private readonly apiKey = 'ENTER YOUR API KEY HERE'; // Replace with your actual API key
+  private readonly apiKey = 'API Key HERE !!!!!!!!'; // Replace with your actual API key
   private readonly openaiUrl = 'https://api.openai.com/v1';
   private knowledgeBase: KnowledgeBaseDocument[] = [];
   private isKnowledgeBaseLoaded = false;

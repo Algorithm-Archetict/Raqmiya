@@ -1,0 +1,35 @@
+<div class="admin-dashboard">
+  <header class="admin-header">
+    <div class="hero-background">
+      <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+      </div>
+    </div>
+    <div class="hero-content">
+      <h1 class="hero-title">Admin Dashboard</h1>
+      <p class="hero-subtitle">Manage users, products, and platform analytics</p>
+      
+      <!-- Data Mode Toggle -->
+      <div class="data-mode-toggle" (click)="toggleDataMode()" style="cursor: pointer;">
+        <i class="bi" [class.bi-database]="!isUsingFallbackData" [class.bi-database-fill]="isUsingFallbackData"></i>
+        <span>{{ isUsingFallbackData ? 'Using Fallback Data' : 'Using Real API' }}</span>
+        <i class="bi bi-arrow-repeat ms-2"></i>
+      </div>
+      
+      <nav class="admin-nav">
+        <a routerLink="/admin/users" routerLinkActive="active" class="btn btn-primary">
+          <i class="bi bi-people-fill"></i> Manage Users
+        </a>
+        <a routerLink="/admin/users/create" routerLinkActive="active" class="btn btn-outline">
+          <i class="bi bi-person-plus-fill"></i> Create User
+        </a>
+      </nav>
+    </div>
+  </header>
+  <main class="admin-content">
+    <router-outlet></router-outlet>
+  </main>
+</div> 

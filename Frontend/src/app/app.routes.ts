@@ -28,10 +28,18 @@ import { ProductEditContent } from './components/creator/creator-product/product
 import { Sales } from './components/creator/sales/sales';
 import { AuthGuard } from './core/guards/auth.guard';
 import { CreatorGuard } from './core/guards/creator.guard';
+import { AdminGuard } from './core/guards/admin.guard';
 import { AllReviews } from './components/products/all-reviews/all-reviews';
 import { WishList } from './components/wish-list/wish-list';
+import { CategoryPageComponent } from './components/category-page/category-page.component';
 import { ReceiptComponent } from './components/receipt/receipt';
 import { CreatorProfileComponent } from './components/creator/creator-profile/creator-profile';
+import { ChatPage } from './features/messaging/chat.page';
+import { DeliveriesComponent } from './components/deliveries/deliveries';
+import { Services } from './components/services/services';
+import { AdminUserList } from './components/Admin/admin-user-list/admin-user-list';
+import { AdminUserCreate } from './components/Admin/admin-user-create/admin-user-create';
+import { AdminUserDetail } from './components/Admin/admin-user-detail/admin-user-detail';
 
 export const routes: Routes = [
     {path:"",redirectTo:"home", pathMatch:"full"},
@@ -40,6 +48,7 @@ export const routes: Routes = [
     // Public routes
     {path:"discover",component:Discover},
     {path:"discover/:id",component:ProductDetails},
+    {path:"category/:categorySlug",component:CategoryPageComponent},
     {path:"creator/:id",component:CreatorProfileComponent},
     {path:"login", redirectTo:"auth/login", pathMatch:"full"}, // Redirect /login to /auth/login
     {path:"auth/login", component:Login},
@@ -72,13 +81,22 @@ export const routes: Routes = [
         ]
     },
     {path:"dashboard",component:Dashboard, canActivate: [AuthGuard]}, // Both creators and customers can access dashboard
+    {path:"messages", component: ChatPage, canActivate: [AuthGuard]},
+    {path:"deliveries", component: DeliveriesComponent, canActivate: [AuthGuard]},
+    {path:"services", component: Services, canActivate: [AuthGuard]},
 
     // Creator-only routes - require authentication and creator role
     {path:"products",component:AllProducts, canActivate: [CreatorGuard]},
     {path:"products/new",component:AddNewProduct, canActivate: [CreatorGuard]},
+    {path:"deliveries/new",component:AddNewProduct, canActivate: [CreatorGuard]},
     {path:"products/:id/edit",component:ProductEdit, canActivate: [CreatorGuard]},
     {path:"products/:id/edit/content",component:ProductEditContent, canActivate: [CreatorGuard]},
     {path:"sales",component:Sales, canActivate: [CreatorGuard]},
+
+    // Admin-only routes - require authentication and admin role
+    {path:"admin/users",component:AdminUserList, canActivate: [AdminGuard]},
+    {path:"admin/users/create",component:AdminUserCreate, canActivate: [AdminGuard]},
+    {path:"admin/users/:id",component:AdminUserDetail, canActivate: [AdminGuard]},
 
     // {path:"wishlist",component:WishList, canActivate: [AuthGuard]}, // Commented out - now under library
     {path:"**",component:NotFound},

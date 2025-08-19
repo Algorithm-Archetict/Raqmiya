@@ -47,6 +47,10 @@ namespace Raqmiya.Infrastructure
         public ICollection<WishlistItem> WishlistItems { get; set; } = new List<WishlistItem>();
         public ICollection<ProductView> ProductViews { get; set; } = new List<ProductView>();
         public ICollection<License> Licenses { get; set; } = new List<License>();
+        
+        // Navigation properties for personalization
+        public ICollection<UserInteraction> UserInteractions { get; set; } = new List<UserInteraction>();
+        public ICollection<UserPreference> UserPreferences { get; set; } = new List<UserPreference>();
         public string? StripeCustomerId { get; set; } // Stores Stripe customer ID
         public List<PaymentMethodBalance> PaymentMethodBalances { get; set; } = new List<PaymentMethodBalance>();
     }

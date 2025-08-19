@@ -100,4 +100,8 @@ export class Navbar implements OnInit, OnDestroy {
   isCreator(): boolean {
     return this.authService.isCreator();
   }
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
 }

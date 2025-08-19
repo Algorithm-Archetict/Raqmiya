@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DashboardSidebar } from '../../dashboard-sidebar/dashboard-sidebar';
 import { PaymentService, BalanceResponse, RevenueAnalytics } from '../../../core/services/payment.service';
+// Services widgets moved to dedicated Services page; keep dashboard lean
 
 interface DashboardData {
   balance: number;
@@ -18,7 +19,7 @@ interface DashboardData {
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, DashboardSidebar],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css'
+  styleUrls: ['./dashboard.css']
 })
 export class Dashboard implements OnInit {
   dashboardData: DashboardData = {

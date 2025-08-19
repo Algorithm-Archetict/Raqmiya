@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Raqmiya.Infrastructure;
 using Infrastructure.Data.Entities;
 using System.Collections.Generic;
@@ -19,7 +19,7 @@ namespace Raqmiya.Infrastructure
         public DbSet<WishlistItem> WishlistItems { get; set; } = default!;
         public DbSet<PaymentMethodBalance> PaymentMethodBalances { get; set; }
         public DbSet<ProductView> ProductViews { get; set; } = default!;
-        public DbSet<ProductCategory> ProductCategories { get; set; } = default!;
+        
         public DbSet<ProductTag> ProductTags { get; set; } = default!;
         public DbSet<AddedFile> Files { get; set; } = default!; // Renamed if conflict with System.IO.File
         public DbSet<Variant> Variants { get; set; } = default!;
@@ -35,6 +35,19 @@ namespace Raqmiya.Infrastructure
         // public DbSet<ProductCategory> ProductCategories { get; set; } = null!;
         public DbSet<CategoryTag> CategoryTags { get; set; } = null!;
         public DbSet<ModerationLog> ModerationLogs { get; set; } = null!;
+        
+        // Messaging
+        public DbSet<Conversation> Conversations { get; set; } = null!;
+        public DbSet<Message> Messages { get; set; } = null!;
+        public DbSet<MessageRequest> MessageRequests { get; set; } = null!;
+        public DbSet<ServiceRequest> ServiceRequests { get; set; } = null!;
+        public DbSet<Delivery> Deliveries { get; set; } = null!;
+        public DbSet<ServiceRequestDeadlineChange> ServiceRequestDeadlineChanges { get; set; } = null!;
+        
+        // Personalization & Analytics Entities
+        public DbSet<UserPreference> UserPreferences { get; set; } = null!;
+        public DbSet<UserInteraction> UserInteractions { get; set; } = null!;
+        public DbSet<UserProfile> UserProfiles { get; set; } = null!;
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
         public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; } = null!;
         public DbSet<AccountDeletionToken> AccountDeletionTokens { get; set; } = null!;
@@ -43,8 +56,7 @@ namespace Raqmiya.Infrastructure
             base.OnModelCreating(modelBuilder);
 
             // Configure composite primary keys for join tables
-            modelBuilder.Entity<ProductCategory>()
-                .HasKey(pc => new { pc.ProductId, pc.CategoryId });
+            
 
             modelBuilder.Entity<ProductTag>()
                 .HasKey(pt => new { pt.ProductId, pt.TagId });
@@ -57,10 +69,17 @@ namespace Raqmiya.Infrastructure
 
             // Configure relationships
             modelBuilder.Entity<Product>()
-                .HasOne(p => p.Creator)
-                .WithMany(u => u.Products)
-                .HasForeignKey(p => p.CreatorId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevent cascading delete if creator has products
+                .HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Product>()
+    .HasOne(p => p.Creator)
+    .WithMany(u => u.Products)
+    .HasForeignKey(p => p.CreatorId)
+    .OnDelete(DeleteBehavior.Restrict); // Prevent multiple cascade paths
+
 
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.User)
@@ -92,17 +111,7 @@ namespace Raqmiya.Infrastructure
                 .HasForeignKey(pv => pv.ProductId)
                 .OnDelete(DeleteBehavior.Cascade); // Views are deleted with product
 
-            modelBuilder.Entity<ProductCategory>()
-                .HasOne(pc => pc.Product)
-                .WithMany(p => p.ProductCategories)
-                .HasForeignKey(pc => pc.ProductId)
-                .OnDelete(DeleteBehavior.Cascade); // Join entry deleted with product
-
-            modelBuilder.Entity<ProductCategory>()
-                .HasOne(pc => pc.Category)
-                .WithMany(c => c.ProductCategories)
-                .HasForeignKey(pc => pc.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict); // Keep category if products reference it
+            
 
             modelBuilder.Entity<ProductTag>()
                 .HasOne(pt => pt.Product)
@@ -217,6 +226,62 @@ namespace Raqmiya.Infrastructure
                 .HasForeignKey(m => m.AdminId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Configure personalization entities
+            
+            // UserPreference configuration
+            modelBuilder.Entity<UserPreference>()
+                .HasOne(up => up.User)
+                .WithMany(u => u.UserPreferences)
+                .HasForeignKey(up => up.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserPreference>()
+                .HasOne(up => up.Category)
+                .WithMany()
+                .HasForeignKey(up => up.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserPreference>()
+                .HasOne(up => up.Tag)
+                .WithMany()
+                .HasForeignKey(up => up.TagId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserPreference>()
+                .HasIndex(up => new { up.UserId, up.CategoryId, up.TagId })
+                .IsUnique();
+
+            // UserInteraction configuration
+            modelBuilder.Entity<UserInteraction>()
+                .HasOne(ui => ui.User)
+                .WithMany(u => u.UserInteractions)
+                .HasForeignKey(ui => ui.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserInteraction>()
+                .HasOne(ui => ui.Product)
+                .WithMany(p => p.UserInteractions)
+                .HasForeignKey(ui => ui.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserInteraction>()
+                .HasIndex(ui => new { ui.UserId, ui.ProductId, ui.Type, ui.CreatedAt });
+
+            // UserProfile configuration
+            modelBuilder.Entity<UserProfile>()
+                .HasOne(up => up.User)
+                .WithOne()
+                .HasForeignKey<UserProfile>(up => up.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserProfile>(entity =>
+            {
+                entity.Property(e => e.Profession).HasMaxLength(100);
+                entity.Property(e => e.Industry).HasMaxLength(100);
+                entity.Property(e => e.PreferredStyle).HasMaxLength(100);
+                entity.Property(e => e.PreferredFormats).HasMaxLength(500);
+            });
+
             // Configure PasswordResetToken table
             modelBuilder.Entity<PasswordResetToken>(entity =>
             {
@@ -282,7 +347,76 @@ namespace Raqmiya.Infrastructure
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Ensure other entity configurations (e.g., string lengths) are present.
+            // --- Messaging configuration ---
+            modelBuilder.Entity<Conversation>(entity =>
+            {
+                entity.HasIndex(e => new { e.CreatorId, e.CustomerId });
+                entity.HasOne(e => e.Creator)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Customer)
+                    .WithMany()
+                    .HasForeignKey(e => e.CustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Message>(entity =>
+            {
+                entity.HasIndex(e => new { e.ConversationId, e.CreatedAt });
+                entity.HasOne(e => e.Conversation)
+                    .WithMany(c => c.Messages)
+                    .HasForeignKey(e => e.ConversationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Sender)
+                    .WithMany()
+                    .HasForeignKey(e => e.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<MessageRequest>(entity =>
+            {
+                entity.HasIndex(e => e.ConversationId).IsUnique();
+                entity.HasOne(e => e.Conversation)
+                    .WithOne(c => c.MessageRequest)
+                    .HasForeignKey<MessageRequest>(e => e.ConversationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.RequestedByCustomer)
+                    .WithMany()
+                    .HasForeignKey(e => e.RequestedByCustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ServiceRequest>(entity =>
+            {
+                entity.HasIndex(e => new { e.ConversationId, e.CreatedAt });
+                entity.HasOne(e => e.Conversation)
+                    .WithMany(c => c.ServiceRequests)
+                    .HasForeignKey(e => e.ConversationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.RequestedByCustomer)
+                    .WithMany()
+                    .HasForeignKey(e => e.RequestedByCustomerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(e => e.Currency).HasMaxLength(3);
+            });
+
+            modelBuilder.Entity<Delivery>(entity =>
+            {
+                entity.HasIndex(e => new { e.ConversationId, e.CreatedAt });
+                entity.HasOne(e => e.Conversation)
+                    .WithMany(c => c.Deliveries)
+                    .HasForeignKey(e => e.ConversationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.ServiceRequest)
+                    .WithMany()
+                    .HasForeignKey(e => e.ServiceRequestId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(e => e.Product)
+                    .WithMany()
+                    .HasForeignKey(e => e.ProductId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
         }
     }
 }

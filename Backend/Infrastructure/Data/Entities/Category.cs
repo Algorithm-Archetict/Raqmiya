@@ -12,7 +12,7 @@
         public ICollection<Category> Subcategories { get; set; } = new List<Category>();
 
         // Navigation property for many-to-many with Product
-        public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+        public ICollection<Product> Products { get; set; } = new List<Product>();
 
 
         // Tags (predefined for this category)

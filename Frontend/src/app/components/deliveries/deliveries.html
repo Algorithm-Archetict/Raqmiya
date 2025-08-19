@@ -1,0 +1,226 @@
+<div class="deliveries-container">
+  <!-- Dashboard Sidebar -->
+  <app-dashboard-sidebar></app-dashboard-sidebar>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Sticky Header -->
+    <div class="deliveries-header">
+      <div class="header-content">
+        <div class="header-title">
+          <i class="fas fa-box-open"></i>
+          Deliveries
+        </div>
+        <div class="header-actions">
+          <button (click)="refreshDeliveryStatuses()" class="refresh-btn" [disabled]="loading">
+            <i class="fas fa-sync-alt" [class.fa-spin]="loading"></i>
+            Refresh Status
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Statistics Cards -->
+      <div class="stats-section">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon sent">
+              <i class="fas fa-paper-plane"></i>
+            </div>
+            <div class="stat-content">
+              <h3 class="stat-number">{{ creatorDeliveries.length }}</h3>
+              <p class="stat-label">Deliveries Sent</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon received">
+              <i class="fas fa-inbox"></i>
+            </div>
+            <div class="stat-content">
+              <h3 class="stat-number">{{ customerDeliveries.length }}</h3>
+              <p class="stat-label">Deliveries Received</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon pending">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+              <h3 class="stat-number">{{ getPendingDeliveriesCount() }}</h3>
+              <p class="stat-label">Pending Purchase</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon completed">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+              <h3 class="stat-number">{{ getCompletedDeliveriesCount() }}</h3>
+              <p class="stat-label">Completed</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="error" class="error-container">
+        <div class="error-content">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div class="error-message">
+            <h5>Error</h5>
+            <p>{{ error }}</p>
+          </div>
+        </div>
+        <button class="retry-btn" (click)="load()">
+          <i class="fas fa-redo"></i> Retry
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-container">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading deliveries...</p>
+        </div>
+      </div>
+
+      <!-- Deliveries Content -->
+      <div *ngIf="!loading && !error" class="deliveries-content">
+        <!-- Creator Deliveries Section -->
+        <div *ngIf="creatorDeliveries.length > 0" class="deliveries-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <i class="fas fa-paper-plane"></i>
+              Deliveries You've Sent
+            </h2>
+            <p class="section-subtitle">Products you've delivered to customers</p>
+          </div>
+          
+          <div class="deliveries-grid">
+            <div *ngFor="let delivery of creatorDeliveries" class="delivery-card">
+              <div class="delivery-header">
+                <div class="delivery-status">
+                  <span class="status-badge" [class]="getStatusBadgeClass(delivery.status)">
+                    <i [class]="getStatusIcon(delivery.status)"></i>
+                    {{ getStatusDisplayText(delivery.status) }}
+                  </span>
+                </div>
+                <div class="delivery-date">
+                  <i class="fas fa-calendar"></i>
+                  {{ delivery.createdAt | date:'MMM dd, yyyy' }}
+                </div>
+              </div>
+              
+              <div class="delivery-content">
+                <div class="product-info">
+                  <h3 class="product-name">
+                    <a [routerLink]="['/discover', delivery.productId]">
+                      {{ delivery.productName || 'Delivered Product' }}
+                    </a>
+                  </h3>
+                  <div class="customer-info">
+                    <i class="fas fa-user"></i>
+                    <span>Delivered to: {{ getCounterpartyUsername(delivery) }}</span>
+                  </div>
+                </div>
+                
+                <div class="delivery-details">
+                  <div class="price-info">
+                    <span class="price-label">Price:</span>
+                    <span class="price-value">{{ (delivery.currency || 'USD') + ' ' + (delivery.price | number:'1.0-2') }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer Deliveries Section -->
+        <div *ngIf="customerDeliveries.length > 0" class="deliveries-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <i class="fas fa-inbox"></i>
+              Deliveries For You
+            </h2>
+            <p class="section-subtitle">Products delivered to you by creators</p>
+          </div>
+          
+          <div class="deliveries-grid">
+            <div *ngFor="let delivery of customerDeliveries" class="delivery-card">
+              <div class="delivery-header">
+                <div class="delivery-status">
+                  <span class="status-badge" [class]="getStatusBadgeClass(delivery.status)">
+                    <i [class]="getStatusIcon(delivery.status)"></i>
+                    {{ getStatusDisplayText(delivery.status) }}
+                  </span>
+                </div>
+                <div class="delivery-date">
+                  <i class="fas fa-calendar"></i>
+                  {{ delivery.createdAt | date:'MMM dd, yyyy' }}
+                </div>
+              </div>
+              
+              <div class="delivery-content">
+                <div class="product-info">
+                  <h3 class="product-name">
+                    <a [routerLink]="['/discover', delivery.productId]">
+                      {{ delivery.productName || 'Delivered Product' }}
+                    </a>
+                  </h3>
+                  <div class="creator-info">
+                    <i class="fas fa-user"></i>
+                    <span>From: {{ getCounterpartyUsername(delivery) }}</span>
+                  </div>
+                </div>
+                
+                <div class="delivery-details">
+                  <div class="price-info">
+                    <span class="price-label">Price:</span>
+                    <span class="price-value">{{ (delivery.currency || 'USD') + ' ' + (delivery.price | number:'1.0-2') }}</span>
+                  </div>
+                </div>
+                
+                <div class="delivery-actions">
+                  <button 
+                    *ngIf="delivery.status === 'AwaitingPurchase'" 
+                    (click)="purchase(delivery)" 
+                    class="btn btn-primary"
+                  >
+                    <i class="fas fa-credit-card"></i>
+                    Purchase via Checkout
+                  </button>
+                  
+                  <button 
+                    *ngIf="delivery.status === 'Purchased'" 
+                    (click)="viewInLibrary(delivery)" 
+                    class="btn btn-success"
+                  >
+                    <i class="fas fa-book"></i>
+                    View in Library
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!loading && !error && deliveries.length === 0" class="empty-state">
+          <div class="empty-content">
+            <i class="fas fa-box-open"></i>
+            <h3>No deliveries yet</h3>
+            <p>When deliveries are made, they will appear here.</p>
+            <div class="empty-actions">
+              <a routerLink="/discover" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Discover Products
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

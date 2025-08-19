@@ -83,6 +83,18 @@
                   Create Product
                 </a>
               </li>
+              <li *ngIf="isAdmin()">
+                <a class="dropdown-item" routerLink="/admin/users" (click)="closeUserDropdown()">
+                  <i class="fas fa-users-cog me-2"></i>
+                  Manage Users
+                </a>
+              </li>
+              <li *ngIf="isAdmin()">
+                <a class="dropdown-item" routerLink="/admin/users/create" (click)="closeUserDropdown()">
+                  <i class="fas fa-user-plus me-2"></i>
+                  Create User
+                </a>
+              </li>
               <li>
                 <a class="dropdown-item" routerLink="/settings" (click)="closeUserDropdown()">
                   <i class="fas fa-cog me-2"></i>
