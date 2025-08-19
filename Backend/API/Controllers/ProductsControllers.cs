@@ -370,7 +370,26 @@ namespace API.Controllers
             var creatorId = GetCurrentUserId();
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
-            var allowedTypes = new[] { "application/pdf", "application/zip", "image/jpeg", "image/png", "video/mp4" };
+            var allowedTypes = new[] { 
+                "application/pdf", 
+                "application/zip", 
+                "application/x-zip-compressed",
+                "image/jpeg", 
+                "image/jpg", 
+                "image/png", 
+                "image/gif",
+                "video/mp4",
+                "audio/mpeg",
+                "audio/mp3",
+                "text/plain",
+                "text/csv",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation", // pptx
+                "application/vnd.ms-powerpoint", // ppt
+                "application/msword", // doc
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
+                "application/vnd.ms-excel", // xls
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" // xlsx
+            };
             if (!allowedTypes.Contains(file.ContentType))
                 return BadRequest("File type not allowed.");
             var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), FileStorageConstants.ProductUploadsRoot, id.ToString());

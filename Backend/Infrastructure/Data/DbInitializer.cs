@@ -282,10 +282,7 @@ namespace Raqmiya.Infrastructure.Data
                     new Category { Name = "Software Development" },
                     new Category { Name = "Gaming" },
                     new Category { Name = "Photography" },
-                    new Category { Name = "Comics & Graphic Novels" },
-                    new Category { Name = "Fiction Books" },
-                    new Category { Name = "Audio" },
-                    new Category { Name = "Recorded Music" },
+                    new Category { Name = "eBooks" },
                     // Subcategories - Fitness & Health (ParentId: 1)
                     new Category { Name = "Exercise & Workout", ParentCategoryId = 1 },
                     new Category { Name = "Running", ParentCategoryId = 1 },
@@ -379,14 +376,13 @@ namespace Raqmiya.Infrastructure.Data
                     new Category { Name = "Photo Presets & Actions", ParentCategoryId = 13 },
                     new Category { Name = "Reference Photos", ParentCategoryId = 13 },
                     new Category { Name = "Stock Photos", ParentCategoryId = 13 },
-                    // Subcategories - Comics & Graphic Novels (ParentId: 14)
-                    // (No subcategories in provided data)
-                    // Subcategories - Fiction Books (ParentId: 15)
-                    new Category {  Name = "Children's Books", ParentCategoryId = 15 },
-                    new Category {  Name = "Fantasy", ParentCategoryId = 15 },
-                    new Category {  Name = "Mystery", ParentCategoryId = 15 },
-                    new Category {  Name = "Romance", ParentCategoryId = 15 },
-                    new Category {  Name = "Science Fiction & Young Adult", ParentCategoryId = 15 },
+                    // Subcategories - eBooks (ParentId: 14)
+                    new Category {  Name = "Fiction & Novels", ParentCategoryId = 14 },
+                    new Category {  Name = "Comics & Graphic Novels", ParentCategoryId = 14 },
+                    new Category {  Name = "Non-Fiction", ParentCategoryId = 14 },
+                    new Category {  Name = "Children's Books", ParentCategoryId = 14 },
+                    new Category {  Name = "Educational Books", ParentCategoryId = 14 },
+                    new Category {  Name = "Reference Materials", ParentCategoryId = 14 },
                     // Subcategories - Audio (ParentId: 16)
                     new Category { Name = "ASMR", ParentCategoryId = 16 },
                     new Category { Name = "Healing", ParentCategoryId = 16 },
@@ -704,6 +700,459 @@ namespace Raqmiya.Infrastructure.Data
                 };
                 
                 context.Tags.AddRange(comprehensiveTags);
+                context.SaveChanges();
+            }
+
+            // --- Category-Tag Relationships ---
+            if (!context.CategoryTags.Any())
+            {
+                var categories = context.Categories.ToList();
+                var tags = context.Tags.ToList();
+                var categoryTags = new List<CategoryTag>();
+                var addedRelationships = new HashSet<(int CategoryId, int TagId)>();
+
+                // Helper function to find category by name
+                Category? FindCategory(string name) => categories.FirstOrDefault(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                Tag? FindTag(string name) => tags.FirstOrDefault(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+                // Helper function to add category-tag relationship if not already added
+                void AddCategoryTagRelationship(int categoryId, int tagId)
+                {
+                    var relationship = (categoryId, tagId);
+                    if (!addedRelationships.Contains(relationship))
+                    {
+                        categoryTags.Add(new CategoryTag { CategoryId = categoryId, TagId = tagId });
+                        addedRelationships.Add(relationship);
+                    }
+                }
+
+                // Software Development category relationships
+                var softwareDev = FindCategory("Software Development");
+                if (softwareDev != null)
+                {
+                    var softwareTags = new[] { "Technology", "Software", "Tools", "Automation", "Productivity Tools", "Browser Extension", "Desktop App", "SaaS", "API", "Integration", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in softwareTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(softwareDev.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Programming subcategory relationships
+                var programming = FindCategory("Programming");
+                if (programming != null)
+                {
+                    var programmingTags = new[] { "C#", "Java", "Python", "JavaScript", "PHP", "Ruby", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in programmingTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(programming.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Web Development subcategory relationships
+                var webDev = FindCategory("Web Development");
+                if (webDev != null)
+                {
+                    var webDevTags = new[] { "AWS", "Frontend", "Backend", "React JS", "Next JS", "Angular", ".NET", "Spring Boot", "Node.Js", "NestJs", "Django", "Flask", "Laravel", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in webDevTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(webDev.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Music & Sound Design category relationships (consolidated with Audio and Recorded Music)
+                var musicSound = FindCategory("Music & Sound Design");
+                if (musicSound != null)
+                {
+                    var musicTags = new[] { 
+                        // Music genres and types
+                        "Hip Hop", "Electronic", "Pop", "Rock", "Jazz", "Classical", "Ambient", "Trap", "House Music", "Cinematic", 
+                        "Recorded Music", "Albums", "EP", "LP", "Singles", "Hit Songs", "Chart Music", "Children Music", "Kids Songs", "Nursery Rhymes", 
+                        "Christian Music", "Gospel", "Worship", "Classic Rock", "Rock Music", "Hard Rock", "Classical Music", "Orchestra", "Symphony", 
+                        "Country Music", "Country", "Folk Country", "Electronic Music", "EDM", "Techno", "House", "Folk Music", "Acoustic", "Traditional", 
+                        "Heavy Metal", "Death Metal", "Black Metal", "Holiday Music", "Christmas", "Seasonal", "Jazz Music", "Smooth Jazz", "Bebop", 
+                        "Latin Music", "Salsa", "Reggaeton", "New Age Music", "Ambient Music", "Chill", "Opera", "Classical Vocal", "Art Songs", 
+                        "Pop Music", "Top 40", "Mainstream", "Hip-Hop", "Rap", "Trap", "Old School", "R&B", "Soul", "Funk", "Soundtracks", "Film Music", "Game Music", 
+                        "World Music", "Ethnic", "Cultural",
+                        
+                        // Audio and sound design
+                        "Audio", "Sound", "Sound Design", "Sound Effects", "Foley", "Voiceover", "Voice Acting", "Narration", "Podcast",
+                        
+                        // Wellness and therapeutic audio
+                        "ASMR", "Relaxation", "Sleep Aid", "Tingles", "Healing", "Sound Therapy", "Wellness Audio", "Hypnosis", "Self-Hypnosis", 
+                        "Therapeutic", "Sleep", "Meditation Audio", "Guided Meditation", "Subliminal", "Subliminal Messages", "Affirmations",
+                        
+                        // Music production
+                        "Music Production", "Beat Making", "Mixing", "Mastering", "Recording", "Instruments", "Guitar", "Piano", "Drums", "Violin", "Saxophone", "Trumpet",
+                        
+                        // General tags
+                        "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License", 
+                        "Creative", "Professional", "Quality", "Exclusive", "Trending", "Popular", "Bestseller", "New Release", "Limited Edition", "Seasonal", "Vintage", "Modern", "Minimalist", "Elegant", "Bold", "Colorful" 
+                    };
+                    foreach (var tagName in musicTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(musicSound.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Education category relationships
+                var education = FindCategory("Education");
+                if (education != null)
+                {
+                    var educationTags = new[] { "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License", "Creative", "Professional", "Quality", "Exclusive", "Trending", "Popular", "Bestseller", "New Release", "Limited Edition", "Seasonal", "Vintage", "Modern", "Minimalist", "Elegant", "Bold", "Colorful" };
+                    foreach (var tagName in educationTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(education.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Design category relationships
+                var design = FindCategory("Design");
+                if (design != null)
+                {
+                    var designTags = new[] { "UI/UX Design", "Logo Design", "Graphic Design", "Web Design", "Brand Identity", "Typography", "Icon Design", "Print Design", "Mobile Design", "Wireframe Templates", "Tutorial", "Course", "Guide", "Template", "Preset", "Bundle", "Pack", "Collection", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License", "Creative", "Professional", "Quality", "Exclusive", "Trending", "Popular", "Bestseller", "New Release", "Limited Edition", "Seasonal", "Vintage", "Modern", "Minimalist", "Elegant", "Bold", "Colorful" };
+                    foreach (var tagName in designTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(design.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // 3D category relationships
+                var threeD = FindCategory("3D");
+                if (threeD != null)
+                {
+                    var threeDTags = new[] { "Character Models", "Environment Assets", "Vehicles", "Architecture", "Props", "Weapons", "Animals", "Furniture", "Sci-Fi Assets", "Fantasy Models", "Tutorial", "Course", "Guide", "Template", "Preset", "Bundle", "Pack", "Collection", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License", "Creative", "Professional", "Quality", "Exclusive", "Trending", "Popular", "Bestseller", "New Release", "Limited Edition", "Seasonal", "Vintage", "Modern", "Minimalist", "Elegant", "Bold", "Colorful" };
+                    foreach (var tagName in threeDTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(threeD.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Business & Money category relationships
+                var businessMoney = FindCategory("Business & Money");
+                if (businessMoney != null)
+                {
+                    var businessTags = new[] { "Digital Marketing", "Entrepreneurship", "Personal Finance", "E-commerce", "Affiliate Marketing", "Dropshipping", "Real Estate Investing", "Stock Trading", "Business Planning", "Sales Strategies", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License", "Creative", "Professional", "Quality", "Exclusive", "Trending", "Popular", "Bestseller", "New Release", "Limited Edition", "Seasonal", "Vintage", "Modern", "Minimalist", "Elegant", "Bold", "Colorful" };
+                    foreach (var tagName in businessTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(businessMoney.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Fitness & Health category relationships
+                var fitnessHealth = FindCategory("Fitness & Health");
+                if (fitnessHealth != null)
+                {
+                    var fitnessTags = new[] { "Weight Loss", "Muscle Building", "Yoga", "Running", "CrossFit", "Nutrition", "Meal Planning", "Home Workouts", "Strength Training", "Cardio Training", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License", "Creative", "Professional", "Quality", "Exclusive", "Trending", "Popular", "Bestseller", "New Release", "Limited Edition", "Seasonal", "Vintage", "Modern", "Minimalist", "Elegant", "Bold", "Colorful" };
+                    foreach (var tagName in fitnessTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(fitnessHealth.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Self Improvement category relationships
+                var selfImprovement = FindCategory("Self Improvement");
+                if (selfImprovement != null)
+                {
+                    var selfImprovementTags = new[] { "Productivity", "Time Management", "Goal Setting", "Habit Building", "Mindfulness", "Stress Management", "Confidence Building", "Communication Skills", "Leadership", "Personal Finance", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License", "Creative", "Professional", "Quality", "Exclusive", "Trending", "Popular", "Bestseller", "New Release", "Limited Edition", "Seasonal", "Vintage", "Modern", "Minimalist", "Elegant", "Bold", "Colorful" };
+                    foreach (var tagName in selfImprovementTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(selfImprovement.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Films category relationships
+                var films = FindCategory("Films");
+                if (films != null)
+                {
+                    var filmTags = new[] { "Action & Adventure", "Animation", "Anime", "Black Voices", "Classics", "Drama", "Faith & Spirituality", "Foreign Language & International", "Horror", "Thriller", "Indian Cinema & Bollywood", "Indie & Art House", "Kids & Family", "Music Videos & Concerts", "Romance", "Science Fiction", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License", "Creative", "Professional", "Quality", "Exclusive", "Trending", "Popular", "Bestseller", "New Release", "Limited Edition", "Seasonal", "Vintage", "Modern", "Minimalist", "Elegant", "Bold", "Colorful" };
+                    foreach (var tagName in filmTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(films.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // --- SUBcategory relationships ---
+
+                // Exercise & Workout subcategory relationships
+                var exerciseWorkout = FindCategory("Exercise & Workout");
+                if (exerciseWorkout != null)
+                {
+                    var exerciseTags = new[] { "Workout", "Fitness", "Exercise", "Training", "Health", "Strength", "Cardio", "Muscle Building", "Weight Loss", "Home Workouts", "Gym", "Personal Training", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in exerciseTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(exerciseWorkout.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Running subcategory relationships
+                var running = FindCategory("Running");
+                if (running != null)
+                {
+                    var runningTags = new[] { "Running", "Marathon", "5K", "10K", "Half Marathon", "Endurance", "Cardio", "Fitness", "Training", "Speed", "Distance", "Trail Running", "Road Running", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in runningTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(running.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Sports subcategory relationships
+                var sports = FindCategory("Sports");
+                if (sports != null)
+                {
+                    var sportsTags = new[] { "Sports", "Athletics", "Team Sports", "Individual Sports", "Competition", "Training", "Fitness", "Performance", "Coaching", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in sportsTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(sports.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Weight Loss subcategory relationships
+                var weightLoss = FindCategory("Weight Loss");
+                if (weightLoss != null)
+                {
+                    var weightLossTags = new[] { "Weight Loss", "Diet", "Nutrition", "Meal Planning", "Fitness", "Health", "Wellness", "Transformation", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in weightLossTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(weightLoss.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Yoga subcategory relationships
+                var yoga = FindCategory("Yoga");
+                if (yoga != null)
+                {
+                    var yogaTags = new[] { "Yoga", "Meditation", "Mindfulness", "Wellness", "Health", "Flexibility", "Balance", "Stress Management", "Relaxation", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in yogaTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(yoga.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Cooking subcategory relationships
+                var cooking = FindCategory("Cooking");
+                if (cooking != null)
+                {
+                    var cookingTags = new[] { "Cooking", "Recipes", "Food", "Cuisine", "Chef", "Kitchen", "Meal Planning", "Nutrition", "Healthy Eating", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in cookingTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(cooking.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Crafts & DIY subcategory relationships
+                var craftsDiy = FindCategory("Crafts & DYI");
+                if (craftsDiy != null)
+                {
+                    var craftsTags = new[] { "Crafts", "DIY", "Handmade", "Creative", "Art", "Hobbies", "Projects", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in craftsTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(craftsDiy.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Dating & Relationships subcategory relationships
+                var datingRelationships = FindCategory("Dating & Relationships");
+                if (datingRelationships != null)
+                {
+                    var datingTags = new[] { "Dating", "Relationships", "Love", "Communication", "Social Skills", "Confidence", "Psychology", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in datingTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(datingRelationships.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Outdoors subcategory relationships
+                var outdoors = FindCategory("Outdoors");
+                if (outdoors != null)
+                {
+                    var outdoorsTags = new[] { "Outdoors", "Adventure", "Nature", "Hiking", "Camping", "Survival", "Exploration", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in outdoorsTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(outdoors.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Productivity subcategory relationships
+                var productivity = FindCategory("Productivity");
+                if (productivity != null)
+                {
+                    var productivityTags = new[] { "Productivity", "Time Management", "Goal Setting", "Habit Building", "Efficiency", "Organization", "Work", "Business", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in productivityTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(productivity.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Gaming subcategory relationships
+                var gaming = FindCategory("Gaming");
+                if (gaming != null)
+                {
+                    var gamingTags = new[] { "Gaming", "Video Games", "Game Development", "Esports", "Streaming", "Gaming Content", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in gamingTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(gaming.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Photography subcategory relationships
+                var photography = FindCategory("Photography");
+                if (photography != null)
+                {
+                    var photographyTags = new[] { "Photography", "Photos", "Camera", "Portrait", "Landscape", "Wedding", "Street", "Nature", "Product", "Travel", "Fashion", "Real Estate", "Event", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in photographyTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(photography.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // eBooks category relationships (consolidated from Comics & Graphic Novels and Fiction Books)
+                var eBooks = FindCategory("eBooks");
+                if (eBooks != null)
+                {
+                    var eBooksTags = new[] { 
+                        "Fiction", "Books", "eBooks", "Novels", "Stories", "Writing", "Literature", "Creative Writing",
+                        "Comics", "Graphic Novels", "Manga", "Webcomics", "Superhero", "Indie Comics", "Sequential Art",
+                        "Children's Books", "Kids", "Picture Books", "Fantasy", "Epic Fantasy", "Urban Fantasy",
+                        "Mystery", "Detective", "Crime", "Thriller", "Romance", "Historical Romance", "Contemporary Romance",
+                        "Science Fiction", "Sci-Fi", "Space Opera", "Young Adult", "YA", "Teen Fiction",
+                        "Illustration", "Storytelling", "Art", "Creative", "Tutorial", "Course", "Guide", "Template", 
+                        "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" 
+                    };
+                    foreach (var tagName in eBooksTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(eBooks.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Note: Audio and Recorded Music categories have been consolidated into Music & Sound Design
+
+                // Writings & Publishing subcategory relationships
+                var writingsPublishing = FindCategory("Writings & Publishing");
+                if (writingsPublishing != null)
+                {
+                    var writingTags = new[] { "Writing", "Publishing", "Books", "E-books", "Content", "Copywriting", "Blogging", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in writingTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(writingsPublishing.Id, tag.Id);
+                        }
+                    }
+                }
+
+                // Drawing & Painting subcategory relationships
+                var drawingPainting = FindCategory("Drawing & Painting");
+                if (drawingPainting != null)
+                {
+                    var drawingTags = new[] { "Drawing", "Painting", "Art", "Digital Art", "Traditional Art", "Portrait", "Landscape", "Character Design", "Concept Art", "Illustration", "Watercolor", "Oil Painting", "Sketching", "Comic Art", "Fantasy Art", "Tutorial", "Course", "Guide", "Template", "Premium", "Professional", "Advanced", "Beginner", "Instant Download", "Digital Download", "Commercial License" };
+                    foreach (var tagName in drawingTags)
+                    {
+                        var tag = FindTag(tagName);
+                        if (tag != null)
+                        {
+                            AddCategoryTagRelationship(drawingPainting.Id, tag.Id);
+                        }
+                    }
+                }
+
+                context.CategoryTags.AddRange(categoryTags);
                 context.SaveChanges();
             }
 

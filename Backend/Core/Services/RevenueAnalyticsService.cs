@@ -42,30 +42,45 @@ namespace Core.Services
                 _logger.LogInformation("Found {OrderCount} completed orders for creator {CreatorId}", creatorOrders.Count, creatorId);
 
                 var totalSales = creatorOrders.Count;
-                var totalRevenue = creatorOrders.Sum(oi => oi.Product.Price * oi.Quantity);
-                var monthlyRevenue = creatorOrders
-                    .Where(oi => oi.Order.OrderedAt >= monthStart)
-                    .Sum(oi => oi.Product.Price * oi.Quantity);
-                var weeklyRevenue = creatorOrders
-                    .Where(oi => oi.Order.OrderedAt >= weekStart)
-                    .Sum(oi => oi.Product.Price * oi.Quantity);
+                
+                // Calculate revenue by converting each product's price from its original currency to USD first
+                var totalRevenueUSD = 0m;
+                var monthlyRevenueUSD = 0m;
+                var weeklyRevenueUSD = 0m;
+                
+                foreach (var orderItem in creatorOrders)
+                {
+                    var itemRevenueUSD = await _currencyService.ConvertCurrencyAsync(
+                        orderItem.Product.Price * orderItem.Quantity, 
+                        orderItem.Product.Currency, 
+                        "USD"
+                    );
+                    totalRevenueUSD += itemRevenueUSD;
+                    
+                    if (orderItem.Order.OrderedAt >= monthStart)
+                    {
+                        monthlyRevenueUSD += itemRevenueUSD;
+                    }
+                    
+                    if (orderItem.Order.OrderedAt >= weekStart)
+                    {
+                        weeklyRevenueUSD += itemRevenueUSD;
+                    }
+                }
 
-                _logger.LogInformation("Revenue calculations: Total={TotalRevenue}, Monthly={MonthlyRevenue}, Weekly={WeeklyRevenue}", 
-                    totalRevenue, monthlyRevenue, weeklyRevenue);
+                _logger.LogInformation("Revenue calculations (USD): Total={TotalRevenue}, Monthly={MonthlyRevenue}, Weekly={WeeklyRevenue}", 
+                    totalRevenueUSD, monthlyRevenueUSD, weeklyRevenueUSD);
 
-                var averageOrderValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+                var averageOrderValueUSD = totalSales > 0 ? totalRevenueUSD / totalSales : 0;
 
                 // Get top products
                 var topProducts = await GetCreatorTopProductsAsync(creatorId, 5, currency);
 
-                // Convert currency if needed
-                if (currency != "USD")
-                {
-                    totalRevenue = await _currencyService.ConvertCurrencyAsync(totalRevenue, "USD", currency);
-                    monthlyRevenue = await _currencyService.ConvertCurrencyAsync(monthlyRevenue, "USD", currency);
-                    weeklyRevenue = await _currencyService.ConvertCurrencyAsync(weeklyRevenue, "USD", currency);
-                    averageOrderValue = await _currencyService.ConvertCurrencyAsync(averageOrderValue, "USD", currency);
-                }
+                // Convert from USD to target currency if needed
+                var totalRevenue = currency == "USD" ? totalRevenueUSD : await _currencyService.ConvertCurrencyAsync(totalRevenueUSD, "USD", currency);
+                var monthlyRevenue = currency == "USD" ? monthlyRevenueUSD : await _currencyService.ConvertCurrencyAsync(monthlyRevenueUSD, "USD", currency);
+                var weeklyRevenue = currency == "USD" ? weeklyRevenueUSD : await _currencyService.ConvertCurrencyAsync(weeklyRevenueUSD, "USD", currency);
+                var averageOrderValue = currency == "USD" ? averageOrderValueUSD : await _currencyService.ConvertCurrencyAsync(averageOrderValueUSD, "USD", currency);
 
                 return new CreatorRevenueAnalyticsDTO
                 {
@@ -90,13 +105,24 @@ namespace Core.Services
         {
             try
             {
-                var totalRevenue = await _context.OrderItems
+                var orderItems = await _context.OrderItems
                     .Include(oi => oi.Product)
                     .Include(oi => oi.Order)
                     .Where(oi => oi.Product.CreatorId == creatorId && oi.Order.Status == "Completed")
-                    .SumAsync(oi => oi.Product.Price * oi.Quantity);
+                    .ToListAsync();
 
-                return await _currencyService.ConvertCurrencyAsync(totalRevenue, "USD", currency);
+                var totalRevenueUSD = 0m;
+                foreach (var orderItem in orderItems)
+                {
+                    var itemRevenueUSD = await _currencyService.ConvertCurrencyAsync(
+                        orderItem.Product.Price * orderItem.Quantity,
+                        orderItem.Product.Currency,
+                        "USD"
+                    );
+                    totalRevenueUSD += itemRevenueUSD;
+                }
+
+                return await _currencyService.ConvertCurrencyAsync(totalRevenueUSD, "USD", currency);
             }
             catch (Exception ex)
             {
@@ -111,15 +137,26 @@ namespace Core.Services
             {
                 var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
                 
-                var monthlyRevenue = await _context.OrderItems
+                var orderItems = await _context.OrderItems
                     .Include(oi => oi.Product)
                     .Include(oi => oi.Order)
                     .Where(oi => oi.Product.CreatorId == creatorId && 
                                 oi.Order.Status == "Completed" && 
                                 oi.Order.OrderedAt >= monthStart)
-                    .SumAsync(oi => oi.Product.Price * oi.Quantity);
+                    .ToListAsync();
 
-                return await _currencyService.ConvertCurrencyAsync(monthlyRevenue, "USD", currency);
+                var monthlyRevenueUSD = 0m;
+                foreach (var orderItem in orderItems)
+                {
+                    var itemRevenueUSD = await _currencyService.ConvertCurrencyAsync(
+                        orderItem.Product.Price * orderItem.Quantity,
+                        orderItem.Product.Currency,
+                        "USD"
+                    );
+                    monthlyRevenueUSD += itemRevenueUSD;
+                }
+
+                return await _currencyService.ConvertCurrencyAsync(monthlyRevenueUSD, "USD", currency);
             }
             catch (Exception ex)
             {
@@ -134,15 +171,26 @@ namespace Core.Services
             {
                 var weekStart = DateTime.UtcNow.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
                 
-                var weeklyRevenue = await _context.OrderItems
+                var orderItems = await _context.OrderItems
                     .Include(oi => oi.Product)
                     .Include(oi => oi.Order)
                     .Where(oi => oi.Product.CreatorId == creatorId && 
                                 oi.Order.Status == "Completed" && 
                                 oi.Order.OrderedAt >= weekStart)
-                    .SumAsync(oi => oi.Product.Price * oi.Quantity);
+                    .ToListAsync();
 
-                return await _currencyService.ConvertCurrencyAsync(weeklyRevenue, "USD", currency);
+                var weeklyRevenueUSD = 0m;
+                foreach (var orderItem in orderItems)
+                {
+                    var itemRevenueUSD = await _currencyService.ConvertCurrencyAsync(
+                        orderItem.Product.Price * orderItem.Quantity,
+                        orderItem.Product.Currency,
+                        "USD"
+                    );
+                    weeklyRevenueUSD += itemRevenueUSD;
+                }
+
+                return await _currencyService.ConvertCurrencyAsync(weeklyRevenueUSD, "USD", currency);
             }
             catch (Exception ex)
             {
@@ -155,22 +203,49 @@ namespace Core.Services
         {
             try
             {
-                var topProducts = await _context.OrderItems
+                var orderItems = await _context.OrderItems
                     .Include(oi => oi.Product)
                     .Include(oi => oi.Order)
                     .Where(oi => oi.Product.CreatorId == creatorId && oi.Order.Status == "Completed")
+                    .ToListAsync();
+
+                // Group by product and calculate revenue in USD first
+                var productGroups = orderItems
                     .GroupBy(oi => new { oi.ProductId, oi.Product.Name })
-                    .Select(g => new TopProductDTO
+                    .ToList();
+
+                var topProducts = new List<TopProductDTO>();
+
+                foreach (var group in productGroups)
+                {
+                    var totalSales = group.Sum(oi => oi.Quantity);
+                    var revenueUSD = 0m;
+
+                    foreach (var orderItem in group)
                     {
-                        Id = g.Key.ProductId,
-                        Name = g.Key.Name,
-                        Sales = g.Sum(oi => oi.Quantity),
-                        Revenue = g.Sum(oi => oi.Product.Price * oi.Quantity),
+                        var itemRevenueUSD = await _currencyService.ConvertCurrencyAsync(
+                            orderItem.Product.Price * orderItem.Quantity,
+                            orderItem.Product.Currency,
+                            "USD"
+                        );
+                        revenueUSD += itemRevenueUSD;
+                    }
+
+                    topProducts.Add(new TopProductDTO
+                    {
+                        Id = group.Key.ProductId,
+                        Name = group.Key.Name,
+                        Sales = totalSales,
+                        Revenue = revenueUSD,
                         Currency = "USD"
-                    })
+                    });
+                }
+
+                // Sort by revenue and take top count
+                topProducts = topProducts
                     .OrderByDescending(p => p.Revenue)
                     .Take(count)
-                    .ToListAsync();
+                    .ToList();
 
                 // Convert currency if needed
                 if (currency != "USD")
@@ -203,27 +278,51 @@ namespace Core.Services
                 var now = DateTime.UtcNow;
                 var start = new DateTime(now.Year, now.Month, 1).AddMonths(-11); // inclusive start 11 months ago
 
-                var raw = await _context.OrderItems
+                var orderItems = await _context.OrderItems
                     .Include(oi => oi.Product)
                     .Include(oi => oi.Order)
                     .Where(oi => oi.Product.CreatorId == creatorId
                                  && oi.Order.Status == "Completed"
                                  && oi.Order.OrderedAt >= start)
-                    .GroupBy(oi => new { oi.Order.OrderedAt.Year, oi.Order.OrderedAt.Month })
-                    .Select(g => new { Year = g.Key.Year, Month = g.Key.Month, Revenue = g.Sum(oi => oi.UnitPrice * oi.Quantity) })
                     .ToListAsync();
+
+                // Group by month and calculate revenue in USD first
+                var monthlyGroups = orderItems
+                    .GroupBy(oi => new { oi.Order.OrderedAt.Year, oi.Order.OrderedAt.Month })
+                    .ToList();
+
+                var monthlyRevenueUSD = new Dictionary<(int Year, int Month), decimal>();
+
+                foreach (var group in monthlyGroups)
+                {
+                    var monthKey = (group.Key.Year, group.Key.Month);
+                    var revenueUSD = 0m;
+
+                    foreach (var orderItem in group)
+                    {
+                        var itemRevenueUSD = await _currencyService.ConvertCurrencyAsync(
+                            orderItem.Product.Price * orderItem.Quantity,
+                            orderItem.Product.Currency,
+                            "USD"
+                        );
+                        revenueUSD += itemRevenueUSD;
+                    }
+
+                    monthlyRevenueUSD[monthKey] = revenueUSD;
+                }
 
                 var series = new List<MonthlyRevenuePointDTO>();
                 for (int i = 0; i < 12; i++)
                 {
                     var dt = start.AddMonths(i);
-                    var found = raw.FirstOrDefault(r => r.Year == dt.Year && r.Month == dt.Month);
-                    var revenue = found?.Revenue ?? 0m;
+                    var monthKey = (dt.Year, dt.Month);
+                    var revenueUSD = monthlyRevenueUSD.ContainsKey(monthKey) ? monthlyRevenueUSD[monthKey] : 0m;
+                    
                     series.Add(new MonthlyRevenuePointDTO
                     {
                         Year = dt.Year,
                         Month = dt.Month,
-                        Revenue = revenue,
+                        Revenue = revenueUSD,
                         Currency = "USD"
                     });
                 }
