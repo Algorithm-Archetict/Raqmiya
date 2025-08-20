@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../../core/services/product.service';
+import { Subject, Subscription, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, tap, catchError } from 'rxjs/operators';
 import { ProductListItemDTO } from '../../../core/models/product/product-list-item.dto';
 import { ProductListItemDTOPagedResultDTO } from '../../../core/models/product/product-list-item-paged-result.dto';
 
@@ -13,7 +15,7 @@ import { ProductListItemDTOPagedResultDTO } from '../../../core/models/product/p
   templateUrl: './admin-product-list.html',
   styleUrls: ['./admin-product-list.css']
 })
-export class AdminProductList implements OnInit {
+export class AdminProductList implements OnInit, OnDestroy {
   status: 'pending' | 'published' | 'rejected' = 'pending';
   isLoading = false;
   error = '';
@@ -36,11 +38,58 @@ export class AdminProductList implements OnInit {
     inactiveProducts: 0
   };
 
+  // Debounced search
+  private searchSubject = new Subject<string>();
+  private searchSubscription: Subscription | null = null;
+
   constructor(private products: ProductService) {}
 
   ngOnInit(): void {
     this.loadStatistics();
     this.load();
+
+    // Wire up debounced search (300ms). When empty term is emitted, load admin list by status.
+    this.searchSubscription = this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      tap(() => {
+        this.page = 1; // reset page for new search
+        this.isLoading = true;
+        this.error = '';
+      }),
+      switchMap((term: string) => {
+        const q = term ? term.trim() : '';
+        if (!q) {
+          // load admin list for current status
+          return this.products.getByStatus(this.status, this.page, this.size).pipe(
+            catchError(err => {
+              // convert to null so subscriber can handle
+              return of(null as unknown as ProductListItemDTOPagedResultDTO);
+            })
+          );
+        }
+        return this.products.searchProducts(q, this.page, this.size).pipe(
+          catchError(err => of(null as unknown as ProductListItemDTOPagedResultDTO))
+        );
+      })
+    ).subscribe((res: ProductListItemDTOPagedResultDTO | null) => {
+      if (!res) {
+        this.items = [];
+        this.totalItems = 0;
+        this.totalPages = 0;
+        this.hasNextPage = false;
+        this.hasPreviousPage = false;
+        this.isLoading = false;
+        return;
+      }
+
+      this.items = res.items || [];
+      this.totalItems = res.totalCount || 0;
+      this.totalPages = res.totalPages || 0;
+      this.hasNextPage = res.hasNextPage || false;
+      this.hasPreviousPage = res.hasPreviousPage || false;
+      this.isLoading = false;
+    });
   }
 
   load() {
@@ -120,18 +169,9 @@ export class AdminProductList implements OnInit {
   }
 
   getFilteredProducts(): ProductListItemDTO[] {
-    let filteredProducts = this.items;
-
-    // Filter by search term
-    if (this.searchTerm.trim()) {
-      const searchLower = this.searchTerm.trim().toLowerCase();
-      filteredProducts = filteredProducts.filter(product => 
-        (product.name && product.name.toLowerCase().includes(searchLower)) ||
-        (product.creatorUsername && product.creatorUsername.toLowerCase().includes(searchLower))
-      );
-    }
-
-    return filteredProducts;
+  // Items are provided by the API. Searching now queries the backend and replaces
+  // `this.items` with the search results. Return the current items array directly.
+  return this.items;
   }
 
   // Load overall statistics
@@ -282,28 +322,84 @@ export class AdminProductList implements OnInit {
   }
 
   clearFilters(): void {
+    // Clear search and reload the current status page from the server
     this.searchTerm = '';
+    this.page = 1;
+    // Emit empty term so debounced pipeline handles loading
+    this.searchSubject.next('');
+  }
+
+  onSearchChange(term: string): void {
+    // Push the new term into the debounced search stream
+    this.searchTerm = term || '';
+    this.searchSubject.next(this.searchTerm);
+  }
+
+  ngOnDestroy(): void {
+    if (this.searchSubscription) {
+      this.searchSubscription.unsubscribe();
+      this.searchSubscription = null;
+    }
   }
 
   // Pagination methods
   goToPage(pageNumber: number): void {
     if (pageNumber >= 1 && pageNumber <= this.totalPages) {
       this.page = pageNumber;
-      this.load();
+      this.fetchCurrentPage();
     }
   }
 
   nextPage(): void {
     if (this.hasNextPage) {
       this.page++;
-      this.load();
+      this.fetchCurrentPage();
     }
   }
 
   previousPage(): void {
     if (this.hasPreviousPage) {
       this.page--;
-      this.load();
+      this.fetchCurrentPage();
+    }
+  }
+
+  private fetchCurrentPage(): void {
+    // If there's an active search term, use search endpoint, otherwise use admin by-status
+    this.isLoading = true;
+    this.error = '';
+
+    if (this.searchTerm && this.searchTerm.trim()) {
+      this.products.searchProducts(this.searchTerm.trim(), this.page, this.size).subscribe({
+        next: (res: ProductListItemDTOPagedResultDTO) => {
+          this.items = res.items || [];
+          this.totalItems = res.totalCount || 0;
+          this.totalPages = res.totalPages || 0;
+          this.hasNextPage = res.hasNextPage || false;
+          this.hasPreviousPage = res.hasPreviousPage || false;
+          this.isLoading = false;
+        },
+        error: (err: any) => {
+          this.error = this.getErrorMessage(err);
+          this.isLoading = false;
+        }
+      });
+    } else {
+      // normal admin list by status
+      this.products.getByStatus(this.status, this.page, this.size).subscribe({
+        next: (res: ProductListItemDTOPagedResultDTO) => {
+          this.items = res.items || [];
+          this.totalItems = res.totalCount || 0;
+          this.totalPages = res.totalPages || 0;
+          this.hasNextPage = res.hasNextPage || false;
+          this.hasPreviousPage = res.hasPreviousPage || false;
+          this.isLoading = false;
+        },
+        error: (err: any) => {
+          this.error = this.getErrorMessage(err);
+          this.isLoading = false;
+        }
+      });
     }
   }
 

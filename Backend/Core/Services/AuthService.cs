@@ -23,6 +23,7 @@ namespace Core.Services
         private readonly IEmailVerificationRepository _emailVerificationRepository;
         private readonly IAccountDeletionRepository _accountDeletionRepository;
         private readonly IEmailService _emailService;
+    private readonly IPaymentMethodBalanceRepository _paymentMethodBalanceRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
         private static readonly HashSet<string> AllowedRoles = new() { "Admin", "Creator", "Customer" };
@@ -33,6 +34,7 @@ namespace Core.Services
             IEmailVerificationRepository emailVerificationRepository,
             IAccountDeletionRepository accountDeletionRepository,
             IEmailService emailService,
+            IPaymentMethodBalanceRepository paymentMethodBalanceRepository,
             IConfiguration configuration, 
             ILogger<AuthService> logger)
         {
@@ -41,6 +43,7 @@ namespace Core.Services
             _emailVerificationRepository = emailVerificationRepository;
             _accountDeletionRepository = accountDeletionRepository;
             _emailService = emailService;
+            _paymentMethodBalanceRepository = paymentMethodBalanceRepository;
             _configuration = configuration;
             _logger = logger;
         }
@@ -535,6 +538,30 @@ namespace Core.Services
                 };
 
                 await _authRepository.AddAsync(newUser);
+
+                // Create initial payment method balance record for the new user with zero balance
+                try
+                {
+                    var initialBalance = new PaymentMethodBalance
+                    {
+                        UserId = newUser.Id,
+                        PaymentMethodId = "default_payment_method",
+                        Balance = 0m,
+                        Currency = "USD",
+                        CardBrand = string.Empty,
+                        CardLast4 = string.Empty,
+                        CreatedAt = DateTime.UtcNow,
+                        LastUpdated = DateTime.UtcNow,
+                        IsSelected = true
+                    };
+
+                    await _paymentMethodBalanceRepository.AddAsync(initialBalance);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to create initial payment method balance for user {UserId}", newUser.Id);
+                    // Non-fatal: user creation succeeds even if balance initialization fails
+                }
 
                 // Mark token as used
                 verificationToken.IsUsed = true;

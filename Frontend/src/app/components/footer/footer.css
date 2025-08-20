@@ -1,45 +1,55 @@
-.epic-footer {
-    background: rgba(18, 18, 18, 0.8); /* Epic-like dark glass */
-    backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.4);
-    color: #b0b0b0; /* Muted light gray */
-  }
-  
-  .epic-footer a,
-  .epic-footer .nav-link {
-    color: #b0b0b0;
-    font-weight: 500;
-    text-decoration: none;
-    transition: color 0.3s ease, text-shadow 0.3s ease;
-  }
-  
-  .epic-footer .nav-link:hover {
-    color: #ffffff;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
-  }
-  
-  .epic-footer svg {
-    fill: #ffffff;
-    opacity: 0.8;
-    transition: opacity 0.3s ease;
-  }
-  
-  .epic-footer svg:hover {
-    opacity: 1;
-  }
-  
-  /* Responsive tweaks (optional) */
-  @media (max-width: 768px) {
-    .epic-footer {
-      text-align: center;
-      flex-direction: column;
-      gap: 1rem;
-    }
-  
-    .epic-footer ul {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-  }
+:root{
+  --bg:#0b0b0d;
+  --card:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  --muted:#b8c2cc;
+  --accent:#6bd1ff;
+}
+
+.site-footer{background:var(--bg);color:var(--muted);padding:36px 0;border-top:1px solid rgba(255,255,255,0.04)}
+.site-footer .container{max-width:1200px;margin:0 auto;padding:0 20px}
+.site-footer .footer-top{display:flex;gap:36px;align-items:flex-start;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.site-footer .brand{flex:1;min-width:220px}
+.site-footer .logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.site-footer .logo-mark{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#1f2937,#111827);display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;font-size:20px}
+.site-footer .logo-text{color:#fff;font-weight:700;font-size:18px}
+.site-footer .tag{color:var(--muted);margin-top:8px;font-size:13px}
+.site-footer .links{display:flex;gap:28px}
+.site-footer .links .col{min-width:140px}
+.site-footer .links h5{color:#fff;margin-bottom:8px;font-size:14px}
+.site-footer .links ul{list-style:none;padding:0;margin:0}
+.site-footer .links li{margin:6px 0}
+.site-footer .links a{color:var(--muted);text-decoration:none;font-size:14px}
+.site-footer .links a:hover{color:var(--accent);text-decoration:underline}
+
+.site-footer .footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:16px;font-size:13px}
+.site-footer .footer-bottom .bottom-links{display:flex;gap:18px;align-items:center}
+.site-footer a[routerLink]{cursor:pointer}
+
+@media (max-width: 880px){
+  .site-footer .footer-top{flex-direction:column;align-items:flex-start}
+  .site-footer .links{width:100%;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .site-footer .footer-bottom{flex-direction:column;align-items:flex-start;gap:10px}
+}
+
+/* Newsletter & Socials */
+.site-footer .newsletter{min-width:260px}
+.site-footer .newsletter h5{color:#fff;margin-bottom:6px}
+.site-footer .newsletter .muted{color:var(--muted);margin-bottom:8px;font-size:13px}
+.site-footer .newsletter-form{display:flex;gap:8px;align-items:center}
+.site-footer .newsletter-form input{flex:1;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#f0fbff;box-shadow:inset 0 2px 6px rgba(0,0,0,0.35);font-size:14px}
+.site-footer .newsletter-form .btn-primary{background:linear-gradient(90deg,#00d4ff,#0077ff);border:none;color:#ffffff;padding:12px 16px;border-radius:12px;cursor:pointer;font-weight:700;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(0,119,255,0.22);min-width:130px;transition:all 220ms cubic-bezier(.2,.9,.2,1);z-index:2}
+.site-footer .newsletter-form .btn-primary:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 20px 40px rgba(0,119,255,0.28)}
+.site-footer .newsletter-form .btn-primary:active{transform:translateY(-1px) scale(0.995)}
+.site-footer .newsletter-form .btn-primary:focus{outline:3px solid rgba(0,119,255,0.14);outline-offset:3px}
+
+/* Make input and button stack on small screens for visibility */
+@media (max-width:560px){
+  .site-footer .newsletter-form{flex-direction:column;align-items:stretch}
+  .site-footer .newsletter-form input{width:100%}
+  .site-footer .newsletter-form .btn-primary{width:100%;min-width:0}
+}
+.site-footer .newsletter-msg{margin-top:8px;color:#9ae1ff;font-size:13px}
+.site-footer .socials{margin-top:12px;display:flex;gap:10px}
+.site-footer .socials a{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.02);color:var(--muted);text-decoration:none}
+.site-footer .socials a:hover{color:#fff;background:rgba(255,255,255,0.04)}
   

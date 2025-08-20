@@ -13,6 +13,8 @@ import { firstValueFrom } from 'rxjs';
 interface SalesData {
   totalSales: number;
   totalRevenue: number;
+  netRevenue?: number;
+  creatorCommissionTotal?: number;
   monthlyRevenue: number;
   weeklyRevenue: number;
   averageOrderValue: number;
@@ -103,6 +105,8 @@ export class Sales implements OnInit, AfterViewInit {
           this.salesData = {
             totalSales: analytics.totalSales || 0,
             totalRevenue: analytics.totalRevenue || 0,
+            netRevenue: analytics.netRevenue ?? analytics.totalRevenue ?? 0,
+            creatorCommissionTotal: analytics.creatorCommissionTotal ?? 0,
             monthlyRevenue: analytics.monthlyRevenue || 0,
             weeklyRevenue: analytics.weeklyRevenue || 0,
             averageOrderValue: analytics.averageOrderValue || 0,
@@ -117,6 +121,8 @@ export class Sales implements OnInit, AfterViewInit {
           this.salesData = {
             totalSales: 0,
             totalRevenue: 0,
+            netRevenue: 0,
+            creatorCommissionTotal: 0,
             monthlyRevenue: 0,
             weeklyRevenue: 0,
             averageOrderValue: 0,

@@ -25,6 +25,19 @@ export interface TopEntityDTO {
   currency: string;
 }
 
+export interface PlatformCommissionDTO {
+  id: number;
+  orderId: number;
+  orderItemId: number;
+  productId: number;
+  creatorId: number;
+  commissionAmount: number;
+  commissionCurrency: string;
+  commissionUsd: number;
+  percentageApplied: number;
+  createdAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PlatformAnalyticsService {
   private baseUrl = `${environment.apiUrl}/platform-analytics`;
@@ -45,6 +58,10 @@ export class PlatformAnalyticsService {
 
   getTopProducts(count = 10, currency = 'USD'): Observable<TopEntityDTO[]> {
     return this.http.get<TopEntityDTO[]>(`${this.baseUrl}/top-products?count=${count}&currency=${currency}`);
+  }
+
+  getRecentCommissions(count = 50, currency = 'USD'): Observable<PlatformCommissionDTO[]> {
+    return this.http.get<PlatformCommissionDTO[]>(`${this.baseUrl}/recent-commissions?count=${count}&currency=${currency}`);
   }
 }
 

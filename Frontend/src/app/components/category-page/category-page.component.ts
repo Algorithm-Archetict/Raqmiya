@@ -13,6 +13,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
 import { HierarchicalCategoryNav } from '../shared/hierarchical-category-nav/hierarchical-category-nav';
 import { Navbar } from '../navbar/navbar';
+import { Footer } from "../footer/footer";
 
 interface Product {
   id: number;
@@ -47,7 +48,7 @@ interface FilterState {
 @Component({
   selector: 'app-category-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HierarchicalCategoryNav, Navbar],
+  imports: [CommonModule, FormsModule, RouterModule, HierarchicalCategoryNav, Navbar, Footer],
   templateUrl: './category-page.component.html',
   styleUrl: './category-page.component.css'
 })

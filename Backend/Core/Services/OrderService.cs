@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using System;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace Core.Services
@@ -120,13 +121,21 @@ namespace Core.Services
         {
             try
             {
+                // Load commission percentage from platform settings (key: "DefaultCommissionPercentage"); fallback to 0.10 (10%)
+                decimal commissionPercentage = 0.10m;
+                var setting = await _context.PlatformSettings.FirstOrDefaultAsync(s => s.Key == "DefaultCommissionPercentage");
+                if (setting != null && setting.DecimalValue > 0)
+                {
+                    commissionPercentage = setting.DecimalValue;
+                }
+
                 foreach (var item in order.OrderItems)
                 {
                     var product = await _productRepository.GetByIdAsync(item.ProductId);
                     if (product == null) continue;
 
                     var totalItemCost = item.UnitPrice * item.Quantity;
-                    var commission = Math.Round(totalItemCost * 0.10m, 2, MidpointRounding.AwayFromZero);
+                    var commission = Math.Round(totalItemCost * commissionPercentage, 2, MidpointRounding.AwayFromZero);
                     var creatorNet = totalItemCost - commission;
 
                     // Deduct from buyer's selected payment method
@@ -170,7 +179,7 @@ namespace Core.Services
                         CommissionAmount = commission,
                         CommissionCurrency = product.Currency,
                         CommissionUsd = commissionUsd,
-                        PercentageApplied = 0.10m,
+                        PercentageApplied = commissionPercentage,
                         CreatedAt = DateTime.UtcNow
                     };
                     _context.PlatformCommissions.Add(commissionEntry);

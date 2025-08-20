@@ -4,6 +4,10 @@ namespace Shared.DTOs
     {
         public int TotalSales { get; set; }
         public decimal TotalRevenue { get; set; }
+    // Net revenue after platform commissions
+    public decimal NetRevenue { get; set; }
+    // Total commission collected for this creator
+    public decimal CreatorCommissionTotal { get; set; }
         public decimal MonthlyRevenue { get; set; }
         public decimal WeeklyRevenue { get; set; }
         public decimal AverageOrderValue { get; set; }
@@ -54,6 +58,21 @@ namespace Shared.DTOs
         public string Name { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public string Currency { get; set; } = "USD";
+    }
+
+    public class PlatformCommissionDTO
+    {
+        public int Id { get; set; }
+        public int OrderId { get; set; }
+        public int OrderItemId { get; set; }
+        public int ProductId { get; set; }
+        public int CreatorId { get; set; }
+        public decimal CommissionAmount { get; set; }
+        public string CommissionCurrency { get; set; } = "USD";
+        // Commission expressed in USD (for consistent aggregation)
+        public decimal CommissionUsd { get; set; }
+        public decimal PercentageApplied { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }
 

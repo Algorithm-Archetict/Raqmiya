@@ -47,6 +47,7 @@ namespace Core.Services
                 var totalRevenueUSD = 0m;
                 var monthlyRevenueUSD = 0m;
                 var weeklyRevenueUSD = 0m;
+                var totalCommissionUsd = 0m;
                 
                 foreach (var orderItem in creatorOrders)
                 {
@@ -68,6 +69,11 @@ namespace Core.Services
                     }
                 }
 
+                // Sum platform commissions for this creator in USD
+                totalCommissionUsd = await _context.PlatformCommissions
+                    .Where(pc => pc.CreatorId == creatorId)
+                    .SumAsync(pc => (decimal?)pc.CommissionUsd) ?? 0m;
+
                 _logger.LogInformation("Revenue calculations (USD): Total={TotalRevenue}, Monthly={MonthlyRevenue}, Weekly={WeeklyRevenue}", 
                     totalRevenueUSD, monthlyRevenueUSD, weeklyRevenueUSD);
 
@@ -86,6 +92,9 @@ namespace Core.Services
                 {
                     TotalSales = totalSales,
                     TotalRevenue = totalRevenue,
+                    // Net revenue after subtracting platform commission collected for this creator
+                    NetRevenue = currency == "USD" ? (totalRevenueUSD - totalCommissionUsd) : await _currencyService.ConvertCurrencyAsync(totalRevenueUSD - totalCommissionUsd, "USD", currency),
+                    CreatorCommissionTotal = currency == "USD" ? totalCommissionUsd : await _currencyService.ConvertCurrencyAsync(totalCommissionUsd, "USD", currency),
                     MonthlyRevenue = monthlyRevenue,
                     WeeklyRevenue = weeklyRevenue,
                     AverageOrderValue = averageOrderValue,

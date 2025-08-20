@@ -14,6 +14,17 @@
 
   <div class="cards" *ngIf="summary">
     <div class="card">
+      <div class="title">Platform Commission</div>
+      <div class="value">
+        <span *ngIf="!editingCommission">{{ (commissionPercentage * 100) | number:'1.0-2' }} %</span>
+        <input *ngIf="editingCommission" type="number" [(ngModel)]="commissionPercentage" min="0" max="1" step="0.01" />
+      </div>
+      <div class="actions">
+        <button *ngIf="!editingCommission" (click)="startEditing()">Edit</button>
+        <button *ngIf="editingCommission" (click)="saveCommission()">Save</button>
+      </div>
+    </div>
+    <div class="card">
       <div class="title">Total Commission</div>
       <div class="value">{{ summary.totalCommission | number:'1.0-2' }} {{ summary.currency }}</div>
     </div>
@@ -54,6 +65,23 @@
         <span class="amount">{{ product.amount | number:'1.0-2' }} {{ product.currency }}</span>
       </div>
     </div>
+  </div>
+
+  <div class="recent-commissions" *ngIf="recentCommissions.length > 0">
+    <h3>Recent Commissions</h3>
+    <table>
+      <thead>
+        <tr><th>When</th><th>Product</th><th>Creator</th><th>Amount</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of recentCommissions">
+          <td>{{ c.createdAt | date:'short' }}</td>
+          <td>{{ 'Product #' + c.productId }}</td>
+          <td>{{ 'Creator #' + c.creatorId }}</td>
+          <td>{{ c.commissionAmount | number:'1.0-2' }} {{ c.commissionCurrency }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <div class="loading" *ngIf="loading">

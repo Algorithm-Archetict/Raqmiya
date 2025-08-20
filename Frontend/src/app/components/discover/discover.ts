@@ -17,6 +17,7 @@ import { ProductCarouselComponent } from '../shared/product-carousel/product-car
 import { UserService } from '../../core/services/user.service';
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { environment } from '../../../environments/environment';
+import { Footer } from "../footer/footer";
 
 interface Product {
   id: number;
@@ -41,7 +42,7 @@ interface Product {
 
 @Component({
   selector: 'app-discover',
-  imports: [CommonModule, FormsModule, RouterModule, Navbar, HierarchicalCategoryNav, ProductCarouselComponent],
+  imports: [CommonModule, FormsModule, RouterModule, Navbar, HierarchicalCategoryNav, ProductCarouselComponent, Footer],
   templateUrl: './discover.html',
   styleUrl: './discover.css',
   encapsulation: ViewEncapsulation.None

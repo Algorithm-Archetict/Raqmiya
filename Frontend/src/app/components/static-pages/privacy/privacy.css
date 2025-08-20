@@ -1,0 +1,5 @@
+.static-page{padding:48px 0;color:#d0d0d0;background:linear-gradient(180deg,#0f1113,#0b0d0f)}
+.static-page .container{max-width:1100px;margin:0 auto;padding:0 20px}
+.static-page h1{color:#fff}
+.static-page .lead{color:#b8b8b8;margin-bottom:18px}
+.static-page article{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.12));padding:18px;border-radius:8px;border:1px solid rgba(255,255,255,0.03)}

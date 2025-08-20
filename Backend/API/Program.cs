@@ -18,8 +18,6 @@ using Microsoft.AspNetCore.SignalR;
 using API.Hubs;
 using Raqmiya.Infrastructure.Data.Repositories.Interfaces;
 using Raqmiya.Infrastructure.Data.Repositories.Implementations;
-using Core.Interfaces;
-using Core.Services;
 
 namespace API
 {

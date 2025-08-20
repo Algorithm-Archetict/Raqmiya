@@ -98,6 +98,35 @@ namespace Core.Services
             }
             return list;
         }
+
+        // Returns recent platform commission transactions (for admin view)
+        public async Task<List<PlatformCommissionDTO>> GetRecentPlatformCommissionsAsync(int count = 50, string currency = "USD")
+        {
+            var rows = await _context.PlatformCommissions
+                .OrderByDescending(pc => pc.CreatedAt)
+                .Take(count)
+                .ToListAsync();
+
+            var result = new List<PlatformCommissionDTO>();
+            foreach (var pc in rows)
+            {
+                var commissionAmount = currency == "USD" ? pc.CommissionUsd : await _currencyService.ConvertCurrencyAsync(pc.CommissionUsd, "USD", currency);
+                result.Add(new PlatformCommissionDTO
+                {
+                    Id = pc.Id,
+                    OrderId = pc.OrderId,
+                    OrderItemId = pc.OrderItemId,
+                    ProductId = pc.ProductId,
+                    CreatorId = pc.CreatorId,
+                    CommissionAmount = commissionAmount,
+                    CommissionCurrency = currency,
+                    CommissionUsd = pc.CommissionUsd,
+                    PercentageApplied = pc.PercentageApplied,
+                    CreatedAt = pc.CreatedAt
+                });
+            }
+            return result;
+        }
     }
 }
 

@@ -1,0 +1,6 @@
+.static-page{padding:48px 0;color:#d0d0d0;background:linear-gradient(180deg,#0f1113,#0b0d0f)}
+.static-page .container{max-width:1100px;margin:0 auto;padding:0 20px}
+.static-page h1{color:#fff;margin-bottom:8px}
+.static-page .lead{color:#b8b8b8;margin-bottom:24px}
+.static-page .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:20px}
+.static-page .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.12));border:1px solid rgba(255,255,255,0.03);padding:18px;border-radius:10px}

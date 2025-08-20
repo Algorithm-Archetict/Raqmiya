@@ -124,7 +124,7 @@
         [loading]="loading">
       </app-product-carousel>
 
-      <div class="row">
+  <div class="row" *ngIf="isLoggedIn() && recommendedProducts && recommendedProducts.length > 0">
         <div class="col-12">
           
           
@@ -253,7 +253,8 @@
                     </div>
                   </div>
                 </div>
-              </div>
+                    <app-footer></app-footer>
+                  </div>
             </div>
           </div>
         </div>

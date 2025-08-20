@@ -69,8 +69,8 @@
               <i class="fas fa-dollar-sign"></i>
             </div>
             <div class="card-content">
-              <h3 class="card-value">{{ formatCurrency(salesData.totalRevenue) }}</h3>
-              <p class="card-label">Total Revenue</p>
+              <h3 class="card-value">{{ formatCurrency(salesData.netRevenue ?? salesData.totalRevenue) }}</h3>
+              <p class="card-label">Net Revenue</p>
             </div>
           </div>
 
@@ -81,6 +81,16 @@
             <div class="card-content">
               <h3 class="card-value">{{ formatCurrency(salesData.monthlyRevenue) }}</h3>
               <p class="card-label">Monthly Revenue</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon">
+              <i class="fas fa-percent"></i>
+            </div>
+            <div class="card-content">
+              <h3 class="card-value">-{{ formatCurrency(salesData.creatorCommissionTotal || 0) }}</h3>
+              <p class="card-label">Platform fees</p>
             </div>
           </div>
 

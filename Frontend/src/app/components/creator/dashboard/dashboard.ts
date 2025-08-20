@@ -10,7 +10,9 @@ interface DashboardData {
   balance: number;
   last7Days: number;
   last28Days: number;
-  totalEarnings: number;
+  totalEarnings: number; // kept for backward compatibility
+  netEarnings?: number;
+  creatorCommissionTotal?: number;
   currency: string;
 }
 
@@ -63,12 +65,17 @@ export class Dashboard implements OnInit {
     this.paymentService.getRevenueAnalytics(this.selectedCurrency).subscribe({
       next: (analytics: RevenueAnalytics) => {
         if (analytics) {
+          // Prefer netRevenue if provided by backend
+          this.dashboardData.netEarnings = analytics.netRevenue ?? (analytics.totalRevenue ?? 0);
+          this.dashboardData.creatorCommissionTotal = analytics.creatorCommissionTotal ?? 0;
           this.dashboardData.totalEarnings = analytics.totalRevenue || 0;
           this.dashboardData.last7Days = analytics.weeklyRevenue || 0;
           this.dashboardData.last28Days = analytics.monthlyRevenue || 0;
           this.dashboardData.currency = analytics.currency || 'USD';
         } else {
           // Set default values if no analytics data
+          this.dashboardData.netEarnings = 0;
+          this.dashboardData.creatorCommissionTotal = 0;
           this.dashboardData.totalEarnings = 0;
           this.dashboardData.last7Days = 0;
           this.dashboardData.last28Days = 0;

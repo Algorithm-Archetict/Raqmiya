@@ -85,6 +85,7 @@
           <input 
             type="text" 
             [(ngModel)]="searchTerm" 
+            (ngModelChange)="onSearchChange($event)"
             placeholder="Search products by name, creator, or description..."
             class="search-input"
           >
@@ -250,7 +251,7 @@
             <i class="fas fa-box-open"></i>
             <h3>No products found</h3>
             <p>No products match your current filters. Try adjusting your search criteria.</p>
-            <button (click)="clearFilters()" class="btn btn-primary">
+            <button (click)="onSearchChange('')" class="btn btn-primary">
               Clear Filters
             </button>
           </div>

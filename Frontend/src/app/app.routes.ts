@@ -37,6 +37,12 @@ import { CreatorProfileComponent } from './components/creator/creator-profile/cr
 import { ChatPage } from './features/messaging/chat.page';
 import { DeliveriesComponent } from './components/deliveries/deliveries';
 import { Services } from './components/services/services';
+import { About } from './components/static-pages/about/about';
+import { Terms } from './components/static-pages/terms/terms';
+import { Privacy } from './components/static-pages/privacy/privacy';
+import { Help } from './components/static-pages/help/help';
+import { Careers } from './components/static-pages/careers/careers';
+import { Developers } from './components/static-pages/developers/developers';
 import { AdminUserList } from './components/Admin/admin-user-list/admin-user-list';
 import { AdminUserCreate } from './components/Admin/admin-user-create/admin-user-create';
 import { AdminUserDetail } from './components/Admin/admin-user-detail/admin-user-detail';
@@ -86,6 +92,12 @@ export const routes: Routes = [
     {path:"messages", component: ChatPage, canActivate: [AuthGuard]},
     {path:"deliveries", component: DeliveriesComponent, canActivate: [AuthGuard]},
     {path:"services", component: Services, canActivate: [AuthGuard]},
+    {path:"about", component: About},
+    {path:"terms", component: Terms},
+    {path:"privacy", component: Privacy},
+    {path:"help", component: Help},
+    {path:"careers", component: Careers},
+    {path:"developers", component: Developers},
 
     // Creator-only routes - require authentication and creator role
     {path:"products",component:AllProducts, canActivate: [CreatorGuard]},

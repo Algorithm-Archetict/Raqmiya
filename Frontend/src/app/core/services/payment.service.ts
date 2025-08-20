@@ -68,6 +68,10 @@ export interface StripeConfigResponse {
 export interface RevenueAnalytics {
   totalSales: number;
   totalRevenue: number;
+  // Net revenue after platform commissions
+  netRevenue?: number;
+  // Commission collected for this creator
+  creatorCommissionTotal?: number;
   monthlyRevenue: number;
   weeklyRevenue: number;
   averageOrderValue: number;

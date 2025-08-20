@@ -59,6 +59,16 @@
               <div class="activity-label">Total earnings</div>
               <div class="activity-value">{{ formatCurrency(dashboardData.totalEarnings) }}</div>
             </div>
+
+            <div class="activity-card">
+              <div class="activity-label">Net earnings</div>
+              <div class="activity-value">{{ formatCurrency(dashboardData.netEarnings ?? dashboardData.totalEarnings) }}</div>
+            </div>
+            <div class="activity-card">
+              <div class="activity-label">Platform fees (commission)</div>
+              <div class="activity-value">{{ formatCurrency(dashboardData.creatorCommissionTotal || 0) }}</div>
+            </div>
+            
           </div>
         </div>
       </div>

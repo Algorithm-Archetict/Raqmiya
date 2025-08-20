@@ -1,18 +1,70 @@
-<footer class="epic-footer container-fluid py-4 px-3 d-flex flex-column flex-md-row justify-content-between align-items-center">
-    <p class="mb-2 mb-md-0 text-secondary text-center text-md-start">&copy; {{Year}} Raqmiya</p>
-  
-    <a href="/" class="mb-3 mb-md-0 d-flex justify-content-center align-items-center text-decoration-none" aria-label="Logo">
-      <svg class="bi me-2" width="40" height="32" aria-hidden="true">
-        <use xlink:href="#bootstrap"></use>
-      </svg>
-    </a>
-  
-    <ul class="nav justify-content-center justify-content-md-end">
-      <li class="nav-item"><a href="#" class="nav-link px-2">Home</a></li>
-      <li class="nav-item"><a href="#" class="nav-link px-2">Features</a></li>
-      <li class="nav-item"><a href="#" class="nav-link px-2">Pricing</a></li>
-      <li class="nav-item"><a href="#" class="nav-link px-2">FAQs</a></li>
-      <li class="nav-item"><a href="#" class="nav-link px-2">About</a></li>
-    </ul>
-  </footer>
+<footer class="site-footer">
+  <div class="footer-top container">
+    <div class="brand">
+      <a routerLink="/" class="logo" aria-label="Raqmiya home">
+        <div class="logo-mark">R</div>
+        <div class="logo-text">Raqmiya</div>
+      </a>
+      <p class="tag">A curated marketplace for digital creators</p>
+    </div>
+
+  <div class="links">
+      <div class="col">
+        <h5>Marketplace</h5>
+        <ul>
+          <li><a routerLink="/discover">Discover</a></li>
+          <li><a routerLink="/services">Services</a></li>
+          <li><a routerLink="/library">Library</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h5>Company</h5>
+        <ul>
+          <li><a routerLink="/about">About</a></li>
+          <li><a routerLink="/careers">Careers</a></li>
+          <li><a routerLink="/contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h5>Legal</h5>
+        <ul>
+          <li><a routerLink="/terms">Terms</a></li>
+          <li><a routerLink="/privacy">Privacy</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h5>Developers</h5>
+        <ul>
+          <li><a routerLink="/developers">API & Docs</a></li>
+          <li><a routerLink="/docs">Integration Guides</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="newsletter">
+      <h5>Stay updated</h5>
+      <p class="muted">Get product drops and creator spotlights — no spam.</p>
+      <div class="newsletter-form">
+        <input [(ngModel)]="newsletterEmail" type="email" placeholder="Your email" aria-label="Email">
+        <button class="btn-primary" (click)="subscribeNewsletter()">Subscribe</button>
+      </div>
+      <div class="newsletter-msg" *ngIf="newsletterMessage">{{ newsletterMessage }}</div>
+
+      <div class="socials">
+        <a href="#" aria-label="Twitter" title="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" aria-label="Github" title="GitHub"><i class="fab fa-github"></i></a>
+        <a href="#" aria-label="LinkedIn" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+        <a href="#" aria-label="YouTube" title="YouTube"><i class="fab fa-youtube"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom container">
+    <div class="copyright">&copy; {{Year}} Raqmiya — All rights reserved.</div>
+    <div class="bottom-links">
+      <a routerLink="/help">Help</a>
+      <a href="mailto:support@raqmiya.example">support@raqmiya.example</a>
+    </div>
+  </div>
+</footer>
   

@@ -46,6 +46,13 @@ namespace API.Controllers
             var result = await _service.GetTopProductsAsync(count, currency);
             return Ok(result);
         }
+
+        [HttpGet("recent-commissions")]
+        public async Task<IActionResult> GetRecentCommissions([FromQuery] int count = 50, [FromQuery] string currency = "USD")
+        {
+            var result = await _service.GetRecentPlatformCommissionsAsync(count, currency);
+            return Ok(result);
+        }
     }
 }
 
