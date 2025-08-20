@@ -16,6 +16,7 @@ import { TagDTO } from '../../../../core/models/product/tag.dto';
 import { CATEGORIES, Category } from '../../../../core/data/categories';
 import { QuillService } from '../../../../core/services/quill.service';
 import Swal from 'sweetalert2';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 interface ProductDetail {
   attribute: string;
@@ -90,6 +91,11 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
   private quillEditor: any = null;
   contentPreview: string = '';
 
+  // Preview video (local upload)
+  previewVideoFile: File | null = null;
+  previewVideoBlobUrl: string | null = null;
+  previewVideoError: string | null = null;
+
   // Form validation
   isFormValid: boolean = true;
   fieldErrors: { [key: string]: string } = {};
@@ -161,6 +167,7 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
     private messaging: MessagingHttpService,
     private router: Router,
     private quillService: QuillService,
+    private sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit(): void {
@@ -285,6 +292,11 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
     if (this.quillEditor) {
       this.quillService.destroy();
     }
+    // Revoke blob URL if any
+    if (this.previewVideoBlobUrl) {
+      URL.revokeObjectURL(this.previewVideoBlobUrl);
+      this.previewVideoBlobUrl = null;
+    }
   }
 
   private initializeForm(): void {
@@ -336,6 +348,40 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
 
     // Add real-time validation feedback
     this.setupFormValidation();
+  }
+
+  // ===== Preview Video (local file) =====
+  onPreviewVideoFileSelected(event: any): void {
+    const file: File | undefined = event?.target?.files?.[0];
+    this.previewVideoError = null;
+    if (!file) return;
+
+    // Validate type
+    if (file.type !== 'video/mp4') {
+      this.previewVideoError = 'Only MP4 videos are supported.';
+      return;
+    }
+    // Validate size (400 MB)
+    const MAX_SIZE = 400 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      this.previewVideoError = 'File is too large. Maximum size is 400 MB.';
+      return;
+    }
+
+    // Keep file and create blob URL
+    this.previewVideoFile = file;
+    if (this.previewVideoBlobUrl) URL.revokeObjectURL(this.previewVideoBlobUrl);
+    this.previewVideoBlobUrl = URL.createObjectURL(file);
+
+    // Clear URL field so we use the blob for preview; actual URL will be set after upload
+    this.productForm.get('previewVideoUrl')?.setValue('');
+  }
+
+  clearPreviewVideoSelection(): void {
+    this.previewVideoFile = null;
+    if (this.previewVideoBlobUrl) URL.revokeObjectURL(this.previewVideoBlobUrl);
+    this.previewVideoBlobUrl = null;
+    this.previewVideoError = null;
   }
 
   private setupFormValidation(): void {
@@ -876,6 +922,76 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
     return Math.max(readingTime, 1);
   }
 
+  // --- Preview Video Helpers ---
+  getSafePreviewVideoUrl(): SafeResourceUrl | null {
+    // If there's a local blob selected, we render via <video>, not iframe
+    if (this.previewVideoBlobUrl) return null;
+    const raw = this.productForm?.get('previewVideoUrl')?.value as string | null | undefined;
+    if (!raw) return null;
+    const embed = this.toEmbedUrl(raw.trim());
+    return embed ? this.sanitizer.bypassSecurityTrustResourceUrl(embed) : null;
+  }
+
+  private toEmbedUrl(url: string): string | null {
+    if (!url) return null;
+    try {
+      const u = new URL(url);
+      const host = u.hostname.replace('www.', '').toLowerCase();
+
+      // YouTube
+      if (host === 'youtube.com' || host === 'm.youtube.com') {
+        // Formats: /watch?v=ID, /shorts/ID, /embed/ID
+        let videoId = u.searchParams.get('v');
+        if (!videoId) {
+          const parts = u.pathname.split('/').filter(Boolean);
+          if (parts[0] === 'shorts' && parts[1]) videoId = parts[1];
+          if (parts[0] === 'embed' && parts[1]) videoId = parts[1];
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+      }
+      if (host === 'youtu.be') {
+        const parts = u.pathname.split('/').filter(Boolean);
+        const id = parts[0];
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+
+      // Vimeo
+      if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+        // Formats: vimeo.com/ID, player.vimeo.com/video/ID
+        const parts = u.pathname.split('/').filter(Boolean);
+        const id = host === 'player.vimeo.com' ? (parts[1] || parts[0]) : parts[0];
+        return id ? `https://player.vimeo.com/video/${id}` : null;
+      }
+
+      // If direct mp4 link
+      if (/\.mp4($|\?)/i.test(u.pathname)) {
+        return url; // allow direct mp4
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  isPreviewVideoMp4(): boolean {
+    // If local file is selected, treat as mp4
+    if (this.previewVideoBlobUrl || (this.previewVideoFile && this.previewVideoFile.type === 'video/mp4')) return true;
+    const raw = this.productForm?.get('previewVideoUrl')?.value as string | null | undefined;
+    if (!raw) return false;
+    try {
+      const u = new URL(raw.trim());
+      return /\.mp4($|\?)/i.test(u.pathname);
+    } catch {
+      return false;
+    }
+  }
+
+  getCurrentPreviewVideoSrc(): string | null {
+    if (this.previewVideoBlobUrl) return this.previewVideoBlobUrl;
+    const raw = this.productForm?.get('previewVideoUrl')?.value as string | null | undefined;
+    return raw ? raw.trim() : null;
+  }
+
     // Main save and publish method
   async saveAndPublish(): Promise<void> {
     console.log('🚀 SaveAndPublish called!');
@@ -1009,6 +1125,26 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
           } catch (imageError) {
             console.error('❌ Image upload failed:', imageError);
             // Continue with success message even if image upload fails
+          }
+
+          // Upload preview video if selected
+          if (this.previewVideoFile) {
+            try {
+              console.log('🎬 Uploading preview video for product', createdProduct.id);
+              const res = await firstValueFrom(this.productService.uploadPreviewVideo(createdProduct.id, this.previewVideoFile));
+              if (res?.url) {
+                // Set the hosted URL into the form (backend also updates product)
+                this.productForm.patchValue({ previewVideoUrl: res.url });
+              }
+            } catch (videoErr) {
+              console.error('❌ Preview video upload failed:', videoErr);
+              await Swal.fire({
+                icon: 'warning',
+                title: 'Preview Video Upload Failed',
+                text: 'Product created, but the preview video failed to upload. You can try again in the editor.',
+                confirmButtonColor: '#3b82f6'
+              });
+            }
           }
 
           // Upload files if any

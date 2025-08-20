@@ -15,6 +15,7 @@ import { TagService } from '../../../../core/services/tag.service';
 import { TagDTO } from '../../../../core/models/product/tag.dto';
 import { MessagingHttpService } from '../../../../core/services/messaging-http.service';
 import Swal from 'sweetalert2';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 interface ProductDetail {
   attribute: string;
@@ -27,7 +28,7 @@ interface ProductDetail {
   templateUrl: './product-edit.html',
   styleUrl: './product-edit.css'
 })
-export class ProductEdit implements OnInit {
+export class ProductEdit implements OnInit, OnDestroy {
   @Input() productForm!: FormGroup;
   @Input() productId?: number;
   @Output() save = new EventEmitter<void>();
@@ -73,6 +74,11 @@ export class ProductEdit implements OnInit {
   filteredTags: TagDTO[] = [];
   tagSearchInput: string = '';
 
+  // Preview video (local upload) state
+  previewVideoFile: File | null = null;
+  previewVideoBlobUrl: string | null = null;
+  previewVideoError: string | null = null;
+
   constructor(
     private fb: FormBuilder, 
     private productService: ProductService,
@@ -80,12 +86,21 @@ export class ProductEdit implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private messaging: MessagingHttpService,
+    private sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit(): void {
     this.parentCategories = CATEGORIES.filter(c => !c.parentId);
     this.initializeForm();
     this.loadProduct();
+  }
+
+  ngOnDestroy(): void {
+    // Revoke any created blob URL to avoid memory leaks
+    if (this.previewVideoBlobUrl) {
+      URL.revokeObjectURL(this.previewVideoBlobUrl);
+      this.previewVideoBlobUrl = null;
+    }
   }
 
   private initializeForm(): void {
@@ -296,6 +311,24 @@ export class ProductEdit implements OnInit {
     try {
       // First upload images to get proper URLs
       await this.uploadImages();
+
+      // If a local preview video file is selected, upload it first to get the hosted URL
+      if (this.previewVideoFile && this.productId) {
+        try {
+          const res = await firstValueFrom(this.productService.uploadPreviewVideo(this.productId, this.previewVideoFile));
+          if (res?.url) {
+            this.productForm.patchValue({ previewVideoUrl: res.url });
+          }
+        } catch (err: any) {
+          console.error('❌ Preview video upload failed:', err);
+          await Swal.fire({
+            icon: 'warning',
+            title: 'Preview Video Upload Failed',
+            text: 'Your product will be saved without updating the preview video. You can try uploading it again later.',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      }
       
       // Include disabled controls (price/currency might be disabled for delivered private products)
       const formValue = this.productForm.getRawValue();
@@ -404,6 +437,58 @@ export class ProductEdit implements OnInit {
     const permalinkValid = this.productForm.get('permalink')?.valid;
          
     this.isFormValid = nameValid && priceValid && categoryValid && currencyValid && permalinkValid;
+  }
+
+  // ===== Preview Video (local + URL) =====
+  getSafePreviewVideoUrl(): SafeResourceUrl | null {
+    // If a local blob is selected, we do not render iframe
+    if (this.previewVideoBlobUrl) return null;
+    const raw: string = (this.productForm?.get('previewVideoUrl')?.value || '').trim();
+    if (!raw) return null;
+    if (this.isPreviewVideoMp4()) return null; // MP4 handled by <video>
+    const embed = this.toEmbedUrl(raw);
+    return embed ? this.sanitizer.bypassSecurityTrustResourceUrl(embed) : null;
+  }
+
+  isPreviewVideoMp4(): boolean {
+    if (this.previewVideoBlobUrl) return true;
+    const url: string = (this.productForm?.get('previewVideoUrl')?.value || '').trim().toLowerCase();
+    return !!url && (url.endsWith('.mp4') || url.includes('.mp4?'));
+  }
+
+  getCurrentPreviewVideoSrc(): string | null {
+    if (this.previewVideoBlobUrl) return this.previewVideoBlobUrl;
+    const url: string = (this.productForm?.get('previewVideoUrl')?.value || '').trim();
+    return url || null;
+  }
+
+  private toEmbedUrl(url: string): string | null {
+    if (!url) return null;
+    try {
+      const u = new URL(url);
+      const host = u.hostname.replace('www.', '').toLowerCase();
+
+      // YouTube
+      if (host.includes('youtube.com')) {
+        const v = u.searchParams.get('v');
+        if (v) return `https://www.youtube.com/embed/${v}`;
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts[0] === 'shorts' && parts[1]) return `https://www.youtube.com/embed/${parts[1]}`;
+      }
+      if (host === 'youtu.be') {
+        const id = u.pathname.replace('/', '');
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+
+      // Vimeo
+      if (host.includes('vimeo.com')) {
+        const id = u.pathname.split('/').filter(Boolean)[0];
+        if (id && /^\d+$/.test(id)) return `https://player.vimeo.com/video/${id}`;
+      }
+    } catch {
+      return null;
+    }
+    return null;
   }
 
   // Tag management methods
@@ -569,6 +654,50 @@ export class ProductEdit implements OnInit {
       u8arr[n] = bstr.charCodeAt(n);
     }
     return new File([u8arr], filename, { type: mime });
+  }
+
+  // ===== Preview Video selection handlers =====
+  onPreviewVideoFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files[0] ? input.files[0] : null;
+    this.previewVideoError = null;
+
+    if (!file) return;
+
+    // Validate type and size (<= 400MB)
+    const isMp4 = file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4');
+    const maxBytes = 400 * 1024 * 1024; // 400MB
+    if (!isMp4) {
+      this.previewVideoError = 'Please select an MP4 video file (.mp4).';
+      return;
+    }
+    if (file.size > maxBytes) {
+      this.previewVideoError = 'File is too large. Maximum size is 400MB.';
+      return;
+    }
+
+    this.previewVideoFile = file;
+
+    // Revoke previous blob if any
+    if (this.previewVideoBlobUrl) {
+      URL.revokeObjectURL(this.previewVideoBlobUrl);
+      this.previewVideoBlobUrl = null;
+    }
+
+    // Create new blob URL for immediate preview
+    this.previewVideoBlobUrl = URL.createObjectURL(file);
+
+    // Clear URL control to prioritize local preview
+    this.productForm.patchValue({ previewVideoUrl: '' });
+  }
+
+  clearPreviewVideoSelection(): void {
+    this.previewVideoFile = null;
+    if (this.previewVideoBlobUrl) {
+      URL.revokeObjectURL(this.previewVideoBlobUrl);
+      this.previewVideoBlobUrl = null;
+    }
+    this.previewVideoError = null;
   }
 
   // Upload images and get URLs (similar to creation component)
@@ -745,16 +874,5 @@ export class ProductEdit implements OnInit {
     this.uploadedFiles.splice(index, 1);
     
     // Also remove from productFiles array to keep them in sync
-    if (index < this.productFiles.length) {
-      this.productFiles.splice(index, 1);
-    }
-  }
-
-  formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }

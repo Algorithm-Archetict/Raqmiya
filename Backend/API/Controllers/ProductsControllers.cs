@@ -354,6 +354,60 @@ namespace API.Controllers
         }
 
         /// <summary>
+        /// Upload a preview video (MP4) for a product. The file is stored in wwwroot/uploads/products/{productId}/videos/ and the
+        /// product's PreviewVideoUrl is updated with a fully-qualified URL. Only the product creator can upload.
+        /// </summary>
+        [HttpPost("{id}/preview-video")]
+        [Authorize(Roles = "Creator")]
+        [RequestSizeLimit(400_000_000)] // 400 MB limit for preview video
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> UploadPreviewVideo(int id, [FromForm] IFormFile video)
+        {
+            var creatorId = GetCurrentUserId();
+            if (video == null || video.Length == 0)
+                return BadRequest("No video uploaded.");
+
+            var allowedTypes = new[] { "video/mp4" };
+            if (!allowedTypes.Contains(video.ContentType))
+                return BadRequest("Video type not allowed. Only MP4 is supported.");
+
+            // Ensure product exists and user is creator
+            var product = await _productService.GetByIdAsync(id);
+            if (product == null)
+                return NotFound("Product not found.");
+            if (product.CreatorId != creatorId)
+                return Forbid("Only the product creator can upload a preview video.");
+
+            var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), FileStorageConstants.ProductUploadsRoot, id.ToString(), "videos");
+            Directory.CreateDirectory(uploadsRoot);
+            var fileName = Path.GetRandomFileName() + Path.GetExtension(video.FileName);
+            var filePath = Path.Combine(uploadsRoot, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await video.CopyToAsync(stream);
+            }
+
+            var relativeUrl = $"/{FileStorageConstants.UploadsFolder}/products/{id}/videos/{fileName}";
+            var backendBaseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fullVideoUrl = $"{backendBaseUrl}{relativeUrl}";
+
+            // Log upload
+            _logger.LogInformation("Preview video uploaded. Product ID: {ProductId}, File: {FileName}, URL: {Url}, Full URL: {FullUrl}, Size: {Size} bytes",
+                id, fileName, relativeUrl, fullVideoUrl, video.Length);
+
+            // Update product and persist
+            product.PreviewVideoUrl = fullVideoUrl;
+            await _productService.UpdateAsync(product);
+
+            return Ok(new { url = fullVideoUrl });
+        }
+
+        /// <summary>
         /// Get new arrivals products (paged).
         /// </summary>
         [HttpGet("analytics/new-arrivals")]

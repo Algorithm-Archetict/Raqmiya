@@ -210,6 +210,50 @@
               
 
               
+              <!-- Preview Video -->
+              <div class="form-group">
+                <label class="form-label">Preview Video</label>
+                <div class="upload-options">
+                  <div class="upload-option">
+                    <input 
+                      type="file" 
+                      id="previewVideoFile" 
+                      accept="video/mp4"
+                      (change)="onPreviewVideoFileSelected($event)"
+                      style="display: none;"
+                    >
+                    <label for="previewVideoFile" class="upload-option-btn">
+                      <i class="fas fa-film"></i>
+                      Choose MP4 file
+                    </label>
+                    <button 
+                      type="button" 
+                      class="btn btn-outline btn-sm"
+                      *ngIf="previewVideoBlobUrl"
+                      (click)="clearPreviewVideoSelection()"
+                      title="Remove selected video"
+                    >
+                      <i class="fas fa-times"></i>
+                      Clear
+                    </button>
+                  </div>
+                </div>
+                <p class="form-hint">Max size 400MB. Only MP4 supported for local uploads.</p>
+                <div class="error-message" *ngIf="previewVideoError">
+                  <i class="fas fa-exclamation-triangle"></i> {{ previewVideoError }}
+                </div>
+
+                <!-- Optional URL input (backward compatible) -->
+                <div class="link-input-group" style="margin-top: 8px;">
+                  <input 
+                    type="url" 
+                    class="form-input"
+                    placeholder="Or paste a YouTube, Vimeo, or direct MP4 link"
+                    formControlName="previewVideoUrl"
+                  >
+                </div>
+              </div>
+              
               <!-- Enhanced Product Details -->
               <div class="section-divider"></div>
               <div class="form-group">
@@ -455,8 +499,38 @@
                   <div class="preview-image-placeholder" *ngIf="coverImages.length === 0">
                     <i class="fas fa-image"></i>
                     <p>Upload a cover image to see preview</p>
-            </div>
-            
+                  </div>
+                  
+                  <!-- Preview Video Player -->
+                  <div class="preview-video-card" *ngIf="getCurrentPreviewVideoSrc() || productForm.get('previewVideoUrl')?.value">
+                    <div class="preview-video-header">
+                      <i class="fas fa-video"></i>
+                      <span>Preview Video</span>
+                    </div>
+                    <div class="preview-video-player">
+                      <ng-container *ngIf="isPreviewVideoMp4(); else embedFrame">
+                        <video controls playsinline class="preview-video-el">
+                          <source [src]="getCurrentPreviewVideoSrc()" type="video/mp4" />
+                          Your browser does not support the video tag.
+                        </video>
+                      </ng-container>
+                      <ng-template #embedFrame>
+                        <iframe
+                          class="preview-video-iframe"
+                          *ngIf="getSafePreviewVideoUrl() as safeUrl"
+                          [src]="safeUrl"
+                          frameborder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowfullscreen
+                        ></iframe>
+                        <div class="preview-video-invalid" *ngIf="!getSafePreviewVideoUrl()">
+                          <i class="fas fa-exclamation-circle"></i>
+                          <span>We couldn’t embed this URL. Please enter a YouTube, Vimeo, or .mp4 link.</span>
+                        </div>
+                      </ng-template>
+                    </div>
+                  </div>
+                  
                   <!-- Product Info -->
                   <div class="preview-info">
                     <h2 class="preview-title">{{ productForm.get('name')?.value || 'Product Name' }}</h2>

@@ -2491,3 +2491,67 @@ textarea.form-input:focus,
     font-size: 12px;
   }
 }
+
+/* Preview Video Card */
+.preview-video-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-top: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.preview-video-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.preview-video-header i {
+  color: var(--primary-color);
+}
+
+.preview-video-player {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.preview-video-el,
+.preview-video-iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+}
+
+.preview-video-el {
+  background: #000;
+}
+
+.preview-video-invalid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .preview-video-card {
+    padding: 12px;
+  }
+}

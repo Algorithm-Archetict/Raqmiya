@@ -529,7 +529,56 @@
                 </div>
               </div>
               
-              
+              <!-- Preview Video: Local upload + optional URL -->
+              <div class="form-group">
+                <label class="form-label">
+                  <i class="fas fa-video"></i>
+                  Preview Video
+                </label>
+                <div class="media-uploader">
+                  <input 
+                    type="file"
+                    id="previewVideoFile"
+                    accept="video/mp4"
+                    (change)="onPreviewVideoFileSelected($event)"
+                    style="display: none;"
+                  >
+                  <label for="previewVideoFile" class="upload-btn secondary">
+                    <i class="fas fa-upload"></i>
+                    Choose MP4 from Computer
+                  </label>
+                  <button 
+                    type="button"
+                    class="btn btn-outline"
+                    *ngIf="previewVideoBlobUrl"
+                    (click)="clearPreviewVideoSelection()"
+                    title="Clear selected video"
+                  >
+                    <i class="fas fa-times"></i>
+                    Clear Selected Video
+                  </button>
+                </div>
+                <div class="error-message" *ngIf="previewVideoError">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ previewVideoError }}
+                </div>
+                <div class="upload-hint">
+                  <i class="fas fa-info-circle"></i>
+                  MP4 only, up to 400MB. For YouTube/Vimeo, paste a link below.
+                </div>
+
+                <!-- Optional URL input for backward compatibility -->
+                <div class="form-group" style="margin-top: 0.75rem;">
+                  <input 
+                    type="url"
+                    class="form-input"
+                    placeholder="Optional: Paste YouTube, Vimeo, or direct MP4 link"
+                    formControlName="previewVideoUrl"
+                    [disabled]="!!previewVideoBlobUrl"
+                  >
+                  <p class="form-hint">If a local file is selected, it will be previewed and uploaded on save.</p>
+                </div>
+              </div>
             </div>
 
             <!-- Settings Section -->
@@ -572,6 +621,43 @@
                 <div class="preview-image-placeholder" *ngIf="coverImages.length === 0">
                   <i class="fas fa-image"></i>
                   <p>Upload a cover image to see preview</p>
+                </div>
+                
+                <!-- Preview Video Player -->
+                <div class="preview-video-card" *ngIf="previewVideoBlobUrl || productForm.get('previewVideoUrl')?.value">
+                  <div class="preview-video-header">
+                    <h4><i class="fas fa-video"></i> Preview Video</h4>
+                    <span class="preview-video-hint">Auto-detected from URL</span>
+                  </div>
+                  <div class="preview-video-player">
+                    <!-- MP4 video -->
+                    <video 
+                      *ngIf="isPreviewVideoMp4()"
+                      class="preview-video-el"
+                      [src]="getCurrentPreviewVideoSrc()"
+                      controls
+                      playsinline
+                    ></video>
+
+                    <!-- Embed iframe for YouTube/Vimeo -->
+                    <iframe 
+                      *ngIf="!isPreviewVideoMp4() && getSafePreviewVideoUrl() as safeUrl"
+                      class="preview-video-iframe"
+                      [src]="safeUrl"
+                      frameborder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowfullscreen
+                    ></iframe>
+
+                    <!-- Invalid state -->
+                    <div class="preview-video-invalid" *ngIf="!isPreviewVideoMp4() && !getSafePreviewVideoUrl()">
+                      <i class="fas fa-exclamation-triangle"></i>
+                      <div>
+                        <p>We couldn't preview this URL.</p>
+                        <small>Use a valid YouTube, Vimeo, or direct MP4 link.</small>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
                 <!-- Product Info -->

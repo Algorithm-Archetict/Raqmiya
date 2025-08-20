@@ -115,8 +115,10 @@
                 <img [src]="product?.coverImageUrl || selectedMedia.url" [alt]="product?.name" class="main-image">
               </div>
               <div class="media-container" *ngIf="selectedMedia.type === 'video'">
+                <!-- Embed (YouTube/Vimeo) -->
                 <iframe
-                  [src]="product?.previewVideoUrl || selectedMedia.url"
+                  *ngIf="isEmbedVideo(product?.previewVideoUrl || selectedMedia.url)"
+                  [src]="getTrustedEmbedUrl(product?.previewVideoUrl || selectedMedia.url)"
                   title="Product Video"
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -124,6 +126,13 @@
                   allowfullscreen
                   class="main-video">
                 </iframe>
+                <!-- Direct MP4 -->
+                <video
+                  *ngIf="!isEmbedVideo(product?.previewVideoUrl || selectedMedia.url)"
+                  class="main-video"
+                  controls
+                  [src]="product?.previewVideoUrl || selectedMedia.url"
+                ></video>
               </div>
             </div>
 

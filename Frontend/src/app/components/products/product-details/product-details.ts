@@ -1,4 +1,5 @@
 import { Component, OnInit, AfterViewInit, Input, OnDestroy } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -11,7 +12,7 @@ import { ReviewDTO } from '../../../core/models/product/review.dto';
 import { environment } from '../../../../environments/environment';
 import Swal from 'sweetalert2';
 import { Subject, takeUntil } from 'rxjs';
-
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 interface MediaItem {
   type: 'image' | 'video';
@@ -50,13 +51,62 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private productService: ProductService,
     private cartService: CartService,
-    private authService: AuthService
+    private authService: AuthService,
+    private sanitizer: DomSanitizer
   ) {}
 
   // Check if a review belongs to the current user
   isMyReview(review: ReviewDTO): boolean {
     const currentUser = this.authService.getCurrentUser();
     return !!(currentUser && review.userName === currentUser.username);
+  }
+
+  // ===== Preview video helpers =====
+  isEmbedVideo(url?: string | null): boolean {
+    if (!url) return false;
+    const u = url.toLowerCase();
+    return u.includes('youtube.com') || u.includes('youtu.be') || u.includes('vimeo.com');
+  }
+
+  isMp4Url(url?: string | null): boolean {
+    if (!url) return false;
+    return /\.mp4($|\?)/i.test(url);
+  }
+
+  getTrustedEmbedUrl(url?: string | null): SafeResourceUrl | null {
+    if (!url) return null;
+    const embedUrl = this.toEmbedUrl(url);
+    return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
+  }
+
+  private toEmbedUrl(url: string): string {
+    try {
+      const u = new URL(url, window.location.origin);
+      // YouTube variations
+      if (u.hostname.includes('youtube.com')) {
+        const vid = u.searchParams.get('v');
+        if (vid) return `https://www.youtube.com/embed/${vid}`;
+        // already embed or shorts
+        if (u.pathname.startsWith('/embed/')) return url;
+        if (u.pathname.startsWith('/shorts/')) {
+          const id = u.pathname.split('/')[2];
+          if (id) return `https://www.youtube.com/embed/${id}`;
+        }
+      }
+      if (u.hostname === 'youtu.be') {
+        const id = u.pathname.replace('/', '');
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+      // Vimeo
+      if (u.hostname.includes('vimeo.com')) {
+        const parts = u.pathname.split('/').filter(Boolean);
+        const id = parts.pop();
+        if (id) return `https://player.vimeo.com/video/${id}`;
+      }
+      return url;
+    } catch {
+      return url;
+    }
   }
 
   // Edit a specific review

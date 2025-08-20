@@ -154,6 +154,13 @@ export class ProductService {
     return this.http.post<FileDTO[]>(`${this.apiUrl}/${productId}/files`, formData);
   }
 
+  // Upload preview video (MP4) for a product and receive the hosted URL
+  uploadPreviewVideo(productId: number, video: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('video', video);
+    return this.http.post<{ url: string }>(`${this.apiUrl}/${productId}/preview-video`, formData);
+  }
+
   uploadImage(productId: number, image: File, type: 'cover' | 'thumbnail'): Observable<any> {
     const formData = new FormData();
     formData.append('image', image);
