@@ -48,6 +48,15 @@
 # Ignore environment variables
 **/.env
 
+# Ignore Google Cloud credentials and sensitive files
+**/credentials/
+**/*.json
+!**/package.json
+!**/package-lock.json
+!**/tsconfig*.json
+!**/angular.json
+!**/appsettings.json
+
 # Ignore deployment artifacts
 **/publish/
 **/deploy/
