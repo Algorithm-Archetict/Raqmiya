@@ -133,7 +133,13 @@ export class Profile implements OnInit, OnDestroy {
                 // Refresh AuthService to update navbar
                 this.authService.fetchUserProfile().subscribe();
               } else {
-                this.errorMessage = response.message || 'Failed to upload image';
+                // Check for content moderation error
+                const errorMessage = response.message || 'Failed to upload image';
+                if (this.userService.isContentModerationError(errorMessage)) {
+                  this.errorMessage = this.userService.getContentModerationMessage();
+                } else {
+                  this.errorMessage = errorMessage;
+                }
               }
             }, 500);
           },

@@ -141,6 +141,35 @@ export class UserService {
   }
 
   /**
+   * Check if error is related to content moderation
+   */
+  isContentModerationError(errorMessage: string): boolean {
+    const moderationKeywords = [
+      'inappropriate content',
+      'sensitive',
+      'adult content',
+      'violence',
+      'racy content',
+      'community guidelines'
+    ];
+    
+    return moderationKeywords.some(keyword => 
+      errorMessage.toLowerCase().includes(keyword.toLowerCase())
+    );
+  }
+
+  /**
+   * Get user-friendly error message for content moderation
+   */
+  getContentModerationMessage(fileName?: string): string {
+    const baseMessage = fileName 
+      ? `${fileName} was rejected: Contains inappropriate content.` 
+      : 'Image rejected: Contains inappropriate content.';
+    
+    return `${baseMessage} Please choose a different image that follows our community guidelines.`;
+  }
+
+  /**
    * Get user initials for avatar fallback
    */
   getUserInitials(user: UserProfile | null): string {

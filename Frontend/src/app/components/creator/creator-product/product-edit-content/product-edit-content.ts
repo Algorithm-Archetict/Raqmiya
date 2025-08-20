@@ -198,7 +198,13 @@ export class ProductEditContent implements OnInit {
         this.uploadProgress = ((i + 1) / this.newFiles.length) * 100;
       } catch (error: any) {
         console.error('Error uploading file:', error);
-        this.errorMessage = `Failed to upload ${file.name}: ${error.error?.message || error.message}`;
+        // Check for content moderation error
+        const errorMessage = error.error?.message || error.message;
+        if (errorMessage?.includes('inappropriate content') || errorMessage?.includes('Sensitive')) {
+          this.errorMessage = `${file.name} rejected: Contains inappropriate content. Please choose a different image that follows our community guidelines.`;
+        } else {
+          this.errorMessage = `Failed to upload ${file.name}: ${errorMessage}`;
+        }
       }
     }
 

@@ -456,6 +456,17 @@ namespace API.Controllers
             if (type != "cover" && type != "thumbnail")
                 return BadRequest("Image type must be 'cover' or 'thumbnail'.");
 
+            // Moderate image content using Google Vision API
+            using (var stream = image.OpenReadStream())
+            {
+                bool isSafe = await _fileModerationService.IsImageSafeAsync(stream);
+                if (!isSafe)
+                {
+                    _logger.LogWarning("Sensitive or inappropriate image detected for product {ProductId}, type: {Type}", id, type);
+                    return BadRequest("Sensitive or inappropriate content detected in the image.");
+                }
+            }
+
             var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), FileStorageConstants.ProductUploadsRoot, id.ToString(), "images");
             Directory.CreateDirectory(uploadsRoot);
             var fileName = Path.GetRandomFileName() + Path.GetExtension(image.FileName);
