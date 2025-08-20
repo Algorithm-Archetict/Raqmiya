@@ -127,7 +127,7 @@
         </div>
 
         <!-- Top Products -->
-        <div class="top-products-section">
+        <div class="top-products-section" *ngIf="(salesData?.totalSales || 0) > 0 && ((salesData?.topProducts?.length || 0) > 0)">
           <div class="section-header">
             <h3>Top Performing Products</h3>
             <p>Your best-selling products by revenue</p>

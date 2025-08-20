@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import Chart from 'chart.js/auto';
 
 import { CommonModule } from '@angular/common';
@@ -33,7 +33,7 @@ interface SalesData {
   templateUrl: './sales.html',
   styleUrl: './sales.css'
 })
-export class Sales implements OnInit, AfterViewInit {
+export class Sales implements OnInit, AfterViewInit, OnDestroy {
   salesData: SalesData = {
     totalSales: 0,
     totalRevenue: 0,
@@ -58,6 +58,7 @@ export class Sales implements OnInit, AfterViewInit {
   private pendingData: number[] | null = null;
   private chartRetryCount = 0;
   private readonly chartRetryMax = 40; // ~2s total
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor(
     private paymentService: PaymentService,
@@ -71,9 +72,31 @@ export class Sales implements OnInit, AfterViewInit {
     this.loadMonthlySeries();
   }
 
+  ngOnDestroy(): void {
+    try { this.resizeObserver?.disconnect(); } catch {}
+    try { this.chart?.destroy(); } catch {}
+    this.chart = null;
+  }
+
   ngAfterViewInit(): void {
-    // Try to render if data already arrived
-    this.maybeRenderChart();
+    // Try to render if data already arrived, defer to next frame for layout stability
+    requestAnimationFrame(() => this.maybeRenderChart());
+
+    // Observe container resize; if data pending and no chart, try again
+    try {
+      const canvas = this.revenueChartCanvas?.nativeElement;
+      const parent = canvas?.parentElement as HTMLElement | null;
+      if (parent && 'ResizeObserver' in window) {
+        this.resizeObserver = new ResizeObserver(() => {
+          if (!this.chart && this.pendingLabels && this.pendingData) {
+            this.maybeRenderChart();
+          } else {
+            try { this.chart?.resize(); } catch {}
+          }
+        });
+        this.resizeObserver.observe(parent);
+      }
+    } catch {}
   }
 
   private loadBalance() {
@@ -379,27 +402,26 @@ export class Sales implements OnInit, AfterViewInit {
         ${this.kpiCard('Weekly Revenue', fmt(this.salesData.weeklyRevenue), 'fas fa-calendar-week')}
         ${this.kpiCard('Avg. Order Value', fmt(this.salesData.averageOrderValue), 'fas fa-calculator')}
       </div>`;
-    const topProducts = `
+    const includeTop = (this.salesData.totalSales > 0) && (this.salesData.topProducts?.length || 0) > 0;
+    const topProducts = !includeTop ? '' : `
       <div style="padding:0 16px 16px">
         <h3 style="margin:8px 0 10px;font-size:16px">Top Performing Products</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead>
-            <tr>
-              <th style="text-align:left;border-bottom:1px solid #e5e7eb;padding:8px">Product</th>
-              <th style="text-align:right;border-bottom:1px solid #e5e7eb;padding:8px">Sales</th>
-              <th style="text-align:right;border-bottom:1px solid #e5e7eb;padding:8px">Revenue</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr;background:#f8fafc;border-bottom:1px solid #e5e7eb;font-weight:600;color:#334155">
+            <div style="padding:8px;text-align:left">Product</div>
+            <div style="padding:8px;text-align:right">Sales</div>
+            <div style="padding:8px;text-align:right">Revenue</div>
+          </div>
+          <div style="max-height: calc(5 * 42px); overflow-y:auto">
             ${(this.salesData.topProducts || []).map(p => `
-              <tr>
-                <td style=\"padding:8px;border-bottom:1px solid #f1f5f9\">${this.escapeHtml(p.name)}</td>
-                <td style=\"padding:8px;border-bottom:1px solid #f1f5f9;text-align:right\">${p.sales}</td>
-                <td style=\"padding:8px;border-bottom:1px solid #f1f5f9;text-align:right\">${fmt(p.revenue)}</td>
-              </tr>
+              <div style=\"display:grid;grid-template-columns:2fr 1fr 1fr;border-bottom:1px solid #f1f5f9;min-height:42px\">
+                <div style=\"padding:8px\">${this.escapeHtml(p.name)}</div>
+                <div style=\"padding:8px;text-align:right\">${p.sales}</div>
+                <div style=\"padding:8px;text-align:right\">${fmt(p.revenue)}</div>
+              </div>
             `).join('')}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>`;
     const wrapper = `
       <div style="font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">

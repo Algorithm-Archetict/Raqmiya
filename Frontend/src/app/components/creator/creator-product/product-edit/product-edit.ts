@@ -13,8 +13,8 @@ import { CategoryDTO } from '../../../../core/models/product/category.dto';
 import { CATEGORIES, Category } from '../../../../core/data/categories';
 import { TagService } from '../../../../core/services/tag.service';
 import { TagDTO } from '../../../../core/models/product/tag.dto';
+import { MessagingHttpService } from '../../../../core/services/messaging-http.service';
 import Swal from 'sweetalert2';
-
 
 interface ProductDetail {
   attribute: string;
@@ -78,7 +78,8 @@ export class ProductEdit implements OnInit {
     private productService: ProductService,
     private tagService: TagService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private messaging: MessagingHttpService,
   ) {}
 
   ngOnInit(): void {
@@ -96,7 +97,7 @@ export class ProductEdit implements OnInit {
       coverImageUrl: [''],
       thumbnailImageUrl: [''],
       previewVideoUrl: [''],
-      isPublic: [true], // Default to published
+      isPublic: [false], // Default to private; actual value loaded from product
       permalink: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
       // Enhanced product details
       compatibility: [''],
@@ -206,6 +207,32 @@ export class ProductEdit implements OnInit {
     this.loadAvailableTags();
 
     this.updateFormValidation();
+
+    // If this is a private delivery product, lock the price from editing
+    void this.lockPriceIfDeliveredPrivate();
+  }
+
+  private async lockPriceIfDeliveredPrivate(): Promise<void> {
+    try {
+      if (!this.productId || !this.product || this.product.isPublic) return;
+      // Fetch conversations and their deliveries, then check if any delivery references this productId
+      const convs = await firstValueFrom(this.messaging.getConversations(200, 0));
+      const lists = await Promise.all((convs || []).map(c => this.messaging.getDeliveriesForConversation(c.id).toPromise().catch(() => [])));
+      const allDeliveries: Array<{ productId: number }> = ([] as any[]).concat(...(lists as any));
+      const hasDelivery = allDeliveries.some(d => d && d.productId === this.productId);
+      if (hasDelivery) {
+        const priceCtrl = this.productForm.get('price');
+        const currencyCtrl = this.productForm.get('currency');
+        if (priceCtrl && !priceCtrl.disabled) {
+          priceCtrl.disable({ emitEvent: false });
+        }
+        if (currencyCtrl && !currencyCtrl.disabled) {
+          currencyCtrl.disable({ emitEvent: false });
+        }
+      }
+    } catch {
+      // Non-blocking; if check fails, leave field as-is
+    }
   }
 
   onSaveClick(): void {
@@ -270,32 +297,33 @@ export class ProductEdit implements OnInit {
       // First upload images to get proper URLs
       await this.uploadImages();
       
-      const formValue = this.productForm.value;
+      // Include disabled controls (price/currency might be disabled for delivered private products)
+      const formValue = this.productForm.getRawValue();
       
-             // Create the product update DTO
-       const productDto: ProductUpdateRequestDTO = {
-         id: this.productId!,
-         name: formValue.name,
-         description: formValue.description || '',
-         price: parseFloat(formValue.price),
-         currency: formValue.currency,
-         coverImageUrl: formValue.coverImageUrl,
-         thumbnailImageUrl: formValue.thumbnailImageUrl,
-         previewVideoUrl: formValue.previewVideoUrl && formValue.previewVideoUrl.trim() !== '' 
-           ? formValue.previewVideoUrl 
-           : null,
-         isPublic: formValue.isPublic,
-         permalink: formValue.permalink,
-         // Enhanced product details
-         features: this.productFeatures,
-         compatibility: formValue.compatibility,
-         license: formValue.license,
-         updates: formValue.updates,
-         categoryId: formValue.categoryId,
-         tagIds: this.selectedTags.map(tag => tag.id).filter(id => id > 0),
-         productCategory: this.product?.category || { id: 0, name: '', parentCategoryId: undefined },
-         status: 'published'
-       };
+             // Create the product update DTO (preserve current visibility/status; do not force publish)
+      const productDto: ProductUpdateRequestDTO = {
+        id: this.productId!,
+        name: formValue.name,
+        description: formValue.description || '',
+        price: Number(formValue.price),
+        currency: formValue.currency,
+        coverImageUrl: formValue.coverImageUrl,
+        thumbnailImageUrl: formValue.thumbnailImageUrl,
+        previewVideoUrl: formValue.previewVideoUrl && formValue.previewVideoUrl.trim() !== '' 
+          ? formValue.previewVideoUrl 
+          : null,
+        isPublic: formValue.isPublic,
+        permalink: formValue.permalink,
+        // Enhanced product details
+        features: this.productFeatures,
+        compatibility: formValue.compatibility,
+        license: formValue.license,
+        updates: formValue.updates,
+        categoryId: formValue.categoryId,
+        tagIds: this.selectedTags.map(tag => tag.id).filter(id => id > 0),
+        productCategory: this.product?.category || { id: 0, name: '', parentCategoryId: undefined },
+        status: this.product?.status || 'draft'
+      };
 
       console.log('📤 Sending Product Update DTO:', JSON.stringify(productDto, null, 2));
 

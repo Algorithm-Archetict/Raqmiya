@@ -7,6 +7,8 @@ import { ProductService } from '../../../../core/services/product.service';
 import { ProductListItemDTO } from '../../../../core/models/product/product-list-item.dto';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PaymentService, RevenueAnalytics } from '../../../../core/services/payment.service';
+import { MessagingHttpService } from '../../../../core/services/messaging-http.service';
+import Swal from 'sweetalert2';
 
 interface Product {
   id: number;
@@ -56,7 +58,8 @@ export class AllProducts implements OnInit {
     private router: Router,
     private productService: ProductService,
     private authService: AuthService,
-    private paymentService: PaymentService
+    private paymentService: PaymentService,
+    private messaging: MessagingHttpService,
   ) {}
 
   ngOnInit() {
@@ -275,13 +278,31 @@ export class AllProducts implements OnInit {
           // Re-apply currency mapping to ensure revenue/price stay consistent
           this.applyCurrency();
           this.isDeleting = false;
+          // Cache deleted id before closing modal in case UI state clears it
+          const deletedId = this.productToDelete!.id;
           this.closeDeleteModal();
-          
-          // Show appropriate message based on deletion type
-          if (response && response.message) {
-            // You can show a success message here if needed
-            console.log('Product deletion response:', response.message);
-          }
+
+          // Notify success
+          void Swal.fire({ icon: 'success', title: 'Deleted', text: 'The product has been deleted.' });
+
+          // Attempt to revert any associated service request(s) back to Confirmed
+          // Non-blocking and best-effort: scan deliveries that reference this product
+          (async () => {
+            try {
+              const convs = await this.messaging.getConversations(200, 0).toPromise();
+              const lists = await Promise.all((convs || []).map(c => this.messaging.getDeliveriesForConversation(c.id).toPromise().catch(() => [])));
+              type MiniDelivery = { serviceRequestId?: string | null; productId: number };
+              const flattened: Array<{ conversationId: string; serviceRequestId?: string | null; productId: number }> = [];
+              (lists || []).forEach((arr: any, i: number) => {
+                const convId = (convs || [])[i]?.id;
+                (arr as MiniDelivery[]).forEach(d => flattened.push({ conversationId: convId, serviceRequestId: d.serviceRequestId, productId: d.productId }));
+              });
+              const targets = flattened.filter(d => d.productId === deletedId && d.serviceRequestId);
+              await Promise.all(targets.map(t => this.messaging.confirmServiceRequest(t.conversationId, t.serviceRequestId as string).toPromise().catch(() => undefined)));
+            } catch {
+              // swallow errors; UI already succeeded for deletion
+            }
+          })();
         },
         error: (error: any) => {
           console.error('Error deleting product:', error);

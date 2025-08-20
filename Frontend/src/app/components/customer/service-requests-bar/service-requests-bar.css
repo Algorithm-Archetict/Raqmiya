@@ -19,6 +19,7 @@
 .sr-status.accepted{border-color:#2563eb;color:#bfdbfe}
 .sr-status.confirmed{border-color:#16a34a;color:#bbf7d0}
 .sr-status.pending{border-color:#f59e0b;color:#fde68a}
+.sr-status.declined{border-color:#9b1c1c;color:#fecaca;background:linear-gradient(180deg,#1a0f14,#120b0f)}
 .sr-deadline{margin-left:auto;display:flex;align-items:center;gap:6px;color:#e5e7eb}
 .sr-deadline.overdue{color:#fecaca;background:#4a0b0b33;border:1px solid #7f1d1d;border-radius:9999px;padding:2px 10px;white-space:normal;line-height:1.2}
 .sr-body{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}

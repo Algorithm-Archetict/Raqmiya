@@ -161,6 +161,16 @@ namespace API.Controllers
             {
                 return Forbid(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                // e.g., duplicate permalink
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                // e.g., invalid category or tag IDs
+                return BadRequest(ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating product");

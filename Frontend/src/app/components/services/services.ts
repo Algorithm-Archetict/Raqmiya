@@ -51,6 +51,7 @@ import { DeadlineUpdatesBar } from './deadline-updates-bar/deadline-updates-bar'
   .sr-bar .sr-status i { margin-right:6px; font-size:12px; }
   .sr-bar .sr-status.confirmed { background: var(--gradient-accent); color:#0f1419; }
   .sr-bar .sr-status.accepted { background: var(--gradient-primary); color:#0f1419; }
+  .sr-bar .sr-status.purchased { background: linear-gradient(135deg,#22c55e,#16a34a); color:#0f1419; box-shadow: var(--shadow-md), var(--shadow-glow); }
   .sr-bar .sr-deadline { display:flex; align-items:center; gap:8px; color: var(--text-primary); font-weight:600; }
   .sr-bar .sr-deadline.overdue { color: var(--warning-color); }
 

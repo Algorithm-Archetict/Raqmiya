@@ -230,7 +230,8 @@ namespace Core.Services
             if (purchased != null)
                 throw new InvalidOperationException("Cannot decline a request with a purchased delivery.");
 
-            _serviceRequests.Remove(req);
+            // Mark as Rejected instead of deleting to keep a visible history
+            req.Status = ServiceRequestStatus.Rejected;
             await _serviceRequests.SaveChangesAsync();
         }
 

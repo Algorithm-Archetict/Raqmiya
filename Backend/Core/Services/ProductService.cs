@@ -1,4 +1,4 @@
-﻿using Core.Interfaces;
+using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Raqmiya.Infrastructure;
@@ -363,18 +363,49 @@ namespace Core.Services
 
             // Check if product has any purchases - if so, we must use soft delete
             var hasPurchases = await _productRepository.HasProductPurchasesAsync(productId);
-            
-            if (hasPurchases)
+            // Also load any deliveries referencing this product; Delivery.ProductId has DeleteBehavior.Restrict
+            var deliveriesForProduct = await _context.Deliveries
+                .Where(d => d.ProductId == productId)
+                .ToListAsync();
+            var hasAnyDeliveries = deliveriesForProduct.Any();
+            var hasPurchasedDeliveries = deliveriesForProduct.Any(d => d.Status == DeliveryStatus.Purchased);
+
+            if (hasAnyDeliveries)
             {
-                // Soft delete - preserve product for customers who purchased it
+                // Remove any non-purchased (AwaitingPurchase) deliveries so the SR UI reverts from "Delivered"
+                foreach (var d in deliveriesForProduct)
+                {
+                    if (d.Status == DeliveryStatus.AwaitingPurchase)
+                    {
+                        _context.Deliveries.Remove(d);
+                    }
+                    // Keep Purchased deliveries so the customer library remains intact
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            // Decide between soft vs hard delete after cleaning up pending deliveries
+            if (hasPurchases || hasPurchasedDeliveries)
+            {
                 await _productRepository.SoftDeleteProductAsync(productId, deletionReason ?? "Product deleted by creator");
-                _logger.LogInformation("Product {ProductId} soft deleted by creator {CreatorId} due to existing purchases", productId, creatorId);
+                if (hasPurchases && hasPurchasedDeliveries)
+                {
+                    _logger.LogInformation("Product {ProductId} soft deleted by creator {CreatorId} due to purchases and purchased deliveries", productId, creatorId);
+                }
+                else if (hasPurchases)
+                {
+                    _logger.LogInformation("Product {ProductId} soft deleted by creator {CreatorId} due to existing purchases", productId, creatorId);
+                }
+                else
+                {
+                    _logger.LogInformation("Product {ProductId} soft deleted by creator {CreatorId} due to existing purchased deliveries", productId, creatorId);
+                }
             }
             else
             {
-                // Hard delete - no purchases, safe to permanently remove
+                // Hard delete - no purchases and no purchased deliveries, safe to permanently remove
                 await _productRepository.DeleteAsync(productId);
-                _logger.LogInformation("Product {ProductId} permanently deleted by creator {CreatorId} - no purchases found", productId, creatorId);
+                _logger.LogInformation("Product {ProductId} permanently deleted by creator {CreatorId} - no purchases or purchased deliveries found", productId, creatorId);
             }
         }
 

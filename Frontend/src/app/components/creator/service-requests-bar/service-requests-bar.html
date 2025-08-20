@@ -27,15 +27,18 @@
             <span>Customer</span>
           </div>
         </ng-template>
-        <div class="sr-status" [class.confirmed]="it.status==='ConfirmedByCustomer'" [class.accepted]="it.status==='AcceptedByCreator'" [class.pending]="it.status==='Pending'">
-          <i class="fas fa-hourglass-half" *ngIf="it.status==='Pending'"></i>
-          <i class="fas fa-user-check" *ngIf="it.status==='AcceptedByCreator'"></i>
-          <i class="fas fa-check-circle" *ngIf="it.status==='ConfirmedByCustomer'"></i>
+        <div class="sr-status" [class.purchased]="it.deliveredPurchased" [class.declined]="it.status==='Rejected'" [class.confirmed]="!it.deliveredPurchased && it.status!=='Rejected' && (it.hasDelivery || it.status==='ConfirmedByCustomer')" [class.accepted]="!it.deliveredPurchased && it.status!=='Rejected' && !it.hasDelivery && it.status==='AcceptedByCreator'" [class.pending]="!it.deliveredPurchased && it.status!=='Rejected' && !it.hasDelivery && it.status==='Pending'">
+          <i class="fas fa-receipt" *ngIf="it.deliveredPurchased"></i>
+          <i class="fas fa-ban" *ngIf="!it.deliveredPurchased && it.status==='Rejected'"></i>
+          <i class="fas fa-box" *ngIf="!it.deliveredPurchased && it.status!=='Rejected' && it.hasDelivery"></i>
+          <i class="fas fa-hourglass-half" *ngIf="!it.deliveredPurchased && it.status!=='Rejected' && !it.hasDelivery && it.status==='Pending'"></i>
+          <i class="fas fa-user-check" *ngIf="!it.deliveredPurchased && it.status!=='Rejected' && !it.hasDelivery && it.status==='AcceptedByCreator'"></i>
+          <i class="fas fa-check-circle" *ngIf="!it.deliveredPurchased && it.status!=='Rejected' && !it.hasDelivery && it.status==='ConfirmedByCustomer'"></i>
           <span>
-            {{ it.status==='Pending' ? 'Awaiting Creator Approval' : (it.status==='AcceptedByCreator' ? 'Awaiting Customer Approval' : 'Confirmed') }}
+            {{ it.deliveredPurchased ? 'Purchased' : (it.status==='Rejected' ? declinedByLabel(it) : (it.hasDelivery ? 'Delivered' : (it.status==='Pending' ? 'Awaiting Creator Approval' : (it.status==='AcceptedByCreator' ? 'Awaiting Customer Approval' : 'Confirmed')))) }}
           </span>
         </div>
-        <div class="sr-deadline" [class.overdue]="it.overdue">
+        <div class="sr-deadline" *ngIf="!it.deliveredPurchased && it.status!=='Rejected'" [class.overdue]="it.overdue">
           <i class="far fa-clock"></i>
           <span>{{ it.timeLeft }}</span>
         </div>
@@ -46,16 +49,23 @@
           {{ isExpanded(it.id) ? 'Read less' : 'Read more' }}
         </button>
         <div class="sr-budget">Budget: {{ it.proposedBudget != null ? (it.proposedBudget | number:'1.0-2') : '—' }} {{ it.currency || '' }}</div>
-        <div class="sr-actions" *ngIf="!it.overdue">
-          <!-- Before both confirmations: show Accept/Decline for creator when Pending -->
-          <ng-container *ngIf="it.status==='Pending'; else postAcceptActions">
-            <button class="refresh-btn" (click)="acceptWithDeadline(it)" [disabled]="loading || actionBusy===it.id" title="Accept and set deadline">Accept</button>
-            <button class="refresh-btn" (click)="declineRequest(it)" [disabled]="loading || actionBusy===it.id" title="Decline this request">Decline</button>
+        <div class="sr-actions" *ngIf="(!it.overdue || it.hasDelivery) && !it.deliveredPurchased && it.status!=='Rejected'">
+          <!-- Delivered: allow editing the delivered product -->
+          <ng-container *ngIf="it.hasDelivery; else notDeliveredActions">
+            <button class="refresh-btn" (click)="editDelivery(it)" [disabled]="loading || actionBusy===it.id" title="Edit delivered product">Edit Delivery</button>
+            <button class="refresh-btn" *ngIf="!it.deliveredPurchased" (click)="deleteDeliveredProduct(it)" [disabled]="loading || actionBusy===it.id" title="Delete delivered product">Delete Delivery</button>
           </ng-container>
-          <ng-template #postAcceptActions>
-            <!-- After both confirmations only -->
-            <button class="refresh-btn" (click)="updateDeadline(it)" [disabled]="loading || actionBusy===it.id || it.status !== 'ConfirmedByCustomer'" title="Propose a new deadline">Request Extension</button>
-            <button class="refresh-btn" (click)="deliver(it)" [disabled]="loading || actionBusy===it.id || it.status !== 'ConfirmedByCustomer'" title="Allowed after customer confirmation">Deliver</button>
+          <ng-template #notDeliveredActions>
+            <!-- Before both confirmations: show Accept/Decline for creator when Pending -->
+            <ng-container *ngIf="it.status==='Pending'; else postAcceptActions">
+              <button class="refresh-btn" (click)="acceptWithDeadline(it)" [disabled]="loading || actionBusy===it.id" title="Accept and set deadline">Accept</button>
+              <button class="refresh-btn" (click)="declineRequest(it)" [disabled]="loading || actionBusy===it.id" title="Decline this request">Decline</button>
+            </ng-container>
+            <ng-template #postAcceptActions>
+              <!-- After both confirmations only -->
+              <button class="refresh-btn" (click)="updateDeadline(it)" [disabled]="loading || actionBusy===it.id || it.status !== 'ConfirmedByCustomer'" title="Propose a new deadline">Request Extension</button>
+              <button class="refresh-btn" (click)="deliver(it)" [disabled]="loading || actionBusy===it.id || it.status !== 'ConfirmedByCustomer'" title="Allowed after customer confirmation">Deliver</button>
+            </ng-template>
           </ng-template>
         </div>
       </div>

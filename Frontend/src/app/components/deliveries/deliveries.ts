@@ -7,6 +7,7 @@ import { CartService } from '../../core/services/cart.service';
 import { Router } from '@angular/router';
 import { DashboardSidebar } from '../dashboard-sidebar/dashboard-sidebar';
 import { OrderService } from '../../core/services/order.service';
+import { ProductService } from '../../core/services/product.service';
 import { filter, Subscription } from 'rxjs';
 
 @Component({
@@ -35,6 +36,7 @@ export class DeliveriesComponent implements OnInit, OnDestroy {
     private cart: CartService,
     private router: Router,
     private orderService: OrderService,
+    private productService: ProductService,
   ) {}
 
   ngOnInit(): void {
@@ -82,6 +84,18 @@ export class DeliveriesComponent implements OnInit, OnDestroy {
 
       // Check if customer has actually purchased the delivered products
       await this.updateDeliveryStatusesForPurchases();
+
+      // Remove deliveries whose products were deleted (treat any error as deleted)
+      const keep: DeliveryDto[] = [];
+      for (const d of this.deliveries) {
+        try {
+          await this.productService.getById(d.productId).toPromise();
+          keep.push(d);
+        } catch {
+          // Product missing or server error; hide this delivery from list
+        }
+      }
+      this.deliveries = keep;
     } catch (e: any) {
       this.error = e?.message || 'Failed to load deliveries';
     } finally { 
@@ -91,17 +105,10 @@ export class DeliveriesComponent implements OnInit, OnDestroy {
 
   async refreshDeliveryStatuses() {
     if (!this.meId || this.loading) return;
-    
-    this.loading = true;
-    try {
-      await this.updateDeliveryStatusesForPurchases();
-      console.log('Delivery statuses refreshed successfully');
-    } catch (error) {
-      console.error('Error refreshing delivery statuses:', error);
-      this.error = 'Failed to refresh delivery statuses. Please try again.';
-    } finally {
-      this.loading = false;
-    }
+
+    // Re-run full load to refresh creator-side delivery statuses from server
+    // and also update customer-side based on purchases.
+    await this.load();
   }
 
   async updateDeliveryStatusesForPurchases() {
@@ -168,13 +175,22 @@ export class DeliveriesComponent implements OnInit, OnDestroy {
     return (this.deliveries || []).filter(d => this.isCustomerDelivery(d));
   }
 
+  // Whether current user is a creator (used by template to hide creator-only sections for customers)
+  get isCreatorUser(): boolean {
+    return this.auth.isCreator();
+  }
+
   // Statistics methods
   getPendingDeliveriesCount(): number {
-    return this.customerDeliveries.filter(d => d.status === 'AwaitingPurchase').length;
+    // Count pending purchases across both roles
+    const creatorPending = this.creatorDeliveries.filter(d => d.status === 'AwaitingPurchase').length;
+    const customerPending = this.customerDeliveries.filter(d => d.status === 'AwaitingPurchase').length;
+    return creatorPending + customerPending;
   }
 
   getCompletedDeliveriesCount(): number {
-    return this.customerDeliveries.filter(d => d.status === 'Purchased').length;
+    // Count all completed (Purchased) deliveries regardless of role
+    return (this.deliveries || []).filter(d => d.status === 'Purchased').length;
   }
 
   // Status handling methods

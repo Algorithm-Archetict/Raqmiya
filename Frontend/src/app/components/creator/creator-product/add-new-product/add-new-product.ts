@@ -82,6 +82,9 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
   privateDeliveryMode = false;
   privateDeliveryConversationId: string | null = null;
   privateDeliveryServiceRequestId: string | null = null;
+  // Auto-create flow disabled (was previously used for private delivery). Keeping flags for future use if re-enabled.
+  private autoCreateRequested = false;
+  private autoCreateTriggered = false;
 
   // Quill editor
   private quillEditor: any = null;
@@ -102,6 +105,29 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
       this.headingHoverTimer = null;
     }
     this.headingMenuOpen = true;
+  }
+
+  private async prefillAndLockBudgetFromServiceRequest(): Promise<void> {
+    try {
+      if (!this.privateDeliveryConversationId || !this.privateDeliveryServiceRequestId) return;
+      // Fetch creator service requests and find the one we are delivering for
+      const list = await firstValueFrom(this.messaging.getCreatorServiceRequests(['Pending','AcceptedByCreator','ConfirmedByCustomer'], 100, 0));
+      const it = (list || []).find(x => x.id === this.privateDeliveryServiceRequestId);
+      if (!it) return;
+      const priceCtrl = this.productForm.get('price');
+      const currencyCtrl = this.productForm.get('currency');
+      if (it.proposedBudget != null && priceCtrl) {
+        priceCtrl.setValue(it.proposedBudget);
+        priceCtrl.disable({ emitEvent: false });
+      }
+      if (it.currency && currencyCtrl) {
+        currencyCtrl.setValue(it.currency);
+        currencyCtrl.disable({ emitEvent: false });
+      }
+    } catch (e) {
+      // Non-blocking; proceed without locking if fetch fails
+      console.warn('Could not prefill budget from service request', e);
+    }
   }
 
   onHeadingMenuLeave(): void {
@@ -146,9 +172,13 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
       this.privateDeliveryMode = params.get('privateDelivery') === '1';
       this.privateDeliveryConversationId = params.get('conversationId');
       this.privateDeliveryServiceRequestId = params.get('serviceRequestId');
+      // Explicitly ignore autoCreate param to prevent unintended auto-publish
+      this.autoCreateRequested = false;
       if (this.privateDeliveryMode) {
         // Force private products for deliveries
         this.productForm.get('isPublic')?.setValue(false);
+        // Load agreed budget and lock price/currency
+        this.prefillAndLockBudgetFromServiceRequest();
       }
     });
 
@@ -164,14 +194,27 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // Auto-create disabled
+  private tryAutoCreate(): void { /* intentionally no-op */ }
+
   private updateFormValidation(): void {
-    const nameValid = this.productForm.get('name')?.value && this.productForm.get('name')?.valid;
-    const priceValid = this.productForm.get('price')?.value > 0 && this.productForm.get('price')?.valid;
-    const categoryValid = this.productForm.get('categoryId')?.value && this.productForm.get('categoryId')?.valid;
-    const currencyValid = this.productForm.get('currency')?.valid;
-    const permalinkValid = this.productForm.get('permalink')?.valid;
+    const nameCtrl = this.productForm.get('name');
+    const descCtrl = this.productForm.get('description');
+    const priceCtrl = this.productForm.get('price');
+    const categoryCtrl = this.productForm.get('categoryId');
+    const currencyCtrl = this.productForm.get('currency');
+    const permalinkCtrl = this.productForm.get('permalink');
+    const tagsCtrl = this.productForm.get('tagIds');
+
+    const nameValid = !!nameCtrl?.value && !!nameCtrl?.valid;
+    const descriptionValid = !!descCtrl?.value && !!descCtrl?.valid;
+    const priceValid = priceCtrl?.disabled ? true : ((priceCtrl?.value > 0) && !!priceCtrl?.valid);
+    const categoryValid = !!categoryCtrl?.value && !!categoryCtrl?.valid;
+    const currencyValid = currencyCtrl?.disabled ? true : !!currencyCtrl?.valid;
+    const permalinkValid = !!permalinkCtrl?.valid;
+    const tagsValid = (!!tagsCtrl?.valid) && (this.selectedTags.length > 0);
          
-     this.isFormValid = nameValid && priceValid && categoryValid && currencyValid && permalinkValid;
+     this.isFormValid = nameValid && descriptionValid && priceValid && categoryValid && currencyValid && permalinkValid && tagsValid;
     
     // Debug logging
     console.log('🔍 Form Validation Debug:', {
@@ -185,6 +228,9 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
       currencyValid,
       permalink: this.productForm.get('permalink')?.value,
       permalinkValid,
+      descriptionValid,
+      tagsCount: this.selectedTags.length,
+      tagsValid,
       isFormValid: this.isFormValid,
       formValid: this.productForm.valid,
       formErrors: this.productForm.errors,
@@ -274,7 +320,8 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
         Validators.required, 
         Validators.minLength(3),
         Validators.maxLength(200),
-        Validators.pattern(/^[a-z0-9-]+$/)
+        // Match backend regex: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
       ]],
       
       // Enhanced product details (optional)
@@ -925,7 +972,7 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
       this.errorMessage = null;
       
     try {
-      const formValue = this.productForm.value;
+      const formValue = this.productForm.getRawValue();
       
       // Create the product DTO without images first
       const productDto: ProductCreateRequestDTO = {
@@ -1032,10 +1079,24 @@ export class AddNewProduct implements OnInit, AfterViewInit, OnDestroy {
             url: error.url
           });
           this.isSubmitting = false;
+          // Extract backend message (handles string body, ProblemDetails, or wrapped message)
+          let backendMessage = '';
+          if (error?.error) {
+            if (typeof error.error === 'string') {
+              backendMessage = error.error;
+            } else if (error.error?.detail) {
+              backendMessage = error.error.detail;
+            } else if (error.error?.title) {
+              backendMessage = error.error.title;
+            } else if (error.error?.message) {
+              backendMessage = error.error.message;
+            }
+          }
+          const message = backendMessage || error.message || 'Unknown error';
           Swal.fire({
             icon: 'error',
             title: 'Creation Failed',
-            text: 'Failed to create product: ' + (error.error?.message || error.message),
+            text: 'Failed to create product: ' + message,
             confirmButtonColor: '#3b82f6'
           });
         }

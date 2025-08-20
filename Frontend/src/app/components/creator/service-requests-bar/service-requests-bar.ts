@@ -4,7 +4,9 @@ import { MessagingHttpService, ServiceRequestDto } from '../../../core/services/
 import { interval, Subscription } from 'rxjs';
 import { ChatSignalRService } from '../../../core/services/chat-signalr.service';
 import { Router } from '@angular/router';
+import { OrderService } from '../../../core/services/order.service';
 import Swal from 'sweetalert2';
+import { ProductService } from '../../../core/services/product.service';
 
 @Component({
   selector: 'app-service-requests-bar',
@@ -16,7 +18,7 @@ import Swal from 'sweetalert2';
 export class ServiceRequestsBar implements OnInit, OnDestroy {
   loading = false;
   error: string | null = null;
-  items: (ServiceRequestDto & { timeLeft: string; overdue: boolean })[] = [];
+  items: (ServiceRequestDto & { timeLeft: string; overdue: boolean; hasDelivery?: boolean; deliveredProductId?: number | null; deliveredPurchased?: boolean; })[] = [];
   actionBusy: string | null = null;
   // track expanded descriptions by id
   private expanded: Set<string> = new Set<string>();
@@ -26,7 +28,7 @@ export class ServiceRequestsBar implements OnInit, OnDestroy {
   private tickSub?: Subscription;
   private convSub?: Subscription;
 
-  constructor(private messaging: MessagingHttpService, private chat: ChatSignalRService, private router: Router) {}
+  constructor(private messaging: MessagingHttpService, private chat: ChatSignalRService, private router: Router, private orderService: OrderService, private productService: ProductService) {}
 
   ngOnInit(): void {
     this.fetch();
@@ -47,9 +49,67 @@ export class ServiceRequestsBar implements OnInit, OnDestroy {
   fetch(userInitiated = false) {
     this.loading = true;
     this.error = null;
-    this.messaging.getCreatorServiceRequests(['Pending','AcceptedByCreator','ConfirmedByCustomer'], 50, 0).subscribe({
-      next: (list) => {
-        this.items = (list || []).map(x => ({ ...x, timeLeft: this.formatTimeLeft(x.deadlineUtc), overdue: this.isOverdue(x.deadlineUtc) }));
+    this.messaging.getCreatorServiceRequests(['Pending','AcceptedByCreator','ConfirmedByCustomer','Rejected'], 50, 0).subscribe({
+      next: async (list) => {
+        const base = (list || []).map(x => ({ ...x, timeLeft: this.formatTimeLeft(x.deadlineUtc), overdue: this.isOverdue(x.deadlineUtc) }));
+
+        // Build conversation set and fetch deliveries to detect already-delivered requests
+        const convIds = Array.from(new Set(base.map(x => x.conversationId)));
+        const deliveriesPerConv = await Promise.all(convIds.map(async cid => {
+          try {
+            const arr = await this.messaging.getDeliveriesForConversation(cid).toPromise();
+            return { cid, arr: arr || [] };
+          } catch { return { cid, arr: [] as any[] }; }
+        }));
+        type MiniDelivery = { serviceRequestId?: string | null; productId: number; status: string };
+        const deliveredMap = new Map<string, { productId: number; purchased: boolean }>();
+        for (const { arr } of deliveriesPerConv) {
+          for (const d of (arr as MiniDelivery[])) {
+            if (d && d.serviceRequestId) {
+              const prev = deliveredMap.get(d.serviceRequestId) || { productId: d.productId, purchased: false };
+              const purchased = prev.purchased || (d.status === 'Purchased');
+              deliveredMap.set(d.serviceRequestId, { productId: d.productId, purchased });
+            }
+          }
+        }
+
+        this.items = base.map(x => {
+          const info = deliveredMap.get(x.id);
+          return {
+            ...x,
+            hasDelivery: !!info,
+            deliveredProductId: info?.productId ?? null,
+            deliveredPurchased: info?.purchased ?? false,
+          };
+        });
+
+        // Ensure purchased status is reflected immediately by checking orders (mirrors customer view)
+        await Promise.all(this.items
+          .filter(it => it.hasDelivery && !it.deliveredPurchased && it.deliveredProductId != null)
+          .map(async it => {
+            try {
+              const purchased = await this.orderService.getPurchasedProduct(it.deliveredProductId as number).toPromise();
+              if (purchased) {
+                it.deliveredPurchased = true;
+              }
+            } catch (e: any) {
+              // ignore 404 (not purchased)
+            }
+          }));
+
+        // If a delivered product was deleted, treat as not delivered anymore (so status appears Confirmed)
+        await Promise.all(this.items
+          .filter(it => it.hasDelivery && it.deliveredProductId != null)
+          .map(async it => {
+            try {
+              await this.productService.getById(it.deliveredProductId as number).toPromise();
+            } catch {
+              it.hasDelivery = false;
+              it.deliveredProductId = null;
+              it.deliveredPurchased = false;
+            }
+          }));
+
         this.loading = false;
         // wait for DOM to render, then measure overflow
         setTimeout(() => this.computeOverflow(), 0);
@@ -136,6 +196,11 @@ export class ServiceRequestsBar implements OnInit, OnDestroy {
     return status.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').trim();
   }
 
+  // Build a human-readable declined label; backend uses 'Rejected' without actor info
+  declinedByLabel(it: ServiceRequestDto): string {
+    return 'Declined';
+  }
+
   async acceptWithDeadline(it: ServiceRequestDto) {
     const { value: form } = await Swal.fire<{ date: string; time: string } | undefined>({
       title: 'Accept Request & Set Deadline',
@@ -203,7 +268,7 @@ export class ServiceRequestsBar implements OnInit, OnDestroy {
     const res = await Swal.fire({
       icon: 'warning',
       title: 'Decline this request?',
-      text: 'This will remove the request. You cannot undo this action.',
+      text: 'This will mark the request as declined and hide its actions.',
       showCancelButton: true,
       confirmButtonText: 'Yes, decline',
       cancelButtonText: 'Cancel'
@@ -212,7 +277,7 @@ export class ServiceRequestsBar implements OnInit, OnDestroy {
     try {
       this.actionBusy = it.id;
       await this.messaging.declineServiceRequest(it.conversationId, it.id).toPromise();
-      await Swal.fire({ icon: 'success', title: 'Request declined', text: 'The request has been removed.' });
+      await Swal.fire({ icon: 'success', title: 'Request declined', text: 'The request has been marked as declined.' });
       this.fetch();
     } catch (e: any) {
       await Swal.fire({ icon: 'error', title: 'Failed to decline', text: e?.message || 'Please try again.' });
@@ -230,11 +295,55 @@ export class ServiceRequestsBar implements OnInit, OnDestroy {
           privateDelivery: '1',
           conversationId: it.conversationId,
           serviceRequestId: it.id,
+          autoCreate: '1',
         }
       });
     } finally {
       this.actionBusy = null;
     }
+  }
+
+  async editDelivery(it: ServiceRequestDto & { deliveredProductId?: number | null }) {
+    if (!it.deliveredProductId) return;
+    this.actionBusy = it.id;
+    try {
+      // Navigate to product edit page so creator can edit the delivered product
+      await this.router.navigate([ '/products', it.deliveredProductId, 'edit' ]);
+    } finally {
+      this.actionBusy = null;
+    }
+  }
+
+  async deleteDeliveredProduct(it: ServiceRequestDto & { deliveredProductId?: number | null }) {
+    if (!it.deliveredProductId) return;
+    const res = await Swal.fire({
+      icon: 'warning',
+      title: 'Delete delivered product?',
+      text: 'This will remove the delivered product and revert the request so you can deliver again.',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel'
+    });
+    if (!res.isConfirmed) return;
+
+    try {
+      this.actionBusy = it.id;
+      await this.productService.deleteProduct(it.deliveredProductId).toPromise();
+      // Best-effort: revert status back to Confirmed
+      try { await this.messaging.confirmServiceRequest(it.conversationId, it.id).toPromise(); } catch {}
+      await Swal.fire({ icon: 'success', title: 'Deleted', text: 'Delivery product deleted and request reverted.' });
+      this.fetch();
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'Failed to delete delivered product.';
+      await Swal.fire({ icon: 'error', title: 'Delete failed', text: msg });
+    } finally {
+      this.actionBusy = null;
+    }
+  }
+
+  async goToProduct(productId?: number | null) {
+    if (!productId) return;
+    await this.router.navigate([ '/discover', productId ]);
   }
 
   async updateDeadline(it: ServiceRequestDto) {

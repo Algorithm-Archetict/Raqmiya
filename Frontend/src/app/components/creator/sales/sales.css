@@ -182,6 +182,9 @@
   grid-template-columns: 2fr 1fr 1fr;
   background: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .header-cell {
@@ -195,11 +198,17 @@
   text-align: left;
 }
 
+.table-body {
+  max-height: calc(5 * 56px);
+  overflow-y: auto;
+}
+
 .table-body .table-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
   border-bottom: 1px solid #e9ecef;
   transition: background-color 0.2s ease;
+  min-height: 56px;
 }
 
 .table-body .table-row:last-child {

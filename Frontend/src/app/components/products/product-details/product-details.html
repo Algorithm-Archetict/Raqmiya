@@ -291,7 +291,7 @@
                      [class.text-warning]="star <= (product?.averageRating || 0)"></i>
                 </div>
                 <span class="rating-number">{{ product?.averageRating | number:'1.1-1' }}/5</span>
-                <span class="rating-count">({{ product?.reviews?.length || 0 }} reviews)</span>
+                <span class="rating-count">({{ reviews.length || 0 }} reviews)</span>
               </div>
 
               <!-- Rating Distribution -->
@@ -480,7 +480,7 @@
           <div class="view-all-reviews text-center mt-4">
             <button class="btn btn-outline-primary" [routerLink]="['/products', product?.id, 'reviews']">
               <i class="bi bi-list me-2"></i>
-              View All Reviews ({{ product?.reviews?.length || 0 }})
+              View All Reviews ({{ reviews.length || 0 }})
             </button>
           </div>
         </div>

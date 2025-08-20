@@ -9,6 +9,7 @@ import { ProductDetailDTO } from '../../../../core/models/product/product-detail
 import { ProductUpdateRequestDTO } from '../../../../core/models/product/product-update-request.dto';
 import { FileDTO } from '../../../../core/models/product/file.dto';
 import { CATEGORIES } from '../../../../core/data/categories';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-product-edit-content',
@@ -139,7 +140,9 @@ export class ProductEditContent implements OnInit {
         previewVideoUrl: this.product!.previewVideoUrl,
         isPublic: this.product!.isPublic,
         permalink: this.product!.permalink,
-        status: publish ? 'published' : this.product!.status,
+        // Preserve status for private products even on "Save and publish"
+        // Only force publish for public products
+        status: publish && this.product!.isPublic ? 'published' : this.product!.status,
         compatibility: this.product!.compatibility,
         license: this.product!.license,
         updates: this.product!.updates,
@@ -155,7 +158,19 @@ export class ProductEditContent implements OnInit {
       this.productService.updateProduct(this.productId!, productDto).subscribe({
         next: (updatedProduct) => {
           this.isSubmitting = false;
-          this.successMessage = publish ? 'Product published successfully!' : 'Content saved successfully!';
+          if (publish) {
+            // Show SweetAlert for publish success instead of top banner
+            void Swal.fire({
+              icon: 'success',
+              title: 'Published',
+              text: 'Product published successfully!',
+              confirmButtonText: 'OK'
+            });
+            this.successMessage = null;
+          } else {
+            // Keep existing banner for non-publish save
+            this.successMessage = 'Content saved successfully!';
+          }
           this.product = updatedProduct;
           
           // Upload any new files

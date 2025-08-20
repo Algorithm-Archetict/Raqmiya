@@ -120,6 +120,9 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
                 confirmButton: 'btn btn-primary'
               }
             });
+
+            // Reload reviews to ensure UI reflects deletion
+            this.refreshReviews();
           },
           error: (error) => {
             console.error('Error deleting review:', error);
@@ -211,7 +214,11 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
         .subscribe({
           next: (product) => {
             this.product = product;
-            this.reviews = product.reviews;
+            // Apply normalization to initial reviews to avoid showing invalid dates before refresh
+            this.reviews = (product.reviews || []).map(r => ({
+              ...r,
+              createdAt: this.normalizeReviewDate(r.createdAt)
+            }));
             this.isInWishlist = product.isInWishlist || false;
             
             // Initialize selected media with the first media item (cover image)
@@ -220,6 +227,8 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
             this.checkPurchaseAndReviewStatus(); // Check if user can review
             this.checkCartStatus(); // Check if product is in cart
             this.loadRelatedProducts();
+            // Ensure reviews (including createdAt) are fresh from server
+            this.refreshReviews();
             this.isLoading = false;
           },
           error: (error) => {
@@ -234,7 +243,11 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
         .subscribe({
           next: (product) => {
             this.product = product;
-            this.reviews = product.reviews;
+            // Apply normalization to initial reviews to avoid showing invalid dates before refresh
+            this.reviews = (product.reviews || []).map(r => ({
+              ...r,
+              createdAt: this.normalizeReviewDate(r.createdAt)
+            }));
             this.isInWishlist = product.isInWishlist || false;
             
             // Initialize selected media with the first media item (cover image)
@@ -243,6 +256,8 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
             this.checkPurchaseAndReviewStatus(); // Check if user can review
             this.checkCartStatus(); // Check if product is in cart
             this.loadRelatedProducts();
+            // Ensure reviews (including createdAt) are fresh from server
+            this.refreshReviews();
             this.isLoading = false;
           },
           error: (error) => {
@@ -548,7 +563,7 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
               comment: review.comment || '',
               userName: review.userName,
               userAvatar: review.userAvatar,
-              createdAt: review.createdAt
+              createdAt: this.normalizeReviewDate(review.createdAt || new Date().toISOString())
             };
           }
           this.existingReview = {
@@ -557,7 +572,7 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
             comment: review.comment || '',
             userName: review.userName,
             userAvatar: review.userAvatar,
-            createdAt: review.createdAt
+            createdAt: this.normalizeReviewDate(review.createdAt || new Date().toISOString())
           };
         } else {
           // Add the new review to the reviews array
@@ -567,7 +582,7 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
             comment: review.comment || '',
             userName: review.userName,
             userAvatar: review.userAvatar,
-            createdAt: review.createdAt
+            createdAt: this.normalizeReviewDate(review.createdAt || new Date().toISOString())
           };
           this.product!.reviews.unshift(newReview);
           this.existingReview = newReview;
@@ -576,6 +591,13 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
         // Update the average rating
         const totalRatings = this.product!.reviews.reduce((sum, r) => sum + r.rating, 0);
         this.product!.averageRating = totalRatings / this.product!.reviews.length;
+
+        // Immediately sync the UI list: normalize dates, dedupe by user, and sort by newest
+        const immediateNormalized = this.product!.reviews.map(r => ({
+          ...r,
+          createdAt: this.normalizeReviewDate(r.createdAt)
+        }));
+        this.reviews = this.dedupeByUserKeepLatest(immediateNormalized);
 
         this.submittingReview = false;
         this.isEditingReview = false;
@@ -590,6 +612,9 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
           },
           timer: 3000
         });
+
+        // Reload reviews to ensure accurate dates and ordering
+        this.refreshReviews();
       },
       error: (error) => {
         console.error('Error submitting review:', error);
@@ -666,6 +691,13 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
             this.userRating = 0;
             this.isEditingReview = false;
 
+            // Immediately sync the UI list: normalize dates, dedupe by user, and sort by newest
+            const immediateNormalized = this.product!.reviews.map(r => ({
+              ...r,
+              createdAt: this.normalizeReviewDate(r.createdAt)
+            }));
+            this.reviews = this.dedupeByUserKeepLatest(immediateNormalized);
+
             Swal.fire({
               icon: 'success',
               title: 'Review Deleted!',
@@ -674,6 +706,9 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
                 confirmButton: 'btn btn-primary'
               }
             });
+
+            // Reload reviews from backend to ensure timestamps and ordering are accurate
+            this.refreshReviews();
           },
           error: (error) => {
             console.error('Error deleting review:', error);
@@ -1183,5 +1218,67 @@ export class ProductDetails implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  // Normalize backend date strings to valid ISO strings; fallback to now if invalid or year <= 1900
+  private normalizeReviewDate(input: any): string {
+    try {
+      if (!input) return new Date().toISOString();
+      const d = new Date(input);
+      if (isNaN(d.getTime())) return new Date().toISOString();
+      const year = d.getUTCFullYear();
+      if (year <= 1900) return new Date().toISOString();
+      return d.toISOString();
+    } catch {
+      return new Date().toISOString();
+    }
+  }
+
+  // Keep only one review per user (the latest by createdAt)
+  private dedupeByUserKeepLatest(reviews: ReviewDTO[]): ReviewDTO[] {
+    const latestByUser = new Map<string, ReviewDTO>();
+    for (const r of reviews) {
+      const key = (r.userName || '').toLowerCase();
+      const existing = latestByUser.get(key);
+      const currentDate = new Date(this.normalizeReviewDate(r.createdAt));
+      if (!existing) {
+        latestByUser.set(key, { ...r, createdAt: currentDate.toISOString() });
+      } else {
+        const existingDate = new Date(this.normalizeReviewDate(existing.createdAt));
+        if (currentDate.getTime() >= existingDate.getTime()) {
+          latestByUser.set(key, { ...r, createdAt: currentDate.toISOString() });
+        }
+      }
+    }
+    // Sort descending by createdAt for consistent UI
+    return Array.from(latestByUser.values()).sort((a, b) => new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime());
+  }
+
+  // Refresh reviews from server to ensure accurate timestamps and immediate UI updates
+  private refreshReviews(): void {
+    if (!this.product) return;
+    this.productService.getReviews(this.product.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (reviews: ReviewDTO[]) => {
+          const normalized = (reviews || []).map(r => ({
+            ...r,
+            createdAt: this.normalizeReviewDate(r.createdAt)
+          }));
+          const deduped = this.dedupeByUserKeepLatest(normalized);
+          this.reviews = deduped;
+          // Keep product.reviews in sync for other parts of the UI
+          this.product!.reviews = this.reviews;
+          // Recompute average rating
+          if (this.reviews.length > 0) {
+            const total = this.reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+            this.product!.averageRating = total / this.reviews.length;
+          } else {
+            this.product!.averageRating = 0;
+          }
+        },
+        error: (err: any) => {
+          console.error('Failed to refresh reviews:', err);
+        }
+      });
+  }
 
 }

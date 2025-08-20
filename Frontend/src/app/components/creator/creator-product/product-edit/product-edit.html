@@ -75,7 +75,7 @@
               </button>
               <button 
                 class="btn btn-primary save-btn" 
-                [disabled]="!isFormValid || isSubmitting"
+                [disabled]="isSubmitting"
                 (click)="saveAndContinue()"
               >
                 <i class="fas fa-spinner fa-spin" *ngIf="isSubmitting"></i>
@@ -97,10 +97,7 @@
               <i class="fas fa-file-alt"></i>
               <span>Content</span>
             </a>
-            <a class="nav-tab" routerLink="/products/{{ productId }}/edit/files">
-              <i class="fas fa-folder"></i>
-              <span>Files</span>
-            </a>
+            
           </div>
         </div>
       </div>
@@ -532,63 +529,7 @@
                 </div>
               </div>
               
-              <!-- Product Files -->
-              <div class="form-group">
-                <label class="form-label">
-                  <i class="fas fa-file-archive"></i>
-                  Product Files
-                </label>
-                <div class="file-uploader">
-                  <div 
-                    class="file-upload-area"
-                    (click)="triggerFileUpload()"
-                    (dragover)="onDragOver($event)"
-                    (dragleave)="onDragLeave($event)"
-                    (drop)="onDrop($event)"
-                    [class.dragover]="isDragOver"
-                  >
-                    <div class="upload-icon">
-                      <i class="fas fa-cloud-upload-alt"></i>
-                    </div>
-                    <div class="upload-text">Upload your product files</div>
-                    <div class="upload-hint">Drag and drop files here or click to browse</div>
-                    <input 
-                      type="file" 
-                      #fileInput 
-                      multiple 
-                      (change)="onFileSelected($event)"
-                      style="display: none;"
-                    >
-                  </div>
-
-                  <!-- Upload Progress -->
-                  <div class="upload-progress" *ngIf="isUploading">
-                    <div class="progress-bar">
-                      <div class="progress-fill" [style.width.%]="uploadProgress"></div>
-                    </div>
-                    <div class="progress-text">Uploading... {{ uploadProgress | number:'1.0-0' }}%</div>
-                  </div>
-
-                  <!-- Uploaded Files List -->
-                  <div class="files-list" *ngIf="uploadedFiles.length > 0">
-                    <h4>Uploaded Files</h4>
-                    <div class="file-items">
-                      <div class="file-item" *ngFor="let file of uploadedFiles; let i = index">
-                        <div class="file-icon">
-                          <i class="fas fa-file"></i>
-                        </div>
-                        <div class="file-info">
-                          <span class="file-name">{{ file.name }}</span>
-                          <small class="file-size">{{ formatFileSize(file.size) }}</small>
-                        </div>
-                        <button class="btn btn-danger remove-file-btn" (click)="removeFile(i)">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              
             </div>
 
             <!-- Settings Section -->

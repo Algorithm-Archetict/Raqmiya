@@ -10,6 +10,7 @@ import { LoadingSpinner } from '../../shared/loading-spinner/loading-spinner';
 import { Navbar } from '../../navbar/navbar';
 import Swal from 'sweetalert2';
 import { ChatSignalRService } from '../../../core/services/chat-signalr.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-creator-profile',
@@ -38,7 +39,16 @@ export class CreatorProfileComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    // Initialize from any already-available auth state
     this.currentUserId = this.authService.getCurrentUser()?.id || null;
+    // Keep current user in sync after hard refresh; when user becomes available, refresh sub status
+    this.authService.currentUser$.subscribe(user => {
+      const prevId = this.currentUserId;
+      this.currentUserId = user?.id || null;
+      if (this.currentUserId && this.creatorProfile && this.currentUserId !== prevId) {
+        this.refreshSubscriptionStatus(this.creatorProfile.id);
+      }
+    });
     this.loadCreatorProfile();
   }
 
@@ -52,9 +62,17 @@ export class CreatorProfileComponent implements OnInit {
 
     this.subscriptionService.getCreatorProfile(+creatorId).subscribe({
       next: (profile) => {
+        // Normalize profile image URL to absolute API URL if needed
+        if (profile?.profileImageUrl) {
+          profile.profileImageUrl = this.normalizeImageUrl(profile.profileImageUrl);
+        }
         this.creatorProfile = profile;
         this.loading = false;
         this.loadCreatorProducts(+creatorId);
+        // If logged in, ensure we have the accurate subscription status (in case backend omits it for anonymous)
+        if (this.authService.isLoggedIn()) {
+          this.refreshSubscriptionStatus(+creatorId);
+        }
         // Fetch public product count (excludes private/freelance)
         this.productService.getPublicProductCountForCreator(+creatorId).subscribe({
           next: (count) => { this.publicProductCount = count; },
@@ -65,6 +83,20 @@ export class CreatorProfileComponent implements OnInit {
         console.error('Error loading creator profile:', error);
         this.error = true;
         this.loading = false;
+      }
+    });
+  }
+
+  private refreshSubscriptionStatus(creatorId: number) {
+    if (!this.creatorProfile) return;
+    this.subscriptionService.getSubscriptionStatus(creatorId).subscribe({
+      next: (status) => {
+        // Update only the subscribed flag to avoid unintended changes
+        this.creatorProfile!.isSubscribed = !!status?.isSubscribed;
+      },
+      error: (err) => {
+        // Do not surface an error UI; just log and keep existing state
+        console.warn('Failed to refresh subscription status', err);
       }
     });
   }
@@ -336,5 +368,21 @@ export class CreatorProfileComponent implements OnInit {
     } else {
       return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
     }
+  }
+
+  private normalizeImageUrl(url?: string): string | undefined {
+    if (!url) return undefined;
+    // Already absolute
+    if (/^https?:\/\//i.test(url)) return url;
+    // Determine correct base for static files vs API
+    const path = url.startsWith('/') ? url : `/${url}`;
+    const apiBase = environment.apiUrl.replace(/\/$/, '');
+    const originBase = apiBase.replace(/\/api$/i, '');
+    // If it's an uploads/static path, use origin base (no '/api')
+    if (/^\/uploads\b/i.test(path)) {
+      return `${originBase}${path}`;
+    }
+    // Fallback: join with api base
+    return `${apiBase}${path}`;
   }
 }

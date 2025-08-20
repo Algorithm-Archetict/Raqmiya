@@ -174,6 +174,12 @@
   background: #0f172a;
   border-bottom: 1px solid #1f2937;
   padding: 0;
+  /* Make header (including navbar) sticky */
+  position: sticky;
+  top: 0;
+  z-index: 1000; /* stay above content */
+  /* Optional subtle backdrop/shadow while stuck */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 .header-content {
@@ -467,6 +473,7 @@ textarea.form-input {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
+  align-items: stretch; /* Ensure cards align uniformly */
 }
 
 .category-card {
@@ -480,6 +487,7 @@ textarea.form-input {
   display: flex;
   align-items: center;
   gap: 16px;
+  height: 100%; /* Make cards fill grid cell height */
 }
 
 .category-card:hover {
@@ -520,6 +528,7 @@ textarea.form-input {
 
 .category-info {
   flex: 1;
+  min-width: 0; /* allow flex child text to wrap instead of overflowing */
 }
 
 .category-info h4 {
@@ -534,6 +543,25 @@ textarea.form-input {
   color: #94a3b8;
   margin: 0;
   line-height: 1.4;
+}
+
+/* Ensure long words in subcategory titles/descriptions wrap inside the card */
+.category-card.subcategory .category-info h4,
+.category-card.subcategory .category-info p {
+  white-space: normal;        /* allow normal wrapping */
+  word-break: normal;         /* do not split words */
+  overflow-wrap: break-word;  /* break only very long tokens */
+  hyphens: none;              /* no automatic hyphenation */
+}
+
+/* Keep subcategory name on a single line with ellipsis */
+/* Display full subcategory name over multiple lines without splitting words */
+.category-card.subcategory .category-info h4 {
+  white-space: normal;   /* allow wrapping to next line */
+  word-break: keep-all;  /* do not break inside words */
+  overflow-wrap: normal; /* wrap only at allowed break points (spaces) */
+  display: block;
+  max-width: 100%;
 }
 
 .category-check {
@@ -572,11 +600,31 @@ textarea.form-input {
 }
 
 .category-grid.subcategories {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: stretch; /* Stretch subcategory items to equal heights */
 }
 
 .category-card.subcategory {
   padding: 16px;
+  align-items: flex-start; /* Align subcategory content to top for consistency */
+  display: grid; /* Organize icon and text for better readability */
+  grid-template-columns: 48px 1fr; /* icon then text */
+  column-gap: 16px;
+}
+
+/* Place icon in first column and text in second column for subcategories */
+.category-card.subcategory .category-icon {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.category-card.subcategory .category-info {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
 }
 
 /* Tag Manager */
