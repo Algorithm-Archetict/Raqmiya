@@ -4,7 +4,6 @@
 
 ![Raqmiya Logo](https://img.shields.io/badge/Raqmiya-Digital%20Marketplace-blue?style=for-the-badge&logo=shopping-cart)
 
-[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![Angular](https://img.shields.io/badge/Angular-20.0-red?style=flat-square&logo=angular)](https://angular.io/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
@@ -304,17 +303,12 @@ JWT_ISSUER=http://localhost:5255
 JWT_AUDIENCE=http://localhost:4200
 
 # Stripe
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret
-STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable
 
 # Email (SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
 
-# Google Cloud (Optional)
-GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
+# Google Cloud 
 ```
 
 ### Feature Flags
@@ -391,19 +385,9 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - **Frontend**: Use Angular style guide and Prettier formatting
 - **Commits**: Use conventional commit messages
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Documentation**: [Wiki](https://github.com/Algorithm-Archetict/Raqmiya/wiki)
-- **Issues**: [GitHub Issues](https://github.com/Algorithm-Archetict/Raqmiya/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Algorithm-Archetict/Raqmiya/discussions)
-
 ## 🏆 Acknowledgments
 
-- Built with ❤️ by the Algorithm-Archetict team
+- Built with ❤️ by the RAQMIYA team
 - Powered by .NET 8 and Angular 20
 - AI capabilities by Google Cloud Vision API
 - Payment processing by Stripe
